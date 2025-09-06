@@ -130,8 +130,11 @@ const Footer = () => {
         </div>
         
         {/* Copyright */}
-        <div className="pt-8 mt-8 border-t border-gray-700 text-center text-gray-300">
-          <p>© {new Date().getFullYear()} <span className="text-cakePink-light font-semibold">La Patisserie Team</span> | All Rights Reserved</p>
+        <div className="pt-8 mt-8 border-t border-gray-200 text-center">
+          <div className="flex flex-col items-center justify-center">
+            <img src="/images/cake-logo.png" alt="Dessertify Logo" className="h-16 w-16 mb-3" />
+            <p className="text-gray-600">© {new Date().getFullYear()} <span className="text-cakePink font-semibold">La Patisserie Team</span> | All Rights Reserved</p>
+          </div>
         </div>
       </div>
     </footer>

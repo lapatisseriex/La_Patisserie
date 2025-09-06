@@ -1,10 +1,14 @@
-import React, { useState, useContext, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { AuthContext } from '../../App';
+import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 import { useCart } from '../../context/CartContext';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import './Header.css';
+
+// Import UserMenu component
+import UserMenu from './UserMenu/UserMenu';
 
 // Import icons
 import { 
@@ -14,17 +18,26 @@ import {
   X, 
   MapPin, 
   ChevronDown,
-  ShoppingBag
+  ShoppingBag,
+  AlertTriangle,
+  Settings,
+  Package
 } from 'lucide-react';
 
-const Header = () => {
+const Header = ({ isAdminView = false }) => {
   const { 
-    toggleAuthPanel, 
-    isLoggedIn, 
-    logout, 
-    userLocation, 
-    setUserLocation 
-  } = useContext(AuthContext);
+    user,
+    toggleAuthPanel,
+    logout
+  } = useAuth();
+  
+  const {
+    locations,
+    loading: locationsLoading,
+    updateUserLocation,
+    getCurrentLocationName,
+    hasValidDeliveryLocation
+  } = useLocationContext();
   
   const { cartCount } = useCart();
   
@@ -33,12 +46,18 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   
+  // Function to toggle mobile menu
+
+  
   const location = useLocation();
   const locationDropdownRef = useRef(null);
   const categorySliderRef = useRef(null);
   
   // Check if we're on a cart or payment page
   const isCartOrPaymentPage = location.pathname === '/cart' || location.pathname === '/payment';
+  
+  // Memoize values that should only update when their dependencies change
+  const memoizedCartCount = useMemo(() => cartCount, [cartCount]);
   
   // Sample categories data for the category bar
   const categories = [
@@ -52,17 +71,25 @@ const Header = () => {
     { id: 8, name: "Ice Cream Cakes", image: "/images/cake2.png" }
   ];
   
-  // Sample city locations for the dropdown
-  const cityLocations = [
-    "New York", 
-    "Los Angeles", 
-    "Chicago", 
-    "Houston", 
-    "Phoenix", 
-    "Philadelphia",
-    "San Antonio",
-    "San Diego"
-  ];
+  // Get user's location display name
+  const [userLocationDisplay, setUserLocationDisplay] = useState('Select Location');
+  
+  // Update location display once when user changes
+  // We use a ref to track if we've already set the location
+  const locationDisplayInitialized = useRef(false);
+  const prevLocationIdRef = useRef(user?.location?._id);
+  
+  useEffect(() => {
+    // Set the location display when the component mounts or when user changes
+    if (user?.location && user.location.area && user.location.city) {
+      setUserLocationDisplay(`${user.location.area}, ${user.location.city}`);
+      prevLocationIdRef.current = user.location._id;
+    } else {
+      setUserLocationDisplay('Select Location');
+      prevLocationIdRef.current = null;
+    }
+    locationDisplayInitialized.current = true;
+  }, [user?.uid, user?.location?._id]); // Only update when user ID or location ID changes
 
   // Handle scroll event to change header styling
   useEffect(() => {
@@ -81,6 +108,31 @@ const Header = () => {
     };
   }, []);
   
+  // Clean up body scroll lock when component unmounts
+  useEffect(() => {
+    // Set a CSS variable for the header height to use in body padding
+    const header = document.querySelector('header');
+    if (header) {
+      document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
+    }
+    
+    // Handle resize to update header height variable
+    const handleResize = () => {
+      const header = document.querySelector('header');
+      if (header) {
+        document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      // Clean up
+      document.body.style.overflow = '';
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
   // Close location dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -94,18 +146,48 @@ const Header = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+  
+  // We no longer need an event listener for location updates
+  // The user and location changes will be handled by the effect above
 
   // No need for manual swiper initialization when using Swiper React components
   
   // Handle location selection
-  const handleLocationSelect = (city) => {
-    setUserLocation(city);
+  const handleLocationSelect = async (locationId) => {
+    if (user) {
+      console.log("Updating user location to:", locationId);
+      
+      // Find the selected location to display immediately
+      const selectedLocation = locations.find(loc => loc._id === locationId);
+      
+      if (selectedLocation) {
+        // Update the display immediately without waiting for backend
+        setUserLocationDisplay(`${selectedLocation.area}, ${selectedLocation.city}`);
+        // Also update the ref to prevent useEffect from updating again
+        prevLocationIdRef.current = selectedLocation._id;
+      }
+      
+      // Update the user location in the backend and context
+      const success = await updateUserLocation(locationId);
+      console.log("Location update success:", success);
+      
+      // The context will handle updating the user object
+    } else {
+      toggleAuthPanel(); // Prompt user to login first
+    }
     setIsLocationDropdownOpen(false);
   };
   
-  // Toggle mobile menu
+  // Toggle mobile menu with body scroll lock
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+    
+    // Prevent body scrolling when menu is open
+    if (!isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
   };
   
   // Handle category selection
@@ -117,20 +199,20 @@ const Header = () => {
   const renderBreadcrumb = () => {
     if (location.pathname === '/cart') {
       return (
-        <div className="flex items-center text-sm text-gray-600 px-4 py-3 bg-gray-50">
+        <div className="flex items-center text-xs sm:text-sm text-gray-600 px-2 sm:px-4 py-2 sm:py-3 bg-gray-50">
           <Link to="/" className="hover:text-cakePink">Home</Link>
-          <span className="mx-2">/</span>
-          <span className="font-medium text-gray-800">Shopping Cart</span>
+          <span className="mx-1 sm:mx-2">/</span>
+          <span className="font-medium text-gray-800 truncate">Shopping Cart</span>
         </div>
       );
     } else if (location.pathname === '/payment') {
       return (
-        <div className="flex items-center text-sm text-gray-600 px-4 py-3 bg-gray-50">
-          <Link to="/" className="hover:text-cakePink">Home</Link>
-          <span className="mx-2">/</span>
-          <Link to="/cart" className="hover:text-cakePink">Shopping Cart</Link>
-          <span className="mx-2">/</span>
-          <span className="font-medium text-gray-800">Checkout</span>
+        <div className="flex items-center text-xs sm:text-sm text-gray-600 px-2 sm:px-4 py-2 sm:py-3 bg-gray-50 overflow-x-auto whitespace-nowrap">
+          <Link to="/" className="hover:text-cakePink flex-shrink-0">Home</Link>
+          <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
+          <Link to="/cart" className="hover:text-cakePink flex-shrink-0">Shopping Cart</Link>
+          <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
+          <span className="font-medium text-gray-800 flex-shrink-0">Checkout</span>
         </div>
       );
     }
@@ -139,51 +221,74 @@ const Header = () => {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${isScrolled ? 'shadow-md' : ''}`}>
-      {/* Top Bar - City Selector */}
-      <div className="bg-white py-2 px-4 border-b border-gray-100">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="relative" ref={locationDropdownRef}>
-            <button 
-              className="flex items-center text-sm text-cakeBrown hover:text-cakePink-dark transition-colors"
-              onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
-            >
-              <MapPin className="h-4 w-4 mr-1" />
-              <span>{userLocation}</span>
-              <ChevronDown className="h-4 w-4 ml-1" />
-            </button>
+      {/* Top Bar - City Selector (hidden in admin view) */}
+      {!isAdminView && (
+        <div className="bg-white py-1 sm:py-2 px-2 sm:px-4 border-b border-gray-100">
+          <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
+            <div className="relative w-full sm:w-auto" ref={locationDropdownRef}>
+              <button 
+                className="flex items-center text-xs sm:text-sm text-cakeBrown hover:text-cakePink-dark transition-colors"
+                onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
+              >
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="truncate max-w-[120px] sm:max-w-[150px]">{userLocationDisplay}</span>
+                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+                {user && !hasValidDeliveryLocation() && (
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 ml-1 text-amber-500" />
+                )}
+              </button>
+              
+              {/* City Dropdown */}
+              {isLocationDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-full sm:w-64 bg-white shadow-lg rounded-md overflow-hidden z-50">
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                    <h3 className="text-xs font-medium text-gray-500">AVAILABLE DELIVERY LOCATIONS</h3>
+                  </div>
+                  {locationsLoading ? (
+                    <div className="p-4 text-center text-gray-500">Loading...</div>
+                  ) : locations.length > 0 ? (
+                    <ul className="py-1 max-h-48 sm:max-h-64 overflow-y-auto">
+                      {locations.map((location) => (
+                        <li key={location._id}>
+                          <button
+                            className={`w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-cakePink-light hover:text-cakeBrown transition-colors ${
+                              user?.location?._id === location._id
+                                ? 'bg-pink-50 text-cakePink font-medium'
+                                : 'text-gray-700'
+                            }`}
+                            onClick={() => handleLocationSelect(location._id)}
+                          >
+                            {location.area}, {location.city}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="p-3 sm:p-4 text-center text-xs sm:text-sm text-gray-500">No delivery locations available</div>
+                  )}
+                  <div className="p-2 sm:p-3 bg-amber-50 border-t border-amber-200">
+                    <p className="text-xs text-amber-700">
+                      Orders can only be placed in these locations
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
             
-            {/* City Dropdown */}
-            {isLocationDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-md overflow-hidden z-50">
-                <ul className="py-1">
-                  {cityLocations.map((city) => (
-                    <li key={city}>
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown transition-colors"
-                        onClick={() => handleLocationSelect(city)}
-                      >
-                        {city}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-          
-          <div className="text-sm text-cakeBrown">
-            <span>Free delivery on orders over $50</span>
+            <div className="text-xs sm:text-sm text-cakeBrown mt-1 sm:mt-0">
+              <span>Free delivery on orders over ₹50</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
       
       {/* Middle Bar - Logo and Profile/Login */}
-      <div className="py-4 px-4 bg-white">
+      <div className="py-3 sm:py-4 px-2 sm:px-4 bg-white">
         <div className="container mx-auto flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-10" />
-            <span className="ml-2 text-2xl font-bold text-cakeBrown">La Patisserie</span>
+            <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-8 sm:h-10" />
+            <span className="ml-2 text-lg sm:text-xl md:text-2xl font-bold text-cakeBrown truncate max-w-[120px] sm:max-w-none">La Patisserie</span>
           </Link>
           
           {/* Search Bar - Desktop */}
@@ -200,104 +305,101 @@ const Header = () => {
           
           {/* Navigation Links - Desktop */}
           <div className="hidden md:flex items-center space-x-6">
-            {isLoggedIn ? (
+            {/* Navigation Links - Desktop */}
+            <Link to="/" className="hidden lg:block text-cakeBrown hover:text-cakePink">Home</Link>
+            <Link to="/products" className="hidden lg:block text-cakeBrown hover:text-cakePink">Products</Link>
+            
+            {user && (
               <>
-                {/* Profile when logged in */}
-                <div className="relative group">
-                  <button className="flex items-center text-cakeBrown hover:text-cakePink transition-colors">
-                    <User className="h-5 w-5 mr-1" />
-                    <span>My Account</span>
-                  </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                    <ul className="py-1">
-                      <li>
-                        <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown">
-                          Profile
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/orders" className="block px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown">
-                          Orders
-                        </Link>
-                      </li>
-                      <li>
-                        <button 
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown"
-                          onClick={logout}
-                        >
-                          Logout
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                {/* User Menu - Uses role-based display */}
+                <UserMenu />
                 
-                {/* Cart */}
+                {/* Cart component */}
                 <Link to="/cart" className="flex items-center text-cakeBrown hover:text-cakePink transition-colors relative">
                   <ShoppingBag className="h-5 w-5 mr-1" />
-                  <span>Cart ({cartCount})</span>
-                  {cartCount > 0 && (
+                  <span>Cart ({memoizedCartCount})</span>
+                  {memoizedCartCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-cakePink text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                      {cartCount}
+                      {memoizedCartCount}
                     </span>
                   )}
                 </Link>
               </>
-            ) : (
+            )}
+            
+            {!user && (
               <button 
                 onClick={toggleAuthPanel}
-                className="flex items-center text-cakeBrown hover:text-cakePink transition-colors"
+                className="flex items-center text-cakeBrown hover:text-cakePink transition-all duration-300 ease-in-out transform hover:scale-105"
               >
-                <User className="h-5 w-5 mr-1" />
+                <User className="h-5 w-5 mr-1 transition-transform duration-300 ease-in-out group-hover:scale-110" />
                 <span>Login / Signup</span>
               </button>
             )}
           </div>
           
-          {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden text-cakeBrown hover:text-cakePink"
-            onClick={toggleMobileMenu}
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
+          {/* Mobile Icons */}
+          <div className="flex items-center space-x-3 md:hidden">
+            {/* User icon for mobile */}
+            {!user ? (
+              <button 
+                onClick={toggleAuthPanel}
+                className="text-cakeBrown hover:text-cakePink p-1"
+                aria-label="Login"
+              >
+                <User className="h-5 w-5" />
+              </button>
             ) : (
-              <Menu className="h-6 w-6" />
+              <Link to="/profile" className="text-cakeBrown hover:text-cakePink p-1" aria-label="Profile">
+                <User className="h-5 w-5" />
+              </Link>
             )}
-          </button>
+            
+            {/* Mobile search button */}
+            <button 
+              className="text-cakeBrown hover:text-cakePink p-1"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+            
+            {/* Mobile Menu Button */}
+            <button 
+              className="text-cakeBrown hover:text-cakePink p-1"
+              onClick={toggleMobileMenu}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
       
-      {/* Category Bar or Breadcrumb */}
+      {/* Category Bar or Breadcrumb - Hidden in admin view */}
       {isCartOrPaymentPage ? (
         renderBreadcrumb()
-      ) : (
-        <div className="bg-white border-t border-b border-gray-100 py-3 px-4 overflow-hidden">
+      ) : !isAdminView && (
+        <div className="bg-white border-t border-b border-gray-100 py-2 sm:py-3 px-2 sm:px-4 overflow-hidden">
           <div className="container mx-auto relative z-10">
             {/* Category Swiper */}
             <Swiper
             className="category-swiper"
-            slidesPerView={2.5}
+            slidesPerView="auto"
             spaceBetween={10}
+            freeMode={true}
+            touchRatio={1.5}
+            touchAngle={45}
+            grabCursor={true}
+            preventClicks={true}
+            resistanceRatio={0.85}
             modules={[]}
-            breakpoints={{
-              640: {
-                slidesPerView: 3.5,
-                spaceBetween: 15,
-              },
-              768: {
-                slidesPerView: 4.5,
-                spaceBetween: 20,
-              },
-              1024: {
-                slidesPerView: 5.5,
-                spaceBetween: 25,
-              },
-              1280: {
-                slidesPerView: 6.5,
-                spaceBetween: 30,
-              },
-            }}
+            watchOverflow={true}
+            watchSlidesProgress={true}
             ref={categorySliderRef}
           >
             {categories.map(category => (
@@ -305,56 +407,69 @@ const Header = () => {
                 key={category.id}
                 className={`cursor-pointer ${selectedCategory === category.id ? 'selected-category' : ''}`}
                 onClick={() => handleCategorySelect(category.id)}
+                style={{ width: 'auto', minWidth: '70px', maxWidth: '100px' }}
               >
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full overflow-hidden mb-1">
+                <div className="flex flex-col items-center px-1">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden mb-1 shadow-sm">
                     <img 
                       src={category.image} 
                       alt={category.name} 
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   </div>
-                  <span className="text-xs text-center text-cakeBrown leading-tight">
+                  <span className="text-[10px] sm:text-xs text-center text-cakeBrown leading-tight line-clamp-1 sm:line-clamp-2 w-full">
                     {category.name}
                   </span>
                 </div>
               </SwiperSlide>
             ))}
           </Swiper>
+          </div>
         </div>
-      </div>
-      )}
-      
-      {/* Floating Cart Button (mobile only) */}
-      {cartCount > 0 && !isCartOrPaymentPage && (
+      )}      {/* Floating Cart Button (mobile only) */}
+      {memoizedCartCount > 0 && !isCartOrPaymentPage && (
         <Link
           to="/cart"
-          className="md:hidden fixed bottom-6 right-6 bg-cakePink text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center z-30"
+          className="md:hidden fixed bottom-4 sm:bottom-6 right-4 sm:right-6 bg-cakePink text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105"
           aria-label="View Cart"
         >
-          <ShoppingBag className="h-6 w-6" />
-          <span className="absolute -top-1 -right-1 bg-cakeBrown text-white text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-white">
-            {cartCount}
+          <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
+          <span className="absolute -top-1 -right-1 bg-cakeBrown text-white text-[10px] sm:text-xs w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full border-2 border-white">
+            {memoizedCartCount}
           </span>
         </Link>
       )}
       
+      {/* Mobile Menu Overlay */}
+      <div 
+        className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 md:hidden ${
+          isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={toggleMobileMenu}
+      ></div>
+      
       {/* Mobile Menu */}
-      <div className={`md:hidden fixed inset-0 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="p-4">
-          <div className="flex justify-between items-center mb-6">
-            <Link to="/" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
-              <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-14" />
-              <span className="ml-2 text-xl font-bold text-cakeBrown">La Patisserie</span>
-            </Link>
-            <button 
-              className="text-cakeBrown hover:text-cakePink"
-              onClick={toggleMobileMenu}
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-          
+      <div 
+        className={`md:hidden fixed inset-y-0 right-0 w-[80%] max-w-xs bg-white z-50 transform transition-transform duration-300 ease-in-out ${
+          isMobileMenuOpen ? 'translate-x-0 shadow-xl' : 'translate-x-full'
+        } flex flex-col`}
+      >
+        <div className="flex justify-between items-center p-4 border-b border-gray-100">
+          <Link to="/" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
+            <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-10" />
+            <span className="ml-2 text-lg font-bold text-cakeBrown">La Patisserie</span>
+          </Link>
+          <button 
+            className="text-cakeBrown hover:text-cakePink p-1"
+            onClick={toggleMobileMenu}
+            aria-label="Close menu"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <div className="p-4 flex-1 overflow-y-auto">
           {/* Mobile Search */}
           <div className="relative mb-6">
             <input 
@@ -367,84 +482,164 @@ const Header = () => {
             </button>
           </div>
           
-          {/* Mobile Nav Links */}
-          <nav className="space-y-4">
-            <Link 
-              to="/" 
-              className="block py-2 text-cakeBrown hover:text-cakePink"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link 
-              to="/products" 
-              className="block py-2 text-cakeBrown hover:text-cakePink"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Products
-            </Link>
-            <Link 
-              to="/about" 
-              className="block py-2 text-cakeBrown hover:text-cakePink"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              About Us
-            </Link>
-            <Link 
-              to="/contact" 
-              className="block py-2 text-cakeBrown hover:text-cakePink"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Contact Us
-            </Link>
-            
-            {/* Cart - Always visible */}
-            <Link 
-              to="/cart" 
-              className="block py-2 text-cakeBrown hover:text-cakePink relative"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <span className="flex items-center">
-                Cart ({cartCount})
-                {cartCount > 0 && (
-                  <span className="inline-block ml-1 bg-cakePink text-white text-xs px-2 py-0.5 rounded-full">
-                    {cartCount}
-                  </span>
-                )}
-              </span>
-            </Link>
-            
-            {isLoggedIn ? (
-              <>
-                <Link 
-                  to="/profile" 
-                  className="block py-2 text-cakeBrown hover:text-cakePink"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  My Account
-                </Link>
-                <button 
-                  className="block w-full text-left py-2 text-cakeBrown hover:text-cakePink"
+          {/* Category chips for mobile menu */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Categories</h3>
+            <div className="flex flex-wrap gap-2">
+              {categories.slice(0, 6).map(category => (
+                <button
+                  key={category.id}
+                  className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                    selectedCategory === category.id
+                      ? 'bg-cakePink text-white border-cakePink'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-cakePink'
+                  }`}
                   onClick={() => {
-                    logout();
+                    handleCategorySelect(category.id);
                     setIsMobileMenuOpen(false);
                   }}
                 >
-                  Logout
+                  {category.name}
                 </button>
-              </>
-            ) : (
-              <button 
-                className="block w-full text-left py-2 text-cakeBrown hover:text-cakePink"
-                onClick={() => {
-                  toggleAuthPanel();
-                  setIsMobileMenuOpen(false);
-                }}
+              ))}
+              <Link 
+                to="/products"
+                className="px-3 py-1 rounded-full text-xs border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
               >
-                Login / Signup
-              </button>
-            )}
+                View All
+              </Link>
+            </div>
+          </div>
+          
+          {/* Mobile Nav Links */}
+          <nav>
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Navigation</h3>
+              <Link 
+                to="/" 
+                className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="text-base">Home</span>
+              </Link>
+              <Link 
+                to="/products" 
+                className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="text-base">Products</span>
+              </Link>
+              <Link 
+                to="/about" 
+                className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="text-base">About Us</span>
+              </Link>
+              <Link 
+                to="/contact" 
+                className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="text-base">Contact Us</span>
+              </Link>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Your Account</h3>
+              
+              {/* Cart - Always visible */}
+              <Link 
+                to="/cart" 
+                className="flex items-center justify-between py-2.5 text-cakeBrown hover:text-cakePink"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="flex items-center text-base">
+                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  Cart
+                </span>
+                {memoizedCartCount > 0 && (
+                  <span className="bg-cakePink text-white text-xs px-2 py-0.5 rounded-full">
+                    {memoizedCartCount}
+                  </span>
+                )}
+              </Link>
+              
+              {user ? (
+                <>
+                  {user.role === 'admin' ? (
+                    <>
+                      <Link 
+                        to="/admin/dashboard" 
+                        className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Settings className="h-5 w-5 mr-2" />
+                        <span className="text-base">Admin Dashboard</span>
+                      </Link>
+                      <Link 
+                        to="/admin/orders" 
+                        className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Package className="h-5 w-5 mr-2" />
+                        <span className="text-base">Orders</span>
+                      </Link>
+                    </>
+                  ) : (
+                    <Link 
+                      to="/profile" 
+                      className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <User className="h-5 w-5 mr-2" />
+                      <span className="text-base">My Account</span>
+                    </Link>
+                  )}
+                  <button 
+                    className="flex items-center w-full text-left py-2.5 text-cakeBrown hover:text-cakePink"
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <span className="text-base">Logout</span>
+                  </button>
+                </>
+              ) : (
+                <button 
+                  className="flex items-center w-full text-left py-2.5 text-cakeBrown hover:text-cakePink"
+                  onClick={() => {
+                    toggleAuthPanel();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <User className="h-5 w-5 mr-2" />
+                  <span className="text-base">Login / Signup</span>
+                </button>
+              )}
+            </div>
           </nav>
+        </div>
+        
+        {/* Mobile menu footer - Selected location */}
+        <div className="mt-auto p-4 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center text-xs text-gray-500">
+              <MapPin className="h-3 w-3 mr-1" />
+              <span className="truncate max-w-[180px]">{userLocationDisplay}</span>
+            </div>
+            <button 
+              className="text-xs text-cakePink"
+              onClick={() => {
+                setIsLocationDropdownOpen(true);
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              Change
+            </button>
+          </div>
         </div>
       </div>
 
@@ -452,4 +647,5 @@ const Header = () => {
   );
 };
 
-export default Header;
+// Export as memoized component to prevent unnecessary re-renders
+export default memo(Header);

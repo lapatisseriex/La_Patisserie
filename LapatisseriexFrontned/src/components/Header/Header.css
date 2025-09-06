@@ -12,13 +12,143 @@
 
 /* Padding is now handled in Layout.jsx directly */
 
-/* Fix for overlapping issue */
+/* Fix for category swiper issues */
 .category-swiper {
   position: relative;
   z-index: 5;
+  width: 100%;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+/* Prevent jittering/shaking during scrolling */
+.category-swiper .swiper-wrapper {
+  transform: translate3d(0,0,0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+  transition-timing-function: ease-out;
+}
+
+/* Add consistent sizing for swiper slides */
+.category-swiper .swiper-slide {
+  height: auto;
+  flex-shrink: 0;
 }
 
 /* Breadcrumb styles */
 .breadcrumb {
   margin-top: 10px;
+}
+
+/* Auth transitions */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Login button hover effect */
+button:has(.h-5.w-5.mr-1):hover .h-5.w-5.mr-1 {
+  transform: scale(1.1);
+}
+
+/* Auth panel closing state */
+.auth-panel-closing .fixed.inset-0.bg-black {
+  transition: opacity 500ms ease-in-out;
+  opacity: 0;
+}
+
+.auth-panel-closing .fixed.top-0.right-0.h-full.bg-white {
+  transition: transform 500ms ease-in-out;
+  transform: translateX(100%);
+}
+
+/* Responsive header styles */
+@media (max-width: 640px) {
+  .header-container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  /* Smaller text for mobile */
+  .header-logo-text {
+    font-size: 1rem;
+  }
+  
+  /* Adjust category swiper on mobile */
+  .category-swiper .swiper-slide {
+    width: 60px !important;
+  }
+}
+
+/* Mobile menu slide-in animation */
+.mobile-menu-overlay {
+  transition: opacity 300ms ease-in-out;
+}
+
+.mobile-menu {
+  transition: transform 300ms ease-in-out;
+}
+
+/* Fix for small screens */
+@media (max-width: 360px) {
+  .location-text {
+    max-width: 100px;
+  }
+  
+  .logo-text {
+    max-width: 90px;
+  }
+}
+
+/* Improved hover effects */
+.nav-link {
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: #FF80A0;
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Animated mobile menu */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Ensure fixed header doesn't create layout issues */
+header.fixed {
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Add space below header for content */
+body {
+  padding-top: var(--header-height, 0px);
+}
+
+/* Handle orientation changes */
+@media (orientation: landscape) and (max-height: 500px) {
+  .mobile-menu {
+    overflow-y: auto;
+  }
 }

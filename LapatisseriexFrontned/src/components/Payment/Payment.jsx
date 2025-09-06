@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaCheckCircle, FaMapMarkerAlt, FaCreditCard, FaWallet } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaMapMarkerAlt, FaCreditCard, FaWallet, FaExclamationTriangle } from 'react-icons/fa';
 import { BsCashCoin } from 'react-icons/bs';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useLocation } from '../../context/LocationContext/LocationContext';
 
 const Payment = () => {
   const { cartItems, cartTotal, couponDiscount, clearCart } = useCart();
+  const { user } = useAuth();
+  const { hasValidDeliveryLocation } = useLocation();
   const navigate = useNavigate();
+  
+  // Redirect if no valid delivery location
+  useEffect(() => {
+    if (!hasValidDeliveryLocation()) {
+      navigate('/cart');
+    }
+  }, [hasValidDeliveryLocation, navigate]);
   
   // Delivery charge (free above 500, else 49)
   const deliveryCharge = cartTotal >= 500 ? 0 : 49;

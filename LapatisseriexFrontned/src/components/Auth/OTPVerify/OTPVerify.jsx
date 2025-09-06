@@ -1,14 +1,39 @@
-import React, { useState, useRef, useContext } from 'react';
-import { AuthContext } from '../../../App';
+import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext/AuthContext';
 
 const OTPVerify = () => {
-  const { changeAuthType } = useContext(AuthContext);
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const { verifyOTP, changeAuthType, authError, loading, tempPhoneNumber, sendOTP } = useAuth();
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [localError, setLocalError] = useState('');
+  const [resendDisabled, setResendDisabled] = useState(true);
+  const [countdown, setCountdown] = useState(30);
   const inputRefs = useRef([]);
   
-  // Mock phone number for display
-  const phone = "1234567890";
-  const isNewUser = false;
+  // Mask phone number for display
+  const maskedPhone = tempPhoneNumber ? 
+    `+91 ${tempPhoneNumber.slice(0, 2)}****${tempPhoneNumber.slice(-4)}` : 
+    '';
+    
+  // Clear local error when authError changes
+  useEffect(() => {
+    if (authError) {
+      setLocalError(authError);
+    } else {
+      setLocalError('');
+    }
+  }, [authError]);
+  
+  // Setup countdown for resend button
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setResendDisabled(false);
+    }
+  }, [countdown]);
   
   // Handle OTP input change
   const handleChange = (index, value) => {
@@ -18,7 +43,7 @@ const OTPVerify = () => {
       setOtp(newOtp);
       
       // Auto-focus to next input
-      if (value && index < 3) {
+      if (value && index < 5) {
         inputRefs.current[index + 1].focus();
       }
     }
@@ -34,82 +59,130 @@ const OTPVerify = () => {
   // Handle paste functionality
   const handlePaste = (e) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 4).split('');
-    if (pastedData.length === 4 && pastedData.every(char => /^[0-9]$/.test(char))) {
+    const pastedData = e.clipboardData.getData('text').slice(0, 6).split('');
+    if (pastedData.length === 6 && pastedData.every(char => /^[0-9]$/.test(char))) {
       setOtp(pastedData);
-      inputRefs.current[3].focus();
+      inputRefs.current[5].focus();
     }
   };
   
   // Handle OTP verification
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const otpValue = otp.join('');
     
-    if (otpValue.length !== 4) {
-      alert('Please enter a valid 4-digit OTP');
+    if (otpValue.length !== 6) {
+      setLocalError('Please enter a valid 6-digit OTP');
       return;
     }
     
-    // Simulate successful login
-    window.location.href = '/';
+    // Reset error
+    setLocalError('');
+    
+    // Verify OTP with Firebase
+    await verifyOTP(otpValue);
   };
   
   // Handle resend OTP
-  const handleResendOtp = () => {
-    alert('OTP resend feature would be implemented here');
+  const handleResendOtp = async () => {
+    if (resendDisabled) return;
+    
+    // Extract phone number without country code for resend
+    const phoneNumber = tempPhoneNumber.replace('+91', '');
+    
+    // Resend OTP
+    const success = await sendOTP(phoneNumber);
+    
+    if (success) {
+      // Reset OTP input fields
+      setOtp(['', '', '', '', '', '']);
+      // Reset countdown
+      setCountdown(30);
+      setResendDisabled(true);
+    }
   };
   
   return (
-    <div className="py-6">
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        <div className="text-center mb-2">
-          <h2 className="text-2xl font-bold text-cakeBrown">Verify OTP</h2>
-          <p className="text-sm text-gray-600 mt-2">
-            We've sent a verification code to {phone && `+91 ${phone.slice(0, 5)}*****`}
-          </p>
-        </div>
-        
-        <div className="flex justify-center space-x-4 mb-3">
-          {otp.map((digit, index) => (
-            <input
-              key={index}
-              type="text"
-              ref={(ref) => (inputRefs.current[index] = ref)}
-              value={digit}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              onPaste={index === 0 ? handlePaste : null}
-              className="w-14 h-14 text-center text-2xl font-bold border-2 border-cakeBrown/30 rounded-md focus:border-cakePink focus:ring-1 focus:ring-cakePink focus:outline-none transition-colors shadow-sm"
-              maxLength={1}
-              autoFocus={index === 0}
-              aria-label={`OTP digit ${index + 1}`}
-            />
-          ))}
-        </div>
-        
-        <button 
-          type="submit" 
-          className="w-full bg-cakePink text-white py-3 px-4 rounded-md hover:bg-cakePink-dark transition-colors shadow-md"
-        >
-          Verify OTP
-        </button>
-        
-        <div className="flex justify-between text-sm">
-          <button
+    <div className="h-full flex flex-col">
+      {/* Header with back button and title */}
+      <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
+        <div className="flex items-center">
+          <button 
             type="button"
-            onClick={handleResendOtp}
-            className="text-cakePink hover:text-cakePink-dark transition-colors"
+            onClick={() => changeAuthType('login')}
+            disabled={loading}
+            className="mr-3 text-gray-500 hover:text-cakeBrown"
           >
-            Resend OTP
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
-          
-          <button
-            type="button"
-            onClick={() => changeAuthType(isNewUser ? 'signup' : 'login')}
-            className="text-cakePink font-medium hover:text-cakePink-dark transition-colors"
+          <div>
+            <h2 className="text-2xl font-bold text-cakeBrown">OTP Verification</h2>
+          </div>
+        </div>
+        <div className="w-14 h-14 flex items-center justify-center">
+          <img src="/images/cake-logo.png" alt="Cake Logo" className="w-full h-full object-contain" />
+        </div>
+      </div>
+      <p className="text-sm text-gray-500 mb-6">Enter verification code sent to {maskedPhone}</p>
+      
+      <form className="flex-1 flex flex-col" onSubmit={handleSubmit}>
+        {/* OTP Input section */}
+        <div className="flex-1">
+          <div className="mb-8">
+            <p className="text-base font-medium text-gray-700 mb-6">Enter the 6-digit code</p>
+            
+            <div className="flex justify-between mb-3">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  type="text"
+                  ref={(ref) => (inputRefs.current[index] = ref)}
+                  value={digit}
+                  onChange={(e) => handleChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={index === 0 ? handlePaste : null}
+                  disabled={loading}
+                  className="w-[14%] h-12 text-center text-xl font-bold border-b-2 border-gray-300 focus:border-cakePink focus:outline-none transition-colors"
+                  maxLength={1}
+                  autoFocus={index === 0}
+                  aria-label={`OTP digit ${index + 1}`}
+                />
+              ))}
+            </div>
+            
+            {localError && (
+              <p className="text-red-500 text-sm">{localError}</p>
+            )}
+            
+            <div className="flex justify-center mt-6">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendDisabled || loading}
+                className={`text-cakePink text-sm font-medium transition-colors ${
+                  resendDisabled || loading ? 'opacity-60 cursor-not-allowed' : 'hover:text-cakePink/80'
+                }`}
+              >
+                {resendDisabled ? `Resend code in ${countdown}s` : 'Resend code'}
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Bottom section with verify button */}
+        <div className="mt-auto">
+          <button 
+            type="submit" 
+            disabled={loading || otp.some(digit => !digit)}
+            className={`w-full bg-cakePink text-white py-3.5 rounded-lg text-lg font-medium transition-colors shadow-md ${
+              loading || otp.some(digit => !digit) 
+                ? 'opacity-60 cursor-not-allowed' 
+                : 'hover:bg-cakePink/90'
+            }`}
           >
-            Change Number
+            {loading ? 'VERIFYING...' : 'VERIFY'}
           </button>
         </div>
       </form>

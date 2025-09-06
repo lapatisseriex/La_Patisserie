@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaTag, FaShoppingCart } from 'react-icons/fa';
+import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaTag, FaShoppingCart, FaExclamationTriangle } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
-import { useContext } from 'react';
-import { AuthContext } from '../../App';
+import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useLocation } from '../../context/LocationContext/LocationContext';
 
 const Cart = () => {
   const { 
@@ -17,12 +17,21 @@ const Cart = () => {
     couponDiscount
   } = useCart();
   
-  const { userLocation, setUserLocation } = useContext(AuthContext);
+  // Use our hooks
+  const { user } = useAuth();
+  const { 
+    locations,
+    loading: locationsLoading,
+    updateUserLocation,
+    getCurrentLocationName,
+    hasValidDeliveryLocation
+  } = useLocation();
+  
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState('');
   const [couponError, setCouponError] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [newLocation, setNewLocation] = useState(userLocation);
+  const [selectedLocationId, setSelectedLocationId] = useState('');
   
   const navigate = useNavigate();
 
@@ -54,14 +63,20 @@ const Cart = () => {
   };
   
   // Handle location change
-  const handleChangeLocation = () => {
-    setUserLocation(newLocation);
+  const handleChangeLocation = async () => {
+    if (selectedLocationId) {
+      await updateUserLocation(selectedLocationId);
+    }
     setShowLocationModal(false);
   };
   
   // Handle checkout
   const handleCheckout = () => {
-    navigate('/payment');
+    if (hasValidDeliveryLocation()) {
+      navigate('/payment');
+    } else {
+      setShowLocationModal(true);
+    }
   };
   
   // If cart is empty
@@ -105,16 +120,29 @@ const Cart = () => {
               <div className="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
                 <h2 className="font-semibold text-lg text-gray-800">Cart Items ({cartItems.length})</h2>
                 <div className="flex items-center text-sm">
-                  <FaMapMarkerAlt className="text-cakePink mr-1" />
-                  <span className="mr-2">{userLocation}</span>
+                  <FaMapMarkerAlt className={`${hasValidDeliveryLocation() ? 'text-cakePink' : 'text-amber-500'} mr-1`} />
+                  <span className="mr-2">{user?.location ? `${user.location.area}, ${user.location.city}` : 'Select Location'}</span>
                   <button 
                     className="text-cakePink hover:underline"
                     onClick={() => setShowLocationModal(true)}
                   >
-                    Change
+                    {user?.location ? 'Change' : 'Select'}
                   </button>
                 </div>
               </div>
+              
+              {/* Location Warning */}
+              {!hasValidDeliveryLocation() && (
+                <div className="bg-amber-50 text-amber-800 border border-amber-200 rounded-md p-4 mb-6">
+                  <div className="flex items-start">
+                    <FaExclamationTriangle className="text-amber-500 mt-0.5 mr-2" />
+                    <div>
+                      <p className="font-medium">Delivery location required</p>
+                      <p className="text-sm mt-1">Please select a valid delivery location to place your order</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Cart item list */}
               <div className="space-y-6">
@@ -287,16 +315,18 @@ const Cart = () => {
               <div className="mt-6">
                 <button 
                   onClick={handleCheckout}
-                  className="w-full bg-cakePink text-white font-medium py-3 rounded-md hover:bg-pink-700 transition-colors mb-3"
+                  className={`w-full bg-cakePink text-white font-medium py-3 rounded-md transition-colors mb-3 ${
+                    hasValidDeliveryLocation() ? 'hover:bg-pink-700' : 'opacity-80 cursor-not-allowed'
+                  }`}
                 >
                   Proceed to Checkout
                 </button>
-                <Link 
-                  to="/payment" 
-                  className="w-full block text-center bg-gray-800 text-white font-medium py-3 rounded-md hover:bg-gray-700 transition-colors"
-                >
-                  Buy Now
-                </Link>
+                
+                {!hasValidDeliveryLocation() && (
+                  <p className="text-amber-600 text-xs text-center mb-3">
+                    Select a valid delivery location to continue
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -307,19 +337,46 @@ const Cart = () => {
       {showLocationModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Update Delivery Location</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Select Delivery Location</h3>
             
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Delivery Address
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
-                placeholder="Enter your delivery location"
-                value={newLocation}
-                onChange={(e) => setNewLocation(e.target.value)}
-              />
+              <p className="text-sm text-gray-600 mb-3">
+                We currently deliver to the following locations:
+              </p>
+              
+              {locationsLoading ? (
+                <div className="py-4 text-center text-gray-500">Loading locations...</div>
+              ) : locations.length > 0 ? (
+                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                  {locations.map(location => (
+                    <div 
+                      key={location._id}
+                      className={`p-3 border-b border-gray-200 last:border-0 cursor-pointer ${
+                        selectedLocationId === location._id ? 'bg-pink-50' : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedLocationId(location._id)}
+                    >
+                      <div className="flex items-start">
+                        <input 
+                          type="radio"
+                          name="location"
+                          className="mt-1 text-cakePink focus:ring-cakePink"
+                          checked={selectedLocationId === location._id}
+                          onChange={() => setSelectedLocationId(location._id)}
+                        />
+                        <div className="ml-3">
+                          <p className="font-medium text-gray-800">{location.area}</p>
+                          <p className="text-sm text-gray-600">{location.city}, {location.pincode}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center bg-gray-50 rounded-md">
+                  No delivery locations available at this time.
+                </div>
+              )}
             </div>
             
             <div className="flex justify-end space-x-3">
@@ -331,7 +388,12 @@ const Cart = () => {
               </button>
               <button
                 onClick={handleChangeLocation}
-                className="px-4 py-2 bg-cakePink text-white rounded-md hover:bg-pink-700 transition-colors"
+                disabled={!selectedLocationId || !locations.length}
+                className={`px-4 py-2 bg-cakePink text-white rounded-md transition-colors ${
+                  (!selectedLocationId || !locations.length) 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:bg-pink-700'
+                }`}
               >
                 Update Location
               </button>

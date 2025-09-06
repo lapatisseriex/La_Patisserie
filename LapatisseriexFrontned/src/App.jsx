@@ -1,14 +1,24 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState, createContext } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
 // Layout
 import Layout from './components/Layout/Layout';
+import AdminLayout from './components/Layout/AdminLayout';
+
+// Pages
+import ProfilePage from './pages/Profile';
 
 // Home Components
 import Home from './components/Home/Home';
 import Products from './components/Products/Products';
 import ProductDetail from './components/Products/ProductDetail';
+
+// Admin Components
+import AdminDashboardLayout from './components/Admin/AdminDashboardLayout';
+import AdminDashboard from './components/Admin/AdminDashboard';
+import AdminUsers from './components/Admin/AdminUsers';
+import AdminLocations from './components/Admin/AdminLocations';
 
 // Cart and Payment Components
 import Cart from './components/Cart/Cart';
@@ -17,69 +27,107 @@ import Payment from './components/Payment/Payment';
 import Newsletter from './components/Newsletter/Newsletter';
 
 // Auth Components
-import Login from './components/Auth/Login/Login';
-import Signup from './components/Auth/Signup/Signup';
-import OTPVerify from './components/Auth/OTPVerify/OTPVerify';
+import AuthModal from './components/Auth/AuthModal/AuthModal';
 
 // Context Providers
 import { CartProvider } from './context/CartContext';
-
-// Create Auth context
-export const AuthContext = createContext();
+import { AuthProvider, useAuth } from './context/AuthContext/AuthContext';
+import { LocationProvider } from './context/LocationContext/LocationContext';
 
 // Main Homepage that combines all sections
 const HomePage = () => (
   <div className="homepage-container">
-    <Home />
+    {/* <Home /> */}
     <Products />
     <Newsletter />
   </div>
 );
 
-function App() {
-  const [isAuthPanelOpen, setIsAuthPanelOpen] = useState(false);
-  const [authType, setAuthType] = useState('login'); // login, signup, otp
-  const [userLocation, setUserLocation] = useState('Your City');
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Just for UI display
-
-  const toggleAuthPanel = () => {
-    setIsAuthPanelOpen(!isAuthPanelOpen);
-  };
-
-  const changeAuthType = (type) => {
-    setAuthType(type);
-  };
+// Protected route for admin pages
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
   
-  // Simple logout function for UI demonstration
-  const logout = () => setIsLoggedIn(false);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+};
 
+// Protected route for authenticated users
+const PrivateRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+};
+
+function App() {
   return (
-    <AuthContext.Provider value={{ 
-      isAuthPanelOpen, 
-      toggleAuthPanel, 
-      authType, 
-      changeAuthType,
-      isLoggedIn,
-      logout, 
-      userLocation, 
-      setUserLocation 
-    }}>
-      <CartProvider>
-        <Router>
-          <Routes>
-            {/* Main Layout Routes */}
-            <Route path="/" element={<Layout />}>
-              <Route index element={<HomePage />} />
-              <Route path="products" element={<Products />} />
-              <Route path="product/:id" element={<ProductDetail />} />
-              <Route path="cart" element={<Cart />} />
-              <Route path="payment" element={<Payment />} />
-              <Route path="contact" element={<Newsletter />} />
-            </Route>
-          </Routes>
-        </Router>
-      </CartProvider>
-    </AuthContext.Provider>
+    <AuthProvider>
+      <LocationProvider>
+        <CartProvider>
+          <Router>
+            {/* Auth Modal - available on all pages */}
+            <AuthModal />
+            
+            <Routes>
+              {/* Main Layout Routes */}
+              <Route path="/" element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="products" element={<Products />} />
+                <Route path="product/:id" element={<ProductDetail />} />
+                
+                {/* Protected Routes */}
+                <Route path="cart" element={<Cart />} />
+                <Route path="payment" element={<Payment />} />
+                <Route path="profile" element={
+                  <PrivateRoute>
+                    {/* Use the dedicated ProfilePage component */}
+                    <React.Suspense fallback={<div>Loading...</div>}>
+                      <ProfilePage />
+                    </React.Suspense>
+                  </PrivateRoute>
+                } />
+                <Route path="orders" element={
+                  <PrivateRoute>
+                    <div>Orders Page</div>
+                  </PrivateRoute>
+                } />
+                <Route path="contact" element={<Newsletter />} />
+              </Route>
+              
+              {/* Admin Routes with custom AdminLayout */}
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }>
+                <Route element={<AdminDashboardLayout />}>
+                  <Route index element={<Navigate to="dashboard" />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="locations" element={<AdminLocations />} />
+                  <Route path="orders" element={<div>Admin Orders</div>} />
+                  <Route path="products" element={<div>Admin Products</div>} />
+                </Route>
+              </Route>
+            </Routes>
+          </Router>
+        </CartProvider>
+      </LocationProvider>
+    </AuthProvider>
   );
 }
 
