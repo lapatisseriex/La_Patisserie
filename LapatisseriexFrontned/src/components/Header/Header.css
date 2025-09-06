@@ -1,0 +1,24 @@
+/* Header Styles */
+
+/* Selected category styling */
+.selected-category img {
+  border: 2px solid #FF80A0;
+}
+
+.selected-category span {
+  color: #FF80A0;
+  font-weight: 500;
+}
+
+/* Padding is now handled in Layout.jsx directly */
+
+/* Fix for overlapping issue */
+.category-swiper {
+  position: relative;
+  z-index: 5;
+}
+
+/* Breadcrumb styles */
+.breadcrumb {
+  margin-top: 10px;
+}

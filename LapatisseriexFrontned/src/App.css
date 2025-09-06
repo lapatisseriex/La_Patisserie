@@ -1,0 +1,103 @@
+/* App.css */
+
+/* Fix for header overlay */
+.homepage-container {
+  position: relative;
+  z-index: 10;
+}
+
+/* Ensure the header doesn't overlap content by allowing the Layout component to control padding */
+main {
+  position: relative;
+  z-index: 10;
+}
+
+/* Product page specific styling is now managed by the Layout.jsx padding */
+
+/* Improved container responsiveness - ensure full width with appropriate margins */
+.container {
+  width: 100%;
+  max-width: 1440px; /* Increased max-width */
+  margin: 0 auto;
+  padding: 0 1rem; /* Base padding */
+}
+
+/* Enhance global styling */
+:root {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+  background-color: white;
+  font-family: 'Quicksand', sans-serif;
+}
+
+/* Modern button hover effects */
+button, a {
+  transition: all 0.3s ease;
+}
+
+button:hover, a:hover {
+  transform: translateY(-2px);
+}
+
+/* Enhanced typography */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.025em;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cake-pink-light);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cake-pink);
+}
+
+/* Mobile-friendly focus states */
+button:focus, a:focus, input:focus, textarea:focus {
+  outline: 2px solid var(--cake-pink);
+  outline-offset: 2px;
+}
+
+/* Improved container responsiveness */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* Animation utility classes */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
