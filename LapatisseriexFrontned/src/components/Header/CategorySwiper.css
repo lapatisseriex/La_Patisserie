@@ -1,34 +1,63 @@
-/* CategorySwiper Styles */
+.category-swiper-container {
+  height: 60px; /* Fixed height to prevent layout shifts */
+  display: flex;
+  align-items: center;
+}
 
 .category-swiper {
-  position: relative;
-  z-index: 5;
   width: 100%;
-  overflow: visible;
-  touch-action: pan-y;
+  height: 100%;
+  padding: 4px 0;
 }
 
-/* Prevent jittering/shaking during scrolling */
-.category-swiper .swiper-wrapper {
-  transform: translate3d(0,0,0);
-  backface-visibility: hidden;
-  perspective: 1000px;
-  will-change: transform;
-  transition-timing-function: ease-out;
+.category-slide {
+  width: 60px !important; /* Fixed width for all category items */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Add consistent sizing for swiper slides */
+.category-slide-full {
+  width: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selected-category .w-8 {
+  border: 2px solid #f472b6; /* cakePink color */
+  box-shadow: 0 0 0 1px white, 0 0 0 3px #f472b6;
+}
+
+/* Ensure text doesn't overflow */
+.category-slide span {
+  max-width: 55px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Swiper customizations */
 .category-swiper .swiper-slide {
-  height: auto;
-  flex-shrink: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Selected category styling */
-.selected-category img {
-  border: 2px solid #FF80A0;
-}
-
-.selected-category span {
-  color: #FF80A0;
-  font-weight: 500;
+/* Compact view for smaller screens */
+@media (max-width: 640px) {
+  .category-swiper-container {
+    height: 55px;
+  }
+  
+  .category-slide {
+    width: 55px !important;
+  }
+  
+  .category-slide .w-8 {
+    width: 7px;
+    height: 7px;
+  }
 }

@@ -11,6 +11,7 @@ export const ProductProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { user } = useAuth();
+
   
   // Cache to prevent redundant API calls
   const requestCache = useRef(new Map());
@@ -32,7 +33,7 @@ export const ProductProvider = ({ children }) => {
       });
       
       const queryString = queryParams.toString();
-      
+
       // Generate a unique cache key that includes a timestamp to avoid stale data
       // For admin views (checking for isActive=all), we'll always bypass cache
       const isAdminView = filters.isActive === 'all';
@@ -88,11 +89,11 @@ export const ProductProvider = ({ children }) => {
   }, [API_URL]);
   
   // Get a single product by ID
-  const getProduct = async (productId) => {
+  const getProduct = useCallback(async (productId) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await axios.get(`${API_URL}/products/${productId}`);
       return response.data;
     } catch (err) {
@@ -102,7 +103,7 @@ export const ProductProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); 
   
   // Admin function: Create a new product
   const createProduct = useCallback(async (productData) => {

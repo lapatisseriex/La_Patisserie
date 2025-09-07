@@ -303,23 +303,25 @@ const AdminProducts = () => {
                     <td className="py-3 px-4">
                       {product.category?.name || "—"}
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-col">
-                        {!product.cancelOffer && product.discount?.type ? (
-                          <>
-                            <span className="font-medium">{formatPrice(product.discountedPrice)}</span>
-                            <span className="text-xs text-gray-500 line-through">
-                              {formatPrice(product.price)}
-                            </span>
-                            <span className="text-xs text-green-600">
-                              {calculateDiscountPercentage(product)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="font-medium">{formatPrice(product.price)}</span>
-                        )}
-                      </div>
+                    <td className="py-3 px-4 text-left">
+                      {Array.isArray(product.variants) && product.variants.length > 0 ? (
+                        <select
+                          className="border rounded px-2 py-1"
+                          defaultValue={product.variants[0]._id} // default to first variant
+                        >
+                          {product.variants.map((variant) => (
+                            <option key={variant._id} value={variant._id}>
+                              {variant.name ? `${variant.name} - ` : ''}
+                              {formatPrice(variant.price)}
+                              {variant.quantity ? ` (${variant.quantity}${variant.measuringUnit || ''})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="font-medium">{formatPrice(product.price)}</span>
+                      )}
                     </td>
+
                     <td className="py-3 px-4">
                       <span
                         className={`inline-block px-2 py-1 text-xs rounded-full ${

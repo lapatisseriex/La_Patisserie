@@ -141,10 +141,6 @@ export const createProduct = asyncHandler(async (req, res) => {
   const {
     name,
     description,
-    price,
-    weight,
-    weightUnit,
-    stock,
     images,
     videos,
     category,
@@ -154,41 +150,37 @@ export const createProduct = asyncHandler(async (req, res) => {
     importantField,
     extraFields,
     id,
-    badge
+    badge,
+    variants // [{ name?, price, stock, quantity, measuring }]
   } = req.body;
-  
+
   // Validate required fields
-  if (!name || !price || !category) {
+  if (!name || !category) {
     res.status(400);
-    throw new Error('Name, price and category are required');
+    throw new Error('Name and category are required');
   }
-  
-  // Verify category exists and is valid
+
+  // Verify category exists
   const categoryExists = await Category.findById(category);
   if (!categoryExists) {
     res.status(400);
     throw new Error('Selected category not found');
   }
-  
-  // Warn if category is inactive but still allow admins to create the product
+
   if (!categoryExists.isActive) {
     console.warn(`Creating product in inactive category: ${categoryExists.name}`);
   }
-  
-  // Validate price
-  if (price <= 0) {
+
+  // Validate variants if provided
+  if (variants && !Array.isArray(variants)) {
     res.status(400);
-    throw new Error('Price must be greater than 0');
+    throw new Error('Variants must be an array');
   }
-  
+
   // Create product
   const product = await Product.create({
     name,
     description,
-    price,
-    weight,
-    weightUnit,
-    stock,
     images: images || [],
     videos: videos || [],
     category,
@@ -198,13 +190,15 @@ export const createProduct = asyncHandler(async (req, res) => {
     importantField,
     extraFields: extraFields || {},
     id,
-    badge
+    badge,
+    variants: variants || [] // Store variants directly
   });
-  
+
   const createdProduct = await Product.findById(product._id).populate('category', 'name');
-  
+
   res.status(201).json(createdProduct);
 });
+
 
 // @desc    Update a product
 // @route   PUT /api/products/:id
@@ -263,9 +257,9 @@ export const updateProduct = asyncHandler(async (req, res) => {
     product.price = price;
   }
   
-  product.weight = weight !== undefined ? weight : product.weight;
-  product.weightUnit = weightUnit || product.weightUnit;
-  product.stock = stock !== undefined ? stock : product.stock;
+  product.variants.quantity = quantity !== undefined ? quantity : product.variants.quantity;
+  product.variants.measurementUnit = measurementUnit || product.variants.measurementUnit;
+  product.variants.stock = stock !== undefined ? stock : product.variants.stock;
   product.category = category || product.category;
   product.isVeg = isVeg !== undefined ? isVeg : product.isVeg;
   product.isActive = isActive !== undefined ? isActive : product.isActive;

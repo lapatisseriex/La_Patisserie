@@ -74,7 +74,7 @@ const ProductCard = ({
   
   return (
     <Link 
-      to={`/products/${product._id}`}
+      to={`/product/${product._id}`}
       className={`product-card group block relative rounded-lg overflow-hidden transition-all duration-300 ${
         compact ? 'border border-gray-100' : 'shadow-sm hover:shadow-md'
       } bg-white ${className}`}

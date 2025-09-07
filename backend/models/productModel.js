@@ -1,169 +1,97 @@
 import mongoose from 'mongoose';
 
+// Variant schema
+const variantSchema = new mongoose.Schema({
+  quantity: { 
+    type: Number, 
+    required: true, 
+    min: 0 
+  },
+  measuringUnit: { 
+    type: String, 
+    enum: ['g', 'kg', 'lb', 'oz'], 
+    default: 'g' 
+  },
+  price: { 
+    type: Number, 
+    required: true, 
+    min: 0 
+  },
+  discount: {
+    type: { type: String, enum: ['flat', 'percentage', null], default: null },
+    value: { type: Number, default: 0, min: 0 }
+  },
+  stock: { type: Number, default: 0, min: 0 },
+}, { _id: false });
+
+// Product schema
 const productSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    id: {
-      type: String,
-      unique: true,
-      sparse: true // Allows multiple null values
-    },
-    description: {
-      type: String,
-      trim: true
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: 0
-    },
-    weight: {
-      type: Number,
-      min: 0
-    },
-    weightUnit: {
-      type: String,
-      default: 'g',
-      enum: ['g', 'kg', 'lb', 'oz']
-    },
-    stock: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    images: {
-      type: [String], // Array of Cloudinary URLs
-      default: []
-    },
-    videos: {
-      type: [String], // Array of Cloudinary URLs for videos
-      default: []
-    },
-    category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-      required: true
-    },
-    tags: {
-      type: [String],
-      default: []
-    },
-    isVeg: {
-      type: Boolean,
-      default: true
-    },
-    discount: {
-      type: {
-        type: String,
-        enum: ['flat', 'percentage', null],
-        default: null
-      },
-      value: {
-        type: Number,
-        default: 0,
-        min: 0
-      }
-    },
-    cancelOffer: {
-      type: Boolean,
-      default: false
-    },
+    name: { type: String, required: true, trim: true },
+    id: { type: String, unique: true },
+    description: { type: String, trim: true },
+    images: { type: [String], default: [] },
+    videos: { type: [String], default: [] },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    tags: { type: [String], default: [] },
+    isVeg: { type: Boolean, default: true },
+    variants: { type: [variantSchema], default: [] },
+    cancelOffer: { type: Boolean, default: false },
     importantField: {
-      name: {
-        type: String,
-        trim: true
-      },
-      value: {
-        type: String,
-        trim: true
-      }
+      name: { type: String, trim: true },
+      value: { type: String, trim: true }
     },
-    extraFields: {
-      type: Map,
-      of: String,
-      default: {}
-    },
-    isActive: {
-      type: Boolean,
-      default: true
-    },
-    badge: {
-      type: String,
-      trim: true
-    }
+    extraFields: { type: Map, of: String, default: {} },
+    isActive: { type: Boolean, default: true },
+    badge: { type: String, trim: true }
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Virtual for getting featured image (first in the array)
+// Virtual for featured image
 productSchema.virtual('featuredImage').get(function() {
   return this.images && this.images.length > 0 ? this.images[0] : null;
 });
 
-// Virtual for calculating the discounted price
-productSchema.virtual('discountedPrice').get(function() {
-  if (this.cancelOffer || !this.discount.type) {
-    return this.price;
-  }
-  
-  if (this.discount.type === 'flat') {
-    return Math.max(0, this.price - this.discount.value);
-  }
-  
-  if (this.discount.type === 'percentage') {
-    return this.price * (1 - this.discount.value / 100);
-  }
-  
-  return this.price;
-});
+// Method to get discounted price of a variant
+productSchema.methods.getVariantPrice = function(variantIndex = 0) {
+  const variant = this.variants[variantIndex];
+  if (!variant) return 0;
 
-// Virtual for calculating discount percentage for display
-productSchema.virtual('discountPercentage').get(function() {
-  if (this.cancelOffer || !this.discount.type) {
-    return 0;
-  }
-  
-  if (this.discount.type === 'flat') {
-    return Math.round((this.discount.value / this.price) * 100);
-  }
-  
-  if (this.discount.type === 'percentage') {
-    return this.discount.value;
-  }
-  
+  if (!variant.discount.type || this.cancelOffer) return variant.price;
+
+  if (variant.discount.type === 'flat') return Math.max(0, variant.price - variant.discount.value);
+  if (variant.discount.type === 'percentage') return variant.price * (1 - variant.discount.value / 100);
+
+  return variant.price;
+};
+
+// Method to get discount percentage of a variant
+productSchema.methods.getVariantDiscountPercentage = function(variantIndex = 0) {
+  const variant = this.variants[variantIndex];
+  if (!variant || !variant.discount.type || this.cancelOffer) return 0;
+
+  if (variant.discount.type === 'flat') return Math.round((variant.discount.value / variant.price) * 100);
+  if (variant.discount.type === 'percentage') return variant.discount.value;
+
   return 0;
-});
+};
 
-// Middleware to auto-generate a product ID before saving if not provided
+// Middleware to auto-generate product ID
 productSchema.pre('save', async function(next) {
-  // Only generate ID for new products that don't have an ID yet
   if (this.isNew && !this.id) {
-    // Get category name first few characters
     const category = await mongoose.model('Category').findById(this.category);
     let prefix = 'PRD';
-    
-    if (category) {
-      // Use first 5 chars of category name (uppercase)
-      prefix = category.name.substring(0, 5).toUpperCase();
-    }
-    
-    // Get count of products for numbering
+    if (category) prefix = category.name.substring(0, 5).toUpperCase();
+
     const count = await mongoose.model('Product').countDocuments();
     const paddedCount = String(count + 1).padStart(3, '0');
-    
-    // Set the ID format: CATEG-001
     this.id = `${prefix}-${paddedCount}`;
   }
   next();
 });
 
-// Set the toJSON option to include virtuals
+// Include virtuals in JSON
 productSchema.set('toJSON', { virtuals: true });
 productSchema.set('toObject', { virtuals: true });
 

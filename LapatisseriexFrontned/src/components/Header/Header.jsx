@@ -410,8 +410,8 @@ const Header = ({ isAdminView = false }) => {
       {isCartOrPaymentPage ? (
         renderBreadcrumb()
       ) : !isAdminView && (
-        <div className="bg-white border-t border-b border-gray-100 py-2 sm:py-3 px-2 sm:px-4 overflow-hidden">
-          <div className="container mx-auto relative z-10">
+        <div className="bg-white border-t border-b border-gray-100 py-1 px-2 sm:px-4 overflow-hidden h-[68px]"> {/* Fixed height */}
+          <div className="container mx-auto relative z-10 h-full">
             {/* Use CategorySwiper component */}
             <CategorySwiper
               categories={categories}
@@ -422,7 +422,7 @@ const Header = ({ isAdminView = false }) => {
             />
           </div>
         </div>
-      )}      {/* Floating Cart Button (mobile only) */}
+      )}    {/* Floating Cart Button (mobile only) */}
       {memoizedCartCount > 0 && !isCartOrPaymentPage && (
         <Link
           to="/cart"
