@@ -186,11 +186,12 @@ const AdminProducts = () => {
           fetchProducts();
           alert('Product deleted successfully!');
         } else {
-          alert('Failed to delete product');
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          alert('Failed to delete product: ' + (errorData.message || 'Unknown error'));
         }
       } catch (error) {
         console.error('Error deleting product:', error);
-        alert('Error deleting product');
+        alert('Error deleting product: ' + error.message);
       }
     }
   };

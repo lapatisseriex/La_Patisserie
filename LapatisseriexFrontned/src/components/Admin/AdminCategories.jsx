@@ -136,12 +136,12 @@ const AdminCategories = () => {
           fetchCategories();
           alert('Category deleted successfully!');
         } else {
-          const error = await response.json();
+          const error = await response.json().catch(() => ({ message: 'Unknown error' }));
           alert(error.message || 'Failed to delete category');
         }
       } catch (error) {
         console.error('Error deleting category:', error);
-        alert('Error deleting category');
+        alert('Error deleting category: ' + error.message);
       }
     }
   };

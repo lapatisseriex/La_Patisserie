@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useAuth } from '../../context/AuthContext/AuthContext';
 
 const UploadImage = ({ 
   onImageUpload, 
@@ -10,6 +11,7 @@ const UploadImage = ({
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentImage);
   const [error, setError] = useState(null);
+  const { getIdToken } = useAuth();
 
   const onDrop = useCallback(async (acceptedFiles, rejectedFiles) => {
     // Handle rejected files
@@ -40,10 +42,10 @@ const UploadImage = ({
       const formData = new FormData();
       formData.append('image', file);
 
-      // Get auth token
-      const token = localStorage.getItem('authToken');
+      // Get auth token from Firebase
+      const token = await getIdToken();
       if (!token) {
-        throw new Error('No authentication token found');
+        throw new Error('No authentication token found. Please log in.');
       }
 
       // Upload to backend
