@@ -202,16 +202,62 @@ export const getProductsByCategory = async (req, res) => {
   }
 };
 
+// Get categories for admin with product count
+export const getAdminCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+    console.log('Raw categories from DB:', categories.map(cat => ({ 
+      name: cat.name, 
+      imageUrl: cat.imageUrl,
+      hasImageUrl: !!cat.imageUrl 
+    })));
+    
+    // For each category, get the product count
+    const categoriesWithCount = await Promise.all(
+      categories.map(async (category) => {
+        const productCount = await Product.countDocuments({ 
+          category: category._id, 
+          isActive: true 
+        });
+        
+        const result = {
+          _id: category._id,
+          name: category.name,
+          description: category.description,
+          imageUrl: category.imageUrl,
+          isActive: category.isActive,
+          createdAt: category.createdAt,
+          productCount
+        };
+        
+        console.log(`Category ${category.name}: imageUrl = ${category.imageUrl}`);
+        return result;
+      })
+    );
+    
+    console.log('Final categories response:', categoriesWithCount.map(cat => ({ 
+      name: cat.name, 
+      imageUrl: cat.imageUrl 
+    })));
+    
+    res.status(200).json({
+      success: true,
+      data: categoriesWithCount
+    });
+  } catch (error) {
+    console.error('Error fetching admin categories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching categories',
+      error: error.message
+    });
+  }
+};
+
 // Get public categories for header display (optimized)
 export const getPublicCategories = async (req, res) => {
   try {
     const categories = await Category.find({ isActive: true });
-    
-    console.log('Raw categories from DB:', categories.map(cat => ({ 
-      _id: cat._id, 
-      name: cat.name,
-      hasId: !!cat._id 
-    })));
     
     const formattedCategories = categories.map(category => ({
       _id: category._id,
@@ -219,12 +265,6 @@ export const getPublicCategories = async (req, res) => {
       description: category.description,
       imageUrl: category.imageUrl || '/images/default-category.jpg' // Use category's own imageUrl field
     }));
-
-    console.log('Formatted categories:', formattedCategories.map(cat => ({ 
-      _id: cat._id, 
-      name: cat.name,
-      hasId: !!cat._id 
-    })));
 
     res.json({
       success: true,

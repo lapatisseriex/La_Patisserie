@@ -8,6 +8,7 @@ import {
 } from '../controllers/locationController.js';
 import {
   getCategories,
+  getAdminCategories,
   getCategoryById,
   createCategory,
   updateCategory,
@@ -35,7 +36,7 @@ router.put('/locations/:id', protect, admin, updateLocation);
 router.patch('/locations/:id/toggle', protect, admin, toggleLocationStatus);
 
 // Admin category routes
-router.get('/categories', protect, admin, getCategories);
+router.get('/categories', protect, admin, getAdminCategories);
 router.get('/categories/:id', protect, admin, getCategoryById);
 router.post('/categories', protect, admin, createCategory);
 router.put('/categories/:id', protect, admin, updateCategory);
