@@ -19,6 +19,8 @@ import AdminDashboardLayout from './components/Admin/AdminDashboardLayout';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminUsers from './components/Admin/AdminUsers';
 import AdminLocations from './components/Admin/AdminLocations';
+import AdminProducts from './components/Admin/AdminProducts';
+import AdminCategories from './components/Admin/AdminCategories';
 
 // Cart and Payment Components
 import Cart from './components/Cart/Cart';
@@ -37,8 +39,7 @@ import { LocationProvider } from './context/LocationContext/LocationContext';
 // Main Homepage that combines all sections
 const HomePage = () => (
   <div className="homepage-container">
-    {/* <Home /> */}
-    <Products />
+    <Home />
     <Newsletter />
   </div>
 );
@@ -118,9 +119,10 @@ function App() {
                   <Route index element={<Navigate to="dashboard" />} />
                   <Route path="dashboard" element={<AdminDashboard />} />
                   <Route path="users" element={<AdminUsers />} />
+                  <Route path="categories" element={<AdminCategories />} />
+                  <Route path="products" element={<AdminProducts />} />
                   <Route path="locations" element={<AdminLocations />} />
                   <Route path="orders" element={<div>Admin Orders</div>} />
-                  <Route path="products" element={<div>Admin Products</div>} />
                 </Route>
               </Route>
             </Routes>

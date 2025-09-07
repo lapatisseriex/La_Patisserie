@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 import { useCart } from '../../context/CartContext';
@@ -28,7 +28,8 @@ const Header = ({ isAdminView = false }) => {
   const { 
     user,
     toggleAuthPanel,
-    logout
+    logout,
+    getIdToken
   } = useAuth();
   
   const {
@@ -40,11 +41,14 @@ const Header = ({ isAdminView = false }) => {
   } = useLocationContext();
   
   const { cartCount } = useCart();
+  const navigate = useNavigate();
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   
   // Function to toggle mobile menu
 
@@ -59,17 +63,37 @@ const Header = ({ isAdminView = false }) => {
   // Memoize values that should only update when their dependencies change
   const memoizedCartCount = useMemo(() => cartCount, [cartCount]);
   
-  // Sample categories data for the category bar
-  const categories = [
-    { id: 1, name: "Birthday Cakes", image: "/images/cake1.png" },
-    { id: 2, name: "Cupcakes", image: "/images/cake2.png" },
-    { id: 3, name: "Wedding Cakes", image: "/images/cake3.png" },
-    { id: 4, name: "Pastries", image: "/images/cake1.png" },
-    { id: 5, name: "Cookies", image: "/images/cake2.png" },
-    { id: 6, name: "Brownies", image: "/images/cake3.png" },
-    { id: 7, name: "Donuts", image: "/images/cake1.png" },
-    { id: 8, name: "Ice Cream Cakes", image: "/images/cake2.png" }
-  ];
+  // Fetch categories from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await fetch('http://localhost:3000/api/products/categories');
+        
+        if (response.ok) {
+          const data = await response.json();
+          const categories = data.data || [];
+          
+          // Map categories to the expected format
+          const formattedCategories = categories.map(category => ({
+            id: category._id,
+            name: category.name,
+            image: category.imageUrl
+          }));
+          
+          console.log('Fetched categories:', formattedCategories);
+          setCategories(formattedCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   
   // Get user's location display name
   const [userLocationDisplay, setUserLocationDisplay] = useState('Select Location');
@@ -193,6 +217,8 @@ const Header = ({ isAdminView = false }) => {
   // Handle category selection
   const handleCategorySelect = (categoryId) => {
     setSelectedCategory(categoryId);
+    // Navigate to home page with category filter
+    navigate(`/?category=${categoryId}`);
   };
   
   // Render breadcrumb for cart/payment pages
@@ -387,44 +413,62 @@ const Header = ({ isAdminView = false }) => {
         <div className="bg-white border-t border-b border-gray-100 py-2 sm:py-3 px-2 sm:px-4 overflow-hidden">
           <div className="container mx-auto relative z-10">
             {/* Category Swiper */}
-            <Swiper
-            className="category-swiper"
-            slidesPerView="auto"
-            spaceBetween={10}
-            freeMode={true}
-            touchRatio={1.5}
-            touchAngle={45}
-            grabCursor={true}
-            preventClicks={true}
-            resistanceRatio={0.85}
-            modules={[]}
-            watchOverflow={true}
-            watchSlidesProgress={true}
-            ref={categorySliderRef}
-          >
-            {categories.map(category => (
-              <SwiperSlide 
-                key={category.id}
-                className={`cursor-pointer ${selectedCategory === category.id ? 'selected-category' : ''}`}
-                onClick={() => handleCategorySelect(category.id)}
-                style={{ width: 'auto', minWidth: '70px', maxWidth: '100px' }}
-              >
-                <div className="flex flex-col items-center px-1">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden mb-1 shadow-sm">
-                    <img 
-                      src={category.image} 
-                      alt={category.name} 
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
+            {categoriesLoading ? (
+              <div className="flex space-x-4 animate-pulse">
+                {[...Array(8)].map((_, index) => (
+                  <div key={index} className="flex flex-col items-center px-1">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 mb-1"></div>
+                    <div className="w-12 h-3 bg-gray-200 rounded"></div>
                   </div>
-                  <span className="text-[10px] sm:text-xs text-center text-cakeBrown leading-tight line-clamp-1 sm:line-clamp-2 w-full">
-                    {category.name}
-                  </span>
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+                ))}
+              </div>
+            ) : categories.length > 0 ? (
+              <Swiper
+                className="category-swiper"
+                slidesPerView="auto"
+                spaceBetween={10}
+                freeMode={true}
+                touchRatio={1.5}
+                touchAngle={45}
+                grabCursor={true}
+                preventClicks={true}
+                resistanceRatio={0.85}
+                modules={[]}
+                watchOverflow={true}
+                watchSlidesProgress={true}
+                ref={categorySliderRef}
+              >
+                {categories.map(category => (
+                  <SwiperSlide 
+                    key={category.id}
+                    className={`cursor-pointer ${selectedCategory === category.id ? 'selected-category' : ''}`}
+                    onClick={() => handleCategorySelect(category.id)}
+                    style={{ width: 'auto', minWidth: '70px', maxWidth: '100px' }}
+                  >
+                    <div className="flex flex-col items-center px-1">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden mb-1 shadow-sm">
+                        <img 
+                          src={category.image} 
+                          alt={category.name} 
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.src = '/images/cake-logo.png'; // Fallback image
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] sm:text-xs text-center text-cakeBrown leading-tight line-clamp-1 sm:line-clamp-2 w-full">
+                        {category.name}
+                      </span>
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                <span className="text-sm">No categories available</span>
+              </div>
+            )}
           </div>
         </div>
       )}      {/* Floating Cart Button (mobile only) */}
@@ -485,31 +529,39 @@ const Header = ({ isAdminView = false }) => {
           {/* Category chips for mobile menu */}
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-500 mb-2">Categories</h3>
-            <div className="flex flex-wrap gap-2">
-              {categories.slice(0, 6).map(category => (
-                <button
-                  key={category.id}
-                  className={`px-3 py-1 rounded-full text-xs border transition-colors ${
-                    selectedCategory === category.id
-                      ? 'bg-cakePink text-white border-cakePink'
-                      : 'bg-white text-gray-700 border-gray-200 hover:border-cakePink'
-                  }`}
-                  onClick={() => {
-                    handleCategorySelect(category.id);
-                    setIsMobileMenuOpen(false);
-                  }}
+            {categoriesLoading ? (
+              <div className="flex flex-wrap gap-2 animate-pulse">
+                {[...Array(6)].map((_, index) => (
+                  <div key={index} className="h-6 w-16 bg-gray-200 rounded-full"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {categories.slice(0, 6).map(category => (
+                  <button
+                    key={category.id}
+                    className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                      selectedCategory === category.id
+                        ? 'bg-cakePink text-white border-cakePink'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-cakePink'
+                    }`}
+                    onClick={() => {
+                      handleCategorySelect(category.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+                <Link 
+                  to="/products"
+                  className="px-3 py-1 rounded-full text-xs border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {category.name}
-                </button>
-              ))}
-              <Link 
-                to="/products"
-                className="px-3 py-1 rounded-full text-xs border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                View All
-              </Link>
-            </div>
+                  View All
+                </Link>
+              </div>
+            )}
           </div>
           
           {/* Mobile Nav Links */}

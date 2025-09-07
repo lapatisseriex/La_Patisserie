@@ -12,6 +12,7 @@ const AdminDashboard = () => {
     totalOrders: 0,
     pendingOrders: 0,
     totalProducts: 0,
+    totalCategories: 0,
     activeLocations: 0
   });
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,18 @@ const AdminDashboard = () => {
         const usersResponse = await axios.get(`${API_URL}/admin/users`, { headers });
         const usersData = usersResponse.data || [];
         
+        // Fetch products and categories
+        const [productsResponse, categoriesResponse] = await Promise.all([
+          axios.get(`${API_URL}/admin/products`, { headers }),
+          axios.get(`${API_URL}/admin/categories`, { headers })
+        ]);
+        
+        const productsData = productsResponse.data?.products || [];
+        const categoriesData = categoriesResponse.data?.data || [];
+        
         console.log("User data fetched:", usersData);
+        console.log("Products data fetched:", productsData);
+        console.log("Categories data fetched:", categoriesData);
         
         // Set recent users (last 5)
         // Make sure we're sorting correctly based on the actual data structure
@@ -58,7 +70,8 @@ const AdminDashboard = () => {
           totalUsers: Array.isArray(usersData) ? usersData.length : 0,
           totalOrders: 0, // We're setting this to 0 as requested
           pendingOrders: 0, // We're setting this to 0 as requested
-          totalProducts: 0, // We're setting this to 0 as requested
+          totalProducts: Array.isArray(productsData) ? productsData.length : 0,
+          totalCategories: Array.isArray(categoriesData) ? categoriesData.length : 0,
           activeLocations: locations ? locations.filter(loc => loc.isActive).length : 0
         });
         
@@ -92,7 +105,7 @@ const AdminDashboard = () => {
           <p>{error}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <div className="bg-blue-100 p-3 rounded-full">
@@ -138,6 +151,21 @@ const AdminDashboard = () => {
             </div>
             <div className="mt-4">
               <a href="/admin/products" className="text-purple-500 text-sm hover:underline">View all products</a>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="bg-indigo-100 p-3 rounded-full">
+                <FaList className="text-indigo-500 text-xl" />
+              </div>
+              <div className="ml-4">
+                <h2 className="text-sm font-medium text-gray-600">Categories</h2>
+                <p className="text-2xl font-semibold text-gray-800">{stats.totalCategories}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <a href="/admin/categories" className="text-indigo-500 text-sm hover:underline">Manage categories</a>
             </div>
           </div>
           

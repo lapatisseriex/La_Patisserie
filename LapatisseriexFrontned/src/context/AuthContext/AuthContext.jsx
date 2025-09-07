@@ -298,6 +298,19 @@ export const AuthProvider = ({ children }) => {
     setAuthError(null);
   };
 
+  // Get current Firebase ID token
+  const getIdToken = async () => {
+    if (auth.currentUser) {
+      try {
+        return await auth.currentUser.getIdToken(true); // Force refresh
+      } catch (error) {
+        console.error("Error getting ID token:", error);
+        return null;
+      }
+    }
+    return null;
+  };
+
   const value = {
     user,
     setUser, // Expose setUser to other contexts
@@ -312,7 +325,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     toggleAuthPanel,
     changeAuthType,
-    tempPhoneNumber
+    tempPhoneNumber,
+    getIdToken
   };
 
   return (

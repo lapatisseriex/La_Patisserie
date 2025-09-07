@@ -7,7 +7,9 @@ import {
   FaList, 
   FaMapMarkerAlt, 
   FaTachometerAlt, 
-  FaSignOutAlt 
+  FaSignOutAlt,
+  FaTags,
+  FaBoxes
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 
@@ -73,10 +75,19 @@ const AdminDashboardLayout = () => {
             </li>
             <li>
               <Link 
+                to="/admin/categories" 
+                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/categories' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
+              >
+                <FaTags className="mr-3" />
+                <span className={!isSidebarOpen ? 'hidden' : ''}>Categories</span>
+              </Link>
+            </li>
+            <li>
+              <Link 
                 to="/admin/products" 
                 className={`flex items-center py-3 px-4 ${location.pathname === '/admin/products' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
               >
-                <FaList className="mr-3" />
+                <FaBoxes className="mr-3" />
                 <span className={!isSidebarOpen ? 'hidden' : ''}>Products</span>
               </Link>
             </li>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay } from 'swiper/modules';
+import { useSearchParams } from 'react-router-dom';
 import ProductGrid from './ProductGrid';
 
 // Import Swiper styles
@@ -11,216 +12,198 @@ import 'swiper/css/navigation';
 const Products = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [regularProducts, setRegularProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+
+  // Get category from URL parameters
+  const categoryParam = searchParams.get('category');
+
+  // Fetch products from backend
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('http://localhost:3000/api/products');
+      
+      if (response.ok) {
+        const data = await response.json();
+        const products = data.products || [];
+        
+        // Separate featured products (first 4) and regular products
+        const featured = products.slice(0, 4).map(product => ({
+          id: product._id,
+          name: product.name,
+          images: [product.imageUrl],
+          price: product.price,
+          badge: product.tags && product.tags.length > 0 ? product.tags[0] : "",
+          isVeg: true, // Assuming all products are veg for now
+          rating: 4.5, // Default rating
+          reviewCount: Math.floor(Math.random() * 30) + 5,
+          description: product.description
+        }));
+        
+        const regular = products.map(product => ({
+          id: product._id,
+          name: product.name,
+          price: product.price,
+          badge: product.tags && product.tags.length > 0 ? product.tags[0] : "",
+          isVeg: true,
+          rating: 4.5,
+          reviewCount: Math.floor(Math.random() * 30) + 5,
+          coupon: '',
+          images: [product.imageUrl],
+          category: product.category,
+          stock: product.stock,
+          weight: product.weight,
+          weightUnit: product.weightUnit,
+          description: product.description
+        }));
+        
+        setFeaturedProducts(featured);
+        setRegularProducts(regular);
+        setFilteredProducts(regular);
+      } else {
+        console.error('Failed to fetch products');
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Simulate API call to fetch products
-    setTimeout(() => {
-      // Featured products for carousel
-      const featured = [
-        {
-          id: "f1",
-          name: "Chocolate Truffle",
-          images: ["/images/cake1.png"],
-          price: "1299",
-          badge: "Best Seller",
-          isVeg: true,
-          rating: 4.9,
-          reviewCount: 28,
-          description: "Rich, decadent chocolate truffle cake layered with premium cocoa and topped with chocolate ganache."
-        },
-        {
-          id: "f2",
-          name: "Strawberry Cheesecake",
-          images: ["/images/cake2.png"],
-          price: "1199",
-          badge: "Popular",
-          isVeg: true,
-          rating: 4.8,
-          reviewCount: 24,
-          description: "Creamy cheesecake with a buttery graham cracker crust, topped with fresh strawberry compote."
-        },
-        {
-          id: "f3",
-          name: "Vanilla Dream",
-          images: ["/images/cake3.png"],
-          price: "999",
-          isVeg: true,
-          rating: 4.7,
-          reviewCount: 19,
-          description: "Light and fluffy vanilla sponge cake with a delicate buttercream frosting and subtle vanilla notes."
-        },
-        {
-          id: "f4",
-          name: "Blueberry Delight",
-          images: ["/images/cake1.png"],
-          price: "1099",
-          isVeg: true,
-          rating: 4.6,
-          reviewCount: 15,
-          description: "Moist blueberry-infused cake with cream cheese frosting and fresh blueberry garnish."
-        }
-      ];
-      
-      // Regular products for grid display
-      const regular = [
-        {
-          id: '1',
-          name: 'First Birthday Mickey Cake',
-          price: '1499',
-          badge: '',
-          isVeg: true,
-          rating: 5,
-          reviewCount: 2,
-          coupon: 'CAKE10',
-          images: [
-            '/images/cake1.png',
-            '/images/cake2.png',
-            '/images/cake3.png'
-          ]
-        },
-        {
-          id: '2',
-          name: 'Round Cream Happy Birthday Pink Cake',
-          price: '675',
-          badge: 'Best Seller',
-          isVeg: true,
-          rating: 5,
-          reviewCount: 11,
-          coupon: 'FIRST50',
-          images: [
-            '/images/cake2.png',
-            '/images/cake1.png',
-            '/images/cake3.png'
-          ]
-        },
-        {
-          id: '3',
-          name: 'Pastel Paradise Birthday Cake',
-          price: '2399',
-          badge: '',
-          isVeg: true,
-          rating: 4.9,
-          reviewCount: 10,
-          images: [
-            '/images/cake3.png',
-            '/images/cake1.png',
-            '/images/cake2.png'
-          ]
-        },
-        {
-          id: '4',
-          name: 'First Bday Photo Cake',
-          price: '749',
-          originalPrice: '899',
-          badge: 'Personalised',
-          isVeg: true,
-          rating: 5,
-          reviewCount: 25,
-          coupon: 'SAVE150',
-          images: [
-            '/images/cake1.png',
-            '/images/cake3.png',
-            '/images/cake2.png'
-          ]
-        },
-        {
-          id: '5',
-          name: 'Chocolate Truffle Cake',
-          price: '899',
-          badge: '',
-          isVeg: true,
-          rating: 4.8,
-          reviewCount: 15,
-          coupon: 'CHOC20',
-          images: [
-            '/images/cake2.png',
-            '/images/cake1.png',
-            '/images/cake3.png'
-          ]
-        },
-        {
-          id: '6',
-          name: 'Butterscotch Delight Cake',
-          price: '950',
-          badge: '',
-          isVeg: true,
-          rating: 4.7,
-          reviewCount: 8,
-          images: [
-            '/images/cake3.png',
-            '/images/cake2.png',
-            '/images/cake1.png'
-          ]
-        },
-        {
-          id: '7',
-          name: 'Red Velvet Cake',
-          price: '1299',
-          badge: 'Popular',
-          isVeg: true,
-          rating: 4.9,
-          reviewCount: 22,
-          images: [
-            '/images/cake1.png',
-            '/images/cake3.png',
-            '/images/cake2.png'
-          ]
-        },
-        {
-          id: '8',
-          name: 'Black Forest Cake',
-          price: '850',
-          badge: '',
-          isVeg: true,
-          rating: 4.6,
-          reviewCount: 18,
-          images: [
-            '/images/cake2.png',
-            '/images/cake1.png',
-            '/images/cake3.png'
-          ]
-        }
-      ];
-
-      setFeaturedProducts(featured);
-      setRegularProducts(regular);
-      setIsLoading(false);
-    }, 800);
+    fetchProducts();
   }, []);
 
-  return (
-    <section className="bg-gradient-to-b from-white to-cakePink-light/20 py-20 mt-8 pt-6" id="product">
-      <div className="container mx-auto px-4">
-        
-        {/* Section Heading */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-cakeBrown relative inline-block">
-            Our Exclusive Products
-            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-cakePink-dark"></span>
-          </h2>
-          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
-            Handcrafted with love and premium ingredients for your special moments
-          </p>
-        </div>
-        
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cakePink"></div>
-          </div>
-        ) : (
-          <>
-            {/* Featured Products Carousel */}
-            <div className="mb-16">
-           
-            </div>
-            
-            {/* Regular Products Grid */}
-            <ProductGrid products={regularProducts} title="All Cakes & Desserts" />
-          </>
-        )}
+  // Filter products when category changes from URL parameter
+  useEffect(() => {
+    if (categoryParam && regularProducts.length > 0) {
+      const filtered = regularProducts.filter(product => 
+        product.category?._id === categoryParam || product.category?.name === categoryParam
+      );
+      setFilteredProducts(filtered);
+    } else {
+      setFilteredProducts(regularProducts);
+    }
+  }, [categoryParam, regularProducts]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cakePink"></div>
       </div>
-    </section>
+    );
+  }
+
+  return (
+    <div className="bg-white">
+      {/* Featured Products Carousel */}
+      <section className="py-16 bg-gray-50">
+        <div className="mx-auto px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 max-w-[1600px]">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-cakeBrown mb-4">
+              Featured <span className="text-cakePink">Products</span>
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Discover our most popular and trending desserts
+            </p>
+          </div>
+
+          <Swiper
+            modules={[Pagination, Autoplay]}
+            spaceBetween={30}
+            slidesPerView={1}
+            pagination={{ clickable: true }}
+            autoplay={{ delay: 4000, disableOnInteraction: false }}
+            breakpoints={{
+              640: {
+                slidesPerView: 2,
+              },
+              1024: {
+                slidesPerView: 3,
+              },
+              1280: {
+                slidesPerView: 4,
+              },
+            }}
+            className="featured-swiper"
+          >
+            {featuredProducts.map((product) => (
+              <SwiperSlide key={product.id}>
+                <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+                  <div className="relative">
+                    <img 
+                      src={product.images[0]} 
+                      alt={product.name}
+                      className="w-full h-64 object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                      }}
+                    />
+                    {product.badge && (
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-cakePink text-white px-3 py-1 rounded-full text-sm font-medium">
+                          {product.badge}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-cakeBrown mb-2">{product.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-2xl font-bold text-cakePink">${product.price}</span>
+                      <div className="flex items-center">
+                        <span className="text-yellow-500 text-sm mr-1">★</span>
+                        <span className="text-gray-600 text-sm">{product.rating} ({product.reviewCount})</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+      </section>
+
+      {/* All Products Grid */}
+      <section className="py-16">
+        <div className="mx-auto px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 max-w-[1600px]">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-cakeBrown mb-4">
+              Our <span className="text-cakePink">Exclusive</span> Products
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              {categoryParam 
+                ? `Explore our ${filteredProducts[0]?.category?.name || 'selected'} collection` 
+                : 'Browse through our complete collection of handcrafted desserts'
+              }
+            </p>
+            {categoryParam && filteredProducts.length > 0 && (
+              <p className="text-cakePink font-medium mt-2">
+                Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} 
+                {filteredProducts[0]?.category?.name && ` in ${filteredProducts[0].category.name}`}
+              </p>
+            )}
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-gray-400 text-6xl mb-4">🎂</div>
+              <h3 className="text-2xl font-semibold text-gray-600 mb-2">
+                {categoryParam ? 'No products found in this category' : 'No products available'}
+              </h3>
+              <p className="text-gray-500">
+                {categoryParam ? 'Try browsing other categories or check back later.' : 'Please check back later for new products.'}
+              </p>
+            </div>
+          ) : (
+            <ProductGrid products={filteredProducts} />
+          )}
+        </div>
+      </section>
+    </div>
   );
 };
 
