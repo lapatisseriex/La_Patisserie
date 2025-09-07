@@ -1,0 +1,241 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import { useCart } from '../../context/CartContext';
+import MediaDisplay from '../common/MediaDisplay';
+import { Heart, ShoppingCart, Star, AlertCircle } from 'lucide-react';
+
+const ProductCard = ({ 
+  product,
+  showRating = true,
+  showAddToCart = true,
+  className = '',
+  compact = false
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const { addToCart } = useCart();
+  
+  // Handle stock status display logic
+  const getStockStatus = () => {
+    if (!product.isActive) {
+      return { 
+        label: 'Unavailable', 
+        color: 'bg-gray-500',
+        textColor: 'text-white'
+      };
+    }
+    
+    if (product.stock === 0) {
+      return { 
+        label: 'Out of Stock', 
+        color: 'bg-red-500',
+        textColor: 'text-white'
+      };
+    }
+    
+    if (product.stock < 5) {
+      return { 
+        label: 'Low Stock', 
+        color: 'bg-amber-400',
+        textColor: 'text-amber-800'
+      };
+    }
+    
+    return { 
+      label: 'In Stock', 
+      color: 'bg-green-500',
+      textColor: 'text-white'
+    };
+  };
+  
+  const stockStatus = getStockStatus();
+  
+  // Calculate discount percentage
+  const discountPercentage = product.price && product.discountPrice 
+    ? Math.round(((product.price - product.discountPrice) / product.price) * 100) 
+    : 0;
+  
+  // Handle add to cart action
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (product.isActive && product.stock > 0) {
+      addToCart({
+        productId: product._id,
+        name: product.name,
+        price: product.discountPrice || product.price,
+        image: product.images?.[0] || '',
+        quantity: 1,
+        stock: product.stock
+      });
+    }
+  };
+  
+  return (
+    <Link 
+      to={`/products/${product._id}`}
+      className={`product-card group block relative rounded-lg overflow-hidden transition-all duration-300 ${
+        compact ? 'border border-gray-100' : 'shadow-sm hover:shadow-md'
+      } bg-white ${className}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Product Image with Overlay */}
+      <div className={`relative overflow-hidden ${compact ? 'h-28' : 'h-44 sm:h-52'}`}>
+        <MediaDisplay
+          src={product.images?.[0] || ''}
+          alt={product.name}
+          aspectRatio={compact ? 'auto' : '4/3'}
+        />
+        
+        {/* Category Badge */}
+        {product.category && !compact && (
+          <div className="absolute top-2 left-2">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/80 backdrop-blur-sm text-gray-700">
+              {product.category.name}
+            </span>
+          </div>
+        )}
+        
+        {/* Overlay controls (wishlist, quick view) */}
+        {!compact && (
+          <div className={`absolute inset-0 bg-black/5 flex items-center justify-center transition-opacity duration-300 ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}>
+            <div className="flex flex-col items-center justify-center gap-2">
+              {showAddToCart && product.isActive && product.stock > 0 && (
+                <button 
+                  onClick={handleAddToCart}
+                  className="p-2 bg-white rounded-full shadow-md hover:bg-cakePink hover:text-white transition-colors"
+                  aria-label="Add to cart"
+                >
+                  <ShoppingCart size={16} />
+                </button>
+              )}
+              <button 
+                className="p-2 bg-white rounded-full shadow-md hover:bg-cakePink hover:text-white transition-colors"
+                aria-label="Add to wishlist"
+              >
+                <Heart size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Discount Badge */}
+        {discountPercentage > 0 && (
+          <div className="absolute top-2 right-2 bg-cakePink text-white text-xs font-medium px-2 py-0.5 rounded">
+            {discountPercentage}% OFF
+          </div>
+        )}
+        
+        {/* Stock Status Badge */}
+        {!product.isActive || product.stock === 0 ? (
+          <div className="absolute bottom-0 left-0 right-0 py-1 px-2 text-center text-xs font-medium bg-gray-800/80 text-white">
+            {stockStatus.label}
+          </div>
+        ) : null}
+      </div>
+      
+      {/* Product Details */}
+      <div className={`p-2 ${compact ? '' : 'p-3'}`}>
+        {/* Title */}
+        <h3 className={`font-medium text-gray-800 line-clamp-1 ${compact ? 'text-sm' : 'mb-1'}`}>
+          {product.name}
+        </h3>
+        
+        {!compact && (
+          <p className="text-xs text-gray-500 line-clamp-2 mb-2 h-8">
+            {product.description}
+          </p>
+        )}
+        
+        {/* Price */}
+        <div className="flex items-baseline gap-1">
+          {product.discountPrice ? (
+            <>
+              <span className={`font-semibold text-cakePink ${compact ? 'text-sm' : ''}`}>
+                ₹{product.discountPrice.toFixed(2)}
+              </span>
+              <span className="text-gray-500 line-through text-xs">
+                ₹{product.price.toFixed(2)}
+              </span>
+            </>
+          ) : (
+            <span className={`font-semibold text-cakePink ${compact ? 'text-sm' : ''}`}>
+              ₹{product.price.toFixed(2)}
+            </span>
+          )}
+        </div>
+        
+        {/* Rating */}
+        {showRating && !compact && product.rating && (
+          <div className="flex items-center mt-1">
+            <div className="flex items-center">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star 
+                  key={star}
+                  size={12}
+                  className={`${
+                    star <= Math.round(product.rating) 
+                      ? 'text-amber-400 fill-amber-400' 
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-xs text-gray-500 ml-1">
+              ({product.numReviews || 0})
+            </span>
+          </div>
+        )}
+        
+        {/* Not active warning */}
+        {!product.isActive && (
+          <div className="flex items-center mt-1 text-xs text-red-500">
+            <AlertCircle size={12} className="mr-1" />
+            <span>Product unavailable</span>
+          </div>
+        )}
+      </div>
+      
+      {/* "Add to Cart" button for non-compact mode */}
+      {!compact && showAddToCart && product.isActive && product.stock > 0 && (
+        <div className="px-3 pb-3">
+          <button 
+            onClick={handleAddToCart}
+            className="w-full py-1.5 text-xs font-medium bg-cakePink text-white rounded hover:bg-cakePink-dark transition-colors"
+          >
+            Add to Cart
+          </button>
+        </div>
+      )}
+    </Link>
+  );
+};
+
+ProductCard.propTypes = {
+  product: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    price: PropTypes.number.isRequired,
+    discountPrice: PropTypes.number,
+    images: PropTypes.arrayOf(PropTypes.string),
+    category: PropTypes.shape({
+      _id: PropTypes.string,
+      name: PropTypes.string
+    }),
+    isActive: PropTypes.bool,
+    stock: PropTypes.number,
+    rating: PropTypes.number,
+    numReviews: PropTypes.number
+  }).isRequired,
+  showRating: PropTypes.bool,
+  showAddToCart: PropTypes.bool,
+  className: PropTypes.string,
+  compact: PropTypes.bool
+};
+
+export default ProductCard;

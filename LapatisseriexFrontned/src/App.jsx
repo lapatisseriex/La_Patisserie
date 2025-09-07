@@ -19,6 +19,8 @@ import AdminDashboardLayout from './components/Admin/AdminDashboardLayout';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminUsers from './components/Admin/AdminUsers';
 import AdminLocations from './components/Admin/AdminLocations';
+import AdminProducts from './components/Admin/Products/AdminProducts';
+import AdminCategories from './components/Admin/Categories/AdminCategories';
 
 // Cart and Payment Components
 import Cart from './components/Cart/Cart';
@@ -33,6 +35,8 @@ import AuthModal from './components/Auth/AuthModal/AuthModal';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext/AuthContext';
 import { LocationProvider } from './context/LocationContext/LocationContext';
+import { CategoryProvider } from './context/CategoryContext/CategoryContext';
+import { ProductProvider } from './context/ProductContext/ProductContext';
 
 // Main Homepage that combines all sections
 const HomePage = () => (
@@ -77,11 +81,13 @@ function App() {
   return (
     <AuthProvider>
       <LocationProvider>
-        <CartProvider>
-          <Router>
-            {/* Auth Modal - available on all pages */}
-            <AuthModal />
-            
+        <CategoryProvider>
+          <ProductProvider>
+            <CartProvider>
+              <Router>
+                {/* Auth Modal - available on all pages */}
+                <AuthModal />
+                
             <Routes>
               {/* Main Layout Routes */}
               <Route path="/" element={<Layout />}>
@@ -120,12 +126,16 @@ function App() {
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="locations" element={<AdminLocations />} />
                   <Route path="orders" element={<div>Admin Orders</div>} />
-                  <Route path="products" element={<div>Admin Products</div>} />
+                  <Route path="products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
+                  <Route path="categories" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCategories /></React.Suspense>} />
+                  <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
                 </Route>
               </Route>
             </Routes>
           </Router>
-        </CartProvider>
+            </CartProvider>
+          </ProductProvider>
+        </CategoryProvider>
       </LocationProvider>
     </AuthProvider>
   );

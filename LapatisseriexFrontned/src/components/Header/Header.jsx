@@ -3,9 +3,11 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 import { useCart } from '../../context/CartContext';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
+import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import './Header.css';
+
+// Import CategorySwiper component
+import CategorySwiper from './CategorySwiper';
 
 // Import UserMenu component
 import UserMenu from './UserMenu/UserMenu';
@@ -40,6 +42,13 @@ const Header = ({ isAdminView = false }) => {
   } = useLocationContext();
   
   const { cartCount } = useCart();
+
+  // Get categories from CategoryContext
+  const { 
+    categories: dbCategories, 
+    loading: categoriesLoading,
+    error: categoriesError 
+  } = useCategory();
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
@@ -47,7 +56,6 @@ const Header = ({ isAdminView = false }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   
   // Function to toggle mobile menu
-
   
   const location = useLocation();
   const locationDropdownRef = useRef(null);
@@ -59,17 +67,24 @@ const Header = ({ isAdminView = false }) => {
   // Memoize values that should only update when their dependencies change
   const memoizedCartCount = useMemo(() => cartCount, [cartCount]);
   
-  // Sample categories data for the category bar
-  const categories = [
-    { id: 1, name: "Birthday Cakes", image: "/images/cake1.png" },
-    { id: 2, name: "Cupcakes", image: "/images/cake2.png" },
-    { id: 3, name: "Wedding Cakes", image: "/images/cake3.png" },
-    { id: 4, name: "Pastries", image: "/images/cake1.png" },
-    { id: 5, name: "Cookies", image: "/images/cake2.png" },
-    { id: 6, name: "Brownies", image: "/images/cake3.png" },
-    { id: 7, name: "Donuts", image: "/images/cake1.png" },
-    { id: 8, name: "Ice Cream Cakes", image: "/images/cake2.png" }
-  ];
+  // Use categories from database or fall back to empty array
+  // We'll only show active categories in the header
+  const categories = useMemo(() => {
+    if (!dbCategories || dbCategories.length === 0) {
+      return [];
+    }
+    
+    // Filter active categories and ensure all required fields are present
+    return dbCategories
+      .filter(category => category.isActive)
+      .map(category => ({
+        _id: category._id,  // Keep the original _id
+        id: category._id,   // Also provide as id for compatibility
+        name: category.name,
+        featuredImage: category.featuredImage || null,
+        images: category.images || [],
+      }));
+  }, [dbCategories]);
   
   // Get user's location display name
   const [userLocationDisplay, setUserLocationDisplay] = useState('Select Location');
@@ -192,7 +207,18 @@ const Header = ({ isAdminView = false }) => {
   
   // Handle category selection
   const handleCategorySelect = (categoryId) => {
+    console.log("Category selected:", categoryId);
     setSelectedCategory(categoryId);
+    
+    // Close mobile menu if open
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+      document.body.style.overflow = '';
+    }
+    
+    // Navigate to products page with category filter
+    // Use window.location for now - this could be expanded to use router navigation
+    window.location.href = `/products?category=${categoryId}`;
   };
   
   // Render breadcrumb for cart/payment pages
@@ -386,45 +412,14 @@ const Header = ({ isAdminView = false }) => {
       ) : !isAdminView && (
         <div className="bg-white border-t border-b border-gray-100 py-2 sm:py-3 px-2 sm:px-4 overflow-hidden">
           <div className="container mx-auto relative z-10">
-            {/* Category Swiper */}
-            <Swiper
-            className="category-swiper"
-            slidesPerView="auto"
-            spaceBetween={10}
-            freeMode={true}
-            touchRatio={1.5}
-            touchAngle={45}
-            grabCursor={true}
-            preventClicks={true}
-            resistanceRatio={0.85}
-            modules={[]}
-            watchOverflow={true}
-            watchSlidesProgress={true}
-            ref={categorySliderRef}
-          >
-            {categories.map(category => (
-              <SwiperSlide 
-                key={category.id}
-                className={`cursor-pointer ${selectedCategory === category.id ? 'selected-category' : ''}`}
-                onClick={() => handleCategorySelect(category.id)}
-                style={{ width: 'auto', minWidth: '70px', maxWidth: '100px' }}
-              >
-                <div className="flex flex-col items-center px-1">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden mb-1 shadow-sm">
-                    <img 
-                      src={category.image} 
-                      alt={category.name} 
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                  <span className="text-[10px] sm:text-xs text-center text-cakeBrown leading-tight line-clamp-1 sm:line-clamp-2 w-full">
-                    {category.name}
-                  </span>
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+            {/* Use CategorySwiper component */}
+            <CategorySwiper
+              categories={categories}
+              loading={categoriesLoading}
+              error={categoriesError}
+              selectedCategory={selectedCategory}
+              onSelectCategory={handleCategorySelect}
+            />
           </div>
         </div>
       )}      {/* Floating Cart Button (mobile only) */}
@@ -486,22 +481,43 @@ const Header = ({ isAdminView = false }) => {
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-500 mb-2">Categories</h3>
             <div className="flex flex-wrap gap-2">
-              {categories.slice(0, 6).map(category => (
-                <button
-                  key={category.id}
-                  className={`px-3 py-1 rounded-full text-xs border transition-colors ${
-                    selectedCategory === category.id
-                      ? 'bg-cakePink text-white border-cakePink'
-                      : 'bg-white text-gray-700 border-gray-200 hover:border-cakePink'
-                  }`}
-                  onClick={() => {
-                    handleCategorySelect(category.id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  {category.name}
-                </button>
-              ))}
+              {categoriesLoading ? (
+                // Loading placeholders for mobile
+                Array(4).fill(0).map((_, index) => (
+                  <div 
+                    key={`mobile-loading-${index}`}
+                    className="px-3 py-1 rounded-full text-xs border border-gray-200 bg-gray-100 w-24 h-6 animate-pulse"
+                  ></div>
+                ))
+              ) : categories.length > 0 ? (
+                // Show max 6 categories in mobile menu
+                categories.slice(0, 6).map(category => (
+                  <button
+                    key={category.id}
+                    className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                      selectedCategory === category.id
+                        ? 'bg-cakePink text-white border-cakePink'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-cakePink'
+                    }`}
+                    onClick={() => {
+                      handleCategorySelect(category.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    {category.name}
+                  </button>
+                ))
+              ) : categoriesError ? (
+                // Show error message
+                <div className="text-xs text-red-500 py-1">
+                  Could not load categories
+                </div>
+              ) : (
+                // Show message when no categories
+                <div className="text-xs text-gray-500 py-1">
+                  No categories available
+                </div>
+              )}
               <Link 
                 to="/products"
                 className="px-3 py-1 rounded-full text-xs border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100"

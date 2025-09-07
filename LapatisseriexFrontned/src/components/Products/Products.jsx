@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay } from 'swiper/modules';
 import ProductGrid from './ProductGrid';
+import ProductCard from './ProductCard';
+import { useProduct } from '../../context/ProductContext/ProductContext';
+import { useCategory } from '../../context/CategoryContext/CategoryContext';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -9,214 +12,113 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 const Products = () => {
+  const { fetchProducts } = useProduct();
+  const { fetchCategories } = useCategory();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [regularProducts, setRegularProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulate API call to fetch products
-    setTimeout(() => {
-      // Featured products for carousel
-      const featured = [
-        {
-          id: "f1",
-          name: "Chocolate Truffle",
-          images: ["/images/cake1.png"],
-          price: "1299",
-          badge: "Best Seller",
-          isVeg: true,
-          rating: 4.9,
-          reviewCount: 28,
-          description: "Rich, decadent chocolate truffle cake layered with premium cocoa and topped with chocolate ganache."
-        },
-        {
-          id: "f2",
-          name: "Strawberry Cheesecake",
-          images: ["/images/cake2.png"],
-          price: "1199",
-          badge: "Popular",
-          isVeg: true,
-          rating: 4.8,
-          reviewCount: 24,
-          description: "Creamy cheesecake with a buttery graham cracker crust, topped with fresh strawberry compote."
-        },
-        {
-          id: "f3",
-          name: "Vanilla Dream",
-          images: ["/images/cake3.png"],
-          price: "999",
-          isVeg: true,
-          rating: 4.7,
-          reviewCount: 19,
-          description: "Light and fluffy vanilla sponge cake with a delicate buttercream frosting and subtle vanilla notes."
-        },
-        {
-          id: "f4",
-          name: "Blueberry Delight",
-          images: ["/images/cake1.png"],
-          price: "1099",
-          isVeg: true,
-          rating: 4.6,
-          reviewCount: 15,
-          description: "Moist blueberry-infused cake with cream cheese frosting and fresh blueberry garnish."
-        }
-      ];
+    // Define an async function to load everything
+    const loadData = async () => {
+      setIsLoading(true);
+      setError(null);
       
-      // Regular products for grid display
-      const regular = [
-        {
-          id: '1',
-          name: 'First Birthday Mickey Cake',
-          price: '1499',
-          badge: '',
-          isVeg: true,
-          rating: 5,
-          reviewCount: 2,
-          coupon: 'CAKE10',
-          images: [
-            '/images/cake1.png',
-            '/images/cake2.png',
-            '/images/cake3.png'
-          ]
-        },
-        {
-          id: '2',
-          name: 'Round Cream Happy Birthday Pink Cake',
-          price: '675',
-          badge: 'Best Seller',
-          isVeg: true,
-          rating: 5,
-          reviewCount: 11,
-          coupon: 'FIRST50',
-          images: [
-            '/images/cake2.png',
-            '/images/cake1.png',
-            '/images/cake3.png'
-          ]
-        },
-        {
-          id: '3',
-          name: 'Pastel Paradise Birthday Cake',
-          price: '2399',
-          badge: '',
-          isVeg: true,
-          rating: 4.9,
-          reviewCount: 10,
-          images: [
-            '/images/cake3.png',
-            '/images/cake1.png',
-            '/images/cake2.png'
-          ]
-        },
-        {
-          id: '4',
-          name: 'First Bday Photo Cake',
-          price: '749',
-          originalPrice: '899',
-          badge: 'Personalised',
-          isVeg: true,
-          rating: 5,
-          reviewCount: 25,
-          coupon: 'SAVE150',
-          images: [
-            '/images/cake1.png',
-            '/images/cake3.png',
-            '/images/cake2.png'
-          ]
-        },
-        {
-          id: '5',
-          name: 'Chocolate Truffle Cake',
-          price: '899',
-          badge: '',
-          isVeg: true,
-          rating: 4.8,
-          reviewCount: 15,
-          coupon: 'CHOC20',
-          images: [
-            '/images/cake2.png',
-            '/images/cake1.png',
-            '/images/cake3.png'
-          ]
-        },
-        {
-          id: '6',
-          name: 'Butterscotch Delight Cake',
-          price: '950',
-          badge: '',
-          isVeg: true,
-          rating: 4.7,
-          reviewCount: 8,
-          images: [
-            '/images/cake3.png',
-            '/images/cake2.png',
-            '/images/cake1.png'
-          ]
-        },
-        {
-          id: '7',
-          name: 'Red Velvet Cake',
-          price: '1299',
-          badge: 'Popular',
-          isVeg: true,
-          rating: 4.9,
-          reviewCount: 22,
-          images: [
-            '/images/cake1.png',
-            '/images/cake3.png',
-            '/images/cake2.png'
-          ]
-        },
-        {
-          id: '8',
-          name: 'Black Forest Cake',
-          price: '850',
-          badge: '',
-          isVeg: true,
-          rating: 4.6,
-          reviewCount: 18,
-          images: [
-            '/images/cake2.png',
-            '/images/cake1.png',
-            '/images/cake3.png'
-          ]
-        }
-      ];
-
-      setFeaturedProducts(featured);
-      setRegularProducts(regular);
-      setIsLoading(false);
-    }, 800);
-  }, []);
+      try {
+        // Load categories first to ensure they're available
+        console.log("Loading categories for Products component");
+        await fetchCategories(false); // Only load active categories
+        
+        // Then load products
+        console.log("Loading products");
+        
+        // Fetch featured products (products with featured=true)
+        const featuredResult = await fetchProducts({ 
+          featured: true, 
+          limit: 10
+        });
+        
+        // Fetch regular products
+        const regularResult = await fetchProducts({ 
+          limit: 12,
+          sort: 'createdAt:-1' // Sort by newest first
+        });
+        
+        setFeaturedProducts(featuredResult.products || []);
+        setRegularProducts(regularResult.products || []);
+        
+        console.log(`Loaded ${featuredResult.products?.length || 0} featured products`);
+        console.log(`Loaded ${regularResult.products?.length || 0} regular products`);
+      } catch (err) {
+        console.error("Error loading products:", err);
+        setError("Failed to load products. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [fetchProducts, fetchCategories]);
 
   return (
     <section className="bg-gradient-to-b from-white to-cakePink-light/20 py-20 mt-8 pt-6" id="product">
       <div className="container mx-auto px-4">
         
         {/* Section Heading */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-cakeBrown relative inline-block">
-            Our Exclusive Products
-            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-cakePink-dark"></span>
-          </h2>
-          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
-            Handcrafted with love and premium ingredients for your special moments
-          </p>
-        </div>
+       
         
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cakePink"></div>
           </div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-10">
+            <p>{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-cakePink text-white rounded-md hover:bg-cakePink-dark"
+            >
+              Try Again
+            </button>
+          </div>
         ) : (
           <>
             {/* Featured Products Carousel */}
-            <div className="mb-16">
-           
-            </div>
+            {featuredProducts.length > 0 && (
+              <div className="mb-16">
+                <h2 className="text-2xl font-bold text-cakeBrown mb-8">Featured Products</h2>
+                <Swiper
+                  modules={[Pagination, Autoplay]}
+                  pagination={{ clickable: true }}
+                  autoplay={{ delay: 5000, disableOnInteraction: false }}
+                  slidesPerView={1}
+                  spaceBetween={20}
+                  loop={true}
+                  breakpoints={{
+                    640: { slidesPerView: 2 },
+                    768: { slidesPerView: 3 },
+                    1024: { slidesPerView: 4 }
+                  }}
+                  className="products-swiper"
+                >
+                  {featuredProducts.map(product => (
+                    <SwiperSlide key={product._id}>
+                      <ProductCard product={product} />
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
+            )}
             
             {/* Regular Products Grid */}
-            <ProductGrid products={regularProducts} title="All Cakes & Desserts" />
+            {regularProducts.length > 0 ? (
+              <ProductGrid products={regularProducts} title="All Cakes & Desserts" />
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-gray-500">No products found.</p>
+              </div>
+            )}
           </>
         )}
       </div>

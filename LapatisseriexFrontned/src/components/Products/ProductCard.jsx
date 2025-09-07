@@ -1,149 +1,176 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaHeart, FaRegHeart, FaImages, FaStar } from 'react-icons/fa';
-import { MdShoppingCart } from 'react-icons/md';
+import PropTypes from 'prop-types';
+import MediaDisplay from '../common/MediaDisplay';
+import ImageSlideshow from '../common/ImageSlideshow';
+import { AlertCircle } from 'lucide-react';
 
-const ProductCard = ({ product }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const cardRef = useRef(null);
-  
-  // Effect to animate card entry
-  useEffect(() => {
-    setTimeout(() => {
-      if (cardRef.current) {
-        cardRef.current.style.opacity = '1';
-        cardRef.current.style.transform = 'translateY(0)';
-      }
-    }, Math.random() * 300); // Staggered animation
-  }, []);
-  
-  // Effect to cycle through images when hovering
-  useEffect(() => {
-    let imageInterval;
-    
-    if (isHovered && product.images && product.images.length > 1) {
-      imageInterval = setInterval(() => {
-        setActiveImageIndex((prevIndex) => 
-          prevIndex === product.images.length - 1 ? 0 : prevIndex + 1
-        );
-      }, 1200);
-    } else {
-      setActiveImageIndex(0);
+const ProductCard = ({ 
+  product,
+  className = '',
+  compact = false
+}) => {
+  // Handle stock status display logic
+  const getStockStatus = () => {
+    if (!product.isActive) {
+      return { 
+        label: 'Unavailable', 
+        color: 'bg-gray-500',
+        textColor: 'text-white'
+      };
     }
     
-    return () => {
-      if (imageInterval) clearInterval(imageInterval);
+    if (product.stock === 0) {
+      return { 
+        label: 'Out of Stock', 
+        color: 'bg-red-500',
+        textColor: 'text-white'
+      };
+    }
+    
+    if (product.stock < 5) {
+      return { 
+        label: 'Low Stock', 
+        color: 'bg-amber-400',
+        textColor: 'text-amber-800'
+      };
+    }
+    
+    return { 
+      label: 'In Stock', 
+      color: 'bg-green-500',
+      textColor: 'text-white'
     };
-  }, [isHovered, product.images]);
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
   };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-  };
-
-  const handleFavoriteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsFavorite(!isFavorite);
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 500);
-  };
-
-  // Check if product has multiple images
-  const hasMultipleImages = product.images && product.images.length > 1;
-
+  
+  const stockStatus = getStockStatus();
+  
+  // Calculate discount percentage
+  const discountPercentage = product.price && product.discountPrice 
+    ? Math.round(((product.price - product.discountPrice) / product.price) * 100) 
+    : 0;
+  
   return (
-    <div className="relative group">
-      <Link 
-        to={`/product/${product.id}`} 
-        className="block rounded-lg overflow-hidden h-full bg-white shadow-sm hover:shadow-md transition-shadow"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* Badge for special status - moved to top-right to avoid collision */}
-        {product.badge && (
-          <span className="absolute top-2 right-9 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded z-10">
-            {product.badge}
-          </span>
+    <Link 
+      to={`/products/${product._id}`}
+      className={`product-card group block relative rounded-lg overflow-hidden transition-all duration-300 ${
+        compact ? 'border border-gray-100' : 'shadow-sm hover:shadow-md'
+      } bg-white ${className}`}
+    >
+      {/* Product Image with Slideshow - clean with no text overlays */}
+      <div className={`relative overflow-hidden ${compact ? 'h-28' : 'h-48 sm:h-56'}`}>
+        {/* Use ImageSlideshow for multiple images, or MediaDisplay for single image */}
+        {product.images && product.images.length > 1 ? (
+          <ImageSlideshow
+            images={product.images}
+            alt={product.name}
+            aspectRatio={compact ? 'auto' : '1/1'}
+            className="w-full h-full"
+          />
+        ) : (
+          <MediaDisplay
+            src={product.images?.[0] || ''}
+            alt={product.name}
+            aspectRatio={compact ? 'auto' : '1/1'}
+          />
         )}
         
-        {/* Vegetarian tag - top left */}
-        {product.isVeg && (
-          <span className="absolute top-2 left-2 z-10">
-            <div className="w-6 h-6 rounded-sm border border-green-600 flex items-center justify-center bg-white">
-              <div className="w-4 h-4 rounded-sm bg-green-600"></div>
-            </div>
-          </span>
+        {/* Removed Category Badge as requested */}
+
+        {/* Discount Badge is now only shown below with the price */}        {/* Stock Status Badge - shown below product details instead of on image */}
+        {/* Removed from image overlay as requested */}
+      </div>
+      
+      {/* Product Details */}
+      <div className={`p-2 ${compact ? '' : 'p-3'}`}>
+        {/* Title */}
+        <h3 className={`font-medium text-gray-800 line-clamp-1 ${compact ? 'text-sm' : ''}`}>
+          {product.name}
+        </h3>
+        
+        {/* Short Description */}
+        {!compact && (
+          <p className="text-xs text-gray-500 line-clamp-2 mt-1 mb-2 min-h-[2.5rem]">
+            {product.description}
+          </p>
         )}
-
-        {/* Favorite button */}
-        <button 
-          onClick={handleFavoriteClick}
-          className="absolute top-2 right-2 z-10 p-1.5 text-xl"
-        >
-          {isFavorite ? <FaHeart className="text-cakePink" /> : <FaRegHeart className="text-gray-600" />}
-        </button>
-
-        {/* Product image with CSS transition */}
-        <div className="aspect-square overflow-hidden bg-gray-100 relative">
-          <div className="relative w-full h-full">
-            {product.images && product.images.map((image, index) => (
-              <img 
-                key={index}
-                src={image} 
-                alt={`${product.name} - ${index + 1}`} 
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-                  activeImageIndex === index ? 'opacity-100' : 'opacity-0'
-                }`}
-                loading="lazy"
-              />
-            ))}
-            
-            {/* Image counter indicator */}
-            {hasMultipleImages && (
-              <div className="absolute bottom-2 right-2 z-10 bg-black/30 text-white text-xs px-2 py-0.5 rounded-full flex items-center">
-                <FaImages className="mr-1" />
-                <span>{product.images.length}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Product details */}
-        <div className="p-3">
-          <h3 className="text-base font-semibold text-gray-800 line-clamp-2">{product.name}</h3>
-          
-          <div className="flex justify-between items-center mt-2">
-            <div>
-              <p className="text-lg font-bold text-cakePink">₹{product.price}
-                {product.originalPrice && (
-                  <span className="text-sm text-gray-400 line-through ml-2">₹{product.originalPrice}</span>
+        
+        {/* Price section */}
+        <div className="mt-2">
+          {/* Price display */}
+          <div className="flex items-baseline gap-1">
+            {product.discountPrice ? (
+              <>
+                <span className={`font-semibold text-black ${compact ? 'text-sm' : ''}`}>
+                  ₹{(typeof product.discountPrice === 'number' ? product.discountPrice : '0')}
+                </span>
+                <span className="text-gray-500 line-through text-xs">
+                  ₹{(typeof product.price === 'number' ? product.price : '0')}
+                </span>
+                {/* Discount Badge - styled to match screenshot */}
+                {discountPercentage > 0 && (
+                  <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-sm ml-1">
+                    {discountPercentage}% OFF
+                  </span>
                 )}
-              </p>
-            </div>
-            
-            {/* Rating */}
-            {product.rating && (
-              <div className="flex items-center">
-                <span className="text-sm font-medium bg-green-50 text-green-700 px-1.5 py-0.5 rounded flex items-center">
-                  {product.rating} ★ 
-                </span>
-                <span className="text-xs text-gray-500 ml-1">
-                  ({product.reviewCount})
-                </span>
-              </div>
+              </>
+            ) : (
+              <span className={`font-semibold text-black ${compact ? 'text-sm' : ''}`}>
+                ₹{(typeof product.price === 'number' ? product.price : '0')}
+              </span>
             )}
           </div>
         </div>
-      </Link>
-    </div>
+        
+        {/* Badge (e.g. Best seller) - styled to match screenshot */}
+        {product.badge && (
+          <div className="mt-1.5">
+            <span className="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-medium px-2 py-0.5 rounded-sm">
+              {product.badge}
+            </span>
+          </div>
+        )}
+        
+        {/* Stock Status and Not active warning */}
+        {!product.isActive ? (
+          <div className="flex items-center mt-1 text-xs text-red-500">
+            <AlertCircle size={12} className="mr-1" />
+            <span>Product unavailable</span>
+          </div>
+        ) : product.stock === 0 ? (
+          <div className="flex items-center mt-1 text-xs text-red-500">
+            <AlertCircle size={12} className="mr-1" />
+            <span>Out of stock</span>
+          </div>
+        ) : product.stock < 5 ? (
+          <div className="flex items-center mt-1 text-xs text-amber-600">
+            <AlertCircle size={12} className="mr-1" />
+            <span>Low stock</span>
+          </div>
+        ) : null}
+      </div>
+    </Link>
   );
+};
+
+ProductCard.propTypes = {
+  product: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    price: PropTypes.number.isRequired,
+    discountPrice: PropTypes.number,
+    images: PropTypes.arrayOf(PropTypes.string),
+    category: PropTypes.shape({
+      _id: PropTypes.string,
+      name: PropTypes.string
+    }),
+    isActive: PropTypes.bool,
+    stock: PropTypes.number,
+    badge: PropTypes.string
+  }).isRequired,
+  className: PropTypes.string,
+  compact: PropTypes.bool
 };
 
 export default ProductCard;

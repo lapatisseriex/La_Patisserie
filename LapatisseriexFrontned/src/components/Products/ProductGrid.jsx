@@ -3,15 +3,20 @@ import ProductCard from './ProductCard';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, A11y, Autoplay } from 'swiper/modules';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 // Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-const ProductGrid = ({ products, title }) => {
+const ProductGrid = ({ products, title, viewAllLink }) => {
   const navigationPrevRef = useRef(null);
   const navigationNextRef = useRef(null);
+
+  if (!products || products.length === 0) {
+    return null;
+  }
 
   return (
     <div className="py-8">
@@ -19,7 +24,7 @@ const ProductGrid = ({ products, title }) => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-cakeBrown">{title}</h2>
           <div className="flex items-center space-x-3">
-            {/* <button 
+            <button 
               ref={navigationPrevRef}
               className="bg-white shadow-sm border border-gray-200 text-cakeBrown hover:text-cakePink rounded-full p-2 transition-colors focus:outline-none"
               aria-label="Previous products"
@@ -32,8 +37,12 @@ const ProductGrid = ({ products, title }) => {
               aria-label="Next products"
             >
               <FaChevronRight />
-            </button> */}
-            <button className="text-cakePink hover:text-cakePink-dark ml-2">View All</button>
+            </button>
+            {viewAllLink && (
+              <Link to={viewAllLink} className="text-cakePink hover:text-cakePink-dark ml-2">
+                View All
+              </Link>
+            )}
           </div>
         </div>
       )}
@@ -79,7 +88,7 @@ const ProductGrid = ({ products, title }) => {
         className="product-carousel pb-12"
       >
         {products.map((product) => (
-          <SwiperSlide key={product.id} className="pb-10">
+          <SwiperSlide key={product._id || product.id} className="pb-10">
             <ProductCard product={product} />
           </SwiperSlide>
         ))}

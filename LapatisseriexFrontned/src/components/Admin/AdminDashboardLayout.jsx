@@ -82,6 +82,15 @@ const AdminDashboardLayout = () => {
             </li>
             <li>
               <Link 
+                to="/admin/categories" 
+                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/categories' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
+              >
+                <FaList className="mr-3" />
+                <span className={!isSidebarOpen ? 'hidden' : ''}>Categories</span>
+              </Link>
+            </li>
+            <li>
+              <Link 
                 to="/admin/locations" 
                 className={`flex items-center py-3 px-4 ${location.pathname === '/admin/locations' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
               >
