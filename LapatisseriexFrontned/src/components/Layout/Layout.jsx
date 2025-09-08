@@ -18,8 +18,8 @@ const Layout = () => {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white pt-[180px] md:pt-[200px] pb-24">
-        <Outlet />
+      <main className="min-h-screen bg-white pt-[80px] md:pt-[100px] pb-12">
+      <Outlet />
       </main>
       <Footer />
     </>

@@ -39,14 +39,16 @@ import { CategoryProvider } from './context/CategoryContext/CategoryContext';
 import { ProductProvider } from './context/ProductContext/ProductContext';
 
 // Main Homepage that combines all sections
-const HomePage = () => (
-  <div className="homepage-container">
-    {/* <Home /> */}
-    <Products />
-    <Newsletter />
-  </div>
-);
+const HomePage = () => {
+  const { user } = useAuth(); // Access user from context
 
+  return (
+    <div className="homepage-container">
+      <Home />
+      {!user && <Newsletter />}
+    </div>
+  );
+};
 // Protected route for admin pages
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();

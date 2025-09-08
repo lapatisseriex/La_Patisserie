@@ -47,27 +47,27 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
             <div className="flex items-center space-x-2">
               <button 
                 ref={navigationPrevRef}
-                className="group bg-white shadow-lg border border-gray-100 text-cakeBrown hover:bg-cakePink hover:text-white rounded-full p-3 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-cakePink focus:ring-offset-2"
+                className="bg-white shadow-lg border border-gray-100 text-cakeBrown rounded-full p-3 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-cakePink focus:ring-offset-2"
                 aria-label="Previous products"
               >
-                <FaChevronLeft className="w-4 h-4 group-hover:animate-pulse" />
+                <FaChevronLeft className="w-4 h-4" />
               </button>
               <button 
                 ref={navigationNextRef}
-                className="group bg-white shadow-lg border border-gray-100 text-cakeBrown hover:bg-cakePink hover:text-white rounded-full p-3 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-cakePink focus:ring-offset-2"
+                className="bg-white shadow-lg border border-gray-100 text-cakeBrown rounded-full p-3 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-cakePink focus:ring-offset-2"
                 aria-label="Next products"
               >
-                <FaChevronRight className="w-4 h-4 group-hover:animate-pulse" />
+                <FaChevronRight className="w-4 h-4" />
               </button>
             </div>
             
             {viewAllLink && (
               <Link 
                 to={viewAllLink} 
-                className="hidden md:flex items-center text-cakePink hover:text-cakePink-dark transition-colors group"
+                className="hidden md:flex items-center text-cakePink transition-colors"
               >
                 <span className="mr-2">View All</span>
-                <span className="transform group-hover:translate-x-1 transition-transform">→</span>
+                <span className="transform transition-transform">→</span>
               </Link>
             )}
           </div>
@@ -133,7 +133,7 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
       >
         {products.map((product) => (
           <SwiperSlide key={product._id || product.id} className="pb-2">
-            <div className="transform transition-all duration-500 hover:scale-105 hover:shadow-xl">
+            <div className="transform transition-all duration-500">
               <ProductCard product={product} />
             </div>
           </SwiperSlide>
@@ -147,7 +147,7 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
         <div className="text-center mt-8 md:hidden">
           <Link 
             to={viewAllLink} 
-            className="inline-flex items-center px-6 py-2 bg-cakePink text-white rounded-lg hover:bg-cakePink-dark transition-colors shadow-md hover:shadow-lg"
+            className="inline-flex items-center px-6 py-2 bg-cakePink text-white rounded-lg transition-colors shadow-md"
           >
             View All Products
           </Link>

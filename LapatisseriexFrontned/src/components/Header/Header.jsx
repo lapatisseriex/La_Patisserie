@@ -6,9 +6,6 @@ import { useCart } from '../../context/CartContext';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import './Header.css';
 
-// Import CategorySwiper component
-import CategorySwiper from './CategorySwiper';
-
 // Import UserMenu component
 import UserMenu from './UserMenu/UserMenu';
 
@@ -226,7 +223,7 @@ const Header = ({ isAdminView = false }) => {
     if (location.pathname === '/cart') {
       return (
         <div className="flex items-center text-xs sm:text-sm text-gray-600 px-2 sm:px-4 py-2 sm:py-3 bg-gray-50">
-          <Link to="/" className="hover:text-cakePink">Home</Link>
+          <Link to="/" className="text-cakePink">Home</Link>
           <span className="mx-1 sm:mx-2">/</span>
           <span className="font-medium text-gray-800 truncate">Shopping Cart</span>
         </div>
@@ -234,9 +231,9 @@ const Header = ({ isAdminView = false }) => {
     } else if (location.pathname === '/payment') {
       return (
         <div className="flex items-center text-xs sm:text-sm text-gray-600 px-2 sm:px-4 py-2 sm:py-3 bg-gray-50 overflow-x-auto whitespace-nowrap">
-          <Link to="/" className="hover:text-cakePink flex-shrink-0">Home</Link>
+          <Link to="/" className="text-cakePink flex-shrink-0">Home</Link>
           <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
-          <Link to="/cart" className="hover:text-cakePink flex-shrink-0">Shopping Cart</Link>
+          <Link to="/cart" className="text-cakePink flex-shrink-0">Shopping Cart</Link>
           <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
           <span className="font-medium text-gray-800 flex-shrink-0">Checkout</span>
         </div>
@@ -253,7 +250,7 @@ const Header = ({ isAdminView = false }) => {
           <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
             <div className="relative w-full sm:w-auto" ref={locationDropdownRef}>
               <button 
-                className="flex items-center text-xs sm:text-sm text-cakeBrown hover:text-cakePink-dark transition-colors"
+                className="flex items-center text-xs sm:text-sm text-cakeBrown"
                 onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
               >
                 <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
@@ -277,7 +274,7 @@ const Header = ({ isAdminView = false }) => {
                       {locations.map((location) => (
                         <li key={location._id}>
                           <button
-                            className={`w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm hover:bg-cakePink-light hover:text-cakeBrown transition-colors ${
+                            className={`w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm ${
                               user?.location?._id === location._id
                                 ? 'bg-pink-50 text-cakePink font-medium'
                                 : 'text-gray-700'
@@ -309,7 +306,7 @@ const Header = ({ isAdminView = false }) => {
       )}
       
       {/* Middle Bar - Logo and Profile/Login */}
-      <div className="py-3 sm:py-4 px-2 sm:px-4 bg-white">
+      <div className="py-2 sm:py-3 px-2 sm:px-4 bg-white">
         <div className="container mx-auto flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center">
@@ -324,7 +321,7 @@ const Header = ({ isAdminView = false }) => {
               placeholder="Search for cakes, cookies, etc..." 
               className="w-full py-2 px-4 pr-10 rounded-full border border-gray-200 focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink"
             />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-cakePink">
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <Search className="h-5 w-5" />
             </button>
           </div>
@@ -332,8 +329,8 @@ const Header = ({ isAdminView = false }) => {
           {/* Navigation Links - Desktop */}
           <div className="hidden md:flex items-center space-x-6">
             {/* Navigation Links - Desktop */}
-            <Link to="/" className="hidden lg:block text-cakeBrown hover:text-cakePink">Home</Link>
-            <Link to="/products" className="hidden lg:block text-cakeBrown hover:text-cakePink">Products</Link>
+            <Link to="/" className="hidden lg:block text-cakeBrown">Home</Link>
+            <Link to="/products" className="hidden lg:block text-cakeBrown">Products</Link>
             
             {user && (
               <>
@@ -341,7 +338,7 @@ const Header = ({ isAdminView = false }) => {
                 <UserMenu />
                 
                 {/* Cart component */}
-                <Link to="/cart" className="flex items-center text-cakeBrown hover:text-cakePink transition-colors relative">
+                <Link to="/cart" className="flex items-center text-cakeBrown relative">
                   <ShoppingBag className="h-5 w-5 mr-1" />
                   <span>Cart ({memoizedCartCount})</span>
                   {memoizedCartCount > 0 && (
@@ -356,9 +353,9 @@ const Header = ({ isAdminView = false }) => {
             {!user && (
               <button 
                 onClick={toggleAuthPanel}
-                className="flex items-center text-cakeBrown hover:text-cakePink transition-all duration-300 ease-in-out transform hover:scale-105"
+                className="flex items-center text-cakeBrown"
               >
-                <User className="h-5 w-5 mr-1 transition-transform duration-300 ease-in-out group-hover:scale-110" />
+                <User className="h-5 w-5 mr-1" />
                 <span>Login / Signup</span>
               </button>
             )}
@@ -370,20 +367,20 @@ const Header = ({ isAdminView = false }) => {
             {!user ? (
               <button 
                 onClick={toggleAuthPanel}
-                className="text-cakeBrown hover:text-cakePink p-1"
+                className="text-cakeBrown p-1"
                 aria-label="Login"
               >
                 <User className="h-5 w-5" />
               </button>
             ) : (
-              <Link to="/profile" className="text-cakeBrown hover:text-cakePink p-1" aria-label="Profile">
+              <Link to="/profile" className="text-cakeBrown p-1" aria-label="Profile">
                 <User className="h-5 w-5" />
               </Link>
             )}
             
             {/* Mobile search button */}
             <button 
-              className="text-cakeBrown hover:text-cakePink p-1"
+              className="text-cakeBrown p-1"
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Search"
             >
@@ -392,7 +389,7 @@ const Header = ({ isAdminView = false }) => {
             
             {/* Mobile Menu Button */}
             <button 
-              className="text-cakeBrown hover:text-cakePink p-1"
+              className="text-cakeBrown p-1"
               onClick={toggleMobileMenu}
               aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             >
@@ -405,36 +402,6 @@ const Header = ({ isAdminView = false }) => {
           </div>
         </div>
       </div>
-      
-      {/* Category Bar or Breadcrumb - Hidden in admin view */}
-      {isCartOrPaymentPage ? (
-        renderBreadcrumb()
-      ) : !isAdminView && (
-        <div className="bg-white border-t border-b border-gray-100 py-1 px-2 sm:px-4 overflow-hidden h-[68px]"> {/* Fixed height */}
-          <div className="container mx-auto relative z-10 h-full">
-            {/* Use CategorySwiper component */}
-            <CategorySwiper
-              categories={categories}
-              loading={categoriesLoading}
-              error={categoriesError}
-              selectedCategory={selectedCategory}
-              onSelectCategory={handleCategorySelect}
-            />
-          </div>
-        </div>
-      )}    {/* Floating Cart Button (mobile only) */}
-      {memoizedCartCount > 0 && !isCartOrPaymentPage && (
-        <Link
-          to="/cart"
-          className="md:hidden fixed bottom-4 sm:bottom-6 right-4 sm:right-6 bg-cakePink text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105"
-          aria-label="View Cart"
-        >
-          <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
-          <span className="absolute -top-1 -right-1 bg-cakeBrown text-white text-[10px] sm:text-xs w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full border-2 border-white">
-            {memoizedCartCount}
-          </span>
-        </Link>
-      )}
       
       {/* Mobile Menu Overlay */}
       <div 
@@ -456,7 +423,7 @@ const Header = ({ isAdminView = false }) => {
             <span className="ml-2 text-lg font-bold text-cakeBrown">La Patisserie</span>
           </Link>
           <button 
-            className="text-cakeBrown hover:text-cakePink p-1"
+            className="text-cakeBrown p-1"
             onClick={toggleMobileMenu}
             aria-label="Close menu"
           >
@@ -472,60 +439,9 @@ const Header = ({ isAdminView = false }) => {
               placeholder="Search for cakes, cookies, etc..." 
               className="w-full py-2 px-4 pr-10 rounded-full border border-gray-200 focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink"
             />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-cakePink">
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <Search className="h-5 w-5" />
             </button>
-          </div>
-          
-          {/* Category chips for mobile menu */}
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Categories</h3>
-            <div className="flex flex-wrap gap-2">
-              {categoriesLoading ? (
-                // Loading placeholders for mobile
-                Array(4).fill(0).map((_, index) => (
-                  <div 
-                    key={`mobile-loading-${index}`}
-                    className="px-3 py-1 rounded-full text-xs border border-gray-200 bg-gray-100 w-24 h-6 animate-pulse"
-                  ></div>
-                ))
-              ) : categories.length > 0 ? (
-                // Show max 6 categories in mobile menu
-                categories.slice(0, 6).map(category => (
-                  <button
-                    key={category.id}
-                    className={`px-3 py-1 rounded-full text-xs border transition-colors ${
-                      selectedCategory === category.id
-                        ? 'bg-cakePink text-white border-cakePink'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-cakePink'
-                    }`}
-                    onClick={() => {
-                      handleCategorySelect(category.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    {category.name}
-                  </button>
-                ))
-              ) : categoriesError ? (
-                // Show error message
-                <div className="text-xs text-red-500 py-1">
-                  Could not load categories
-                </div>
-              ) : (
-                // Show message when no categories
-                <div className="text-xs text-gray-500 py-1">
-                  No categories available
-                </div>
-              )}
-              <Link 
-                to="/products"
-                className="px-3 py-1 rounded-full text-xs border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                View All
-              </Link>
-            </div>
           </div>
           
           {/* Mobile Nav Links */}
@@ -534,28 +450,28 @@ const Header = ({ isAdminView = false }) => {
               <h3 className="text-sm font-medium text-gray-500 mb-2">Navigation</h3>
               <Link 
                 to="/" 
-                className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                className="flex items-center py-2.5 text-cakeBrown"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="text-base">Home</span>
               </Link>
               <Link 
                 to="/products" 
-                className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                className="flex items-center py-2.5 text-cakeBrown"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="text-base">Products</span>
               </Link>
               <Link 
                 to="/about" 
-                className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                className="flex items-center py-2.5 text-cakeBrown"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="text-base">About Us</span>
               </Link>
               <Link 
                 to="/contact" 
-                className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                className="flex items-center py-2.5 text-cakeBrown"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="text-base">Contact Us</span>
@@ -568,7 +484,7 @@ const Header = ({ isAdminView = false }) => {
               {/* Cart - Always visible */}
               <Link 
                 to="/cart" 
-                className="flex items-center justify-between py-2.5 text-cakeBrown hover:text-cakePink"
+                className="flex items-center justify-between py-2.5 text-cakeBrown"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="flex items-center text-base">
@@ -588,7 +504,7 @@ const Header = ({ isAdminView = false }) => {
                     <>
                       <Link 
                         to="/admin/dashboard" 
-                        className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                        className="flex items-center py-2.5 text-cakeBrown"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Settings className="h-5 w-5 mr-2" />
@@ -596,7 +512,7 @@ const Header = ({ isAdminView = false }) => {
                       </Link>
                       <Link 
                         to="/admin/orders" 
-                        className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                        className="flex items-center py-2.5 text-cakeBrown"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Package className="h-5 w-5 mr-2" />
@@ -606,7 +522,7 @@ const Header = ({ isAdminView = false }) => {
                   ) : (
                     <Link 
                       to="/profile" 
-                      className="flex items-center py-2.5 text-cakeBrown hover:text-cakePink"
+                      className="flex items-center py-2.5 text-cakeBrown"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <User className="h-5 w-5 mr-2" />
@@ -614,7 +530,7 @@ const Header = ({ isAdminView = false }) => {
                     </Link>
                   )}
                   <button 
-                    className="flex items-center w-full text-left py-2.5 text-cakeBrown hover:text-cakePink"
+                    className="flex items-center w-full text-left py-2.5 text-cakeBrown"
                     onClick={() => {
                       logout();
                       setIsMobileMenuOpen(false);
@@ -625,7 +541,7 @@ const Header = ({ isAdminView = false }) => {
                 </>
               ) : (
                 <button 
-                  className="flex items-center w-full text-left py-2.5 text-cakeBrown hover:text-cakePink"
+                  className="flex items-center w-full text-left py-2.5 text-cakeBrown"
                   onClick={() => {
                     toggleAuthPanel();
                     setIsMobileMenuOpen(false);

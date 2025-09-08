@@ -183,7 +183,7 @@ const ProductDetail = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 mt-16">
+    <div className="container mx-auto px-8 py-16 mt-16">
       {/* Breadcrumb */}
       <nav className="flex mb-6 text-sm text-gray-500">
         <Link to="/" className="hover:text-cakePink">Home</Link>
@@ -240,24 +240,7 @@ const ProductDetail = () => {
 
             {/* Title */}
             <h1 className="text-2xl font-bold text-cakeBrown mb-2">{product.name}</h1>
-            
-            {/* Category */}
-            <div className="flex items-center mb-3">
-              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                {product.category?.name || 'Pastry'}
-              </span>
-            </div>
-
-            {/* Rating */}
-            <div className="flex items-center mb-3">
-              <div className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs">
-                <FaStar className="mr-1 text-yellow-400 text-xs" />
-                <span className="font-medium">4.8</span>
-                <span className="mx-1 text-blue-400">•</span>
-                <span>128 Reviews</span>
-              </div>
-            </div>
-
+           
             {/* Price Section */}
             <div className="flex items-center mb-3">
               <div className="mr-3">
@@ -276,7 +259,7 @@ const ProductDetail = () => {
                 </div>
               )}
             </div>
-
+              
             {/* Description */}
             <p className="text-gray-700 text-sm leading-relaxed">{product.description}</p>
           </div>

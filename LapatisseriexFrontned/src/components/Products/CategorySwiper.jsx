@@ -13,7 +13,7 @@ const CategorySwiper = ({
   const swiperRef = useRef(null);
 
   return (
-    <div className="category-swiper-container">
+    <div className="category-swiper-container px-36">
       <Swiper
         className="category-swiper"
         slidesPerView="auto"
@@ -37,7 +37,7 @@ const CategorySwiper = ({
               className="category-slide"
             >
               <div className="flex flex-col items-center px-1">
-                <div className="w-8 h-8 rounded-full overflow-hidden mb-1 bg-gray-200 animate-pulse"></div>
+                <div className="w-16 h-16 rounded-full overflow-hidden mb-1 bg-gray-200 animate-pulse"></div>
                 <div className="w-12 h-2 bg-gray-200 animate-pulse rounded"></div>
               </div>
             </SwiperSlide>
@@ -51,8 +51,8 @@ const CategorySwiper = ({
               onClick={() => onSelectCategory(category._id || category.id)}
             >
               <div className="flex flex-col items-center px-1">
-                <div className="w-8 h-8 rounded-full overflow-hidden mb-1 shadow-sm border border-gray-100">
-                  <img 
+              <div className="w-16 h-16 rounded-full overflow-hidden mb-2 shadow-sm border border-gray-100">
+              <img 
                     src={category.featuredImage || (category.images && category.images.length > 0 ? category.images[0] : '')} 
                     alt={category.name} 
                     className="w-full h-full object-cover"
@@ -82,20 +82,6 @@ const CategorySwiper = ({
             <div className="text-center py-1 text-xs text-gray-500">
               No categories available
             </div>
-          </SwiperSlide>
-        )}
-
-        {/* Always show 'View All' link at the end if we have categories */}
-        {categories.length > 0 && (
-          <SwiperSlide className="category-slide">
-            <Link to="/products" className="flex flex-col items-center px-1">
-              <div className="w-8 h-8 rounded-full overflow-hidden mb-1 bg-gray-100 flex items-center justify-center border border-gray-200">
-                <span className="text-xs font-bold text-gray-500">ALL</span>
-              </div>
-              <span className="text-[10px] text-center text-gray-500 leading-tight font-medium">
-                View All
-              </span>
-            </Link>
           </SwiperSlide>
         )}
       </Swiper>
