@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import ProductCard from './ProductCard';
 
 const ProductSwiperHome = ({ categories = [] }) => {
-  const products = categories.map(cat => cat.firstProduct).filter(Boolean);
+  const products = categories.map((cat) => cat.firstProduct).filter(Boolean);
   const [startIndex, setStartIndex] = useState(0);
 
-  if (products.length === 0) {
+  if (!products.length) {
     return (
       <div className="text-center text-gray-500 py-4">
         No products available.
@@ -17,47 +17,44 @@ const ProductSwiperHome = ({ categories = [] }) => {
   const total = products.length;
 
   const handlePrev = () => {
-    if (startIndex === 0) {
-      setStartIndex(0); // Wrap to initial state without duplication
-    } else {
-      setStartIndex(startIndex - visibleCount >= 0 ? startIndex - visibleCount : 0);
-    }
+    setStartIndex((prev) => (prev - visibleCount >= 0 ? prev - visibleCount : total - visibleCount));
   };
 
   const handleNext = () => {
-    if (startIndex + visibleCount >= total) {
-      setStartIndex(0); // Wrap to initial state without duplication
-    } else {
-      setStartIndex(startIndex + visibleCount);
-    }
+    setStartIndex((prev) => (prev + visibleCount >= total ? 0 : prev + visibleCount));
   };
 
   const getVisibleProducts = () => {
-    return products.slice(startIndex, startIndex + visibleCount);
+    const slice = products.slice(startIndex, startIndex + visibleCount);
+    // Loop if needed
+    if (slice.length < visibleCount) {
+      return [...slice, ...products.slice(0, visibleCount - slice.length)];
+    }
+    return slice;
   };
 
   return (
     <div className="relative">
       <div className="overflow-hidden">
-        <div className="flex space-x-10 px-20">
-          {getVisibleProducts().map(product => (
+        <div className="flex space-x-6 px-10">
+          {getVisibleProducts().map((product) => (
             <div key={product._id} className="min-w-[280px] max-w-[280px] flex-shrink-0">
               <ProductCard product={product} />
             </div>
           ))}
         </div>
       </div>
-      <button 
+
+      {/* Navigation Buttons */}
+      <button
         onClick={handlePrev}
-        disabled={startIndex === 0}
-        className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 ${startIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
       >
         ◀
       </button>
-      <button 
+      <button
         onClick={handleNext}
-        disabled={startIndex + visibleCount >= total}
-        className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 ${startIndex + visibleCount >= total ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
       >
         ▶
       </button>

@@ -202,15 +202,10 @@ export const createProduct = asyncHandler(async (req, res) => {
 
 // @desc    Update a product
 // @route   PUT /api/products/:id
-// @access  Admin only
 export const updateProduct = asyncHandler(async (req, res) => {
   const {
     name,
     description,
-    price,
-    weight,
-    weightUnit,
-    stock,
     images,
     videos,
     category,
@@ -222,20 +217,21 @@ export const updateProduct = asyncHandler(async (req, res) => {
     isActive,
     id,
     badge,
-    cancelOffer
+    cancelOffer,
+    variants // Array of variant objects [{ name?, price, stock, quantity, measuring }]
   } = req.body;
-  
+
   const product = await Product.findById(req.params.id);
-  
+
   if (!product) {
     res.status(404);
     throw new Error('Product not found');
   }
-  
+
   // Get current images & videos to check which ones were removed
   const currentImages = [...product.images];
   const currentVideos = [...product.videos];
-  
+
   // Verify category exists if provided
   if (category) {
     const categoryExists = await Category.findById(category);
@@ -244,60 +240,47 @@ export const updateProduct = asyncHandler(async (req, res) => {
       throw new Error('Selected category not found');
     }
   }
-  
-  // Update product fields
-  product.name = name || product.name;
+
+  // Update basic fields if provided
+  product.name = name !== undefined ? name : product.name;
   product.description = description !== undefined ? description : product.description;
-  
-  if (price !== undefined) {
-    if (price <= 0) {
-      res.status(400);
-      throw new Error('Price must be greater than 0');
-    }
-    product.price = price;
-  }
-  
-  product.variants.quantity = quantity !== undefined ? quantity : product.variants.quantity;
-  product.variants.measurementUnit = measurementUnit || product.variants.measurementUnit;
-  product.variants.stock = stock !== undefined ? stock : product.variants.stock;
-  product.category = category || product.category;
+  product.category = category !== undefined ? category : product.category;
   product.isVeg = isVeg !== undefined ? isVeg : product.isVeg;
   product.isActive = isActive !== undefined ? isActive : product.isActive;
-  product.id = id || product.id;
+  product.id = id !== undefined ? id : product.id;
   product.badge = badge !== undefined ? badge : product.badge;
-  
-  // Handle discount and cancelOffer
+  product.importantField = importantField !== undefined ? importantField : product.importantField;
+  product.extraFields = extraFields !== undefined ? extraFields : product.extraFields;
+
+  // Update discount and cancelOffer if provided
   if (discount) {
     product.discount = discount;
   }
-  
   if (cancelOffer !== undefined) {
     product.cancelOffer = cancelOffer;
   }
-  
+
   // Update tags if provided
   if (tags) {
     product.tags = Array.isArray(tags) ? tags : [];
   }
-  
-  // Update importantField if provided
-  if (importantField) {
-    product.importantField = importantField;
+
+  // Update variants if provided
+  if (variants) {
+    if (!Array.isArray(variants)) {
+      res.status(400);
+      throw new Error('Variants must be an array');
+    }
+    product.variants = variants;
   }
-  
-  // Update extraFields if provided
-  if (extraFields) {
-    product.extraFields = extraFields;
-  }
-  
+
   // Update images if provided
   if (images !== undefined) {
     product.images = images;
-    
+
     // Find removed images to delete from Cloudinary
     const removedImages = currentImages.filter(img => !images.includes(img));
-    
-    // Delete each removed image from Cloudinary
+
     for (const imageUrl of removedImages) {
       const publicId = getPublicIdFromUrl(imageUrl);
       if (publicId) {
@@ -309,15 +292,14 @@ export const updateProduct = asyncHandler(async (req, res) => {
       }
     }
   }
-  
+
   // Update videos if provided
   if (videos !== undefined) {
     product.videos = videos;
-    
+
     // Find removed videos to delete from Cloudinary
     const removedVideos = currentVideos.filter(vid => !videos.includes(vid));
-    
-    // Delete each removed video from Cloudinary
+
     for (const videoUrl of removedVideos) {
       const publicId = getPublicIdFromUrl(videoUrl);
       if (publicId) {
@@ -329,13 +311,14 @@ export const updateProduct = asyncHandler(async (req, res) => {
       }
     }
   }
-  
+
   // Save updated product
   const updatedProduct = await product.save();
-  
+
   // Return populated product
-  const populatedProduct = await Product.findById(updatedProduct._id).populate('category', 'name');
-  
+  const populatedProduct = await Product.findById(updatedProduct._id)
+    .populate('category', 'name');
+
   res.status(200).json(populatedProduct);
 });
 
