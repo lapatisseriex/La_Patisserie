@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useProduct } from '../../context/ProductContext/ProductContext';
+import { useAuth } from '../../context/AuthContext/AuthContext';
 import CategorySwiperHome from './categorySwiper';
 import ProductSwiperHome from './productSwiper';
 
@@ -14,9 +15,9 @@ const Home = () => {
 
   const { categories, fetchCategories, loading: loadingCategories } = useCategory();
   const { fetchProducts } = useProduct();
+  const { isAuthenticated } = useAuth();
   const [categoriesWithProducts, setCategoriesWithProducts] = useState([]);
 
-  // Fetch categories
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -28,10 +29,8 @@ const Home = () => {
     loadCategories();
   }, [fetchCategories]);
 
-  // Fetch first product for each category
   useEffect(() => {
     if (!categories.length) return;
-
     const loadFirstProducts = async () => {
       try {
         const promises = categories.map(async (category) => {
@@ -54,7 +53,6 @@ const Home = () => {
     loadFirstProducts();
   }, [categories, fetchProducts]);
 
-  // Fade-in animation
   useEffect(() => {
     const fadeInElements = (element, delay) => {
       setTimeout(() => {
@@ -76,9 +74,9 @@ const Home = () => {
       {/* Hero Section */}
       <section className="bg-white pt-8 pb-24 overflow-hidden w-full max-w-[1600px]" id="home">
         <div className="absolute bottom-20 right-10 w-48 h-48 bg-cakePink-light rounded-full blur-3xl opacity-30 -z-10"></div>
-        <div className="mx-auto px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20">
+        <div className="mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-8">
-            <div className="lg:w-1/2 space-y-8 z-10">
+            <div className="lg:w-1/2 space-y-8 z-10 translate-x-0 sm:translate-x-0 md:translate-x-[-10px] lg:translate-x-[-20px] xl:translate-x-[-30px]">
               <h1
                 ref={headingRef}
                 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-cakeBrown leading-tight opacity-0 transform translate-y-6 transition-all duration-700"
@@ -125,7 +123,7 @@ const Home = () => {
             </div>
             <div
               ref={imageRef}
-              className="lg:w-1/2 opacity-0 transform translate-y-6 transition-all duration-700"
+              className="lg:w-1/2 opacity-0 transform translate-y-6 transition-all duration-700 translate-x-0 sm:translate-x-0 md:translate-x-[-10px] lg:translate-x-[-20px] xl:translate-x-[-30px]"
             >
               <div className="relative">
                 <div className="absolute -top-8 -left-8 w-36 h-36 bg-cakePink-light rounded-full -z-10 animate-pulse"></div>
@@ -151,53 +149,56 @@ const Home = () => {
       </section>
 
       {/* Category Slider Section */}
-      <section className="py-12 bg-gray-50 w-full max-w-[1600px] mx-auto rounded-lg shadow-md">
-        <div className="px-16 text-center">
-          <h2 className="text-4xl font-bold text-cakeBrown mb-2">Explore Categories</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto mb-6">
-            Discover a variety of delicious desserts curated for every occasion.
-            Browse through our categories to find your favorite treats.
-          </p>
-          <div className="flex justify-end mb-4">
-            <Link to="/products">
-              <button className="text-cakePink text-lg font-bold hover:underline">
-                All Categories
-              </button>
-            </Link>
+      {isAuthenticated && (
+        <section className="py-12 bg-gray-50 w-full max-w-[1600px] mx-auto rounded-lg shadow-md translate-x-0 sm:translate-x-0 md:translate-x-[-5px] lg:translate-x-[-15px] xl:translate-x-[-25px]">
+          <div className="px-4 sm:px-8 md:px-12 lg:px-16 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-cakeBrown mb-2">Explore Categories</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto mb-6 text-sm sm:text-base">
+              Discover a variety of delicious desserts curated for every occasion.
+              Browse through our categories to find your favorite treats.
+            </p>
+            <div className="flex justify-end mb-4">
+              <Link to="/products">
+                <button className="text-cakePink text-lg font-bold hover:underline">
+                  All Categories
+                </button>
+              </Link>
+            </div>
           </div>
-        </div>
-        <div className="px-16">
-          <CategorySwiperHome
-            categories={categoriesWithProducts}
-            loading={loadingCategories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-        </div>
-      </section>
+          <div className="px-4 sm:px-8 md:px-12 lg:px-16">
+            <CategorySwiperHome
+              categories={categoriesWithProducts}
+              loading={loadingCategories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Product Slider Section */}
-      <section className="py-12 bg-white w-full max-w-[1600px] mx-auto rounded-lg shadow-md mt-12">
-        <div className="px-16 text-center">
-          <h2 className="text-4xl font-bold text-cakeBrown mb-2">Popular Products</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto mb-6">
-            Handpicked selections from our menu that everyone loves. Treat yourself or surprise your loved ones with our premium delights.
-          </p>
-          <div className="flex justify-end mb-4">
-            <Link to="/products">
-              <button className="text-cakePink text-lg font-bold hover:underline">
-                All Products
-              </button>
-            </Link>
+      {isAuthenticated && (
+        <section className="py-12 bg-white w-full max-w-[1600px] mx-auto rounded-lg shadow-md mt-12 translate-x-0 sm:translate-x-0 md:translate-x-[-5px] lg:translate-x-[-15px] xl:translate-x-[-25px]">
+          <div className="px-4 sm:px-8 md:px-12 lg:px-16 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-cakeBrown mb-2">Popular Products</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto mb-6 text-sm sm:text-base">
+              Handpicked selections from our menu that everyone loves. Treat yourself or surprise your loved ones with our premium delights.
+            </p>
+            <div className="flex justify-end mb-4">
+              <Link to="/products">
+                <button className="text-cakePink text-lg font-bold hover:underline">
+                  All Products
+                </button>
+              </Link>
+            </div>
           </div>
-        </div>
-        <div className="px-16">
-          <ProductSwiperHome
-            categories={categoriesWithProducts}
-          />
-        </div>
-      </section>
-
+          <div className="px-4 sm:px-8 md:px-12 lg:px-16">
+            <ProductSwiperHome
+              categories={categoriesWithProducts}
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 };

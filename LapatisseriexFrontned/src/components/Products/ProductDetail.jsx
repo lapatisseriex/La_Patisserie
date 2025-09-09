@@ -185,7 +185,7 @@ const ProductDetail = () => {
   return (
     <div className="container mx-auto px-8 py-16 mt-16">
       {/* Breadcrumb */}
-      <nav className="flex mb-6 text-sm text-gray-500">
+      <nav className="flex mb-6 py-3 text-sm text-gray-500">
         <Link to="/" className="hover:text-cakePink">Home</Link>
         <span className="mx-2">/</span>
         <Link to="/products" className="hover:text-cakePink">Products</Link>

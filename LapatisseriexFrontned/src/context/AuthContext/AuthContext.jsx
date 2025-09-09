@@ -36,6 +36,8 @@ export const AuthProvider = ({ children }) => {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [isAuthPanelOpen, setIsAuthPanelOpen] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  const isAuthenticated = !!user;
+
 
   // Backend API URL from environment variable
   const API_URL = import.meta.env.VITE_API_URL;
@@ -300,7 +302,8 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
-    setUser, // Expose setUser to other contexts
+    isAuthenticated,
+    setUser, 
     loading,
     authError,
     authType,
