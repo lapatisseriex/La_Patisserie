@@ -3,15 +3,13 @@ import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import MediaDisplay from '../common/MediaDisplay';
 import ImageSlideshow from '../common/ImageSlideshow';
-import { AlertCircle } from 'lucide-react';
-import { FaHeart, FaRegHeart, FaStar, FaFire } from 'react-icons/fa';
+
 
 const ProductCard = ({ 
   product,
   className = '',
   compact = false
 }) => {
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Handle stock status display logic
@@ -52,14 +50,6 @@ const ProductCard = ({
     const discountedPrice = product.variants[0].price && product.variants[0].discount.value
     ? product.variants[0].price - product.variants[0].discount.value
     : product.variants[0].price;
-
-
-  // Handle wishlist toggle
-  const toggleWishlist = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsWishlisted(!isWishlisted);
-  };
 
   return (
     <Link 

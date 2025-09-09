@@ -14,7 +14,8 @@ const CategorySwiper = ({
 
   return (
     <div className="category-swiper-container px-36">
-      <Swiper
+      <h2 className="text-xl font-bold text-cakeBrown mb-6 text-left">All Categories</h2>
+        <Swiper
         className="category-swiper"
         slidesPerView="auto"
         spaceBetween={8}

@@ -1,6 +1,7 @@
 import React, { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
+import ScrollToTop from "./ScrollToTop.jsx";
 
 // Layout
 import Layout from './components/Layout/Layout';
@@ -87,10 +88,12 @@ function App() {
           <ProductProvider>
             <CartProvider>
               <Router>
+              <ScrollToTop />
                 {/* Auth Modal - available on all pages */}
                 <AuthModal />
                 
             <Routes>
+             
               {/* Main Layout Routes */}
               <Route path="/" element={<Layout />}>
                 <Route index element={<HomePage />} />
