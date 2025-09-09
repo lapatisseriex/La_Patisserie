@@ -88,19 +88,7 @@ const ProductCard = ({
             </span>
           )}
         </p>
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className={`flex items-center text-xs ${
-            !product.isActive ? 'text-red-500' :
-            product.stock === 0 ? 'text-red-500' :
-            product.stock < 5 ? 'text-amber-500' : 'text-green-500'
-          }`}>
-            <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
-            {stockStatus.label}
-            {product.stock > 0 && product.stock < 10 && (
-              <span className="ml-2 text-gray-400">• Only {product.stock} left</span>
-            )}
-          </div>
-        </div>
+        {/* Stock status removed as requested */}
       </div>
     </Link>
   );

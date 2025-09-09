@@ -9,10 +9,14 @@ import CategorySwiper from './CategorySwiper';
 const Products = () => {
   const { fetchProducts } = useProduct();
   const { categories, fetchCategories, loading: loadingCategories, error: categoryError } = useCategory();
+  const location = useLocation();
+  
+  // Initialize with category from URL if present
+  const initialCategory = new URLSearchParams(location.search).get('category');
 
   const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,7 +25,6 @@ const Products = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   const PRODUCTS_PER_PAGE = 9;
-  const location = useLocation();
   const categorySectionRef = useRef(null);
   const productsSectionRef = useRef(null);
 
@@ -59,6 +62,10 @@ const Products = () => {
           sort: 'createdAt:-1',
         };
         if (selectedCategory) params.category = selectedCategory;
+        
+        // Debug logs to track the category filtering
+        console.log('Loading products with category:', selectedCategory);
+        console.log('Request params:', params);
 
         const result = await fetchProducts(params);
         setAllProducts(result.products || []);

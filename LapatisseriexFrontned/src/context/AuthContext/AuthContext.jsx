@@ -42,8 +42,20 @@ export const AuthProvider = ({ children }) => {
   // Backend API URL from environment variable
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Check for existing session on component mount
+  // Load cached user data from localStorage first
   useEffect(() => {
+    // Check for cached user data first
+    const cachedUser = localStorage.getItem('cachedUser');
+    if (cachedUser) {
+      try {
+        const userData = JSON.parse(cachedUser);
+        setUser(userData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error parsing cached user data:", error);
+      }
+    }
+    
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -53,12 +65,18 @@ export const AuthProvider = ({ children }) => {
           // Verify with backend
           const response = await axios.post(`${API_URL}/auth/verify`, { idToken });
           
-          // Set user with data from backend
-          setUser({
+          // Create the user object with data from backend
+          const userData = {
             uid: firebaseUser.uid,
             phone: firebaseUser.phoneNumber,
             ...response.data.user
-          });
+          };
+          
+          // Set user state
+          setUser(userData);
+          
+          // Cache user data in localStorage
+          localStorage.setItem('cachedUser', JSON.stringify(userData));
           
           setIsNewUser(response.data.isNewUser || false);
           
@@ -72,6 +90,8 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         setUser(null);
+        // Clear cached user data when logged out
+        localStorage.removeItem('cachedUser');
       }
       setLoading(false);
     });
@@ -269,6 +289,8 @@ export const AuthProvider = ({ children }) => {
     try {
       await signOut(auth);
       setUser(null);
+      // Clear cached user data on logout
+      localStorage.removeItem('cachedUser');
       return true;
     } catch (error) {
       console.error("Error logging out:", error);

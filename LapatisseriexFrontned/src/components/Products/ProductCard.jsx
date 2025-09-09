@@ -80,10 +80,7 @@ const ProductCard = ({ product, className = '', compact = false }) => {
             </span>
           )}
         </div>
-        <div className="mt-2 text-xs flex items-center space-x-1 text-gray-500">
-          <span className={`w-2 h-2 rounded-full ${stockStatus.color}`}></span>
-          <span>{stockStatus.label}</span>
-        </div>
+        {/* Stock status removed as requested */}
       </div>
     </Link>
   );

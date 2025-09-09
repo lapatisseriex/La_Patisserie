@@ -35,15 +35,17 @@ export const ProductProvider = ({ children }) => {
       const queryString = queryParams.toString();
 
       // Generate a unique cache key that includes a timestamp to avoid stale data
-      // For admin views (checking for isActive=all), we'll always bypass cache
+      // For admin views (checking for isActive=all) or category filtering, we'll always bypass cache
       const isAdminView = filters.isActive === 'all';
-      const cacheKey = `products-${queryString}-${isAdminView ? Date.now() : ''}`;
+      const hasCategoryFilter = filters.category !== undefined;
+      const shouldBypassCache = isAdminView || hasCategoryFilter;
+      const cacheKey = `products-${queryString}-${shouldBypassCache ? Date.now() : ''}`;
       
-      // For admin view, always get fresh data
-      const cachedResult = isAdminView ? null : requestCache.current.get(cacheKey);
+      // For admin view or category filtering, always get fresh data
+      const cachedResult = shouldBypassCache ? null : requestCache.current.get(cacheKey);
       const now = Date.now();
       
-      if (!isAdminView && cachedResult && (now - cachedResult.timestamp < 15000)) {
+      if (!shouldBypassCache && cachedResult && (now - cachedResult.timestamp < 15000)) {
         console.log(`Using cached product data for key: ${cacheKey}`);
         return cachedResult.data;
       }

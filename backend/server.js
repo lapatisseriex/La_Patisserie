@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
+import compression from 'compression';
+import helmet from 'helmet';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -16,11 +18,26 @@ import uploadRoutes from './routes/uploadRoutes.js';
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev'));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
+}));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Use compression to reduce response size
+app.use(compression());
+
+// Use Helmet for security headers
+app.use(helmet({
+  contentSecurityPolicy: false // Disable for development, enable in production
+}));
+
+// Only use detailed logging in development
+app.use(morgan(NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -41,13 +58,26 @@ app.get('/', (req, res) => {
   res.send('La Patisserie API is running...');
 });
 
+// 404 handler - must come after all routes
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: 'API endpoint not found'
+  });
+});
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({
+  const statusCode = err.statusCode || 500;
+  
+  res.status(statusCode).json({
     success: false,
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Server error'
+    message: err.message || 'Something went wrong!',
+    error: NODE_ENV === 'development' ? {
+      stack: err.stack,
+      details: err.details || null
+    } : undefined
   });
 });
 
