@@ -157,7 +157,7 @@ const Products = () => {
                 onChange={(e) => setPriceRange([0, Number(e.target.value)])}
                 className="w-full"
               />
-              <div className="text-sm text-gray-600 mt-1">Up to ${priceRange[1]}</div>
+              <div className="text-sm text-gray-600 mt-1">Up to ₹{priceRange[1]}</div>
             </div>
 
             {/* Discount Filter */}

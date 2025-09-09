@@ -11,6 +11,11 @@ const ProductCard = ({ product, className = '', compact = false }) => {
     product.variants[0].price && product.variants[0].discount.value
       ? product.variants[0].price - product.variants[0].discount.value
       : product.variants[0].price;
+      
+  const discountPercentage = 
+    product.variants[0].price && product.variants[0].discount.value
+      ? Math.round((product.variants[0].discount.value / product.variants[0].price) * 100)
+      : 0;
 
   const getStockStatus = () => {
     if (!product.isActive) {
@@ -72,11 +77,18 @@ const ProductCard = ({ product, className = '', compact = false }) => {
             {product.description}
           </p>
         )}
-        <div className="flex items-baseline space-x-2">
-          <span className="text-green-600 font-bold">₹{Math.round(discountedPrice)}</span>
-          {discountedPrice !== product.variants[0].price && (
-            <span className="line-through text-gray-500 text-sm">
-              ₹{Math.round(product.variants[0].price)}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-baseline space-x-2">
+            <span className="text-green-600 font-bold">₹{Math.round(discountedPrice)}</span>
+            {discountedPrice !== product.variants[0].price && (
+              <span className="line-through text-gray-500 text-sm">
+                ₹{Math.round(product.variants[0].price)}
+              </span>
+            )}
+          </div>
+          {discountPercentage > 0 && (
+            <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded">
+              -{discountPercentage}% OFF
             </span>
           )}
         </div>

@@ -29,6 +29,10 @@ const ProductCard = ({
   const discountedPrice = product.variants[0].price && product.variants[0].discount.value
     ? product.variants[0].price - product.variants[0].discount.value
     : product.variants[0].price;
+    
+  const discountPercentage = product.variants[0].price && product.variants[0].discount.value
+    ? Math.round((product.variants[0].discount.value / product.variants[0].price) * 100)
+    : 0;
 
   return (
     <Link 
@@ -78,16 +82,23 @@ const ProductCard = ({
             {product.description}
           </p>
         )}
-        <p>
-          <span className="text-green-600 font-bold">
-            ₹{Math.round(discountedPrice)}
-          </span>{' '}
-          {discountedPrice !== product.variants[0].price && (
-            <span className="line-through text-gray-500 ml-2">
-              ₹{Math.round(product.variants[0].price)}
+        <div className="flex items-center justify-between">
+          <p>
+            <span className="text-green-600 font-bold">
+              ₹{Math.round(discountedPrice)}
+            </span>{' '}
+            {discountedPrice !== product.variants[0].price && (
+              <span className="line-through text-gray-500 ml-2">
+                ₹{Math.round(product.variants[0].price)}
+              </span>
+            )}
+          </p>
+          {discountPercentage > 0 && (
+            <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded">
+              -{discountPercentage}% OFF
             </span>
           )}
-        </p>
+        </div>
         {/* Stock status removed as requested */}
       </div>
     </Link>
