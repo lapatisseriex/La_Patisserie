@@ -27,6 +27,16 @@ const ProductDetail = () => {
 
   // Calculate total price based on quantity and selected variant
   const totalPrice = selectedVariant ? selectedVariant.price * quantity : 0;
+  
+  // Calculate discount percentage if applicable
+  const calculateDiscountPercentage = (variant) => {
+    if (variant && variant.originalPrice && variant.price < variant.originalPrice) {
+      return Math.round(((variant.originalPrice - variant.price) / variant.originalPrice) * 100);
+    } else if (variant && variant.discount && variant.discount.value > 0) {
+      return Math.round((variant.discount.value / variant.price) * 100);
+    }
+    return 0;
+  };
 
   // Handle scroll to show floating cart
   useEffect(() => {
@@ -242,7 +252,7 @@ const ProductDetail = () => {
             <h1 className="text-2xl font-bold text-cakeBrown mb-2">{product.name}</h1>
            
             {/* Price Section */}
-            <div className="flex items-center mb-3">
+            <div className="flex flex-wrap items-center mb-3 gap-2">
               <div className="mr-3">
                 <span className="text-2xl font-bold text-cakePink">
                   ₹{totalPrice.toFixed(2)}
@@ -256,6 +266,11 @@ const ProductDetail = () => {
               {quantity > 1 && (
                 <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
                   {quantity} × ₹{selectedVariant?.price.toFixed(2)}
+                </div>
+              )}
+              {selectedVariant && calculateDiscountPercentage(selectedVariant) > 0 && (
+                <div className="bg-red-100 text-red-700 text-sm font-medium px-3 py-1 rounded-full">
+                  -{calculateDiscountPercentage(selectedVariant)}% OFF
                 </div>
               )}
             </div>

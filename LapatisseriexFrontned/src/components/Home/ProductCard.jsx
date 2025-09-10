@@ -29,6 +29,10 @@ const ProductCard = ({
   const discountedPrice = product.variants[0].price && product.variants[0].discount.value
     ? product.variants[0].price - product.variants[0].discount.value
     : product.variants[0].price;
+    
+  const discountPercentage = product.variants[0].price && product.variants[0].discount.value
+    ? Math.round((product.variants[0].discount.value / product.variants[0].price) * 100)
+    : 0;
 
   return (
     <Link 
@@ -78,29 +82,24 @@ const ProductCard = ({
             {product.description}
           </p>
         )}
-        <p>
-          <span className="text-green-600 font-bold">
-            ₹{Math.round(discountedPrice)}
-          </span>{' '}
-          {discountedPrice !== product.variants[0].price && (
-            <span className="line-through text-gray-500 ml-2">
-              ₹{Math.round(product.variants[0].price)}
+        <div className="flex items-center justify-between">
+          <p>
+            <span className="text-green-600 font-bold">
+              ₹{Math.round(discountedPrice)}
+            </span>{' '}
+            {discountedPrice !== product.variants[0].price && (
+              <span className="line-through text-gray-500 ml-2">
+                ₹{Math.round(product.variants[0].price)}
+              </span>
+            )}
+          </p>
+          {discountPercentage > 0 && (
+            <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded">
+              -{discountPercentage}% OFF
             </span>
           )}
-        </p>
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className={`flex items-center text-xs ${
-            !product.isActive ? 'text-red-500' :
-            product.stock === 0 ? 'text-red-500' :
-            product.stock < 5 ? 'text-amber-500' : 'text-green-500'
-          }`}>
-            <span className="w-2 h-2 rounded-full bg-current mr-2"></span>
-            {stockStatus.label}
-            {product.stock > 0 && product.stock < 10 && (
-              <span className="ml-2 text-gray-400">• Only {product.stock} left</span>
-            )}
-          </div>
         </div>
+        {/* Stock status removed as requested */}
       </div>
     </Link>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 import { useCart } from '../../context/CartContext';
@@ -55,6 +55,7 @@ const Header = ({ isAdminView = false }) => {
   // Function to toggle mobile menu
   
   const location = useLocation();
+  const navigate = useNavigate();
   const locationDropdownRef = useRef(null);
   const categorySliderRef = useRef(null);
   
@@ -320,10 +321,17 @@ const Header = ({ isAdminView = false }) => {
               type="text" 
               placeholder="Search for cakes, cookies, etc..." 
               className="w-full py-2 px-4 pr-10 rounded-full border border-gray-200 focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink"
+              onFocus={(e) => {
+                e.preventDefault();
+                navigate('/products');
+              }}
             />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <Link 
+              to="/products"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            >
               <Search className="h-5 w-5" />
-            </button>
+            </Link>
           </div>
           
           {/* Navigation Links - Desktop */}
@@ -378,14 +386,18 @@ const Header = ({ isAdminView = false }) => {
               </Link>
             )}
             
-            {/* Mobile search button */}
-            <button 
+            {/* Mobile search button - redirects to products page */}
+            <Link 
+              to="/products"
               className="text-cakeBrown p-1"
-              onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Search"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/products');
+              }}
             >
               <Search className="h-5 w-5" />
-            </button>
+            </Link>
             
             {/* Mobile Menu Button */}
             <button 
@@ -432,16 +444,29 @@ const Header = ({ isAdminView = false }) => {
         </div>
         
         <div className="p-4 flex-1 overflow-y-auto">
-          {/* Mobile Search */}
+          {/* Mobile Search - Redirects to products page */}
           <div className="relative mb-6">
             <input 
               type="text" 
               placeholder="Search for cakes, cookies, etc..." 
               className="w-full py-2 px-4 pr-10 rounded-full border border-gray-200 focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink"
+              onFocus={(e) => {
+                e.preventDefault();
+                setIsMobileMenuOpen(false);
+                navigate('/products');
+              }}
             />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <Link 
+              to="/products"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsMobileMenuOpen(false);
+                navigate('/products');
+              }}
+            >
               <Search className="h-5 w-5" />
-            </button>
+            </Link>
           </div>
           
           {/* Mobile Nav Links */}

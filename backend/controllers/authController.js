@@ -46,8 +46,19 @@ export const verifyToken = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Verify token with Firebase Admin SDK
-    const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
+    // Verify token with Firebase Admin SDK with improved error handling
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken, true)
+      .catch(error => {
+        console.error('Firebase token verification error:', error);
+        res.status(401);
+        throw new Error(`Invalid authentication token: ${error.message}`);
+      });
+      
+    if (!decodedToken) {
+      res.status(401);
+      throw new Error('Token verification failed');
+    }
+      
     const { uid, phone_number } = decodedToken;
 
     // First check for potential user conflicts and resolve them

@@ -75,8 +75,8 @@ const CategorySwiperHome = ({
   const isNextDisabled = startIndex + Math.floor(visibleCount) >= total;
 
   const handleCategoryClick = (categoryId) => {
-    // Update the URL with the selected category
-    navigate(`/products?category=${categoryId}`);
+    // Update the URL with the selected category and ensure navigation is synchronous
+    navigate(`/products?category=${categoryId}`, { replace: true });
     
     // Call the onSelectCategory callback if provided
     if (onSelectCategory) {

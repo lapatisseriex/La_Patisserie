@@ -9,10 +9,14 @@ import CategorySwiper from './CategorySwiper';
 const Products = () => {
   const { fetchProducts } = useProduct();
   const { categories, fetchCategories, loading: loadingCategories, error: categoryError } = useCategory();
+  const location = useLocation();
+  
+  // Initialize with category from URL if present
+  const initialCategory = new URLSearchParams(location.search).get('category');
 
   const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,7 +25,6 @@ const Products = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   const PRODUCTS_PER_PAGE = 9;
-  const location = useLocation();
   const categorySectionRef = useRef(null);
   const productsSectionRef = useRef(null);
   const initialLoadRef = useRef(true);
@@ -62,11 +65,11 @@ useEffect(() => {
           page,
           sort: 'createdAt:-1',
         };
+        if (selectedCategory) params.category = selectedCategory;
         
-        // Only add category filter if a category is selected
-        if (selectedCategory) {
-          params.category = selectedCategory;
-        }
+        // Debug logs to track the category filtering
+        console.log('Loading products with category:', selectedCategory);
+        console.log('Request params:', params);
 
         const result = await fetchProducts(params);
         setAllProducts(result.products || []);
@@ -202,7 +205,7 @@ useEffect(() => {
                 onChange={(e) => setPriceRange([0, Number(e.target.value)])}
                 className="w-full"
               />
-              <div className="text-sm text-gray-600 mt-1">Up to ${priceRange[1]}</div>
+              <div className="text-sm text-gray-600 mt-1">Up to ₹{priceRange[1]}</div>
             </div>
 
             {/* Discount Filter */}
