@@ -95,7 +95,12 @@ const Header = ({ isAdminView = false }) => {
   useEffect(() => {
     // Set the location display when the component mounts or when user changes
     if (user?.location && user.location.area && user.location.city) {
-      setUserLocationDisplay(`${user.location.area}, ${user.location.city}`);
+      // Check if user has a hostel selected
+      if (user.hostel && user.hostel.name) {
+        setUserLocationDisplay(`${user.hostel.name}, ${user.location.area}`);
+      } else {
+        setUserLocationDisplay(`${user.location.area}, ${user.location.city}`);
+      }
       prevLocationIdRef.current = user.location._id;
     } else {
       setUserLocationDisplay('Select Location');
@@ -175,7 +180,14 @@ const Header = ({ isAdminView = false }) => {
       
       if (selectedLocation) {
         // Update the display immediately without waiting for backend
-        setUserLocationDisplay(`${selectedLocation.area}, ${selectedLocation.city}`);
+        // Note: When changing location, we don't know the hostel yet, so show location only
+        if (user.hostel && user.hostel.name && user.location?._id === locationId) {
+          // If user already has a hostel and is selecting the same location, keep hostel display
+          setUserLocationDisplay(`${user.hostel.name}, ${selectedLocation.area}`);
+        } else {
+          // New location selected, show location only (hostel will be updated in profile)
+          setUserLocationDisplay(`${selectedLocation.area}, ${selectedLocation.city}`);
+        }
         // Also update the ref to prevent useEffect from updating again
         prevLocationIdRef.current = selectedLocation._id;
       }
@@ -297,10 +309,6 @@ const Header = ({ isAdminView = false }) => {
                   </div>
                 </div>
               )}
-            </div>
-            
-            <div className="text-xs sm:text-sm text-cakeBrown mt-1 sm:mt-0">
-              <span>Free delivery on orders over ₹50</span>
             </div>
           </div>
         </div>

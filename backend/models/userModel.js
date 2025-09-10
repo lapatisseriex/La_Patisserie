@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location',
     },
+    hostel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Hostel',
+    },
     lastLogin: {
       type: Date,
       default: Date.now,

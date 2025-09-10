@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
+import FloatingCartBar from '../Cart/FloatingCartBar';
 
 const Layout = () => {
   // Apply header spacing class
@@ -18,10 +19,11 @@ const Layout = () => {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white pt-[80px] md:pt-[100px] pb-12">
-      <Outlet />
+      <main className="min-h-screen bg-white pt-[80px] md:pt-[100px] pb-20">
+        <Outlet />
       </main>
       <Footer />
+      <FloatingCartBar />
     </>
   );
 };

@@ -35,6 +35,7 @@ const productSchema = new mongoose.Schema(
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
     tags: { type: [String], default: [] },
     isVeg: { type: Boolean, default: true },
+    hasEgg: { type: Boolean, default: false }, // New field for egg/non-egg indicator
     variants: { type: [variantSchema], default: [] },
     cancelOffer: { type: Boolean, default: false },
     importantField: {

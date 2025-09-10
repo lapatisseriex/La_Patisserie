@@ -24,6 +24,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
     images: [],
     videos: [],
     isVeg: true,
+    hasEgg: false, // Added hasEgg default
     isActive: true,
     id: '',
     badge: '',
@@ -73,6 +74,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         images: product.images || [],
         videos: product.videos || [],
         isVeg: product.isVeg !== undefined ? product.isVeg : true,
+        hasEgg: product.hasEgg !== undefined ? product.hasEgg : false, // Added hasEgg initialization
         isActive: product.isActive !== undefined ? product.isActive : true,
         id: product.id || '',
         badge: product.badge || '',
@@ -285,6 +287,10 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
               <label className="flex items-center space-x-2">
                 <input type="checkbox" name="isVeg" checked={formData.isVeg} onChange={handleChange} className="h-4 w-4"/>
                 <span className="text-sm">Vegetarian</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input type="checkbox" name="hasEgg" checked={formData.hasEgg} onChange={handleChange} className="h-4 w-4"/>
+                <span className="text-sm">Contains Egg</span>
               </label>
               <label className="flex items-center space-x-2">
                 <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} className="h-4 w-4"/>

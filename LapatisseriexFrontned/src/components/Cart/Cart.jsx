@@ -147,10 +147,10 @@ const Cart = () => {
               {/* Cart item list */}
               <div className="space-y-6">
                 {cartItems.map((item) => (
-                  <div key={`${item.id}-${JSON.stringify(item.options)}`} className="flex flex-col md:flex-row border-b border-gray-200 pb-6">
+                  <div key={`${item._id || item.id}-${JSON.stringify(item.options)}`} className="flex flex-col md:flex-row border-b border-gray-200 pb-6">
                     <div className="md:w-1/4 mb-4 md:mb-0">
                       <img 
-                        src={item.images[0]} 
+                        src={item.image || item.images?.[0] || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMzAgNzBIMTcwVjEzMEgxMzBWNzBaIiBmaWxsPSIjRDFENUQ5Ii8+CjxwYXRoIGQ9Ik0xNDAgODBIMTYwVjEyMEgxNDBWODBaIiBmaWxsPSIjOTlBMkE5Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjc3MDc5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4='} 
                         alt={item.name} 
                         className="w-full h-32 object-cover rounded-md"
                       />
@@ -159,7 +159,7 @@ const Cart = () => {
                       <div className="flex justify-between mb-2">
                         <h3 className="font-medium text-gray-800">{item.name}</h3>
                         <button 
-                          onClick={() => removeFromCart(item.id, item.options)}
+                          onClick={() => removeFromCart(item._id || item.id, item.options)}
                           className="text-gray-500 hover:text-red-500 transition-colors"
                         >
                           <FaTrash />
@@ -167,13 +167,13 @@ const Cart = () => {
                       </div>
                       
                       <div className="mb-4">
-                        {item.options.weight && (
+                        {item.options?.weight && (
                           <p className="text-sm text-gray-600">Weight: {item.options.weight}</p>
                         )}
-                        {item.options.flavor && (
+                        {item.options?.flavor && (
                           <p className="text-sm text-gray-600">Flavor: {item.options.flavor}</p>
                         )}
-                        {item.options.message && (
+                        {item.options?.message && (
                           <p className="text-sm text-gray-600">Message: "{item.options.message}"</p>
                         )}
                       </div>
@@ -181,7 +181,7 @@ const Cart = () => {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
                           <button 
-                            onClick={() => updateQuantity(item.id, item.quantity - 1, item.options)}
+                            onClick={() => updateQuantity(item._id || item.id, item.quantity - 1, item.options)}
                             className="w-8 h-8 rounded-l-md bg-gray-100 flex items-center justify-center border border-gray-300"
                           >
                             -
@@ -193,7 +193,7 @@ const Cart = () => {
                             readOnly
                           />
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1, item.options)}
+                            onClick={() => updateQuantity(item._id || item.id, item.quantity + 1, item.options)}
                             className="w-8 h-8 rounded-r-md bg-gray-100 flex items-center justify-center border border-gray-300"
                           >
                             +
@@ -201,8 +201,8 @@ const Cart = () => {
                         </div>
                         
                         <div className="text-right">
-                          <div className="font-medium text-gray-800">₹{item.price * item.quantity}</div>
-                          <div className="text-sm text-gray-500">₹{item.price} each</div>
+                          <div className="font-medium text-gray-800">₹{Math.round(item.price * item.quantity)}</div>
+                          <div className="text-sm text-gray-500">₹{Math.round(item.price)} each</div>
                         </div>
                       </div>
                     </div>

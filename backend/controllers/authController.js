@@ -103,7 +103,7 @@ export const verifyToken = asyncHandler(async (req, res) => {
       }
       
       // Populate the newly created user
-      user = await User.findOne({ uid }).populate('location');
+      user = await User.findOne({ uid }).populate('location').populate('hostel');
     } else {
       // User already exists, update user data if needed+
 
@@ -551,9 +551,9 @@ export const verifyToken = asyncHandler(async (req, res) => {
         await user.save();
       }
       
-      // Make sure location is populated
-      if (!user.populated('location')) {
-        user = await User.findOne({ uid }).populate('location');
+      // Make sure location and hostel are populated
+      if (!user.populated('location') || !user.populated('hostel')) {
+        user = await User.findOne({ uid }).populate('location').populate('hostel');
       }
     }
 
@@ -573,6 +573,7 @@ export const verifyToken = asyncHandler(async (req, res) => {
         role: user.role,
         dob: formattedDob, // Use formatted date
         location: user.location || null,
+        hostel: user.hostel || null,
         isProfileIncomplete // Add flag for profile completion status
       }
     });

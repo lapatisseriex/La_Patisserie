@@ -14,6 +14,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import hostelRoutes from './routes/hostelRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -52,6 +53,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/hostels', hostelRoutes);
 
 // Root route
 app.get('/', (req, res) => {

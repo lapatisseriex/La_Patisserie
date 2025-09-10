@@ -1,6 +1,6 @@
 # La Patisserie X - Authentication System
 
-This repository contains both the frontend and backend code for the La Patisserie X authentication system using Firebase Phone Authentication, Firebase Admin SDK, and MongoDB with role-based access control.
+This repository contains both the frontend and backend code for the La Patisserie X authentication system using Firebase Phone Authentication, Firebase Admin SDK, and MongoDB with role-based access okay
 
 ## Project Structure
 

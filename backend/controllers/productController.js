@@ -102,38 +102,6 @@ export const getProducts = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get a single product by ID
-// @route   GET /api/products/:id
-// @access  Public
-export const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id)
-    .populate({
-      path: 'category',
-      select: 'name images description isActive',
-      // Don't filter inactive categories for admin users
-      match: req.user?.role === 'admin' ? {} : { isActive: true }
-    });
-  
-  if (!product) {
-    res.status(404);
-    throw new Error('Product not found');
-  }
-  
-  // If checking non-active product, only allow admins
-  if (!product.isActive && (!req.user || req.user.role !== 'admin')) {
-    res.status(404);
-    throw new Error('Product not found');
-  }
-  
-  // Handle case where category is inactive and user is not admin
-  if (!product.category && !req.user?.role === 'admin') {
-    // Set a placeholder category for frontend display
-    product._doc.categoryInfo = { name: "Uncategorized" };
-  }
-  
-  res.status(200).json(product);
-});
-
 // @desc    Create a new product
 // @route   POST /api/products
 // @access  Admin only
@@ -146,6 +114,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     category,
     tags,
     isVeg,
+    hasEgg, // Added hasEgg field
     discount,
     importantField,
     extraFields,
@@ -186,6 +155,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     category,
     tags: Array.isArray(tags) ? tags : [],
     isVeg: isVeg !== undefined ? isVeg : true,
+    hasEgg: hasEgg !== undefined ? hasEgg : false, // Added hasEgg field
     discount: discount || { type: null, value: 0 },
     importantField,
     extraFields: extraFields || {},
@@ -211,6 +181,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
     category,
     tags,
     isVeg,
+    hasEgg, // Added hasEgg field
     discount,
     importantField,
     extraFields,
@@ -246,6 +217,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
   product.description = description !== undefined ? description : product.description;
   product.category = category !== undefined ? category : product.category;
   product.isVeg = isVeg !== undefined ? isVeg : product.isVeg;
+  product.hasEgg = hasEgg !== undefined ? hasEgg : product.hasEgg; // Added hasEgg update
   product.isActive = isActive !== undefined ? isActive : product.isActive;
   product.id = id !== undefined ? id : product.id;
   product.badge = badge !== undefined ? badge : product.badge;

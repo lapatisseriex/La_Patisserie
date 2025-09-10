@@ -168,3 +168,19 @@ body.has-fixed-header {
 .swiper-slide {
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
+
+/* Hide scrollbar for touch scrollable elements */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Smooth scrolling for categories */
+.categories-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}

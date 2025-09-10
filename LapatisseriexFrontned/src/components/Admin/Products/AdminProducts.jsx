@@ -260,6 +260,7 @@ const AdminProducts = () => {
                 <th className="py-3 px-4 text-left">Name</th>
                 <th className="py-3 px-4 text-left">Category</th>
                 <th className="py-3 px-4 text-left">Price</th>
+                <th className="py-3 px-4 text-left">Egg/No Egg</th>
                 <th className="py-3 px-4 text-left">Status</th>
                 <th className="py-3 px-4 text-left">Actions</th>
               </tr>
@@ -267,7 +268,7 @@ const AdminProducts = () => {
             <tbody>
               {productList.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-4 px-4 text-center text-gray-500">
+                  <td colSpan="7" className="py-4 px-4 text-center text-gray-500">
                     {selectedCategory 
                       ? "No products found in this category. Add your first product." 
                       : "No products found. Add your first product."}
@@ -320,6 +321,18 @@ const AdminProducts = () => {
                       ) : (
                         <span className="font-medium">{formatPrice(product.price)}</span>
                       )}
+                    </td>
+
+                    <td className="py-3 px-4">
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded-full ${
+                          product.hasEgg
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {product.hasEgg ? "🥚 With Egg" : "🌱 No Egg"}
+                      </span>
                     </td>
 
                     <td className="py-3 px-4">

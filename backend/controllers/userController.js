@@ -6,8 +6,8 @@ import firebaseAdmin from '../config/firebase.js';
 // @route   GET /api/users/me
 // @access  Private
 export const getCurrentUser = asyncHandler(async (req, res) => {
-  // Fetch user with populated location
-  const user = await User.findById(req.user._id).populate('location');
+  // Fetch user with populated location and hostel
+  const user = await User.findById(req.user._id).populate('location').populate('hostel');
 
   if (!user) {
     res.status(404);
@@ -28,6 +28,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       email: user.email,
       address: user.address,
       location: user.location,
+      hostel: user.hostel,
       createdAt: user.createdAt
     }
   });
@@ -54,7 +55,7 @@ export const updateUser = asyncHandler(async (req, res) => {
   }
   
   // Update fields
-  const { name, dob, email, address, location, role } = req.body;
+  const { name, dob, email, address, location, hostel, role } = req.body;
   
   if (name) user.name = name;
   if (dob) {
@@ -70,6 +71,7 @@ export const updateUser = asyncHandler(async (req, res) => {
   if (email) user.email = email;
   if (address) user.address = address;
   if (location) user.location = location;
+  if (hostel !== undefined) user.hostel = hostel || null; // Allow clearing hostel with empty string
   
   // Only admins can update roles
   if (role && req.user.role === 'admin') {
@@ -79,8 +81,8 @@ export const updateUser = asyncHandler(async (req, res) => {
   // Save updated user
   await user.save();
   
-  // Fetch updated user with populated location
-  const updatedUser = await User.findOne({ uid: userId }).populate('location');
+  // Fetch updated user with populated location and hostel
+  const updatedUser = await User.findOne({ uid: userId }).populate('location').populate('hostel');
   
   // Format the date of birth for the response
   const formattedDob = updatedUser.dob ? updatedUser.dob.toISOString().split('T')[0] : null;
@@ -95,7 +97,8 @@ export const updateUser = asyncHandler(async (req, res) => {
       dob: formattedDob, // Use formatted date
       email: updatedUser.email,
       address: updatedUser.address,
-      location: updatedUser.location
+      location: updatedUser.location,
+      hostel: updatedUser.hostel
     }
   });
 });
@@ -130,7 +133,7 @@ export const getUserById = asyncHandler(async (req, res) => {
   });
 });
 export const getUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).populate('location').sort('-createdAt');
+  const users = await User.find({}).populate('location').populate('hostel').sort('-createdAt');
   
   res.status(200).json(users);
 });

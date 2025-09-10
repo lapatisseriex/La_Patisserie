@@ -1,19 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaExclamationTriangle } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaExclamationTriangle, FaBuilding, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 const AdminLocations = () => {
   const [locations, setLocations] = useState([]);
+  const [hostels, setHostels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingLocation, setEditingLocation] = useState(null);
   
+  // Hostel management states
+  const [showHostelModal, setShowHostelModal] = useState(false);
+  const [editingHostel, setEditingHostel] = useState(null);
+  const [selectedLocationForHostels, setSelectedLocationForHostels] = useState(null);
+  const [expandedLocation, setExpandedLocation] = useState(null);
+  
   const [formData, setFormData] = useState({
     city: '',
     area: '',
     pincode: '',
+    isActive: true
+  });
+  
+  const [hostelFormData, setHostelFormData] = useState({
+    name: '',
+    locationId: '',
+    address: '',
     isActive: true
   });
   
@@ -40,6 +54,41 @@ const AdminLocations = () => {
       setError('Failed to load locations. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Fetch all hostels
+  const fetchHostels = async () => {
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      const response = await axios.get(`${API_URL}/hostels`, {
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      
+      setHostels(response.data);
+    } catch (err) {
+      console.error('Error fetching hostels:', err);
+    }
+  };
+  
+  // Fetch hostels for a specific location
+  const fetchHostelsByLocation = async (locationId) => {
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      const response = await axios.get(`${API_URL}/hostels/location/${locationId}/admin`, {
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching hostels for location:', err);
+      return [];
     }
   };
   
@@ -112,6 +161,90 @@ const AdminLocations = () => {
       setError('Failed to update location status. Please try again.');
     }
   };
+
+  // Hostel management functions
+  const createHostel = async () => {
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      await axios.post(
+        `${API_URL}/hostels`,
+        hostelFormData,
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      
+      fetchHostels();
+      setShowHostelModal(false);
+      resetHostelForm();
+    } catch (err) {
+      console.error('Error creating hostel:', err);
+      setError('Failed to create hostel. Please try again.');
+    }
+  };
+  
+  const updateHostel = async () => {
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      await axios.put(
+        `${API_URL}/hostels/${editingHostel._id}`,
+        hostelFormData,
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      
+      fetchHostels();
+      setEditingHostel(null);
+      resetHostelForm();
+      setShowHostelModal(false);
+    } catch (err) {
+      console.error('Error updating hostel:', err);
+      setError('Failed to update hostel. Please try again.');
+    }
+  };
+  
+  const deleteHostel = async (hostelId) => {
+    if (!window.confirm('Are you sure you want to delete this hostel?')) {
+      return;
+    }
+    
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      await axios.delete(`${API_URL}/hostels/${hostelId}`, {
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      
+      fetchHostels();
+    } catch (err) {
+      console.error('Error deleting hostel:', err);
+      setError('Failed to delete hostel. Please try again.');
+    }
+  };
+  
+  const toggleHostelStatus = async (hostelId) => {
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      await axios.patch(
+        `${API_URL}/hostels/${hostelId}/toggle`,
+        {},
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      
+      fetchHostels();
+    } catch (err) {
+      console.error('Error toggling hostel status:', err);
+      setError('Failed to update hostel status. Please try again.');
+    }
+  };
   
   // Handle form input change
   const handleInputChange = (e) => {
@@ -122,12 +255,31 @@ const AdminLocations = () => {
     });
   };
   
+  // Handle hostel form input change
+  const handleHostelInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setHostelFormData({
+      ...hostelFormData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+  
   // Reset form
   const resetForm = () => {
     setFormData({
       city: '',
       area: '',
       pincode: '',
+      isActive: true
+    });
+  };
+  
+  // Reset hostel form
+  const resetHostelForm = () => {
+    setHostelFormData({
+      name: '',
+      locationId: '',
+      address: '',
       isActive: true
     });
   };
@@ -143,6 +295,28 @@ const AdminLocations = () => {
     });
   };
   
+  // Open hostel modal
+  const openHostelModal = (locationId = null, hostel = null) => {
+    if (hostel) {
+      setEditingHostel(hostel);
+      setHostelFormData({
+        name: hostel.name,
+        locationId: hostel.locationId._id || hostel.locationId,
+        address: hostel.address || '',
+        isActive: hostel.isActive
+      });
+    } else {
+      setEditingHostel(null);
+      setHostelFormData({
+        name: '',
+        locationId: locationId || '',
+        address: '',
+        isActive: true
+      });
+    }
+    setShowHostelModal(true);
+  };
+  
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -153,25 +327,68 @@ const AdminLocations = () => {
     }
   };
   
-  // Load locations on component mount
+  // Handle hostel form submission
+  const handleHostelSubmit = (e) => {
+    e.preventDefault();
+    if (editingHostel) {
+      updateHostel();
+    } else {
+      createHostel();
+    }
+  };
+  
+  // Toggle expanded location to show hostels
+  const toggleLocationExpansion = async (locationId) => {
+    if (expandedLocation === locationId) {
+      setExpandedLocation(null);
+    } else {
+      setExpandedLocation(locationId);
+      // Fetch hostels for this location if not already fetched
+      const locationHostels = await fetchHostelsByLocation(locationId);
+      setHostels(prev => {
+        // Remove existing hostels for this location and add new ones
+        const filtered = prev.filter(h => h.locationId._id !== locationId);
+        return [...filtered, ...locationHostels];
+      });
+    }
+  };
+  
+  // Get hostels for a specific location
+  const getHostelsForLocation = (locationId) => {
+    return hostels.filter(hostel => 
+      (hostel.locationId._id || hostel.locationId) === locationId
+    );
+  };
+  
+  // Load locations and hostels on component mount
   useEffect(() => {
     fetchLocations();
+    fetchHostels();
   }, []);
 
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Delivery Locations</h1>
-          <p className="text-gray-600">Manage delivery locations for your store</p>
+          <h1 className="text-2xl font-semibold text-gray-800">Delivery Locations & Hostels</h1>
+          <p className="text-gray-600">Manage delivery locations and hostels for your store</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-cakePink text-white px-4 py-2 rounded-md flex items-center hover:bg-pink-700 transition-colors"
-        >
-          <FaPlus className="mr-2" />
-          Add Location
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => openHostelModal()}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-700 transition-colors"
+          >
+            <FaBuilding className="mr-2" />
+            Add Hostel
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-cakePink text-white px-4 py-2 rounded-md flex items-center hover:bg-pink-700 transition-colors"
+          >
+            <FaPlus className="mr-2" />
+            Add Location
+          </button>
+        </div>
       </div>
       
       {error && (
@@ -198,6 +415,9 @@ const AdminLocations = () => {
                 Pincode
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Hostels
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -208,55 +428,129 @@ const AdminLocations = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                   Loading locations...
                 </td>
               </tr>
             ) : locations.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                   No locations found
                 </td>
               </tr>
             ) : (
               locations.map((location) => (
-                <tr key={location._id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <FaMapMarkerAlt className={`mr-2 ${location.isActive ? 'text-cakePink' : 'text-gray-400'}`} />
-                      <span className="font-medium text-gray-900">{location.area}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-gray-700">{location.city}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-gray-700">{location.pincode}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      location.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {location.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => openEditModal(location)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() => toggleLocationStatus(location._id)}
-                        className={location.isActive ? 'text-amber-500 hover:text-amber-700' : 'text-green-600 hover:text-green-800'}
-                      >
-                        {location.isActive ? <FaToggleOff /> : <FaToggleOn />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <React.Fragment key={location._id}>
+                  <tr>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <FaMapMarkerAlt className={`mr-2 ${location.isActive ? 'text-cakePink' : 'text-gray-400'}`} />
+                        <span className="font-medium text-gray-900">{location.area}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-gray-700">{location.city}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-gray-700">{location.pincode}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">
+                          {getHostelsForLocation(location._id).length} hostel(s)
+                        </span>
+                        <button
+                          onClick={() => toggleLocationExpansion(location._id)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          {expandedLocation === location._id ? <FaChevronUp /> : <FaChevronDown />}
+                        </button>
+                        <button
+                          onClick={() => openHostelModal(location._id)}
+                          className="text-green-600 hover:text-green-800"
+                          title="Add hostel to this location"
+                        >
+                          <FaPlus />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        location.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {location.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => openEditModal(location)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => toggleLocationStatus(location._id)}
+                          className={location.isActive ? 'text-amber-500 hover:text-amber-700' : 'text-green-600 hover:text-green-800'}
+                        >
+                          {location.isActive ? <FaToggleOff /> : <FaToggleOn />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  {/* Expanded hostels row */}
+                  {expandedLocation === location._id && (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 bg-gray-50">
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-gray-700 mb-3">Hostels in {location.area}</h4>
+                          {getHostelsForLocation(location._id).length === 0 ? (
+                            <p className="text-gray-500 text-sm">No hostels found in this location.</p>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {getHostelsForLocation(location._id).map((hostel) => (
+                                <div key={hostel._id} className="bg-white p-3 rounded-md border border-gray-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h5 className="font-medium text-gray-800">{hostel.name}</h5>
+                                    <span className={`px-2 py-1 text-xs rounded-full ${
+                                      hostel.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {hostel.isActive ? 'Active' : 'Inactive'}
+                                    </span>
+                                  </div>
+                                  {hostel.address && (
+                                    <p className="text-gray-600 text-sm mb-2">{hostel.address}</p>
+                                  )}
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => openHostelModal(null, hostel)}
+                                      className="text-blue-600 hover:text-blue-900 text-sm"
+                                    >
+                                      <FaEdit />
+                                    </button>
+                                    <button
+                                      onClick={() => toggleHostelStatus(hostel._id)}
+                                      className={`text-sm ${hostel.isActive ? 'text-amber-500 hover:text-amber-700' : 'text-green-600 hover:text-green-800'}`}
+                                    >
+                                      {hostel.isActive ? <FaToggleOff /> : <FaToggleOn />}
+                                    </button>
+                                    <button
+                                      onClick={() => deleteHostel(hostel._id)}
+                                      className="text-red-600 hover:text-red-900 text-sm"
+                                    >
+                                      <FaTrash />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             )}
           </tbody>
@@ -352,6 +646,104 @@ const AdminLocations = () => {
                   className="px-4 py-2 bg-cakePink text-white rounded-md hover:bg-pink-700 transition-colors"
                 >
                   {editingLocation ? 'Update Location' : 'Add Location'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Hostel Modal */}
+      {showHostelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              {editingHostel ? 'Edit Hostel' : 'Add New Hostel'}
+            </h3>
+            
+            <form onSubmit={handleHostelSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hostel Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={hostelFormData.name}
+                    onChange={handleHostelInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    placeholder="e.g. Student Hostel A"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location
+                  </label>
+                  <select
+                    name="locationId"
+                    value={hostelFormData.locationId}
+                    onChange={handleHostelInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    required
+                  >
+                    <option value="">Select a location</option>
+                    {locations.filter(loc => loc.isActive).map(location => (
+                      <option key={location._id} value={location._id}>
+                        {location.area}, {location.city} - {location.pincode}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address (Optional)
+                  </label>
+                  <textarea
+                    name="address"
+                    value={hostelFormData.address}
+                    onChange={handleHostelInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    placeholder="Detailed address of the hostel"
+                    rows="3"
+                  />
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    id="hostelIsActive"
+                    checked={hostelFormData.isActive}
+                    onChange={handleHostelInputChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300 rounded"
+                  />
+                  <label htmlFor="hostelIsActive" className="ml-2 block text-sm text-gray-700">
+                    Hostel is active and available for delivery
+                  </label>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHostelModal(false);
+                    setEditingHostel(null);
+                    resetHostelForm();
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  {editingHostel ? 'Update Hostel' : 'Add Hostel'}
                 </button>
               </div>
             </form>

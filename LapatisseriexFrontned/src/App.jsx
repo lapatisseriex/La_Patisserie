@@ -13,7 +13,6 @@ import ProfilePage from './pages/Profile';
 // Home Components
 import Home from './components/Home/Home';
 import Products from './components/Products/Products';
-import ProductDetail from './components/Products/ProductDetail';
 
 // Admin Components
 import AdminDashboardLayout from './components/Admin/AdminDashboardLayout';
@@ -36,6 +35,7 @@ import AuthModal from './components/Auth/AuthModal/AuthModal';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext/AuthContext';
 import { LocationProvider } from './context/LocationContext/LocationContext';
+import { HostelProvider } from './context/HostelContext/HostelContext';
 import { CategoryProvider } from './context/CategoryContext/CategoryContext';
 import { ProductProvider } from './context/ProductContext/ProductContext';
 
@@ -84,13 +84,14 @@ function App() {
   return (
     <AuthProvider>
       <LocationProvider>
-        <CategoryProvider>
-          <ProductProvider>
-            <CartProvider>
-              <Router>
-              <ScrollToTop />
-                {/* Auth Modal - available on all pages */}
-                <AuthModal />
+        <HostelProvider>
+          <CategoryProvider>
+            <ProductProvider>
+              <CartProvider>
+                <Router>
+                <ScrollToTop />
+                  {/* Auth Modal - available on all pages */}
+                  <AuthModal />
                 
             <Routes>
              
@@ -98,7 +99,6 @@ function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<HomePage />} />
                 <Route path="products" element={<Products />} />
-                <Route path="product/:id" element={<ProductDetail />} />
                 
                 {/* Protected Routes */}
                 <Route path="cart" element={<Cart />} />
@@ -138,9 +138,10 @@ function App() {
               </Route>
             </Routes>
           </Router>
-            </CartProvider>
-          </ProductProvider>
-        </CategoryProvider>
+              </CartProvider>
+            </ProductProvider>
+          </CategoryProvider>
+        </HostelProvider>
       </LocationProvider>
     </AuthProvider>
   );

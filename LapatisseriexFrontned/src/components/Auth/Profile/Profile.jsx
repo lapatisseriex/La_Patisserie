@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext/AuthContext';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
-import { MapPin, Check } from 'lucide-react';
+import { useHostel } from '../../../context/HostelContext/HostelContext';
+import { MapPin, Check, Building } from 'lucide-react';
 import DebugUserData from './DebugUserData';
 
 const Profile = () => {
   const { user, updateProfile, authError, loading, isNewUser } = useAuth();
   const { locations, loading: locationsLoading, fetchLocations } = useLocation();
+  const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   
@@ -14,7 +16,8 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     dob: user?.dob || '',
-    location: user?.location?._id || ''
+    location: user?.location?._id || '',
+    hostel: user?.hostel?._id || ''
   });
   
   // Debug initial form data
@@ -47,6 +50,27 @@ const Profile = () => {
       });
     }
   }, []);
+
+  // Fetch hostels when location changes
+  useEffect(() => {
+    if (formData.location) {
+      fetchHostelsByLocation(formData.location).then(hostelsData => {
+        // If user had a hostel selected but it's not in the new location, clear it
+        if (formData.hostel && !hostelsData.find(h => h._id === formData.hostel)) {
+          setFormData(prev => ({
+            ...prev,
+            hostel: ''
+          }));
+        }
+      });
+    } else {
+      clearHostels();
+      setFormData(prev => ({
+        ...prev,
+        hostel: ''
+      }));
+    }
+  }, [formData.location]);
 
   // Format today's date for max value in date input
   const today = new Date().toISOString().split('T')[0];
@@ -90,12 +114,15 @@ const Profile = () => {
       // Get current values
       const currentName = user.name || '';
       const currentLocationId = typeof user.location === 'object' ? user.location?._id : user.location;
+      const currentHostelId = typeof user.hostel === 'object' ? user.hostel?._id : user.hostel;
       
       console.log('Setting initial form data with:', {
         name: currentName,
         dob: user.dob,
         locationObject: user.location,
-        locationId: currentLocationId
+        locationId: currentLocationId,
+        hostelObject: user.hostel,
+        hostelId: currentHostelId
       });
       
       // Format date correctly for the date input
@@ -119,14 +146,16 @@ const Profile = () => {
       setFormData({
         name: currentName,
         dob: formattedDob,
-        location: currentLocationId || ''
+        location: currentLocationId || '',
+        hostel: currentHostelId || ''
       });
       
       // Store the initial values
       prevUserRef.current = {
         name: currentName,
         dob: user.dob,
-        locationId: currentLocationId
+        locationId: currentLocationId,
+        hostelId: currentHostelId
       };
       
       // Mark as initialized
@@ -140,6 +169,15 @@ const Profile = () => {
       ...formData,
       [name]: value
     });
+    
+    // If location changes, clear hostel selection
+    if (name === 'location') {
+      setFormData(prev => ({
+        ...prev,
+        location: value,
+        hostel: '' // Clear hostel when location changes
+      }));
+    }
   };
 
   // Check if we're in the Auth Modal or standalone page
@@ -321,6 +359,57 @@ const Profile = () => {
             Currently, we deliver only to the available locations shown above.
           </p>
         </div>
+        
+        {/* Hostel Selection */}
+        {formData.location && (
+          <div className="space-y-2">
+            <label htmlFor="hostel" className="block text-sm font-medium text-cakeBrown">
+              Hostel/Residence
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                <Building className="h-5 w-5" />
+              </span>
+              <select
+                id="hostel"
+                name="hostel"
+                value={formData.hostel || ''}
+                onChange={handleChange}
+                disabled={loading || hostelsLoading || !formData.location}
+                className="w-full border-2 border-cakeBrown/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink transition-colors appearance-none"
+              >
+                <option value="">Select hostel/residence (Optional)</option>
+                {hostels && hostels.length > 0 ? (
+                  hostels.map(hostel => (
+                    <option key={hostel._id} value={hostel._id}>
+                      {hostel.name}
+                      {hostel.address && ` - ${hostel.address}`}
+                      {user?.hostel?._id === hostel._id && " (Current)"}
+                    </option>
+                  ))
+                ) : formData.location ? (
+                  <option value="" disabled>
+                    {hostelsLoading ? 'Loading hostels...' : 'No hostels available in this location'}
+                  </option>
+                ) : (
+                  <option value="" disabled>Select a location first</option>
+                )}
+              </select>
+              {/* Debug hostel data */}
+              <div className="mt-1 text-xs text-gray-500">
+                {formData.hostel && `Selected hostel ID: ${formData.hostel}`}
+              </div>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-blue-600 text-sm italic">
+              Select your hostel or residence for more accurate delivery.
+            </p>
+          </div>
+        )}
         
         {localError && (
           <p className="text-red-500 text-sm">{localError}</p>

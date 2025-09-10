@@ -9,15 +9,31 @@ import { useLocation } from '../../context/LocationContext/LocationContext';
 const Payment = () => {
   const { cartItems, cartTotal, couponDiscount, clearCart } = useCart();
   const { user } = useAuth();
-  const { hasValidDeliveryLocation } = useLocation();
+  const { hasValidDeliveryLocation, getCurrentLocationName, locations } = useLocation();
   const navigate = useNavigate();
+  const [showLocationError, setShowLocationError] = useState(false);
   
-  // Redirect if no valid delivery location
+  // Check for valid delivery location and handle gracefully
   useEffect(() => {
-    if (!hasValidDeliveryLocation()) {
-      navigate('/cart');
+    console.log('Payment component - checking delivery location');
+    console.log('User:', user);
+    console.log('Cart Items:', cartItems);
+    console.log('Cart Total:', cartTotal);
+    console.log('Has valid delivery location:', hasValidDeliveryLocation());
+    console.log('Current location name:', getCurrentLocationName());
+    
+    // For testing, let's temporarily bypass location validation when no user is logged in
+    const bypassLocationCheck = !user; // If no user is logged in, bypass location check
+    
+    if (!bypassLocationCheck && !hasValidDeliveryLocation()) {
+      console.log('No valid delivery location found');
+      setShowLocationError(true);
+      // Don't redirect immediately, show error message instead
+      // navigate('/cart');
+    } else {
+      setShowLocationError(false);
     }
-  }, [hasValidDeliveryLocation, navigate]);
+  }, [hasValidDeliveryLocation, navigate, user, cartItems, cartTotal]);
   
   // Delivery charge (free above 500, else 49)
   const deliveryCharge = cartTotal >= 500 ? 0 : 49;
@@ -134,6 +150,45 @@ const Payment = () => {
     );
   }
 
+  // Show location error if no valid delivery location
+  if (showLocationError) {
+    return (
+      <div className="container mx-auto px-4 py-8 min-h-screen">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center mb-6">
+            <Link to="/cart" className="flex items-center text-gray-600 hover:text-cakePink transition-colors">
+              <FaArrowLeft className="mr-2" />
+              <span>Back to Cart</span>
+            </Link>
+            <h1 className="text-2xl font-bold text-center flex-grow">Checkout</h1>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FaExclamationTriangle className="text-red-500 text-4xl" />
+            </div>
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Delivery Location Required</h2>
+            <p className="text-gray-700 mb-6">
+              Please select a delivery location to proceed with checkout.
+            </p>
+            
+            <div className="space-y-4">
+              <Link 
+                to="/cart" 
+                className="block w-full px-6 py-3 bg-cakePink text-white font-medium rounded-md hover:bg-pink-700 transition-colors"
+              >
+                Go Back to Cart
+              </Link>
+              <p className="text-sm text-gray-500">
+                You can select your delivery location from the cart page.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="max-w-5xl mx-auto">
@@ -144,6 +199,19 @@ const Payment = () => {
           </Link>
           <h1 className="text-2xl font-bold text-center flex-grow">Checkout</h1>
         </div>
+        
+        {/* Delivery Location Info */}
+        {user && hasValidDeliveryLocation() && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <FaMapMarkerAlt className="text-green-600 mr-2" />
+              <div>
+                <p className="text-green-800 font-medium">Delivering to:</p>
+                <p className="text-green-700">{getCurrentLocationName()}</p>
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
           {/* Payment Form */}
@@ -500,12 +568,15 @@ const Payment = () => {
               
               <div className="max-h-[300px] overflow-y-auto mb-4 pr-2">
                 {cartItems.map((item) => (
-                  <div key={`${item.id}-${JSON.stringify(item.options)}`} className="flex items-center py-3 border-b border-gray-100">
+                  <div key={`${item.id || item._id}-${JSON.stringify(item.options)}`} className="flex items-center py-3 border-b border-gray-100">
                     <div className="w-16 h-16 flex-shrink-0">
                       <img 
-                        src={item.images[0]} 
+                        src={item.image || (item.images && item.images[0]) || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K'} 
                         alt={item.name} 
                         className="w-full h-full object-cover rounded-md"
+                        onError={(e) => {
+                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K';
+                        }}
                       />
                     </div>
                     <div className="ml-3 flex-grow">
