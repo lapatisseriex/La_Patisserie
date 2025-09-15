@@ -87,14 +87,14 @@ const CategorySwiperHome = ({
   if (loading) {
     return (
       <div className="text-center py-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-cakePink mx-auto"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white mx-auto"></div>
       </div>
     );
   }
 
   if (!categories.length) {
     return (
-      <div className="text-center text-gray-500 py-4">
+      <div className="text-center text-black py-4">
         No categories found.
       </div>
     );
@@ -128,7 +128,7 @@ const CategorySwiperHome = ({
                 key={category._id}
                 onClick={() => handleCategoryClick(category._id)}
                 className={`bg-white rounded-xl shadow-md transition-all duration-300 cursor-pointer overflow-hidden flex-shrink-0 ${
-                  isSelected ? 'ring-2 ring-cakePink' : 'hover:shadow-xl hover:scale-105'
+                  isSelected ? 'ring-2 ring-white' : 'hover:shadow-xl'
                 }`}
                 style={{ 
                   width: '280px',
@@ -143,11 +143,11 @@ const CategorySwiperHome = ({
                 />
                 {/* Category Content */}
                 <div className="p-4 sm:p-5 h-[110px] flex flex-col justify-between">
-                  <h3 className={`text-base sm:text-lg font-semibold ${isSelected ? 'text-cakePink' : 'text-cakeBrown'}`}>
+                  <h3 className={`text-base sm:text-lg font-semibold ${isSelected ? 'text-black' : 'text-black'}`}>
                     {category.name}
                   </h3>
                   {category.description && (
-                    <p className="text-sm text-gray-500 overflow-hidden" 
+                    <p className="text-sm text-black overflow-hidden" 
                        style={{
                          display: '-webkit-box',
                          WebkitLineClamp: 2,
@@ -165,7 +165,7 @@ const CategorySwiperHome = ({
       
       {/* Scroll hint for desktop */}
       <div className="hidden md:block text-center mt-2">
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-white">
           {isUserScrolling 
             ? "← Scroll horizontally to explore all categories →" 
             : "🔄 Auto-scrolling every 3 seconds • Touch to scroll manually →"
@@ -177,3 +177,8 @@ const CategorySwiperHome = ({
 };
 
 export default CategorySwiperHome;
+
+
+
+
+

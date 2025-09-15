@@ -117,15 +117,15 @@ const Payment = () => {
               <FaCheckCircle className="text-green-500 text-4xl" />
             </div>
             <h2 className="text-2xl font-bold text-green-600 mb-2">Order Successful!</h2>
-            <p className="text-gray-700 mb-1">Thank you for your purchase</p>
-            <p className="text-gray-500 text-sm mb-6">Your order has been placed successfully</p>
+            <p className="text-black mb-1">Thank you for your purchase</p>
+            <p className="text-black text-sm mb-6">Your order has been placed successfully</p>
             
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="text-gray-700 font-medium">Order Number:</p>
-              <p className="text-2xl font-bold text-gray-800 tracking-wide">{orderNumber}</p>
+            <div className="bg-gray-100 rounded-lg p-4 mb-6">
+              <p className="text-black font-medium">Order Number:</p>
+              <p className="text-2xl font-bold text-black tracking-wide">{orderNumber}</p>
             </div>
             
-            <p className="text-gray-600 mb-6">
+            <p className="text-black mb-6">
               We have sent you an email with the order details and tracking information.
               You will also receive updates about your order status.
             </p>
@@ -133,13 +133,13 @@ const Payment = () => {
             <div className="flex flex-col md:flex-row justify-center gap-4">
               <Link 
                 to="/" 
-                className="px-8 py-3 bg-cakePink text-white font-medium rounded-md hover:bg-pink-700 transition-colors"
+                className="px-8 py-3 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors"
               >
                 Return to Homepage
               </Link>
               <Link 
                 to="/products" 
-                className="px-8 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
+                className="px-8 py-3 border border-white text-black font-medium rounded-md hover:bg-gray-100 transition-colors"
               >
                 Continue Shopping
               </Link>
@@ -153,10 +153,10 @@ const Payment = () => {
   // Show location error if no valid delivery location
   if (showLocationError) {
     return (
-      <div className="container mx-auto px-4 py-8 min-h-screen">
+      <div className="container mx-auto px-4 py-8 pt-8 min-h-screen">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center mb-6">
-            <Link to="/cart" className="flex items-center text-gray-600 hover:text-cakePink transition-colors">
+            <Link to="/cart" className="flex items-center text-black hover:text-black transition-colors">
               <FaArrowLeft className="mr-2" />
               <span>Back to Cart</span>
             </Link>
@@ -168,18 +168,18 @@ const Payment = () => {
               <FaExclamationTriangle className="text-red-500 text-4xl" />
             </div>
             <h2 className="text-2xl font-bold text-red-600 mb-4">Delivery Location Required</h2>
-            <p className="text-gray-700 mb-6">
+            <p className="text-black mb-6">
               Please select a delivery location to proceed with checkout.
             </p>
             
             <div className="space-y-4">
               <Link 
                 to="/cart" 
-                className="block w-full px-6 py-3 bg-cakePink text-white font-medium rounded-md hover:bg-pink-700 transition-colors"
+                className="block w-full px-6 py-3 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors"
               >
                 Go Back to Cart
               </Link>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-black">
                 You can select your delivery location from the cart page.
               </p>
             </div>
@@ -190,10 +190,10 @@ const Payment = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen">
+    <div className="container mx-auto px-4 py-8 pt-8 min-h-screen">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center mb-6">
-          <Link to="/cart" className="flex items-center text-gray-600 hover:text-cakePink transition-colors">
+          <Link to="/cart" className="flex items-center text-black hover:text-black transition-colors">
             <FaArrowLeft className="mr-2" />
             <span>Back to Cart</span>
           </Link>
@@ -217,30 +217,30 @@ const Payment = () => {
           {/* Payment Form */}
           <div className="lg:col-span-8 mb-8 lg:mb-0">
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h2 className="font-semibold text-lg text-gray-800 pb-4 border-b border-gray-200 mb-4">
+              <h2 className="font-semibold text-lg text-black pb-4 border-b border-white mb-4">
                 Shipping Address
               </h2>
               
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-black text-sm font-medium mb-2">
                       First Name *
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                      className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                       placeholder="First Name"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-black text-sm font-medium mb-2">
                       Last Name *
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                      className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                       placeholder="Last Name"
                       required
                     />
@@ -248,52 +248,52 @@ const Payment = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                  <label className="block text-black text-sm font-medium mb-2">
                     Street Address *
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink mb-2"
+                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white mb-2"
                     placeholder="House number and street name"
                     required
                   />
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                     placeholder="Apartment, suite, unit, etc. (optional)"
                   />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-black text-sm font-medium mb-2">
                       City *
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                      className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                       placeholder="City"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-black text-sm font-medium mb-2">
                       State *
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                      className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                       placeholder="State"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                    <label className="block text-black text-sm font-medium mb-2">
                       Postal Code *
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                      className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                       placeholder="Postal Code"
                       required
                     />
@@ -301,24 +301,24 @@ const Payment = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                  <label className="block text-black text-sm font-medium mb-2">
                     Phone *
                   </label>
                   <input
                     type="tel"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                     placeholder="Phone Number"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                  <label className="block text-black text-sm font-medium mb-2">
                     Email Address *
                   </label>
                   <input
                     type="email"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                     placeholder="Email Address"
                     required
                   />
@@ -327,7 +327,7 @@ const Payment = () => {
             </div>
             
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="font-semibold text-lg text-gray-800 pb-4 border-b border-gray-200 mb-4">
+              <h2 className="font-semibold text-lg text-black pb-4 border-b border-white mb-4">
                 Payment Method
               </h2>
               
@@ -337,12 +337,12 @@ const Payment = () => {
                     onClick={() => setSelectedPaymentMethod('card')}
                     className={`flex-1 p-4 border rounded-lg cursor-pointer transition-colors ${
                       selectedPaymentMethod === 'card' 
-                        ? 'border-cakePink bg-pink-50' 
-                        : 'border-gray-200 hover:bg-gray-50'
+                        ? 'border-white bg-pink-50' 
+                        : 'border-white hover:bg-gray-100'
                     }`}
                   >
                     <div className="flex items-center mb-3">
-                      <FaCreditCard className={`mr-2 ${selectedPaymentMethod === 'card' ? 'text-cakePink' : 'text-gray-500'}`} />
+                      <FaCreditCard className={`mr-2 ${selectedPaymentMethod === 'card' ? 'text-black' : 'text-black'}`} />
                       <span className="font-medium">Credit/Debit Card</span>
                     </div>
                     <div className="flex space-x-2">
@@ -356,12 +356,12 @@ const Payment = () => {
                     onClick={() => setSelectedPaymentMethod('upi')}
                     className={`flex-1 p-4 border rounded-lg cursor-pointer transition-colors ${
                       selectedPaymentMethod === 'upi' 
-                        ? 'border-cakePink bg-pink-50' 
-                        : 'border-gray-200 hover:bg-gray-50'
+                        ? 'border-white bg-pink-50' 
+                        : 'border-white hover:bg-gray-100'
                     }`}
                   >
                     <div className="flex items-center mb-3">
-                      <FaWallet className={`mr-2 ${selectedPaymentMethod === 'upi' ? 'text-cakePink' : 'text-gray-500'}`} />
+                      <FaWallet className={`mr-2 ${selectedPaymentMethod === 'upi' ? 'text-black' : 'text-black'}`} />
                       <span className="font-medium">UPI Payment</span>
                     </div>
                     <div className="flex space-x-2">
@@ -373,15 +373,15 @@ const Payment = () => {
                     onClick={() => setSelectedPaymentMethod('cod')}
                     className={`flex-1 p-4 border rounded-lg cursor-pointer transition-colors ${
                       selectedPaymentMethod === 'cod' 
-                        ? 'border-cakePink bg-pink-50' 
-                        : 'border-gray-200 hover:bg-gray-50'
+                        ? 'border-white bg-pink-50' 
+                        : 'border-white hover:bg-gray-100'
                     }`}
                   >
                     <div className="flex items-center mb-3">
-                      <BsCashCoin className={`mr-2 ${selectedPaymentMethod === 'cod' ? 'text-cakePink' : 'text-gray-500'}`} />
+                      <BsCashCoin className={`mr-2 ${selectedPaymentMethod === 'cod' ? 'text-black' : 'text-black'}`} />
                       <span className="font-medium">Cash on Delivery</span>
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-black">
                       Pay when your order arrives
                     </p>
                   </div>
@@ -390,7 +390,7 @@ const Payment = () => {
                 {selectedPaymentMethod === 'card' && (
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                      <label className="block text-black text-sm font-medium mb-2">
                         Card Number *
                       </label>
                       <input
@@ -398,7 +398,7 @@ const Payment = () => {
                         name="cardNumber"
                         value={cardDetails.cardNumber}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                        className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                         placeholder="1234 5678 9012 3456"
                         maxLength="19"
                         required
@@ -406,7 +406,7 @@ const Payment = () => {
                     </div>
                     
                     <div>
-                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                      <label className="block text-black text-sm font-medium mb-2">
                         Name on Card *
                       </label>
                       <input
@@ -414,7 +414,7 @@ const Payment = () => {
                         name="nameOnCard"
                         value={cardDetails.nameOnCard}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                        className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                         placeholder="John Doe"
                         required
                       />
@@ -422,7 +422,7 @@ const Payment = () => {
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-gray-700 text-sm font-medium mb-2">
+                        <label className="block text-black text-sm font-medium mb-2">
                           Expiry Date *
                         </label>
                         <input
@@ -430,14 +430,14 @@ const Payment = () => {
                           name="expiryDate"
                           value={cardDetails.expiryDate}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                          className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                           placeholder="MM/YY"
                           maxLength="5"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 text-sm font-medium mb-2">
+                        <label className="block text-black text-sm font-medium mb-2">
                           CVV *
                         </label>
                         <input
@@ -445,7 +445,7 @@ const Payment = () => {
                           name="cvv"
                           value={cardDetails.cvv}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                          className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                           placeholder="***"
                           maxLength="4"
                           required
@@ -459,8 +459,8 @@ const Payment = () => {
                         disabled={isProcessing}
                         className={`w-full py-3 text-white font-medium rounded-md ${
                           isProcessing 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-cakePink hover:bg-pink-700'
+                            ? 'bg-white cursor-not-allowed' 
+                            : 'bg-white hover:bg-gray-800'
                         } transition-colors flex items-center justify-center`}
                       >
                         {isProcessing ? (
@@ -482,14 +482,14 @@ const Payment = () => {
                 {selectedPaymentMethod === 'upi' && (
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                      <label className="block text-black text-sm font-medium mb-2">
                         UPI ID *
                       </label>
                       <input
                         type="text"
                         value={upiId}
                         onChange={(e) => setUpiId(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-cakePink focus:border-cakePink"
+                        className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                         placeholder="name@upi"
                         required
                       />
@@ -501,8 +501,8 @@ const Payment = () => {
                         disabled={isProcessing}
                         className={`w-full py-3 text-white font-medium rounded-md ${
                           isProcessing 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-cakePink hover:bg-pink-700'
+                            ? 'bg-white cursor-not-allowed' 
+                            : 'bg-white hover:bg-gray-800'
                         } transition-colors flex items-center justify-center`}
                       >
                         {isProcessing ? (
@@ -536,8 +536,8 @@ const Payment = () => {
                         disabled={isProcessing}
                         className={`w-full py-3 text-white font-medium rounded-md ${
                           isProcessing 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-cakePink hover:bg-pink-700'
+                            ? 'bg-white cursor-not-allowed' 
+                            : 'bg-white hover:bg-gray-800'
                         } transition-colors flex items-center justify-center`}
                       >
                         {isProcessing ? (
@@ -562,13 +562,13 @@ const Payment = () => {
           {/* Order Summary */}
           <div className="lg:col-span-4">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
-              <h2 className="font-semibold text-lg text-gray-800 pb-4 border-b border-gray-200 mb-4">
+              <h2 className="font-semibold text-lg text-black pb-4 border-b border-white mb-4">
                 Order Summary
               </h2>
               
               <div className="max-h-[300px] overflow-y-auto mb-4 pr-2">
                 {cartItems.map((item) => (
-                  <div key={`${item.id || item._id}-${JSON.stringify(item.options)}`} className="flex items-center py-3 border-b border-gray-100">
+                  <div key={`${item.id || item._id}-${JSON.stringify(item.options)}`} className="flex items-center py-3 border-b border-white">
                     <div className="w-16 h-16 flex-shrink-0">
                       <img 
                         src={item.image || (item.images && item.images[0]) || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K'} 
@@ -582,13 +582,13 @@ const Payment = () => {
                     <div className="ml-3 flex-grow">
                       <p className="text-sm font-medium">{item.name}</p>
                       <div className="flex justify-between items-center">
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-black">
                           {item.options.weight && `${item.options.weight} • `}
                           {item.options.flavor && `${item.options.flavor}`}
                         </p>
                         <div className="text-xs">
                           <span className="font-medium">₹{item.price}</span>
-                          <span className="text-gray-500"> × {item.quantity}</span>
+                          <span className="text-black"> × {item.quantity}</span>
                         </div>
                       </div>
                     </div>
@@ -596,7 +596,7 @@ const Payment = () => {
                 ))}
               </div>
               
-              <div className="space-y-2 text-gray-700">
+              <div className="space-y-2 text-black">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span className="font-medium">₹{cartTotal}</span>
@@ -625,12 +625,12 @@ const Payment = () => {
                   </div>
                 )}
                 
-                <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="border-t border-white pt-3 mt-3">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span>₹{grandTotal.toFixed(2)}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-black mt-1">
                     (Including all taxes)
                   </p>
                 </div>
@@ -644,3 +644,8 @@ const Payment = () => {
 };
 
 export default Payment;
+
+
+
+
+

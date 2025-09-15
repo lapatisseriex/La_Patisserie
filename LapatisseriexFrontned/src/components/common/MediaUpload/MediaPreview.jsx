@@ -29,7 +29,7 @@ const MediaPreview = ({
   return (
     <div className="media-preview">
       {/* Main preview - shows the active media item */}
-      <div className={`relative ${aspectRatio} overflow-hidden rounded-lg mb-2 bg-gray-100`}>
+      <div className={`relative ${aspectRatio} overflow-hidden rounded-lg mb-2 bg-white`}>
         {isVideo(displayedMedia[activeIndex]) ? (
           <video 
             src={displayedMedia[activeIndex]} 
@@ -71,7 +71,7 @@ const MediaPreview = ({
               }`}
             >
               {isVideo(url) ? (
-                <div className="relative bg-gray-100 w-full h-full">
+                <div className="relative bg-white w-full h-full">
                   <video 
                     src={url} 
                     className="w-full h-full object-cover"
@@ -96,7 +96,7 @@ const MediaPreview = ({
       
       {/* Show count if there are more media items than the limit */}
       {limit && mediaUrls.length > limit && (
-        <div className="text-sm text-gray-500 text-right mt-1">
+        <div className="text-sm text-black text-right mt-1">
           +{mediaUrls.length - limit} more
         </div>
       )}
@@ -105,3 +105,8 @@ const MediaPreview = ({
 };
 
 export default MediaPreview;
+
+
+
+
+

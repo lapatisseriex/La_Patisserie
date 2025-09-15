@@ -26,8 +26,8 @@
 }
 
 .selected-category .w-8 {
-  border: 2px solid #f472b6; /* cakePink color */
-  box-shadow: 0 0 0 1px white, 0 0 0 3px #f472b6;
+  border: 2px solid black;
+  box-shadow: 0 0 0 1px white;
 }
 
 /* Ensure text doesn't overflow */
@@ -61,3 +61,5 @@
     height: 7px;
   }
 }
+
+

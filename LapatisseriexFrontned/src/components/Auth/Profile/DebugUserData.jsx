@@ -7,7 +7,7 @@ const DebugUserData = ({ user, formData, locations }) => {
   }
   
   return (
-    <div className="mt-6 p-4 bg-gray-100 rounded-lg text-xs font-mono">
+    <div className="mt-6 p-4 bg-white rounded-lg text-xs font-mono">
       <h3 className="font-bold mb-2">Debug Data:</h3>
       <div className="grid grid-cols-2 gap-2">
         <div>
@@ -28,3 +28,8 @@ const DebugUserData = ({ user, formData, locations }) => {
 };
 
 export default DebugUserData;
+
+
+
+
+

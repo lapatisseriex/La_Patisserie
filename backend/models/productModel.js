@@ -54,6 +54,12 @@ productSchema.virtual('featuredImage').get(function() {
   return this.images && this.images.length > 0 ? this.images[0] : null;
 });
 
+// Virtual for total stock (sum of all variant stocks)
+productSchema.virtual('stock').get(function() {
+  if (!this.variants || this.variants.length === 0) return 0;
+  return this.variants.reduce((total, variant) => total + (variant.stock || 0), 0);
+});
+
 // Method to get discounted price of a variant
 productSchema.methods.getVariantPrice = function(variantIndex = 0) {
   const variant = this.variants[variantIndex];

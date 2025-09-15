@@ -76,10 +76,10 @@ const AdminDashboard = () => {
   }, [user, locations]);
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6 pt-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-800">Admin Dashboard</h1>
-        <p className="text-gray-600">Welcome back, Admin</p>
+        <h1 className="text-2xl font-semibold text-black">Admin Dashboard</h1>
+        <p className="text-black">Welcome back, Admin</p>
       </div>
 
       {/* Stats Cards */}
@@ -99,8 +99,8 @@ const AdminDashboard = () => {
                 <FaUsers className="text-blue-500 text-xl" />
               </div>
               <div className="ml-4">
-                <h2 className="text-sm font-medium text-gray-600">Total Users</h2>
-                <p className="text-2xl font-semibold text-gray-800">{stats.totalUsers}</p>
+                <h2 className="text-sm font-medium text-black">Total Users</h2>
+                <p className="text-2xl font-semibold text-black">{stats.totalUsers}</p>
               </div>
             </div>
             <div className="mt-4">
@@ -114,8 +114,8 @@ const AdminDashboard = () => {
                 <FaShoppingCart className="text-green-500 text-xl" />
               </div>
               <div className="ml-4">
-                <h2 className="text-sm font-medium text-gray-600">Total Orders</h2>
-                <p className="text-2xl font-semibold text-gray-800">{stats.totalOrders}</p>
+                <h2 className="text-sm font-medium text-black">Total Orders</h2>
+                <p className="text-2xl font-semibold text-black">{stats.totalOrders}</p>
               </div>
             </div>
             <div className="mt-4 flex justify-between items-center">
@@ -132,8 +132,8 @@ const AdminDashboard = () => {
                 <FaList className="text-purple-500 text-xl" />
               </div>
               <div className="ml-4">
-                <h2 className="text-sm font-medium text-gray-600">Total Products</h2>
-                <p className="text-2xl font-semibold text-gray-800">{stats.totalProducts}</p>
+                <h2 className="text-sm font-medium text-black">Total Products</h2>
+                <p className="text-2xl font-semibold text-black">{stats.totalProducts}</p>
               </div>
             </div>
             <div className="mt-4">
@@ -143,16 +143,16 @@ const AdminDashboard = () => {
           
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
-              <div className="bg-cakePink bg-opacity-20 p-3 rounded-full">
-                <FaMapMarkerAlt className="text-cakePink text-xl" />
+              <div className="bg-white bg-opacity-20 p-3 rounded-full">
+                <FaMapMarkerAlt className="text-black text-xl" />
               </div>
               <div className="ml-4">
-                <h2 className="text-sm font-medium text-gray-600">Delivery Locations</h2>
-                <p className="text-2xl font-semibold text-gray-800">{stats.activeLocations}</p>
+                <h2 className="text-sm font-medium text-black">Delivery Locations</h2>
+                <p className="text-2xl font-semibold text-black">{stats.activeLocations}</p>
               </div>
             </div>
             <div className="mt-4">
-              <a href="/admin/locations" className="text-cakePink text-sm hover:underline">Manage locations</a>
+              <a href="/admin/locations" className="text-black text-sm hover:underline">Manage locations</a>
             </div>
           </div>
         </div>
@@ -161,23 +161,23 @@ const AdminDashboard = () => {
       {/* Recent Activity Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h2>
+          <h2 className="text-lg font-semibold text-black mb-4">Recent Orders</h2>
           <div className="text-center py-8">
-            <div className="text-gray-400 mb-4">
+            <div className="text-white mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
             </div>
-            <p className="text-gray-600">No orders available yet</p>
-            <p className="text-sm text-gray-500 mt-2">Order management coming soon</p>
+            <p className="text-black">No orders available yet</p>
+            <p className="text-sm text-black mt-2">Order management coming soon</p>
           </div>
           <div className="mt-4">
-            <a href="/admin/orders" className="text-cakePink text-sm hover:underline">View orders page</a>
+            <a href="/admin/orders" className="text-black text-sm hover:underline">View orders page</a>
           </div>
         </div>
         
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Users</h2>
+          <h2 className="text-lg font-semibold text-black mb-4">Recent Users</h2>
           {loading ? (
             <div className="text-center py-4">
               <p>Loading user data...</p>
@@ -187,24 +187,24 @@ const AdminDashboard = () => {
               <p>{error}</p>
             </div>
           ) : recentUsers.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
+            <div className="text-center py-4 text-black">
               <p>No users found</p>
             </div>
           ) : (
             <div className="space-y-4">
               {recentUsers.map((userData, i) => (
-                <div key={userData._id || i} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                <div key={userData._id || i} className="border-b border-white pb-3 last:border-0 last:pb-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
                         {userData.name ? userData.name.charAt(0).toUpperCase() : 'U'}
                       </div>
                       <div className="ml-3">
                         <p className="font-medium">{userData.name || 'Unnamed User'}</p>
-                        <p className="text-sm text-gray-600">{userData.phone || 'No phone'}</p>
+                        <p className="text-sm text-black">{userData.phone || 'No phone'}</p>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-black">
                       Joined {userData.createdAt 
                         ? new Date(userData.createdAt).toLocaleDateString() 
                         : 'Unknown date'}
@@ -215,7 +215,7 @@ const AdminDashboard = () => {
             </div>
           )}
           <div className="mt-4">
-            <a href="/admin/users" className="text-cakePink text-sm hover:underline">View all users</a>
+            <a href="/admin/users" className="text-black text-sm hover:underline">View all users</a>
           </div>
         </div>
       </div>
@@ -224,3 +224,8 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+
+
+
+

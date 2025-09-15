@@ -59,3 +59,8 @@ export const HostelProvider = ({ children }) => {
 };
 
 export default HostelContext;
+
+
+
+
+

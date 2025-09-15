@@ -93,10 +93,10 @@ const AdminCategories = () => {
         <div>
           <h1 className="text-2xl font-semibold">Categories</h1>
           <div className="mt-2 flex space-x-4">
-            <Link to="/admin/products" className="text-gray-600 hover:text-cakePink">
+            <Link to="/admin/products" className="text-black hover:text-black">
               Products
             </Link>
-            <Link to="/admin/categories" className="text-cakePink font-medium border-b-2 border-cakePink">
+            <Link to="/admin/categories" className="text-black font-medium border-b-2 border-white">
               Categories
             </Link>
           </div>
@@ -135,8 +135,8 @@ const AdminCategories = () => {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-100">
+          <table className="min-w-full bg-white border border-white">
+            <thead className="bg-white">
               <tr>
                 <th className="py-3 px-4 text-left">Image</th>
                 <th className="py-3 px-4 text-left">Name</th>
@@ -149,13 +149,13 @@ const AdminCategories = () => {
             <tbody>
               {categories.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-4 px-4 text-center text-gray-500">
+                  <td colSpan="6" className="py-4 px-4 text-center text-black">
                     No categories found. Create your first category.
                   </td>
                 </tr>
               ) : (
                 categories.map((category) => (
-                  <tr key={category._id} className="border-b border-gray-200">
+                  <tr key={category._id} className="border-b border-white">
                     <td className="py-3 px-4">
                       {category.featuredImage ? (
                         <img
@@ -164,7 +164,7 @@ const AdminCategories = () => {
                           className="h-12 w-12 object-cover rounded-md"
                         />
                       ) : (
-                        <div className="h-12 w-12 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">
+                        <div className="h-12 w-12 bg-white rounded-md flex items-center justify-center text-white">
                           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
@@ -180,7 +180,7 @@ const AdminCategories = () => {
                         className={`inline-block px-2 py-1 text-xs rounded-full ${
                           category.isActive
                             ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-700"
+                            : "bg-white text-black"
                         }`}
                       >
                         {category.isActive ? "Active" : "Inactive"}
@@ -224,7 +224,7 @@ const AdminCategories = () => {
                             </button>
                             <button
                               onClick={handleCancelDelete}
-                              className="text-gray-500 hover:text-gray-700"
+                              className="text-black hover:text-black"
                             >
                               No
                             </button>
@@ -254,3 +254,8 @@ const AdminCategories = () => {
 };
 
 export default AdminCategories;
+
+
+
+
+

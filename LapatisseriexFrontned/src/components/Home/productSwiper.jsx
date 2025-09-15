@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import ProductCard from './ProductCard';
 
 const ProductSwiperHome = ({ categories = [] }) => {
@@ -65,7 +66,7 @@ const ProductSwiperHome = ({ categories = [] }) => {
 
   if (!products.length) {
     return (
-      <div className="text-center text-gray-500 py-4">
+      <div className="text-center text-black py-4">
         No products available.
       </div>
     );
@@ -73,39 +74,66 @@ const ProductSwiperHome = ({ categories = [] }) => {
 
   return (
     <div className="relative w-full max-w-screen-xl mx-auto px-4 sm:px-6 md:px-8">
-      {/* Scrollable products container */}
-      <div 
-        ref={scrollContainerRef}
-        className="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide scroll-smooth"
-        style={{
-          scrollbarWidth: 'none', /* Firefox */
-          msOverflowStyle: 'none', /* IE and Edge */
-        }}
-        onScroll={handleScroll}
-        onTouchStart={handleTouchStart}
-        onMouseDown={handleUserInteraction}
-      >
-        {products.map((product, index) => (
-          <div 
-            key={`${product._id}-${index}`} 
-            className="flex-shrink-0 w-64 sm:w-72"
-          >
-            <ProductCard product={product} />
+      {/* Mobile: Vertical Stack Layout */}
+      <div className="block md:hidden">
+        <div className="space-y-3">
+          {products.slice(0, 8).map((product, index) => (
+            <div 
+              key={`mobile-${product._id}-${index}`} 
+              className="w-full"
+            >
+              <ProductCard product={product} className="w-full h-auto" compact={true} />
+            </div>
+          ))}
+        </div>
+        
+        {/* Show more products link for mobile */}
+        {products.length > 8 && (
+          <div className="text-center mt-4">
+            <Link to="/products" className="inline-flex items-center px-6 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm">
+              View All Products
+              <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
           </div>
-        ))}
+        )}
       </div>
-      
-      {/* Scroll hint for mobile */}
-      <p className="text-xs text-gray-500 text-center mt-2 sm:hidden">
-        Swipe left or right to explore products • Auto-scrolls every 3 seconds
-      </p>
-      
-      {/* Auto-scroll indicator for desktop */}
-      <p className="hidden sm:block text-xs text-gray-500 text-center mt-2">
-        Products auto-scroll every 3 seconds • Scroll or click to control manually
-      </p>
+
+      {/* Desktop: Horizontal Scrollable Layout */}
+      <div className="hidden md:block">
+        <div 
+          ref={scrollContainerRef}
+          className="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide scroll-smooth"
+          style={{
+            scrollbarWidth: 'none', /* Firefox */
+            msOverflowStyle: 'none', /* IE and Edge */
+          }}
+          onScroll={handleScroll}
+          onTouchStart={handleTouchStart}
+          onMouseDown={handleUserInteraction}
+        >
+          {products.map((product, index) => (
+            <div 
+              key={`desktop-${product._id}-${index}`} 
+              className="flex-shrink-0 w-64 h-[420px]"
+            >
+              <ProductCard product={product} className="h-full" />
+            </div>
+          ))}
+        </div>
+        
+        {/* Auto-scroll indicator for desktop */}
+        <p className="text-xs text-black text-center mt-2">
+          Products auto-scroll every 3 seconds • Scroll or click to control manually
+        </p>
+      </div>
     </div>
   );
 };
 
 export default ProductSwiperHome;
+
+
+
+

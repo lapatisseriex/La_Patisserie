@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { User, ShoppingBag, LogOut, Settings, Package, ChevronDown, UserCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext/AuthContext';
 
 // Using memo to prevent unnecessary re-renders
 const UserMenu = memo(() => {
   const { user, logout, toggleAuthPanel, changeAuthType } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const dropdownRef = useRef(null);
   
   const isAdmin = user?.role === 'admin';
@@ -80,137 +80,224 @@ const UserMenu = memo(() => {
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Main User Button - Luxurious Design */}
       <button
         onClick={toggleMenu}
-        className="flex items-center text-cakeBrown hover:text-cakePink transition-colors"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={`
+          group relative px-6 py-3 
+          bg-gradient-to-r from-black to-gray-900
+          text-white font-light tracking-widest
+          border border-gray-800
+          transition-all duration-500 ease-out
+          hover:shadow-2xl hover:shadow-black/30
+          hover:border-gray-600
+          ${isMenuOpen ? 'shadow-2xl shadow-black/30 border-gray-600' : ''}
+          ${isProfileIncomplete ? 'ring-1 ring-white/20' : ''}
+        `}
         aria-expanded={isMenuOpen}
         aria-haspopup="true"
       >
-        {isProfileIncomplete ? (
-          <UserCircle className="h-5 w-5 mr-1 text-amber-500" />
-        ) : (
-          <User className="h-5 w-5 mr-1" />
-        )}
-        <span className="hidden md:inline">
-          {isAdmin 
-            ? 'Admin' 
-            : user?.name 
-              ? user.name.split(' ')[0] 
-              : 'Account'
-          }
-        </span>
-        <ChevronDown className="h-4 w-4 ml-1" />
+        {/* Animated Background Overlay */}
+        <div className={`
+          absolute inset-0 bg-gradient-to-r from-white/5 to-transparent
+          transition-opacity duration-500
+          ${isHovered || isMenuOpen ? 'opacity-100' : 'opacity-0'}
+        `} />
         
-        {/* Indicator for incomplete profile */}
+        {/* User Name Display */}
+        <div className="relative flex items-center justify-between min-w-[120px]">
+          <span className="text-sm font-light tracking-wider">
+            {isAdmin 
+              ? 'ADMIN' 
+              : user?.name 
+                ? user.name.split(' ')[0].toUpperCase() 
+                : 'ACCOUNT'
+            }
+          </span>
+          
+          {/* Custom Dropdown Arrow */}
+          <div className={`
+            ml-3 w-0 h-0 
+            border-l-[4px] border-l-transparent
+            border-r-[4px] border-r-transparent
+            border-t-[5px] border-t-white
+            transition-transform duration-300
+            ${isMenuOpen ? 'rotate-180' : ''}
+          `} />
+        </div>
+        
+        {/* Profile Status Indicator */}
         {isProfileIncomplete && (
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border border-white"></span>
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full animate-pulse" />
         )}
+        
+        {/* Subtle Animation Line */}
+        <div className={`
+          absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-white to-transparent
+          transition-all duration-500
+          ${isHovered || isMenuOpen ? 'w-full' : 'w-0'}
+        `} />
       </button>
       
+      {/* Dropdown Menu - Professional Design */}
       {isMenuOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white shadow-lg rounded-md overflow-hidden z-50 py-1 border border-gray-200">
-          <div className="px-4 py-2 border-b border-gray-200">
-            <p className="text-sm font-medium text-cakeBrown">
-              {user?.name || 'Guest User'}
-            </p>
-            <p className="text-xs text-gray-500 truncate">{user?.phone}</p>
-            
-            {/* Profile completion notice */}
-            {isProfileIncomplete && (
-              <div className="mt-2 flex items-center p-1.5 bg-amber-50 rounded text-xs">
-                <AlertCircle className="w-3 h-3 text-amber-600 mr-1.5" />
-                <span className="text-amber-800">Profile incomplete</span>
-              </div>
-            )}
-          </div>
+        <div className="absolute right-0 mt-2 w-64 z-50">
+          {/* Backdrop Blur Effect */}
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-lg" />
           
-          <ul>
-            {isAdmin ? (
-              <>
-                <li>
-                  <Link 
-                    to="/admin/dashboard" 
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/admin/orders" 
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    Orders
-                  </Link>
-                </li>
-              </>
-            ) : (
-              <>
-                {/* Complete profile option for users with incomplete profiles */}
-                {isProfileIncomplete && (
-                  <li>
-                    <button 
-                      className="w-full flex items-center px-4 py-2 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100"
-                      onClick={handleCompleteProfile}
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      Complete Profile
-                    </button>
-                  </li>
-                )}
+          {/* Main Menu Container */}
+          <div className="relative bg-white/95 backdrop-blur-lg shadow-2xl rounded-lg overflow-hidden border border-gray-200">
+            
+            {/* User Info Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-black to-gray-900 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-light tracking-wide">
+                    {user?.name || 'Guest User'}
+                  </h3>
+                  <p className="text-xs text-gray-300 mt-1 font-light tracking-wider">
+                    {user?.phone || 'Welcome'}
+                  </p>
+                </div>
                 
-                <li>
-                  <Link 
-                    to="/profile" 
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Profile
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/orders" 
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    My Orders
-                  </Link>
-                </li>
-              </>
-            )}
+                {/* Status Badge */}
+                {isAdmin && (
+                  <div className="px-2 py-1 bg-white/10 rounded-full">
+                    <span className="text-xs font-light tracking-widest">ADMIN</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Profile Completion Notice */}
+              {isProfileIncomplete && (
+                <div className="mt-3 p-2 bg-white/10 rounded border border-white/20">
+                  <p className="text-xs text-white/90 font-light tracking-wide">
+                    Complete your profile for the full experience
+                  </p>
+                </div>
+              )}
+            </div>
             
-            <li>
-              <Link 
-                to="/cart" 
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown"
+            {/* Menu Items */}
+            <div className="py-2">
+              {isAdmin ? (
+                <>
+                  <MenuItem
+                    to="/admin/dashboard"
+                    label="DASHBOARD"
+                    onClick={() => setIsMenuOpen(false)}
+                  />
+                  <MenuItem
+                    to="/admin/orders"
+                    label="ORDER MANAGEMENT"
+                    onClick={() => setIsMenuOpen(false)}
+                  />
+                </>
+              ) : (
+                <>
+                  {/* Complete Profile Button */}
+                  {isProfileIncomplete && (
+                    <MenuButton
+                      onClick={handleCompleteProfile}
+                      label="COMPLETE PROFILE"
+                      priority
+                    />
+                  )}
+                  
+                  <MenuItem
+                    to="/profile"
+                    label="MY PROFILE"
+                    onClick={() => setIsMenuOpen(false)}
+                  />
+                  <MenuItem
+                    to="/orders"
+                    label="ORDER HISTORY"
+                    onClick={() => setIsMenuOpen(false)}
+                  />
+                </>
+              )}
+              
+              <MenuItem
+                to="/cart"
+                label="SHOPPING BOX"
                 onClick={() => setIsMenuOpen(false)}
-              >
-                <ShoppingBag className="h-4 w-4 mr-2" />
-                Cart
-              </Link>
-            </li>
-            
-            <li className="border-t border-gray-200">
-              <button 
-                onClick={handleLogout}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-cakePink-light hover:text-cakeBrown"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </button>
-            </li>
-          </ul>
+              />
+              
+              {/* Logout Button - Special Styling */}
+              <div className="mt-3 px-3">
+                <button 
+                  onClick={handleLogout}
+                  className="
+                    w-full px-4 py-3
+                    bg-gradient-to-r from-gray-900 to-black
+                    text-white text-sm font-light tracking-widest
+                    border border-gray-800
+                    hover:shadow-lg hover:shadow-black/20
+                    hover:border-gray-600
+                    transition-all duration-300
+                    group relative overflow-hidden
+                  "
+                >
+                  <span className="relative z-10">SIGN OUT</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 });
 
+// MenuItem Component - Clean Link Design
+const MenuItem = ({ to, label, onClick }) => (
+  <Link
+    to={to}
+    onClick={onClick}
+    className="
+      block px-6 py-3
+      text-black text-sm font-light tracking-wider
+      hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100
+      border-b border-gray-100 last:border-b-0
+      transition-all duration-300
+      group relative overflow-hidden
+    "
+  >
+    <span className="relative z-10">{label}</span>
+    <div className="absolute left-0 top-0 h-full w-1 bg-black transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+  </Link>
+);
+
+// MenuButton Component - For Actions
+const MenuButton = ({ onClick, label, priority = false }) => (
+  <button
+    onClick={onClick}
+    className={`
+      block w-full px-6 py-3
+      text-sm font-light tracking-wider text-left
+      border-b border-gray-100
+      transition-all duration-300
+      group relative overflow-hidden
+      ${priority 
+        ? 'bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900' 
+        : 'text-black hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'
+      }
+    `}
+  >
+    <span className="relative z-10">{label}</span>
+    {!priority && (
+      <div className="absolute left-0 top-0 h-full w-1 bg-black transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+    )}
+  </button>
+);
+
 export default UserMenu;
+
+
+
+
+
+

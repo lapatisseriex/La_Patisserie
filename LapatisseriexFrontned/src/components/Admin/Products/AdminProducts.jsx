@@ -170,10 +170,10 @@ const AdminProducts = () => {
         <div>
           <h1 className="text-2xl font-semibold">Products</h1>
           <div className="mt-2 flex space-x-4">
-            <Link to="/admin/products" className="text-cakePink font-medium border-b-2 border-cakePink">
+            <Link to="/admin/products" className="text-black font-medium border-b-2 border-white">
               Products
             </Link>
-            <Link to="/admin/categories" className="text-gray-600 hover:text-cakePink">
+            <Link to="/admin/categories" className="text-black hover:text-black">
               Categories
             </Link>
           </div>
@@ -196,14 +196,14 @@ const AdminProducts = () => {
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div className="mb-2 md:mb-0 md:w-2/3">
-            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="category-filter" className="block text-sm font-medium text-black mb-1">
               Filter by Category
             </label>
             <select
               id="category-filter"
               value={selectedCategory}
               onChange={handleCategoryChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+              className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500"
             >
               <option value="">All Categories</option>
               {categories.map((category) => (
@@ -216,7 +216,7 @@ const AdminProducts = () => {
           <div className="mt-2 md:mt-0">
             <Link 
               to="/admin/categories"
-              className="text-sm text-cakePink hover:text-pink-700 flex items-center"
+              className="text-sm text-black hover:text-pink-700 flex items-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -241,7 +241,7 @@ const AdminProducts = () => {
       )}
 
       {/* Products Count */}
-      <div className="mb-4 text-gray-600">
+      <div className="mb-4 text-black">
         Showing {productList.length} of {productCount} products
       </div>
 
@@ -253,8 +253,8 @@ const AdminProducts = () => {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-100">
+          <table className="min-w-full bg-white border border-white">
+            <thead className="bg-white">
               <tr>
                 <th className="py-3 px-4 text-left">Image</th>
                 <th className="py-3 px-4 text-left">Name</th>
@@ -268,7 +268,7 @@ const AdminProducts = () => {
             <tbody>
               {productList.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-4 px-4 text-center text-gray-500">
+                  <td colSpan="7" className="py-4 px-4 text-center text-black">
                     {selectedCategory 
                       ? "No products found in this category. Add your first product." 
                       : "No products found. Add your first product."}
@@ -276,7 +276,7 @@ const AdminProducts = () => {
                 </tr>
               ) : (
                 productList.map((product) => (
-                  <tr key={product._id} className="border-b border-gray-200">
+                  <tr key={product._id} className="border-b border-white">
                     <td className="py-3 px-4">
                       {product.featuredImage ? (
                         <img
@@ -285,7 +285,7 @@ const AdminProducts = () => {
                           className="h-12 w-12 object-cover rounded-md"
                         />
                       ) : (
-                        <div className="h-12 w-12 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">
+                        <div className="h-12 w-12 bg-white rounded-md flex items-center justify-center text-white">
                           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
@@ -294,7 +294,7 @@ const AdminProducts = () => {
                     </td>
                     <td className="py-3 px-4">
                       <div className="font-medium">{product.name}</div>
-                      <div className="text-xs text-gray-500">ID: {product.id || product._id.substring(0, 8)}</div>
+                      <div className="text-xs text-black">ID: {product.id || product._id.substring(0, 8)}</div>
                       {product.badge && (
                         <div className="inline-block mt-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
                           {product.badge}
@@ -340,7 +340,7 @@ const AdminProducts = () => {
                         className={`inline-block px-2 py-1 text-xs rounded-full ${
                           product.isActive
                             ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-700"
+                            : "bg-white text-black"
                         }`}
                       >
                         {product.isActive ? "Active" : "Inactive"}
@@ -366,7 +366,7 @@ const AdminProducts = () => {
                             </button>
                             <button
                               onClick={handleCancelDelete}
-                              className="text-gray-500 hover:text-gray-700"
+                              className="text-black hover:text-black"
                             >
                               No
                             </button>
@@ -396,3 +396,8 @@ const AdminProducts = () => {
 };
 
 export default AdminProducts;
+
+
+
+
+

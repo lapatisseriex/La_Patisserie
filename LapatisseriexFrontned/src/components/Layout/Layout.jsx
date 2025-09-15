@@ -19,7 +19,7 @@ const Layout = () => {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white pt-[80px] md:pt-[100px] pb-20">
+      <main className="min-h-screen bg-white pt-[100px] md:pt-[120px] pb-20">
         <Outlet />
       </main>
       <Footer />
@@ -29,3 +29,8 @@ const Layout = () => {
 };
 
 export default Layout;
+
+
+
+
+

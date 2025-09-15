@@ -64,17 +64,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--cake-pink-light);
+  background: #000000;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--cake-pink);
+  background: #333333;
 }
 
 /* Mobile-friendly focus states */
 button:focus, a:focus, input:focus, textarea:focus {
-  outline: 2px solid var(--cake-pink);
+  outline: 2px solid black;
   outline-offset: 2px;
 }
 
@@ -101,3 +101,5 @@ button:focus, a:focus, input:focus, textarea:focus {
     transform: translateY(0px);
   }
 }
+
+

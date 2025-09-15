@@ -38,53 +38,55 @@ export const LocationProvider = ({ children }) => {
     if (!user) return false;
     
     try {
-      setLoading(true);
+      // Don't set loading to true for location updates to avoid UI delays
       setError(null);
       
-      // Get ID token from auth
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
-      const idToken = await auth.currentUser.getIdToken(true);
-      
-      // Update location
-      const response = await axios.put(
-        `${API_URL}/users/${user.uid}`,
-        { location: locationId },
-        { headers: { Authorization: `Bearer ${idToken}` } }
-      );
-      
-      // Get the location object from our locations array
+      // Get the location object from our locations array first
       const selectedLocation = locations.find(loc => loc._id === locationId);
       
-      if (selectedLocation) {
-        // Update user object directly with the new location
-        if (setUser) {
-          // Create a completely new user object to ensure React detects the change
-          const updatedUser = {
-            ...user,
-            location: {
-              ...selectedLocation
-            }
-          };
-          
-          // Update the user in the auth context
-          setUser(updatedUser);
-          console.log("Location updated in user state:", updatedUser);
-        } else {
-          console.error("setUser function not available");
-        }
-      } else {
-        console.error("Selected location not found in locations array");
+      if (selectedLocation && setUser) {
+        // Update user object immediately for instant UI feedback
+        const updatedUser = {
+          ...user,
+          location: {
+            ...selectedLocation
+          }
+        };
+        
+        // Update the user in the auth context immediately
+        setUser(updatedUser);
+        console.log("Location updated in user state:", updatedUser);
       }
       
-      console.log("Location updated successfully:", selectedLocation);
+      // Update backend asynchronously without blocking UI
+      const updateBackend = async () => {
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const auth = getAuth();
+          const idToken = await auth.currentUser.getIdToken(true);
+          
+          await axios.put(
+            `${API_URL}/users/${user.uid}`,
+            { location: locationId },
+            { headers: { Authorization: `Bearer ${idToken}` } }
+          );
+          
+          console.log("Backend location update successful");
+        } catch (err) {
+          console.error("Error updating location in backend:", err);
+          // Optionally revert the user state if backend fails
+          setError("Failed to update delivery location");
+        }
+      };
+      
+      // Start backend update without waiting
+      updateBackend();
+      
       return true;
     } catch (err) {
       console.error("Error updating location:", err);
       setError("Failed to update delivery location");
       return false;
-    } finally {
-      setLoading(false);
     }
   };
   
@@ -124,3 +126,8 @@ export const LocationProvider = ({ children }) => {
 };
 
 export default LocationContext;
+
+
+
+
+

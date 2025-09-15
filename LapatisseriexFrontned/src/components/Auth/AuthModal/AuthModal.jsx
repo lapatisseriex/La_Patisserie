@@ -70,7 +70,7 @@ const AuthModal = () => {
       >
         {/* Header with close button */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-xl font-bold text-cakeBrown">
+          <h2 className="text-xl font-bold text-black">
             {authType === 'login' && 'Login to La Patisserie'}
             {authType === 'signup' && 'Create an Account'}
             {authType === 'otp' && 'Verify OTP'}
@@ -80,10 +80,10 @@ const AuthModal = () => {
           {authType !== 'profile' && (
             <button
               onClick={toggleAuthPanel}
-              className="p-2 rounded-full hover:bg-gray-100 transition-all duration-300 ease-in-out hover:rotate-90"
+              className="p-2 rounded-full hover:bg-gray-200 transition-all duration-300 ease-in-out hover:rotate-90"
               aria-label="Close"
             >
-              <X className="h-5 w-5 text-gray-500" />
+              <X className="h-5 w-5 text-black" />
             </button>
           )}
         </div>
@@ -103,3 +103,8 @@ const AuthModal = () => {
 };
 
 export default AuthModal;
+
+
+
+
+

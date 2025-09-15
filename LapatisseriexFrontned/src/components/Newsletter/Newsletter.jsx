@@ -18,21 +18,21 @@ const Newsletter = () => {
   return (
     <section className="bg-white py-16 relative overflow-hidden" id="newsletter">
       {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-40 h-40 bg-cakePink-light/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="absolute bottom-0 right-0 w-56 h-56 bg-cakePink-light/10 rounded-full translate-x-1/4 translate-y-1/4"></div>
+      <div className="absolute top-0 left-0 w-40 h-40 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+      <div className="absolute bottom-0 right-0 w-56 h-56 bg-white/10 rounded-full translate-x-1/4 translate-y-1/4"></div>
       
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-cakeBrown mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
             Subscribe for Sweet Updates
           </h2>
-          <p className="text-gray-600 text-lg mb-8">
+          <p className="text-black text-lg mb-8">
             Be the first to know about new flavors, seasonal specials, and exclusive offers
           </p>
           
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
             {subscribed ? (
-              <div className="w-full bg-cakePink-light text-white text-lg font-medium py-4 px-6 rounded-lg shadow-lg">
+              <div className="w-full bg-black text-white text-lg font-medium py-4 px-6 rounded-lg shadow-lg">
                 Thank you for subscribing!
               </div>
             ) : (
@@ -43,12 +43,12 @@ const Newsletter = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="flex-grow py-3 px-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-cakePink/30 focus:border-cakePink shadow-md"
+                  className="flex-grow py-3 px-4 rounded-lg border border-white focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white shadow-md"
                   aria-label="Email address"
                 />
                 <button 
                   type="submit" 
-                  className="bg-cakePink hover:bg-cakePink-dark text-white font-medium py-3 px-6 rounded-lg transition-colors shadow-md whitespace-nowrap"
+                  className="bg-white hover:bg-black text-white font-medium py-3 px-6 rounded-lg transition-colors shadow-md whitespace-nowrap"
                 >
                   Subscribe
                 </button>
@@ -56,7 +56,7 @@ const Newsletter = () => {
             )}
           </form>
           
-          <p className="text-gray-500 text-sm mt-4">
+          <p className="text-black text-sm mt-4">
             We respect your privacy and will never share your information
           </p>
         </div>
@@ -66,3 +66,8 @@ const Newsletter = () => {
 };
 
 export default Newsletter;
+
+
+
+
+

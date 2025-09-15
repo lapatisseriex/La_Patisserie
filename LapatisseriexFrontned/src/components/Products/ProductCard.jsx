@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import MediaDisplay from '../common/MediaDisplay';
-import ImageSlideshow from '../common/ImageSlideshow';
+import ProductImageModal from '../common/ProductImageModal';
 import { useCart } from '../../context/CartContext';
 
-const ProductCard = ({ product, className = '', compact = false }) => {
+const ProductCard = ({ product, className = '', compact = false, featured = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const { addToCart, getProductQuantity, updateProductQuantity } = useCart();
   const navigate = useNavigate();
 
@@ -17,31 +18,16 @@ const ProductCard = ({ product, className = '', compact = false }) => {
     product.variants[0].price && product.variants[0].discount.value
       ? product.variants[0].price - product.variants[0].discount.value
       : product.variants[0].price;
-      
-  const discountPercentage = 
+
+  const discountPercentage =
     product.variants[0].price && product.variants[0].discount.value
       ? Math.round((product.variants[0].discount.value / product.variants[0].price) * 100)
       : 0;
 
-  const getStockStatus = () => {
-    if (!product.isActive) {
-      return { label: 'Unavailable', color: 'bg-gray-500' };
-    }
-    if (product.stock === 0) {
-      return { label: 'Out of Stock', color: 'bg-red-500' };
-    }
-    if (product.stock < 5) {
-      return { label: 'Low Stock', color: 'bg-amber-400' };
-    }
-    return { label: 'In Stock', color: 'bg-green-500' };
-  };
-
-  const stockStatus = getStockStatus();
-
   const handleAddToCart = async (e) => {
     e.stopPropagation();
     if (!product.isActive || product.stock === 0) return;
-    
+
     setIsAddingToCart(true);
     try {
       await addToCart(product, 1);
@@ -71,169 +57,245 @@ const ProductCard = ({ product, className = '', compact = false }) => {
     updateProductQuantity(product._id, newQuantity);
   };
 
+  const openImageModal = (e) => {
+    e.stopPropagation();
+    setIsImageModalOpen(true);
+  };
+
   return (
     <div
-      className={`rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 ${className}`}
+      className={`rounded-xl overflow-hidden bg-white shadow-sm transition-all duration-300 w-full ${
+        featured
+          ? 'h-full'
+          : compact
+          ? 'min-h-[180px] sm:min-h-[200px] md:min-h-[240px] lg:min-h-[260px]'
+          : 'min-h-[200px] sm:min-h-[220px] md:min-h-[280px] lg:min-h-[300px]'
+      } flex flex-row ${className}`}
     >
-      <div className={`relative ${compact ? 'h-32 sm:h-40' : 'h-48 sm:h-56 lg:h-64'} overflow-hidden`}>
-        {product.images && product.images.length > 1 ? (
-          <ImageSlideshow
-            images={product.images}
-            alt={product.name}
-            aspectRatio={compact ? 'auto' : '4/3'}
-            className="w-full h-full object-cover"
-            onIndexChange={setCurrentImageIndex}
-          />
-        ) : (
+      {/* Product Image */}
+      <div
+        className={`${
+          compact ? 'w-24 sm:w-28 md:w-32 lg:w-28' : 'w-28 sm:w-32 md:w-36 lg:w-32'
+        } flex-shrink-0 relative`}
+      >
+        {/* Mobile: Square aspect ratio, SM and up: Vertical rectangle */}
+        <div
+          className="w-full relative cursor-pointer group aspect-square sm:aspect-[3/4] rounded-lg overflow-hidden"
+          onClick={openImageModal}
+        >
           <MediaDisplay
-            src={product.images?.[0] || ''}
+            src={product.images?.[currentImageIndex] || null}
             alt={product.name}
-            aspectRatio={compact ? 'auto' : '4/3'}
-            className="w-full h-full object-cover"
+            className="w-full h-full"
+            aspectRatio="auto"
+            objectFit="cover"
           />
-        )}
-        
-        {/* Discount Badge */}
-        {discountPercentage > 0 && (
-          <div className="absolute top-2 left-2">
-            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
-              -{discountPercentage}% OFF
-            </span>
+          
+          {/* Zoom Indicator */}
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white bg-opacity-90 rounded-full p-2">
+              <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+              </svg>
+            </div>
           </div>
-        )}
+
+          {/* Discount Badge */}
         
-        {/* Image Indicators */}
-        {product.images && product.images.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-            {product.images.map((_, idx) => (
-              <div
-                key={idx}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  idx === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                }`}
-              />
-            ))}
-          </div>
-        )}
+
+          {/* Image Navigation for multiple images */}
+          {product.images && product.images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
+                }}
+                className="absolute left-1 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+                }}
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+
+          {/* Image Dots Indicator */}
+          {product.images && product.images.length > 1 && (
+            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
+              {product.images.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    index === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className={`p-4 ${compact ? 'p-3' : 'p-4 lg:p-5'}`}>
-        <h3 className={`font-semibold text-gray-900 line-clamp-2 mb-2 ${compact ? 'text-sm' : 'text-base lg:text-lg'}`}>
-          {product.name}
-        </h3>
-        
-        {/* Egg/No Egg Indicator - Moved below image */}
-        <div className="mb-2">
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-            product.hasEgg === true
-              ? 'bg-orange-100 text-orange-700' 
-              : 'bg-green-100 text-green-700'
-          }`}>
-            {product.hasEgg === true ? '🥚 With Egg' : '🌱 No Egg'}
-          </span>
-        </div>
-        {!compact && (
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3 leading-relaxed">
-            {product.description}
+      {/* Content */}
+      <div
+        className={`flex-1 ${
+          compact ? 'p-2 sm:p-3 md:p-4 lg:p-5' : 'p-2 sm:p-3 md:p-5 lg:p-6'
+        } flex flex-col justify-between`}
+      >
+        {/* Info */}
+        <div>
+          <h3
+            className={`font-semibold text-black line-clamp-2 ${
+              compact
+                ? 'text-xs sm:text-sm md:text-base'
+                : 'text-sm sm:text-base md:text-lg'
+            } cursor-pointer hover:text-orange-500`}
+            onClick={openImageModal}
+          >
+            {product.name}
+          </h3>
+
+          {/* Egg/No Egg Indicator */}
+          <div className="mb-2">
+            <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${
+              product.hasEgg === true
+                ? 'border border-orange-200 bg-white text-orange-600' 
+                : 'border border-green-200 bg-white text-green-600'
+            }`}>
+              {product.hasEgg === true ? (
+                <div className="flex items-center">
+                  <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-1"></span>
+                  <span className="uppercase tracking-tight font-medium">WITH EGG</span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                  <span className="uppercase tracking-tight font-medium">EGGLESS</span>
+                </div>
+              )}
+            </span>
+          </div>
+
+          <p
+            className={`text-xs text-gray-700 leading-relaxed mb-2 ${
+              compact ? 'line-clamp-1 sm:line-clamp-2' : 'line-clamp-2'
+            }`}
+          >
+            {product.description ||
+              'Delicious handcrafted treat made with premium ingredients'}
           </p>
-        )}
-        
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg lg:text-xl font-bold text-green-600">
-                ₹{Math.round(discountedPrice)}
-              </span>
+
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <div className="flex items-baseline gap-1">
               {discountedPrice !== product.variants[0].price && (
-                <span className="line-through text-gray-500 text-sm">
+                <span className="text-gray-500 line-through text-xs">
                   ₹{Math.round(product.variants[0].price)}
                 </span>
               )}
+              <span className="font-bold text-black text-base">
+                ₹{Math.round(discountedPrice)}
+              </span>
             </div>
-          </div>
-          
-          {/* Stock Status and Add to Cart */}
-          <div className="flex items-center justify-between">
-            <span className={`text-xs font-medium px-2 py-1 rounded-full ${stockStatus.color} text-white`}>
-              {stockStatus.label}
-            </span>
-            {!compact && (
-              <div className="text-xs text-gray-500">
-                {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
-              </div>
+            {/* Green Discount Badge next to price */}
+            {discountPercentage > 0 && (
+              <span className="bg-white text-green-500 text-xs font-bold px-2 py-1 rounded-md">
+                {discountPercentage}% OFF
+              </span>
             )}
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-2">
-            {/* Quantity Control or Add to Cart */}
-            {currentQuantity > 0 ? (
-              <div className="flex items-center justify-center bg-gray-100 rounded-lg p-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleQuantityChange(currentQuantity - 1);
-                  }}
-                  className="w-8 h-8 flex items-center justify-center bg-white rounded-full text-cakePink hover:bg-cakePink hover:text-white transition-colors border border-gray-300"
-                >
-                  −
-                </button>
-                <span className="mx-4 font-medium text-gray-900 min-w-[2rem] text-center">
-                  {currentQuantity}
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleQuantityChange(currentQuantity + 1);
-                  }}
-                  disabled={currentQuantity >= product.stock}
-                  className="w-8 h-8 flex items-center justify-center bg-white rounded-full text-cakePink hover:bg-cakePink hover:text-white transition-colors border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  +
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleAddToCart}
-                disabled={!product.isActive || product.stock === 0 || isAddingToCart}
-                className={`w-full py-2 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${
-                  !product.isActive || product.stock === 0
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : isAddingToCart
-                    ? 'bg-cakePink-light text-white cursor-wait'
-                    : 'bg-gray-100 text-cakePink border border-cakePink hover:bg-cakePink hover:text-white active:scale-95'
-                }`}
-              >
-                {isAddingToCart ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                    Adding...
-                  </div>
-                ) : !product.isActive ? (
-                  'Unavailable'
-                ) : product.stock === 0 ? (
-                  'Out of Stock'
-                ) : (
-                  'Add to Cart'
-                )}
-              </button>
-            )}
-
-            {/* Buy Now Button */}
-            <button
-              onClick={handleBuyNow}
-              disabled={!product.isActive || product.stock === 0}
-              className={`w-full py-2 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${
-                !product.isActive || product.stock === 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-cakePink text-white hover:bg-cakePink-dark active:scale-95'
-              }`}
-            >
-              {!product.isActive ? 'Unavailable' : product.stock === 0 ? 'Out of Stock' : 'Buy Now'}
-            </button>
           </div>
         </div>
+
+        {/* Actions */}
+        <div className={`${compact ? 'space-y-1 sm:space-y-2' : 'space-y-2'}`}>
+          {currentQuantity > 0 ? (
+            <div className="flex items-center justify-center bg-white rounded-lg p-2 border border-gray-200">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleQuantityChange(currentQuantity - 1);
+                }}
+                className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black hover:bg-gray-50"
+              >
+                −
+              </button>
+              <span className="mx-3 font-medium text-black min-w-[2rem] text-center text-sm">
+                {currentQuantity}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleQuantityChange(currentQuantity + 1);
+                }}
+                disabled={currentQuantity >= product.stock}
+                className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              disabled={!product.isActive || product.stock === 0 || isAddingToCart}
+              className={`w-full ${compact ? 'py-2 px-2 text-xs sm:py-2.5 sm:px-3 sm:text-sm' : 'py-2.5 px-3 text-sm'} rounded-lg font-medium transition-all duration-200 ${
+                !product.isActive || product.stock === 0
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300'
+                  : isAddingToCart
+                  ? 'bg-gray-200 text-black cursor-wait border border-gray-400'
+                  : 'bg-white text-black border-2 border-black hover:bg-gray-50 active:scale-95'
+              }`}
+            >
+              {isAddingToCart ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400 mr-2"></div>
+                  Adding...
+                </div>
+              ) : !product.isActive ? (
+                'Unavailable'
+              ) : product.stock === 0 ? (
+                'Out of Stock'
+              ) : product.stock > 0 && product.stock < 15 ? (
+                <span className="text-red-500 font-medium">Only {product.stock} left</span>
+              ) : (
+                'Add to Box'
+              )}
+            </button>
+          )}
+
+          {/* Reserve Yours Button */}
+          <button
+            onClick={handleBuyNow}
+            disabled={!product.isActive || product.stock === 0}
+            className={`w-full ${compact ? 'py-2 px-2 text-xs sm:py-2.5 sm:px-3 sm:text-sm' : 'py-2.5 px-3 text-sm'} rounded-lg font-medium transition-all duration-200 ${
+              !product.isActive || product.stock === 0
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-black text-white hover:bg-gray-800 active:scale-95'
+            }`}
+          >
+            {!product.isActive ? 'Unavailable' : product.stock === 0 ? 'Out of Stock' : 'Reserve Yours'}
+          </button>
+        </div>
       </div>
+
+      {/* Modal */}
+      {isImageModalOpen && (
+        <ProductImageModal
+          isOpen={isImageModalOpen}
+          images={product.images || []}
+          initialIndex={currentImageIndex}
+          onClose={() => setIsImageModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
@@ -257,6 +319,7 @@ ProductCard.propTypes = {
   }).isRequired,
   className: PropTypes.string,
   compact: PropTypes.bool,
+  featured: PropTypes.bool,
 };
 
 export default ProductCard;

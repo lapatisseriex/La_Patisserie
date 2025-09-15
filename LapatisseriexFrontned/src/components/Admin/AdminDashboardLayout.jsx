@@ -24,12 +24,12 @@ const AdminDashboardLayout = () => {
   // This is just a UI protection, server-side protection is also implemented
   
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-white">
       {/* Sidebar */}
-      <div className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-gray-800 text-white transition-all duration-300 flex flex-col`}>
-        <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+      <div className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-black text-white transition-all duration-300 flex flex-col`}>
+        <div className="p-4 border-b border-black flex justify-between items-center">
           <h1 className={`font-bold text-xl ${!isSidebarOpen && 'hidden'}`}>Admin Panel</h1>
-          <button onClick={toggleSidebar} className="p-1 rounded-full hover:bg-gray-700">
+          <button onClick={toggleSidebar} className="p-1 rounded-full hover:bg-black">
             {isSidebarOpen ? (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -47,7 +47,7 @@ const AdminDashboardLayout = () => {
             <li>
               <Link 
                 to="/admin/dashboard" 
-                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/dashboard' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
+                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/dashboard' ? 'bg-black text-white' : 'hover:bg-black'}`}
               >
                 <FaTachometerAlt className="mr-3" />
                 <span className={!isSidebarOpen ? 'hidden' : ''}>Dashboard</span>
@@ -56,7 +56,7 @@ const AdminDashboardLayout = () => {
             <li>
               <Link 
                 to="/admin/users" 
-                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/users' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
+                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/users' ? 'bg-black text-white' : 'hover:bg-black'}`}
               >
                 <FaUsers className="mr-3" />
                 <span className={!isSidebarOpen ? 'hidden' : ''}>Users</span>
@@ -65,7 +65,7 @@ const AdminDashboardLayout = () => {
             <li>
               <Link 
                 to="/admin/orders" 
-                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/orders' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
+                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/orders' ? 'bg-black text-white' : 'hover:bg-black'}`}
               >
                 <FaShoppingCart className="mr-3" />
                 <span className={!isSidebarOpen ? 'hidden' : ''}>Orders</span>
@@ -74,7 +74,7 @@ const AdminDashboardLayout = () => {
             <li>
               <Link 
                 to="/admin/products" 
-                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/products' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
+                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/products' ? 'bg-black text-white' : 'hover:bg-black'}`}
               >
                 <FaList className="mr-3" />
                 <span className={!isSidebarOpen ? 'hidden' : ''}>Products</span>
@@ -83,7 +83,7 @@ const AdminDashboardLayout = () => {
             <li>
               <Link 
                 to="/admin/categories" 
-                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/categories' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
+                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/categories' ? 'bg-black text-white' : 'hover:bg-black'}`}
               >
                 <FaList className="mr-3" />
                 <span className={!isSidebarOpen ? 'hidden' : ''}>Categories</span>
@@ -92,7 +92,7 @@ const AdminDashboardLayout = () => {
             <li>
               <Link 
                 to="/admin/locations" 
-                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/locations' ? 'bg-cakePink text-white' : 'hover:bg-gray-700'}`}
+                className={`flex items-center py-3 px-4 ${location.pathname === '/admin/locations' ? 'bg-black text-white' : 'hover:bg-black'}`}
               >
                 <FaMapMarkerAlt className="mr-3" />
                 <span className={!isSidebarOpen ? 'hidden' : ''}>Locations</span>
@@ -101,7 +101,7 @@ const AdminDashboardLayout = () => {
           </ul>
         </nav>
         
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-4 border-t border-black">
           <Link to="/" className={`flex items-center py-2 ${!isSidebarOpen && 'justify-center'}`}>
             <FaHome className="mr-3" />
             <span className={!isSidebarOpen ? 'hidden' : ''}>Back to Site</span>
@@ -119,7 +119,7 @@ const AdminDashboardLayout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Main content area */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-4">
+        <main className="flex-1 overflow-y-auto bg-gray-100 p-4">
           <Outlet />
         </main>
       </div>
@@ -128,3 +128,8 @@ const AdminDashboardLayout = () => {
 };
 
 export default AdminDashboardLayout;
+
+
+
+
+

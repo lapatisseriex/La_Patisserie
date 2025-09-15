@@ -229,7 +229,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">{isEditing ? 'Edit Product' : 'Add New Product'}</h2>
-        <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700">
+        <button type="button" onClick={onClose} className="text-black hover:text-black">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -241,7 +241,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       {success && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center">Product {isEditing ? 'updated' : 'created'} successfully!</div>}
 
       {/* Tabs */}
-      <div className="mb-6 border-b border-gray-200">
+      <div className="mb-6 border-b border-white">
         <nav className="flex -mb-px">
           {['basic', 'media', 'pricing', 'details'].map(tab => (
             <button
@@ -249,7 +249,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
               type="button"
               onClick={() => setActiveTab(tab)}
               className={`py-2 px-4 text-sm font-medium ${
-                activeTab === tab ? 'border-b-2 border-pink-500 text-pink-600' : 'text-gray-500 hover:text-gray-700'
+                activeTab === tab ? 'border-b-2 border-pink-500 text-pink-600' : 'text-black hover:text-black'
               }`}
             >
               {tab === 'basic' ? 'Basic Info' : tab === 'media' ? 'Media' : tab === 'pricing' ? 'Pricing & Stock' : 'Additional Details'}
@@ -263,19 +263,19 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         {activeTab === 'basic' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Product Name*</label>
+              <label className="block text-sm font-medium text-black">Product Name*</label>
               <input type="text" name="name" value={formData.name} onChange={handleChange}
                 className="mt-1 block w-full border px-3 py-2 rounded-md" placeholder="Product Name" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Description*</label>
+              <label className="block text-sm font-medium text-black">Description*</label>
               <textarea name="description" value={formData.description} onChange={handleChange}
                 className="mt-1 block w-full border px-3 py-2 rounded-md" rows="3" placeholder="Product Description"></textarea>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Category*</label>
+              <label className="block text-sm font-medium text-black">Category*</label>
               <select name="category" value={formData.category} onChange={handleChange}
                 className="mt-1 block w-full border px-3 py-2 rounded-md">
                 <option value="">Select Category</option>
@@ -304,12 +304,12 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         {activeTab === 'media' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Images*</label>
+              <label className="block text-sm font-medium text-black">Images*</label>
               <MediaUploader type="image" onUploadComplete={handleImageUpload} />
               <MediaPreview media={formData.images} onRemove={handleRemoveImage} type="image"/>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mt-4">Videos</label>
+              <label className="block text-sm font-medium text-black mt-4">Videos</label>
               <MediaUploader type="video" onUploadComplete={handleVideoUpload} />
               <MediaPreview media={formData.videos} onRemove={handleRemoveVideo} type="video"/>
             </div>
@@ -319,7 +319,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         {/* PRICING & STOCK TAB */}
         {activeTab === 'pricing' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Variants*</label>
+            <label className="block text-sm font-medium text-black mb-2">Variants*</label>
             {variants.map((variant, idx) => (
               <div key={idx} className="flex items-center space-x-2 mb-2 flex-wrap">
                 <input type="number" placeholder="Quantity" value={variant.quantity}
@@ -362,10 +362,10 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         {activeTab === 'details' && (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Extra Fields</label>
+              <label className="block text-sm font-medium text-black">Extra Fields</label>
               {extraFieldsArray.map((field, idx) => (
                 <div key={idx} className="flex items-center space-x-2 mb-1">
-                  <span className="px-2 py-1 border rounded w-32 bg-gray-100">{field.key}</span>
+                  <span className="px-2 py-1 border rounded w-32 bg-white">{field.key}</span>
                   <input type="text" value={field.value} onChange={(e) => {
                     const val = e.target.value;
                     setExtraFieldsArray(prev => {
@@ -386,7 +386,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Tags</label>
+              <label className="block text-sm font-medium text-black">Tags</label>
               <div className="flex items-center space-x-2 mt-2">
                 <input type="text" placeholder="Tag" value={tagInput} onChange={(e) => setTagInput(e.target.value)}
                   className="px-2 py-1 border rounded w-48"/>
@@ -394,7 +394,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {formData.tags.map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-gray-200 rounded flex items-center space-x-1">
+                  <span key={tag} className="px-2 py-1 bg-white rounded flex items-center space-x-1">
                     <span>{tag}</span>
                     <button type="button" onClick={() => handleRemoveTag(tag)} className="text-red-500 hover:text-red-700">x</button>
                   </span>
@@ -415,3 +415,8 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
 };
 
 export default ProductForm;
+
+
+
+
+

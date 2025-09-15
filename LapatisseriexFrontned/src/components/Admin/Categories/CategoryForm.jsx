@@ -155,7 +155,7 @@ const CategoryForm = ({ category = null, onClose }) => {
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
+          className="text-black hover:text-black"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -184,7 +184,7 @@ const CategoryForm = ({ category = null, onClose }) => {
       <form onSubmit={handleSubmit}>
         {/* Category Name */}
         <div className="mb-4">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="name" className="block text-sm font-medium text-black mb-1">
             Category Name*
           </label>
           <input
@@ -193,14 +193,14 @@ const CategoryForm = ({ category = null, onClose }) => {
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+            className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500"
             required
           />
         </div>
 
         {/* Category Description */}
         <div className="mb-4">
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="description" className="block text-sm font-medium text-black mb-1">
             Description
           </label>
           <textarea
@@ -209,7 +209,7 @@ const CategoryForm = ({ category = null, onClose }) => {
             value={formData.description}
             onChange={handleChange}
             rows="3"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+            className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500"
           />
         </div>
 
@@ -222,9 +222,9 @@ const CategoryForm = ({ category = null, onClose }) => {
               name="isActive"
               checked={formData.isActive}
               onChange={handleChange}
-              className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+              className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-white rounded"
             />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+            <label htmlFor="isActive" className="ml-2 block text-sm text-black">
               Active Category (visible to customers)
             </label>
           </div>
@@ -232,13 +232,13 @@ const CategoryForm = ({ category = null, onClose }) => {
 
         {/* Category Images */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-black mb-2">
             Category Images <span className="text-red-500">*</span>
           </label>
           
           {formData.images.length > 0 && (
             <div className="mb-4">
-              <div className="mb-2 text-sm text-gray-700 flex items-center">
+              <div className="mb-2 text-sm text-black flex items-center">
                 <span className="mr-2">✅</span> {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} uploaded
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -250,7 +250,7 @@ const CategoryForm = ({ category = null, onClose }) => {
             </div>
           )}
           
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 bg-gray-50">
+          <div className="border-2 border-dashed border-white rounded-md p-6 bg-gray-100">
             <MediaUploader
               onUploadComplete={handleImageUpload}
               onError={setError}
@@ -258,7 +258,7 @@ const CategoryForm = ({ category = null, onClose }) => {
               multiple={true}
               accept="image/*"
             />
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-xs text-black mt-3 text-center">
               Add category images for display in the app.<br />
               <span className="text-red-500">At least one image is required.</span>
             </p>
@@ -267,13 +267,13 @@ const CategoryForm = ({ category = null, onClose }) => {
 
         {/* Category Videos */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-black mb-2">
             Category Videos (Optional)
           </label>
           
           {formData.videos.length > 0 && (
             <div className="mb-4">
-              <div className="mb-2 text-sm text-gray-700 flex items-center">
+              <div className="mb-2 text-sm text-black flex items-center">
                 <span className="mr-2">✅</span> {formData.videos.length} video{formData.videos.length !== 1 ? 's' : ''} uploaded
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -285,7 +285,7 @@ const CategoryForm = ({ category = null, onClose }) => {
             </div>
           )}
           
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 bg-gray-50">
+          <div className="border-2 border-dashed border-white rounded-md p-6 bg-gray-100">
             <MediaUploader
               onUploadComplete={handleVideoUpload}
               onError={setError}
@@ -293,7 +293,7 @@ const CategoryForm = ({ category = null, onClose }) => {
               multiple={true}
               accept="video/*"
             />
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-xs text-black mt-3 text-center">
               Add promotional videos for this category (optional)
             </p>
           </div>
@@ -304,7 +304,7 @@ const CategoryForm = ({ category = null, onClose }) => {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 mr-2 hover:bg-gray-50"
+            className="px-4 py-2 border border-white rounded-md text-black mr-2 hover:bg-gray-100"
             disabled={loading}
           >
             Cancel
@@ -331,3 +331,8 @@ const CategoryForm = ({ category = null, onClose }) => {
 };
 
 export default CategoryForm;
+
+
+
+
+

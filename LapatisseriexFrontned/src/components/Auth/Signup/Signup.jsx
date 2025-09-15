@@ -65,10 +65,10 @@ const Signup = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Header with logo/icon */}
-      <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
+      <div className="flex items-center justify-between mb-6 pb-3 border-b border-white">
         <div>
-          <h2 className="text-2xl font-bold text-cakeBrown">Sign Up</h2>
-          <p className="text-sm text-gray-500">to enjoy fresh baked treats</p>
+          <h2 className="text-2xl font-bold text-black">Sign Up</h2>
+          <p className="text-sm text-black">to enjoy fresh baked treats</p>
         </div>
         <img src="/images/logo.png" alt="Dessertify Logo" className="h-12 w-12" />
       </div>
@@ -77,11 +77,11 @@ const Signup = () => {
         {/* Form content */}
         <div className="flex-1">
           <div className="mb-6">
-            <p className="text-lg font-medium text-gray-700 mb-6">Enter your phone number</p>
+            <p className="text-lg font-medium text-black mb-6">Enter your phone number</p>
             
             <div className="relative">
-              <div className="flex items-center border-b-2 border-gray-300 pb-2 focus-within:border-cakePink">
-                <span className="text-gray-500 font-medium mr-2">+91</span>
+              <div className="flex items-center border-b-2 border-white pb-2 focus-within:border-white">
+                <span className="text-black font-medium mr-2">+91</span>
                 <input
                   type="tel"
                   id="phone"
@@ -100,7 +100,7 @@ const Signup = () => {
 
           {/* Location Selection */}
           <div className="mb-8">
-            <p className="text-lg font-medium text-gray-700 mb-4">Select your delivery location</p>
+            <p className="text-lg font-medium text-black mb-4">Select your delivery location</p>
             
             <div className="relative">
               <select
@@ -108,7 +108,7 @@ const Signup = () => {
                 value={formData.locationId}
                 onChange={handleChange}
                 disabled={loading || locationsLoading}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cakePink focus:border-transparent"
+                className="w-full p-3 border border-white rounded-lg focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
                 required
               >
                 <option value="">Select a delivery location</option>
@@ -120,7 +120,7 @@ const Signup = () => {
               </select>
               
               {locationsLoading && (
-                <p className="text-gray-500 text-sm mt-2">Loading locations...</p>
+                <p className="text-black text-sm mt-2">Loading locations...</p>
               )}
               
               {localError && (
@@ -135,30 +135,30 @@ const Signup = () => {
         
         {/* Bottom section with actions */}
         <div className="mt-auto">
-          <p className="text-xs text-gray-500 mb-6">
-            By clicking on Sign Up, I accept the <span className="text-cakePink">Terms & Conditions</span> & <span className="text-cakePink">Privacy Policy</span>
+          <p className="text-xs text-black mb-6">
+            By clicking on Sign Up, I accept the <span className="text-black">Terms & Conditions</span> & <span className="text-black">Privacy Policy</span>
           </p>
           
           <button 
             type="submit" 
             disabled={loading || formData.phone.length !== 10}
-            className={`w-full bg-cakePink text-white py-3.5 rounded-lg text-lg font-medium transition-colors shadow-md ${
+            className={`w-full bg-black text-white py-3.5 rounded-lg text-lg font-medium transition-colors shadow-md ${
               loading || formData.phone.length !== 10
                 ? 'opacity-60 cursor-not-allowed' 
-                : 'hover:bg-cakePink/90'
+                : 'hover:bg-gray-200/90'
             }`}
           >
             {loading ? 'SENDING...' : 'SIGN UP'}
           </button>
           
           <div className="text-center mt-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-black">
               Already have an account? {' '}
               <button 
                 type="button" 
                 onClick={() => changeAuthType('login')}
                 disabled={loading}
-                className="text-cakePink font-medium hover:text-cakePink/80 transition-colors"
+                className="text-black font-medium hover:text-black/80 transition-colors"
               >
                 Login
               </button>
@@ -171,3 +171,8 @@ const Signup = () => {
 };
 
 export default Signup;
+
+
+
+
+

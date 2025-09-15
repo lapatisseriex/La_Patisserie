@@ -2,12 +2,12 @@
 
 /* Selected category styling */
 .selected-category img {
-  border: 2px solid #FF80A0;
+  border: 2px solid black;
 }
 
 .selected-category span {
-  color: #FF80A0;
   font-weight: 500;
+  color: black;
 }
 
 /* Padding is now handled in Layout.jsx directly */
@@ -118,7 +118,7 @@ button:has(.h-5.w-5.mr-1):hover .h-5.w-5.mr-1 {
   height: 2px;
   bottom: -2px;
   left: 0;
-  background-color: #FF80A0;
+  background-color: black;
   transition: width 0.3s ease;
 }
 
@@ -152,3 +152,6 @@ body {
     overflow-y: auto;
   }
 }
+
+
+

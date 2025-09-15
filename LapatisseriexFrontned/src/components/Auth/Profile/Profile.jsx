@@ -229,10 +229,10 @@ const Profile = () => {
       <form className="space-y-5" onSubmit={handleSubmit}>
         <div className="flex flex-col items-center mb-2">
           <img src="/images/logo.png" alt="Dessertify Logo" className="h-16 w-16 mb-3" />
-          <h2 className="text-2xl font-bold text-cakeBrown">
+          <h2 className="text-2xl font-bold text-black">
             {isNewUser ? 'Complete Your Profile' : 'Your Profile'}
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-black mt-1">
             {isNewUser 
               ? 'Just a few more details to get started' 
               : 'Update your information below'
@@ -264,11 +264,11 @@ const Profile = () => {
         </div>
         
         <div className="space-y-2">
-          <label htmlFor="name" className="block text-sm font-medium text-cakeBrown">
+          <label htmlFor="name" className="block text-sm font-medium text-black">
             Full Name
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
@@ -282,17 +282,17 @@ const Profile = () => {
               onChange={handleChange}
               required
               disabled={loading}
-              className="w-full border-2 border-cakeBrown/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink transition-colors"
+              className="w-full border-2 border-black/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors"
             />
           </div>
         </div>
         
         <div className="space-y-2">
-          <label htmlFor="dob" className="block text-sm font-medium text-cakeBrown">
+          <label htmlFor="dob" className="block text-sm font-medium text-black">
             Date of Birth
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -306,10 +306,10 @@ const Profile = () => {
               max={today}
               required
               disabled={loading}
-              className="w-full border-2 border-cakeBrown/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink transition-colors"
+              className="w-full border-2 border-black/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors"
             />
             {formData.dob && (
-              <div className="mt-2 text-xs text-gray-500">
+              <div className="mt-2 text-xs text-black">
                 Selected date: {formData.dob}
               </div>
             )}
@@ -317,11 +317,11 @@ const Profile = () => {
         </div>
         
         <div className="space-y-2">
-          <label htmlFor="location" className="block text-sm font-medium text-cakeBrown">
+          <label htmlFor="location" className="block text-sm font-medium text-black">
             Delivery Location
           </label>
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
               <MapPin className="h-5 w-5" />
             </span>
             <select
@@ -331,7 +331,7 @@ const Profile = () => {
               onChange={handleChange}
               required
               disabled={loading || locationsLoading}
-              className="w-full border-2 border-cakeBrown/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink transition-colors appearance-none"
+              className="w-full border-2 border-black/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors appearance-none"
             >
               <option value="">Select delivery location</option>
               {locations && locations.length > 0 ? (
@@ -346,11 +346,11 @@ const Profile = () => {
               )}
             </select>
             {/* Debug location data */}
-            <div className="mt-1 text-xs text-gray-500">
+            <div className="mt-1 text-xs text-black">
               {formData.location && `Selected location ID: ${formData.location}`}
             </div>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </div>
@@ -363,11 +363,11 @@ const Profile = () => {
         {/* Hostel Selection */}
         {formData.location && (
           <div className="space-y-2">
-            <label htmlFor="hostel" className="block text-sm font-medium text-cakeBrown">
+            <label htmlFor="hostel" className="block text-sm font-medium text-black">
               Hostel/Residence
             </label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                 <Building className="h-5 w-5" />
               </span>
               <select
@@ -376,7 +376,7 @@ const Profile = () => {
                 value={formData.hostel || ''}
                 onChange={handleChange}
                 disabled={loading || hostelsLoading || !formData.location}
-                className="w-full border-2 border-cakeBrown/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-cakePink focus:ring-1 focus:ring-cakePink transition-colors appearance-none"
+                className="w-full border-2 border-black/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors appearance-none"
               >
                 <option value="">Select hostel/residence (Optional)</option>
                 {hostels && hostels.length > 0 ? (
@@ -396,11 +396,11 @@ const Profile = () => {
                 )}
               </select>
               {/* Debug hostel data */}
-              <div className="mt-1 text-xs text-gray-500">
+              <div className="mt-1 text-xs text-black">
                 {formData.hostel && `Selected hostel ID: ${formData.hostel}`}
               </div>
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -432,10 +432,10 @@ const Profile = () => {
         <button 
           type="submit" 
           disabled={loading || !formData.name.trim() || !formData.dob || !formData.location}
-          className={`w-full bg-cakePink text-white py-3 px-4 rounded-md transition-colors shadow-md ${
+          className={`w-full bg-black text-white py-3 px-4 rounded-md transition-colors shadow-md ${
             loading || !formData.name.trim() || !formData.dob || !formData.location
               ? 'opacity-60 cursor-not-allowed' 
-              : 'hover:bg-cakePink-dark'
+              : 'hover:bg-black'
           }`}
         >
           {loading ? 'Saving...' : 'Save Profile'}
@@ -449,3 +449,8 @@ const Profile = () => {
 };
 
 export default Profile;
+
+
+
+
+

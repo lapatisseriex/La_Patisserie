@@ -25,19 +25,6 @@ module.exports = {
       },
     },
     extend: {
-      colors: {
-        cakePink: {
-          light: '#FFD6E0',
-          DEFAULT: '#FF80A0',
-          dark: '#FF4D79',
-        },
-        cakeBrown: {
-          light: '#8B5A2B',
-          DEFAULT: '#704214',
-          dark: '#5E370F',
-        },
-        creamWhite: '#FFF9F4',
-      },
       fontFamily: {
         quicksand: ['Quicksand', 'sans-serif'],
       },

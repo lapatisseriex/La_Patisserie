@@ -37,10 +37,10 @@ const Login = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Header with logo/icon */}
-      <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
+      <div className="flex items-center justify-between mb-6 pb-3 border-b border-white">
         <div>
-          <h2 className="text-2xl font-bold text-cakeBrown">Login</h2>
-          <p className="text-sm text-gray-500">to access your account & orders</p>
+          <h2 className="text-2xl font-bold text-black">Login</h2>
+          <p className="text-sm text-black">to access your account & orders</p>
         </div>
         <img src="/images/logo.png" alt="Dessertify Logo" className="h-12 w-12" />
       </div>
@@ -49,11 +49,11 @@ const Login = () => {
         {/* Form content */}
         <div className="flex-1">
           <div className="mb-8">
-            <p className="text-lg font-medium text-gray-700 mb-6">Enter your phone number</p>
+            <p className="text-lg font-medium text-black mb-6">Enter your phone number</p>
             
             <div className="relative">
-              <div className="flex items-center border-b-2 border-gray-300 pb-2 focus-within:border-cakePink">
-                <span className="text-gray-500 font-medium mr-2">+91</span>
+              <div className="flex items-center border-b-2 border-white pb-2 focus-within:border-white">
+                <span className="text-black font-medium mr-2">+91</span>
                 <input
                   type="tel"
                   id="phone"
@@ -79,30 +79,30 @@ const Login = () => {
         
         {/* Bottom section with actions */}
         <div className="mt-auto">
-          <p className="text-xs text-gray-500 mb-6">
-            By clicking on Login, I accept the <span className="text-cakePink">Terms & Conditions</span> & <span className="text-cakePink">Privacy Policy</span>
+          <p className="text-xs text-black mb-6">
+            By clicking on Login, I accept the <span className="text-black">Terms & Conditions</span> & <span className="text-black">Privacy Policy</span>
           </p>
           
           <button 
             type="submit" 
             disabled={loading || phone.length !== 10}
-            className={`w-full bg-cakePink text-white py-3.5 rounded-lg text-lg font-medium transition-colors shadow-md ${
+            className={`w-full bg-black text-white py-3.5 rounded-lg text-lg font-medium transition-colors shadow-md ${
               loading || phone.length !== 10 
                 ? 'opacity-60 cursor-not-allowed' 
-                : 'hover:bg-cakePink/90'
+                : 'hover:bg-gray-200/90'
             }`}
           >
             {loading ? 'Sending...' : 'LOGIN'}
           </button>
           
           <div className="text-center mt-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-black">
               Don't have an account?{' '}
               <button 
                 type="button" 
                 onClick={() => changeAuthType('signup')}
                 disabled={loading}
-                className="text-cakePink font-medium hover:text-cakePink/80 transition-colors"
+                className="text-black font-medium hover:text-black/80 transition-colors"
               >
                 Sign Up
               </button>
@@ -115,3 +115,8 @@ const Login = () => {
 };
 
 export default Login;
+
+
+
+
+

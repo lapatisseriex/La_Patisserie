@@ -1,0 +1,19 @@
+Remove focus outlines for header navigation elements
+
+/* Logo */
+.header a:focus,
+.header button:focus,
+.header input:focus,
+header a:focus,
+header button:focus,
+header input:focus,
+a:focus,
+button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Add this to the end of your CSS file */
+* {
+  -webkit-tap-highlight-color: transparent;
+}

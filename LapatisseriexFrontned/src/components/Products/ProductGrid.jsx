@@ -33,26 +33,26 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
       {title && (
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <div className="text-center sm:text-left">
-            <h2 className="text-2xl sm:text-3xl font-bold text-cakeBrown">{title}</h2>
-            {subtitle && <p className="text-sm sm:text-base text-gray-600 mt-1">{subtitle}</p>}
+            <h2 className="text-2xl sm:text-3xl font-bold text-black">{title}</h2>
+            {subtitle && <p className="text-sm sm:text-base text-black mt-1">{subtitle}</p>}
           </div>
           <div className="flex items-center mt-4 sm:mt-0 space-x-2">
             <button
               ref={navigationPrevRef}
-              className="bg-white shadow-md border border-gray-200 text-cakeBrown rounded-full p-2 sm:p-3 hover:bg-gray-50 transition"
+              className="bg-white shadow-md border border-gray-300 text-black rounded-full p-2 sm:p-3 transition"
             >
               <FaChevronLeft />
             </button>
             <button
               ref={navigationNextRef}
-              className="bg-white shadow-md border border-gray-200 text-cakeBrown rounded-full p-2 sm:p-3 hover:bg-gray-50 transition"
+              className="bg-white shadow-md border border-gray-300 text-black rounded-full p-2 sm:p-3 transition"
             >
               <FaChevronRight />
             </button>
             {viewAllLink && (
               <Link
                 to={viewAllLink}
-                className="hidden sm:flex items-center text-cakePink hover:underline"
+                className="hidden sm:flex items-center text-black"
               >
                 View All →
               </Link>
@@ -96,7 +96,7 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
         <div className="text-center mt-6 sm:hidden">
           <Link
             to={viewAllLink}
-            className="inline-flex items-center px-4 py-2 bg-cakePink text-white rounded-lg shadow hover:bg-cakePink/90 transition"
+            className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg shadow/90 transition"
           >
             View All Products
           </Link>
@@ -107,3 +107,10 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
 };
 
 export default ProductGrid;
+
+
+
+
+
+
+
