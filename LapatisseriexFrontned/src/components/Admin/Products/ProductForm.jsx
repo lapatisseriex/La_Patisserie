@@ -36,7 +36,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
 
   // Variants state
   const [variants, setVariants] = useState([
-    { quantity: '', measuringUnit: 'g', price: '', stock: 0, discount: { type: null, value: 0 }, isActive: true }
+    { quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true }
   ]);
 
   // State for managing extra fields and tags
@@ -87,8 +87,11 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
 
       // Initialize variants
       setVariants(product.variants && product.variants.length > 0
-        ? product.variants
-        : [{ quantity: '', measuringUnit: 'g', price: '', stock: 0, discount: { type: null, value: 0 }, isActive: true }]
+        ? product.variants.map(v => ({
+            ...v,
+            stock: v.stock !== undefined && v.stock !== null ? v.stock : ''
+          }))
+        : [{ quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true }]
       );
     } else if (preSelectedCategory) {
       setFormData(prev => ({ ...prev, category: preSelectedCategory }));
@@ -160,7 +163,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
   const handleAddVariant = () => {
     setVariants(prev => [
       ...prev, 
-      { quantity: '', measuringUnit: 'g', price: '', stock: 0, discount: { type: null, value: 0 }, isActive: true }
+      { quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true }
     ]);
   };
   
@@ -195,7 +198,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       const extraFields = {};
       extraFieldsArray.forEach(field => { extraFields[field.key] = field.value; });
 
-      // Prepare final data
+      // Prepare final data - handle optional stock field
       const finalData = {
         ...formData,
         extraFields,
@@ -203,7 +206,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
           ...v,
           quantity: Number(v.quantity),
           price: Number(v.price),
-          stock: Number(v.stock),
+          stock: v.stock === '' ? undefined : Number(v.stock),
           discount: { type: v.discount.type || null, value: Number(v.discount.value) || 0 }
         }))
       };
@@ -319,42 +322,78 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         {/* PRICING & STOCK TAB */}
         {activeTab === 'pricing' && (
           <div>
-            <label className="block text-sm font-medium text-black mb-2">Variants*</label>
+            <label className="block text-sm font-medium text-black mb-4">Variants*</label>
             {variants.map((variant, idx) => (
-              <div key={idx} className="flex items-center space-x-2 mb-2 flex-wrap">
-                <input type="number" placeholder="Quantity" value={variant.quantity}
-                  onChange={(e) => handleVariantChange(idx, 'quantity', e.target.value)}
-                  className="px-2 py-1 border rounded w-20"/>
-                <select value={variant.measuringUnit} onChange={(e) => handleVariantChange(idx, 'measuringUnit', e.target.value)}
-                  className="px-2 py-1 border rounded w-24">
-                  <option value="g">g</option>
-                  <option value="kg">kg</option>
-                  <option value="lb">lb</option>
-                  <option value="oz">oz</option>
-                </select>
-                <input type="number" placeholder="Price" value={variant.price}
-                  onChange={(e) => handleVariantChange(idx, 'price', e.target.value)}
-                  className="px-2 py-1 border rounded w-24"/>
-                <input type="number" placeholder="Stock" value={variant.stock}
-                  onChange={(e) => handleVariantChange(idx, 'stock', e.target.value)}
-                  className="px-2 py-1 border rounded w-20"/>
-                <select value={variant.discount.type || ''} onChange={(e) => handleVariantChange(idx, 'discount.type', e.target.value)}
-                  className="px-2 py-1 border rounded w-28">
-                  <option value="">No Discount</option>
-                  <option value="flat">Flat</option>
-                  <option value="percentage">Percentage</option>
-                </select>
-                {variant.discount.type && (
-                  <input type="number" placeholder="Value" value={variant.discount.value}
-                    onChange={(e) => handleVariantChange(idx, 'discount.value', e.target.value)}
-                    className="px-2 py-1 border rounded w-20"/>
-                )}
-                <button type="button" onClick={() => handleRemoveVariant(idx)}
-                  className="text-red-500 hover:text-red-700">Remove</button>
+              <div key={idx} className="mb-6 p-4 border rounded-lg bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">Quantity*</label>
+                    <input type="number" value={variant.quantity}
+                      onChange={(e) => handleVariantChange(idx, 'quantity', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">Unit*</label>
+                    <select value={variant.measuringUnit} onChange={(e) => handleVariantChange(idx, 'measuringUnit', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md">
+                      <option value="g">g</option>
+                      <option value="kg">kg</option>
+                      <option value="lb">lb</option>
+                      <option value="oz">oz</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">Price*</label>
+                    <input type="number" value={variant.price}
+                      onChange={(e) => handleVariantChange(idx, 'price', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">Stock (Optional)</label>
+                    <input type="number" value={variant.stock}
+                      onChange={(e) => handleVariantChange(idx, 'stock', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md"
+                      placeholder="Leave empty unlimited" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">Discount Type</label>
+                    <select value={variant.discount.type || ''} onChange={(e) => handleVariantChange(idx, 'discount.type', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md">
+                      <option value="">No Discount</option>
+                      <option value="flat">Flat</option>
+                      <option value="percentage">Percentage</option>
+                    </select>
+                  </div>
+                  
+                  {variant.discount.type && (
+                    <div>
+                      <label className="block text-sm font-medium text-black mb-1">Discount Value</label>
+                      <input type="number" value={variant.discount.value}
+                        onChange={(e) => handleVariantChange(idx, 'discount.value', e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-end">
+                  <button type="button" onClick={() => handleRemoveVariant(idx)}
+                    className="px-3 py-2 text-red-600 hover:text-red-800 font-medium">
+                    Remove Variant
+                  </button>
+                </div>
               </div>
             ))}
             <button type="button" onClick={handleAddVariant}
-              className="mt-2 px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600">Add Variant</button>
+              className="mt-2 px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600">
+              Add Variant
+            </button>
           </div>
         )}
 
@@ -415,8 +454,3 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
 };
 
 export default ProductForm;
-
-
-
-
-

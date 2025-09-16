@@ -103,7 +103,7 @@ const Cart = () => {
   }
   
   return (
-    <div className="container mx-auto px-4 py-8 pt-8">
+    <div className="container mx-auto px-4 py-8 pt-16">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center mb-6">
           <Link to="/products" className="flex items-center text-black transition-colors">

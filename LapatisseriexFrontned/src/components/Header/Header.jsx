@@ -53,8 +53,6 @@ const Header = ({ isAdminView = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   
-  // Function to toggle mobile menu
-  
   const location = useLocation();
   const navigate = useNavigate();
   const locationDropdownRef = useRef(null);
@@ -67,18 +65,16 @@ const Header = ({ isAdminView = false }) => {
   const memoizedCartCount = useMemo(() => cartCount, [cartCount]);
   
   // Use categories from database or fall back to empty array
-  // We'll only show active categories in the header
   const categories = useMemo(() => {
     if (!dbCategories || dbCategories.length === 0) {
       return [];
     }
     
-    // Filter active categories and ensure all required fields are present
     return dbCategories
       .filter(category => category.isActive)
       .map(category => ({
-        _id: category._id,  // Keep the original _id
-        id: category._id,   // Also provide as id for compatibility
+        _id: category._id,
+        id: category._id,
         name: category.name,
         featuredImage: category.featuredImage || null,
         images: category.images || [],
@@ -94,14 +90,11 @@ const Header = ({ isAdminView = false }) => {
   }, [userLocationDisplay]);
   
   // Update location display once when user changes
-  // We use a ref to track if we've already set the location
   const locationDisplayInitialized = useRef(false);
   const prevLocationIdRef = useRef(user?.location?._id);
   
   useEffect(() => {
-    // Set the location display when the component mounts or when user changes
     if (user?.location && user.location.area && user.location.city) {
-      // Check if user has a hostel selected
       if (user.hostel && user.hostel.name) {
         setUserLocationDisplay(`${user.hostel.name}, ${user.location.area}`);
       } else {
@@ -113,7 +106,7 @@ const Header = ({ isAdminView = false }) => {
       prevLocationIdRef.current = null;
     }
     locationDisplayInitialized.current = true;
-  }, [user?.uid, user?.location?._id]); // Only update when user ID or location ID changes
+  }, [user?.uid, user?.location?._id]);
 
   // Handle scroll event to change header styling
   useEffect(() => {
@@ -134,13 +127,11 @@ const Header = ({ isAdminView = false }) => {
   
   // Clean up body scroll lock when component unmounts
   useEffect(() => {
-    // Set a CSS variable for the header height to use in body padding
     const header = document.querySelector('header');
     if (header) {
       document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
     }
     
-    // Handle resize to update header height variable
     const handleResize = () => {
       const header = document.querySelector('header');
       if (header) {
@@ -151,7 +142,6 @@ const Header = ({ isAdminView = false }) => {
     window.addEventListener('resize', handleResize);
     
     return () => {
-      // Clean up
       document.body.style.overflow = '';
       window.removeEventListener('resize', handleResize);
     };
@@ -165,7 +155,6 @@ const Header = ({ isAdminView = false }) => {
       document.body.style.overflow = '';
     }
     
-    // Cleanup function to ensure scroll is always restored
     return () => {
       document.body.style.overflow = '';
     };
@@ -185,47 +174,30 @@ const Header = ({ isAdminView = false }) => {
     };
   }, []);
   
-  // We no longer need an event listener for location updates
-  // The user and location changes will be handled by the effect above
-
-  // No need for manual swiper initialization when using Swiper React components
-  
   // Handle location selection with useCallback for better performance
   const handleLocationSelect = useCallback((locationId) => {
-    // Close dropdown immediately for instant feedback
     setIsLocationDropdownOpen(false);
     
     if (user) {
-      console.log("Updating user location to:", locationId);
-      
-      // Find the selected location to display immediately
       const selectedLocation = locations.find(loc => loc._id === locationId);
       
       if (selectedLocation) {
-        // Update the display immediately without waiting for backend
-        // Note: When changing location, we don't know the hostel yet, so show location only
         if (user.hostel && user.hostel.name && user.location?._id === locationId) {
-          // If user already has a hostel and is selecting the same location, keep hostel display
           setUserLocationDisplay(`${user.hostel.name}, ${selectedLocation.area}`);
         } else {
-          // New location selected, show location only (hostel will be updated in profile)
           setUserLocationDisplay(`${selectedLocation.area}, ${selectedLocation.city}`);
         }
-        // Also update the ref to prevent useEffect from updating again
         prevLocationIdRef.current = selectedLocation._id;
       }
       
-      // Update the user location in the backend and context asynchronously
-      // This now returns immediately and doesn't block the UI
       updateUserLocation(locationId).then(success => {
         console.log("Location update success:", success);
       }).catch(error => {
         console.error("Location update failed:", error);
-        // Optionally show a toast notification for errors
       });
       
     } else {
-      toggleAuthPanel(); // Prompt user to login first
+      toggleAuthPanel();
     }
   }, [user, locations, updateUserLocation, toggleAuthPanel]);
   
@@ -246,16 +218,12 @@ const Header = ({ isAdminView = false }) => {
   
   // Handle category selection with useCallback
   const handleCategorySelect = useCallback((categoryId) => {
-    console.log("Category selected:", categoryId);
     setSelectedCategory(categoryId);
     
-    // Close mobile menu if open
     if (isMobileMenuOpen) {
       setIsMobileMenuOpen(false);
     }
     
-    // Navigate to products page with category filter
-    // Use window.location for now - this could be expanded to use router navigation
     window.location.href = `/products?category=${categoryId}`;
   }, [isMobileMenuOpen]);
   
@@ -263,7 +231,7 @@ const Header = ({ isAdminView = false }) => {
   const renderBreadcrumb = () => {
     if (location.pathname === '/cart') {
       return (
-        <div className="flex items-center text-xs sm:text-sm text-black px-2 sm:px-4 py-2 sm:py-3 bg-gray-100">
+        <div className="flex items-center text-xs sm:text-sm text-black px-2 sm:px-4 py-2 sm:py-3 bg-gray-100" style={{fontFamily: 'sans-serif'}}>
           <Link to="/" className="text-black">Home</Link>
           <span className="mx-1 sm:mx-2">/</span>
           <span className="font-medium text-black truncate">Shopping Box</span>
@@ -271,7 +239,7 @@ const Header = ({ isAdminView = false }) => {
       );
     } else if (location.pathname === '/payment') {
       return (
-        <div className="flex items-center text-xs sm:text-sm text-black px-2 sm:px-4 py-2 sm:py-3 bg-gray-100 overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center text-xs sm:text-sm text-black px-2 sm:px-4 py-2 sm:py-3 bg-gray-100 overflow-x-auto whitespace-nowrap" style={{fontFamily: 'sans-serif'}}>
           <Link to="/" className="text-black flex-shrink-0">Home</Link>
           <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
           <Link to="/cart" className="text-black flex-shrink-0">Shopping Box</Link>
@@ -284,7 +252,7 @@ const Header = ({ isAdminView = false }) => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${isScrolled ? 'shadow-md' : ''}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${isScrolled ? 'shadow-md' : ''}`} style={{fontFamily: 'sans-serif'}}>
       {/* Top Bar - City Selector (hidden in admin view) */}
       {!isAdminView && (
         <div className="bg-white py-2 sm:py-3 px-3 sm:px-5 border-b border-gray-100 shadow-sm">
@@ -293,6 +261,7 @@ const Header = ({ isAdminView = false }) => {
               <button 
                 className="flex items-center text-xs sm:text-sm text-black hover:text-gray-700 transition-colors duration-200 py-1 px-2 rounded-md hover:bg-gray-50"
                 onClick={toggleLocationDropdown}
+                style={{fontFamily: 'sans-serif'}}
               >
                 <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                 <span className="truncate max-w-[140px] sm:max-w-[180px] font-medium">{memoizedUserLocationDisplay}</span>
@@ -304,7 +273,7 @@ const Header = ({ isAdminView = false }) => {
               
               {/* City Dropdown */}
               {isLocationDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-full sm:w-72 bg-white shadow-xl rounded-lg overflow-hidden z-50 border border-gray-100">
+                <div className="absolute top-full left-0 mt-2 w-full sm:w-72 bg-white shadow-xl rounded-lg overflow-hidden z-50 border border-gray-100" style={{fontFamily: 'sans-serif'}}>
                   <div className="px-4 py-3 bg-black text-white border-b border-gray-800">
                     <h3 className="text-xs font-medium tracking-wider">AVAILABLE DELIVERY LOCATIONS</h3>
                   </div>
@@ -324,6 +293,7 @@ const Header = ({ isAdminView = false }) => {
                                 : 'text-black'
                             }`}
                             onClick={() => handleLocationSelect(location._id)}
+                            style={{fontFamily: 'sans-serif'}}
                           >
                             {location.area}, {location.city}
                           </button>
@@ -334,7 +304,7 @@ const Header = ({ isAdminView = false }) => {
                     <div className="p-4 text-center text-xs sm:text-sm text-black">No delivery locations available</div>
                   )}
                   <div className="p-3 sm:p-4 bg-gray-50 border-t border-gray-200">
-                    <p className="text-xs text-gray-600 italic text-center">
+                    <p className="text-xs text-gray-600 italic text-center" style={{fontFamily: 'sans-serif'}}>
                       Orders can only be placed in these locations
                     </p>
                   </div>
@@ -352,14 +322,14 @@ const Header = ({ isAdminView = false }) => {
           <div className="hidden md:flex items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center header-logo-text">
-                <span className="text-lg sm:text-xl md:text-2xl font-bold text-black truncate max-w-[120px] sm:max-w-none">𝓛𝓪 𝓟𝓪𝓽𝓲𝓼𝓼𝓮𝓻𝓲𝓮</span>
+                <span className="text-lg sm:text-xl md:text-2xl font-bold text-black truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'sans-serif'}}>La Patisserie</span>
               </Link>
             </div>
             
             {/* Navigation Links moved next to logo text on the same line */}
             <div className="flex items-center ml-4 md:ml-6 lg:ml-8 space-x-4 md:space-x-6 lg:space-x-8">
-              <Link to="/special" className="text-sm md:text-base text-black">Special Deals</Link>
-              <Link to="/products" className="text-sm md:text-base text-black">Menu</Link>
+              <Link to="/special" className="text-sm md:text-base text-black" style={{fontFamily: 'sans-serif'}}>Special Deals</Link>
+              <Link to="/products" className="text-sm md:text-base text-black" style={{fontFamily: 'sans-serif'}}>Menu</Link>
             </div>
           </div>
           
@@ -372,7 +342,7 @@ const Header = ({ isAdminView = false }) => {
                 <UserMenu />
                 
                 {/* Cart component */}
-                <Link to="/cart" className="flex items-center text-black relative">
+                <Link to="/cart" className="flex items-center text-black relative" style={{fontFamily: 'sans-serif'}}>
                   <ShoppingBag className="h-5 w-5 mr-1" />
                   <span>Box ({memoizedCartCount})</span>
                   {memoizedCartCount > 0 && (
@@ -388,6 +358,7 @@ const Header = ({ isAdminView = false }) => {
               <button 
                 onClick={toggleAuthPanel}
                 className="flex items-center text-black"
+                style={{fontFamily: 'sans-serif'}}
               >
                 <User className="h-5 w-5 mr-1" />
                 <span>Login / Signup</span>
@@ -402,14 +373,14 @@ const Header = ({ isAdminView = false }) => {
           
           {/* Mobile Icons */}
           <div className="flex justify-between items-center w-full md:hidden">
-            {/* User icon for mobile (as emoji) on left */}
+            {/* User icon for mobile on left */}
             {!user ? (
               <button 
                 onClick={toggleAuthPanel}
                 className="text-black p-1"
                 aria-label="Login"
               >
-                <span className="text-xl">👤</span>
+                <User className="h-6 w-6" />
               </button>
             ) : (
               <Link to="/profile" className="text-black p-1" aria-label="Profile">
@@ -422,20 +393,7 @@ const Header = ({ isAdminView = false }) => {
               <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-12" />
             </Link>
             
-            {/* Mobile Menu Button (moved to right) */}
-            {/* <button 
-              className="text-black p-1"
-              onClick={toggleMobileMenu}
-              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-            >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button> */}
-            
-            {/* Mobile Menu Button (original position - removed) */}
+            {/* Mobile Menu Button */}
             <button 
               className="text-black p-1"
               onClick={toggleMobileMenu}
@@ -464,11 +422,12 @@ const Header = ({ isAdminView = false }) => {
         className={`md:hidden fixed inset-y-0 right-0 w-[80%] max-w-xs bg-white z-50 transform transition-transform duration-300 ease-in-out ${
           isMobileMenuOpen ? 'translate-x-0 shadow-xl' : 'translate-x-full'
         } flex flex-col`}
+        style={{fontFamily: 'sans-serif'}}
       >
         <div className="flex justify-between items-center p-4 border-b border-gray-200">
           <Link to="/" className="flex items-center" onClick={() => closeMobileMenu()}>
             <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-14" />
-            <span className="ml-2 text-lg font-bold text-black">La Patisserie</span>
+            <span className="ml-2 text-lg font-bold text-black" style={{fontFamily: 'sans-serif'}}>La Patisserie</span>
           </Link>
           <button 
             className="text-black p-1"
@@ -486,23 +445,13 @@ const Header = ({ isAdminView = false }) => {
               type="text" 
               placeholder="Search for cakes, cookies, etc..." 
               className="w-full py-2 px-4 pr-10 rounded-full border border-gray-300"
+              style={{fontFamily: 'sans-serif'}}
               onFocus={(e) => {
                 e.preventDefault();
                 closeMobileMenu();
                 navigate('/products');
               }}
             />
-            <Link 
-              to="/products"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white"
-              onClick={(e) => {
-                e.preventDefault();
-                closeMobileMenu();
-                navigate('/products');
-              }}
-            >
-          
-            </Link>
           </div>
           
           {/* Mobile Nav Links - Elegant Design */}
@@ -510,7 +459,7 @@ const Header = ({ isAdminView = false }) => {
             {/* Account Section */}
             <div className="mb-8">
               <div className="px-4 py-3 bg-gradient-to-r from-black to-gray-900 -mx-4 mb-6">
-                <h3 className="text-sm font-light tracking-widest text-white uppercase">
+                <h3 className="text-sm font-light tracking-widest text-white uppercase" style={{fontFamily: 'sans-serif'}}>
                   ACCOUNT
                 </h3>
               </div>
@@ -561,7 +510,7 @@ const Header = ({ isAdminView = false }) => {
             {/* Navigation Section */}
             <div>
               <div className="px-4 py-3 bg-gradient-to-r from-gray-100 to-white -mx-4 mb-6 border-y border-gray-200">
-                <h3 className="text-sm font-light tracking-widest text-black uppercase">
+                <h3 className="text-sm font-light tracking-widest text-black uppercase" style={{fontFamily: 'sans-serif'}}>
                   NAVIGATION
                 </h3>
               </div>
@@ -576,7 +525,7 @@ const Header = ({ isAdminView = false }) => {
                   />
                   {memoizedCartCount > 0 && (
                     <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
-                      <span className="bg-black text-white text-xs px-2 py-1 tracking-wider font-light">
+                      <span className="bg-black text-white text-xs px-2 py-1 tracking-wider font-light" style={{fontFamily: 'sans-serif'}}>
                         {memoizedCartCount}
                       </span>
                     </div>
@@ -602,12 +551,12 @@ const Header = ({ isAdminView = false }) => {
         {/* Mobile menu footer - Elegant Location Display */}
         <div className="mt-auto border-t border-gray-300">
           <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-white">
-            <div className="text-xs font-light tracking-widest text-gray-600 uppercase mb-2">
+            <div className="text-xs font-light tracking-widest text-gray-600 uppercase mb-2" style={{fontFamily: 'sans-serif'}}>
               DELIVERY LOCATION
             </div>
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <span className="text-sm font-light text-black truncate max-w-[180px] block">
+                <span className="text-sm font-light text-black truncate max-w-[180px] block" style={{fontFamily: 'sans-serif'}}>
                   {userLocationDisplay}
                 </span>
               </div>
@@ -618,6 +567,7 @@ const Header = ({ isAdminView = false }) => {
                   hover:bg-gray-800
                   transition-colors duration-300
                 "
+                style={{fontFamily: 'sans-serif'}}
                 onClick={() => {
                   setIsLocationDropdownOpen(true);
                   closeMobileMenu();
@@ -647,6 +597,7 @@ const MobileNavLink = ({ to, label, onClick }) => (
       transition-all duration-300
       group relative
     "
+    style={{fontFamily: 'sans-serif'}}
   >
     <span className="relative z-10">{label}</span>
     <div className="absolute bottom-0 left-6 right-6 h-px bg-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -686,6 +637,7 @@ const MobileNavButton = ({ onClick, label, variant = 'default' }) => {
         transition-all duration-300
         ${getVariantStyles()}
       `}
+      style={{fontFamily: 'sans-serif'}}
     >
       <span className="relative z-10">{label}</span>
     </button>
@@ -694,8 +646,3 @@ const MobileNavButton = ({ onClick, label, variant = 'default' }) => {
 
 // Export as memoized component to prevent unnecessary re-renders
 export default memo(Header);
-
-
-
-
-

@@ -20,6 +20,7 @@ textarea:focus {
 
 /* Ensure proper body spacing with fixed header */
 body.has-fixed-header {
+  @apply font-sans;
   padding-top: 0;
   margin-top: 0;
   overflow-x: hidden; /* Prevent horizontal scrolling issues */
@@ -62,7 +63,7 @@ main {
 }
 
 body {
-  font-family: 'Quicksand', sans-serif;
+  font-family: sans-serif;
   background-color: white;
   padding-top: env(safe-area-inset-top, 0);
 }

@@ -215,35 +215,48 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             )}
           </div>
         </div>
+        
+            {/* Stock info text */}
+            {product.stock > 0 && product.stock < 15 && (
+              <span className="text-red-500 font-medium text-sm">
+                Only {product.stock} left
+              </span>
+            )}
 
+            {product.stock === 0 && (
+              <span className="text-gray-500 font-medium text-sm">
+                Out of Stock
+              </span>
+            )}
         {/* Actions */}
         <div className={`${compact ? 'space-y-1 sm:space-y-2' : 'space-y-2'}`}>
-          {currentQuantity > 0 ? (
-            <div className="flex items-center justify-center bg-white rounded-lg p-2 border border-gray-200">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuantityChange(currentQuantity - 1);
-                }}
-                className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black hover:bg-gray-50"
-              >
-                −
-              </button>
-              <span className="mx-3 font-medium text-black min-w-[2rem] text-center text-sm">
-                {currentQuantity}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuantityChange(currentQuantity + 1);
-                }}
-                disabled={currentQuantity >= product.stock}
-                className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                +
-              </button>
-            </div>
-          ) : (
+        {currentQuantity > 0 ? (
+          <div className="flex items-center justify-center bg-white rounded-lg p-2 border border-gray-200">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleQuantityChange(currentQuantity - 1);
+              }}
+              className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black hover:bg-gray-50"
+            >
+              −
+            </button>
+            <span className="mx-3 font-medium text-black min-w-[2rem] text-center text-sm">
+              {currentQuantity}
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleQuantityChange(currentQuantity + 1);
+              }}
+              disabled={currentQuantity >= product.stock}
+              className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              +
+            </button>
+              </div>
+            ) : (
+              <div className="flex flex-col space-y-1">
             <button
               onClick={handleAddToCart}
               disabled={!product.isActive || product.stock === 0 || isAddingToCart}
@@ -255,22 +268,19 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   : 'bg-white text-black border-2 border-black hover:bg-gray-50 active:scale-95'
               }`}
             >
-              {isAddingToCart ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400 mr-2"></div>
-                  Adding...
-                </div>
-              ) : !product.isActive ? (
-                'Unavailable'
-              ) : product.stock === 0 ? (
-                'Out of Stock'
-              ) : product.stock > 0 && product.stock < 15 ? (
-                <span className="text-red-500 font-medium">Only {product.stock} left</span>
+        
+        {isAddingToCart ? (
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400 mr-2"></div>
+            Adding...
+          </div>
               ) : (
                 'Add to Box'
               )}
             </button>
-          )}
+          </div>
+        )}
+
 
           {/* Reserve Yours Button */}
           <button

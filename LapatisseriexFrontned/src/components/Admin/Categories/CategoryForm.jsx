@@ -147,9 +147,9 @@ const CategoryForm = ({ category = null, onClose }) => {
   };
 
   return (
-    <div className="category-form">
+    <div className="category-form" style={{ fontFamily: 'sans-serif' }}>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">
+        <h2 className="text-xl font-bold">
           {isEditing ? 'Edit Category' : 'Add New Category'}
         </h2>
         <button
@@ -164,7 +164,7 @@ const CategoryForm = ({ category = null, onClose }) => {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center">
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center font-medium">
           <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
@@ -173,7 +173,7 @@ const CategoryForm = ({ category = null, onClose }) => {
       )}
 
       {success && (
-        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center">
+        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center font-medium">
           <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
@@ -193,7 +193,7 @@ const CategoryForm = ({ category = null, onClose }) => {
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+            className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500 font-light"
             required
           />
         </div>
@@ -209,7 +209,7 @@ const CategoryForm = ({ category = null, onClose }) => {
             value={formData.description}
             onChange={handleChange}
             rows="3"
-            className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+            className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-pink-500 focus:border-pink-500 font-light"
           />
         </div>
 
@@ -224,7 +224,7 @@ const CategoryForm = ({ category = null, onClose }) => {
               onChange={handleChange}
               className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-white rounded"
             />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-black">
+            <label htmlFor="isActive" className="ml-2 block text-sm text-black font-light">
               Active Category (visible to customers)
             </label>
           </div>
@@ -238,7 +238,7 @@ const CategoryForm = ({ category = null, onClose }) => {
           
           {formData.images.length > 0 && (
             <div className="mb-4">
-              <div className="mb-2 text-sm text-black flex items-center">
+              <div className="mb-2 text-sm text-black flex items-center font-light">
                 <span className="mr-2">✅</span> {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} uploaded
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -258,9 +258,9 @@ const CategoryForm = ({ category = null, onClose }) => {
               multiple={true}
               accept="image/*"
             />
-            <p className="text-xs text-black mt-3 text-center">
+            <p className="text-xs text-black mt-3 text-center font-light">
               Add category images for display in the app.<br />
-              <span className="text-red-500">At least one image is required.</span>
+              <span className="text-red-500 font-medium">At least one image is required.</span>
             </p>
           </div>
         </div>
@@ -273,7 +273,7 @@ const CategoryForm = ({ category = null, onClose }) => {
           
           {formData.videos.length > 0 && (
             <div className="mb-4">
-              <div className="mb-2 text-sm text-black flex items-center">
+              <div className="mb-2 text-sm text-black flex items-center font-light">
                 <span className="mr-2">✅</span> {formData.videos.length} video{formData.videos.length !== 1 ? 's' : ''} uploaded
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -293,7 +293,7 @@ const CategoryForm = ({ category = null, onClose }) => {
               multiple={true}
               accept="video/*"
             />
-            <p className="text-xs text-black mt-3 text-center">
+            <p className="text-xs text-black mt-3 text-center font-light">
               Add promotional videos for this category (optional)
             </p>
           </div>
@@ -304,14 +304,14 @@ const CategoryForm = ({ category = null, onClose }) => {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-white rounded-md text-black mr-2 hover:bg-gray-100"
+            className="px-4 py-2 border border-white rounded-md text-black mr-2 hover:bg-gray-100 font-medium"
             disabled={loading}
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 disabled:bg-pink-300 flex items-center justify-center min-w-[140px]"
+            className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 disabled:bg-pink-300 flex items-center justify-center min-w-[140px] font-bold"
             disabled={loading}
           >
             {loading ? (
@@ -331,8 +331,3 @@ const CategoryForm = ({ category = null, onClose }) => {
 };
 
 export default CategoryForm;
-
-
-
-
-

@@ -26,7 +26,7 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        quicksand: ['Quicksand', 'sans-serif'],
+        sans: ['Inter', 'Helvetica', 'Arial', 'sans-serif'],
       },
       backgroundImage: {
         'cake-pattern': "url('/images/backGround.png')",

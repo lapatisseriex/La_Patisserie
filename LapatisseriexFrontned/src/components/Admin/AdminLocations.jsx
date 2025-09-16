@@ -367,23 +367,23 @@ const AdminLocations = () => {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-6 pt-8">
+    <div className="container mx-auto px-4 py-6 pt-8 font-sans">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-black">Delivery Locations & Hostels</h1>
-          <p className="text-black">Manage delivery locations and hostels for your store</p>
+          <h1 className="text-2xl font-semibold text-black font-bold">Delivery Locations & Hostels</h1>
+          <p className="text-black font-light">Manage delivery locations and hostels for your store</p>
         </div>
         <div className="flex space-x-3">
           <button
             onClick={() => openHostelModal()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-700 transition-colors font-medium"
           >
             <FaBuilding className="mr-2" />
             Add Hostel
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-black text-white px-4 py-2 rounded-md flex items-center hover:bg-gray-800 transition-colors"
+            className="bg-black text-white px-4 py-2 rounded-md flex items-center hover:bg-gray-800 transition-colors font-medium"
           >
             <FaPlus className="mr-2" />
             Add Location
@@ -395,7 +395,7 @@ const AdminLocations = () => {
         <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
           <div className="flex items-start">
             <FaExclamationTriangle className="text-red-400 mt-0.5 mr-2" />
-            <p className="text-red-800">{error}</p>
+            <p className="text-red-800 font-medium">{error}</p>
           </div>
         </div>
       )}
@@ -405,22 +405,22 @@ const AdminLocations = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 Location
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 City
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 Pincode
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 Hostels
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 Status
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -428,13 +428,13 @@ const AdminLocations = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-black">
+                <td colSpan="6" className="px-6 py-4 text-center text-black font-light">
                   Loading locations...
                 </td>
               </tr>
             ) : locations.length === 0 ? (
               <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-black">
+                <td colSpan="6" className="px-6 py-4 text-center text-black font-light">
                   No locations found
                 </td>
               </tr>
@@ -444,19 +444,19 @@ const AdminLocations = () => {
                   <tr>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <FaMapMarkerAlt className={`mr-2 ${location.isActive ? 'text-black' : 'text-white'}`} />
-                        <span className="font-medium text-black">{location.area}</span>
+                        <FaMapMarkerAlt className={`mr-2 ${location.isActive ? 'text-black' : 'text-gray-400'}`} />
+                        <span className="text-black">{location.area}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-black">{location.city}</span>
+                      <span className="text-black font-medium">{location.city}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-black">{location.pincode}</span>
+                      <span className="text-black font-medium">{location.pincode}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-black">
+                        <span className="text-sm text-black font-medium">
                           {getHostelsForLocation(location._id).length} hostel(s)
                         </span>
                         <button
@@ -475,8 +475,8 @@ const AdminLocations = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        location.isActive ? 'bg-green-100 text-green-800' : 'bg-white text-black'
+                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                        location.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                       }`}>
                         {location.isActive ? 'Active' : 'Inactive'}
                       </span>
@@ -486,12 +486,14 @@ const AdminLocations = () => {
                         <button
                           onClick={() => openEditModal(location)}
                           className="text-blue-600 hover:text-blue-900"
+                          title="Edit location"
                         >
                           <FaEdit />
                         </button>
                         <button
                           onClick={() => toggleLocationStatus(location._id)}
                           className={location.isActive ? 'text-amber-500 hover:text-amber-700' : 'text-green-600 hover:text-green-800'}
+                          title={location.isActive ? 'Deactivate location' : 'Activate location'}
                         >
                           {location.isActive ? <FaToggleOff /> : <FaToggleOn />}
                         </button>
@@ -502,42 +504,45 @@ const AdminLocations = () => {
                   {/* Expanded hostels row */}
                   {expandedLocation === location._id && (
                     <tr>
-                      <td colSpan="6" className="px-6 py-4 bg-gray-100">
+                      <td colSpan="6" className="px-6 py-4 bg-gray-50">
                         <div className="space-y-2">
-                          <h4 className="font-medium text-black mb-3">Hostels in {location.area}</h4>
+                          <h4 className="font-bold text-black mb-3">Hostels in {location.area}</h4>
                           {getHostelsForLocation(location._id).length === 0 ? (
-                            <p className="text-black text-sm">No hostels found in this location.</p>
+                            <p className="text-black text-sm font-light">No hostels found in this location.</p>
                           ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                               {getHostelsForLocation(location._id).map((hostel) => (
-                                <div key={hostel._id} className="bg-white p-3 rounded-md border border-white">
+                                <div key={hostel._id} className="bg-white p-3 rounded-md border border-gray-200">
                                   <div className="flex items-center justify-between mb-2">
-                                    <h5 className="font-medium text-black">{hostel.name}</h5>
-                                    <span className={`px-2 py-1 text-xs rounded-full ${
-                                      hostel.isActive ? 'bg-green-100 text-green-800' : 'bg-white text-black'
+                                    <h5 className="font-bold text-black">{hostel.name}</h5>
+                                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                      hostel.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                                     }`}>
                                       {hostel.isActive ? 'Active' : 'Inactive'}
                                     </span>
                                   </div>
                                   {hostel.address && (
-                                    <p className="text-black text-sm mb-2">{hostel.address}</p>
+                                    <p className="text-black text-sm mb-2 font-light">{hostel.address}</p>
                                   )}
                                   <div className="flex space-x-2">
                                     <button
                                       onClick={() => openHostelModal(null, hostel)}
                                       className="text-blue-600 hover:text-blue-900 text-sm"
+                                      title="Edit hostel"
                                     >
                                       <FaEdit />
                                     </button>
                                     <button
                                       onClick={() => toggleHostelStatus(hostel._id)}
                                       className={`text-sm ${hostel.isActive ? 'text-amber-500 hover:text-amber-700' : 'text-green-600 hover:text-green-800'}`}
+                                      title={hostel.isActive ? 'Deactivate hostel' : 'Activate hostel'}
                                     >
                                       {hostel.isActive ? <FaToggleOff /> : <FaToggleOn />}
                                     </button>
                                     <button
                                       onClick={() => deleteHostel(hostel._id)}
                                       className="text-red-600 hover:text-red-900 text-sm"
+                                      title="Delete hostel"
                                     >
                                       <FaTrash />
                                     </button>
@@ -559,9 +564,9 @@ const AdminLocations = () => {
       
       {/* Add/Edit Location Modal */}
       {(showAddModal || editingLocation) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-sans">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-black mb-4">
+            <h3 className="text-lg font-bold text-black mb-4">
               {editingLocation ? 'Edit Location' : 'Add New Location'}
             </h3>
             
@@ -576,7 +581,7 @@ const AdminLocations = () => {
                     name="city"
                     value={formData.city}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black font-medium"
                     placeholder="e.g. Coimbatore"
                     required
                   />
@@ -591,7 +596,7 @@ const AdminLocations = () => {
                     name="area"
                     value={formData.area}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black font-medium"
                     placeholder="e.g. Avinashi Rd, Peelamedu"
                     required
                   />
@@ -606,7 +611,7 @@ const AdminLocations = () => {
                     name="pincode"
                     value={formData.pincode}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black font-medium"
                     placeholder="e.g. 641004"
                     required
                     pattern="[0-9]{6}"
@@ -621,9 +626,9 @@ const AdminLocations = () => {
                     id="isActive"
                     checked={formData.isActive}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-black focus:ring-white border-white rounded"
+                    className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
                   />
-                  <label htmlFor="isActive" className="ml-2 block text-sm text-black">
+                  <label htmlFor="isActive" className="ml-2 block text-sm text-black font-medium">
                     Location is active and available for delivery
                   </label>
                 </div>
@@ -637,13 +642,13 @@ const AdminLocations = () => {
                     setEditingLocation(null);
                     resetForm();
                   }}
-                  className="px-4 py-2 border border-white rounded-md text-black hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-black hover:bg-gray-100 transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+                  className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
                 >
                   {editingLocation ? 'Update Location' : 'Add Location'}
                 </button>
@@ -655,9 +660,9 @@ const AdminLocations = () => {
 
       {/* Add/Edit Hostel Modal */}
       {showHostelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-sans">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-black mb-4">
+            <h3 className="text-lg font-bold text-black mb-4">
               {editingHostel ? 'Edit Hostel' : 'Add New Hostel'}
             </h3>
             
@@ -672,7 +677,7 @@ const AdminLocations = () => {
                     name="name"
                     value={hostelFormData.name}
                     onChange={handleHostelInputChange}
-                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 font-medium"
                     placeholder="e.g. Student Hostel A"
                     required
                   />
@@ -686,7 +691,7 @@ const AdminLocations = () => {
                     name="locationId"
                     value={hostelFormData.locationId}
                     onChange={handleHostelInputChange}
-                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 font-medium"
                     required
                   >
                     <option value="">Select a location</option>
@@ -706,7 +711,7 @@ const AdminLocations = () => {
                     name="address"
                     value={hostelFormData.address}
                     onChange={handleHostelInputChange}
-                    className="w-full px-3 py-2 border border-white rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 font-light"
                     placeholder="Detailed address of the hostel"
                     rows="3"
                   />
@@ -719,9 +724,9 @@ const AdminLocations = () => {
                     id="hostelIsActive"
                     checked={hostelFormData.isActive}
                     onChange={handleHostelInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-white rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300 rounded"
                   />
-                  <label htmlFor="hostelIsActive" className="ml-2 block text-sm text-black">
+                  <label htmlFor="hostelIsActive" className="ml-2 block text-sm text-black font-medium">
                     Hostel is active and available for delivery
                   </label>
                 </div>
@@ -735,13 +740,13 @@ const AdminLocations = () => {
                     setEditingHostel(null);
                     resetHostelForm();
                   }}
-                  className="px-4 py-2 border border-white rounded-md text-black hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-black hover:bg-gray-100 transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                 >
                   {editingHostel ? 'Update Hostel' : 'Add Hostel'}
                 </button>
@@ -755,8 +760,3 @@ const AdminLocations = () => {
 };
 
 export default AdminLocations;
-
-
-
-
-

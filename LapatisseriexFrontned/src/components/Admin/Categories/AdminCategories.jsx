@@ -88,29 +88,29 @@ const AdminCategories = () => {
   };
 
   return (
-    <div className="admin-categories">
+    <div className="admin-categories" style={{ fontFamily: 'sans-serif' }}>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">Categories</h1>
+          <h1 className="text-2xl font-bold">Categories</h1>
           <div className="mt-2 flex space-x-4">
-            <Link to="/admin/products" className="text-black hover:text-black">
+            <Link to="/admin/products" className="text-black hover:text-black font-light">
               Products
             </Link>
-            <Link to="/admin/categories" className="text-black font-medium border-b-2 border-white">
+            <Link to="/admin/categories" className="text-black font-bold border-b-2 border-black">
               Categories
             </Link>
           </div>
         </div>
         <button
           onClick={handleAddNew}
-          className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600"
+          className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 font-medium"
         >
           Add New Category
         </button>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md font-medium">
           {error}
         </div>
       )}
@@ -118,7 +118,7 @@ const AdminCategories = () => {
       {/* Category Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ fontFamily: 'sans-serif' }}>
             <CategoryForm 
               category={editingCategory} 
               onClose={handleCloseForm} 
@@ -129,27 +129,27 @@ const AdminCategories = () => {
 
       {/* Categories List */}
       {localLoading ? (
-        <div className="text-center py-10">
+        <div className="text-center py-10" style={{ fontFamily: 'sans-serif' }}>
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-pink-500 mx-auto"></div>
-          <p className="mt-2">Loading categories...</p>
+          <p className="mt-2 font-light">Loading categories...</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-white">
+          <table className="min-w-full bg-white border border-white" style={{ fontFamily: 'sans-serif' }}>
             <thead className="bg-white">
               <tr>
-                <th className="py-3 px-4 text-left">Image</th>
-                <th className="py-3 px-4 text-left">Name</th>
-                <th className="py-3 px-4 text-left">Description</th>
-                <th className="py-3 px-4 text-left">Status</th>
-                <th className="py-3 px-4 text-left">Media</th>
-                <th className="py-3 px-4 text-left">Actions</th>
+                <th className="py-3 px-4 text-left font-semibold">Image</th>
+                <th className="py-3 px-4 text-left font-semibold">Name</th>
+                <th className="py-3 px-4 text-left font-semibold">Description</th>
+                <th className="py-3 px-4 text-left font-semibold">Status</th>
+                <th className="py-3 px-4 text-left font-semibold">Media</th>
+                <th className="py-3 px-4 text-left font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {categories.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-4 px-4 text-center text-black">
+                  <td colSpan="6" className="py-4 px-4 text-center text-black font-light">
                     No categories found. Create your first category.
                   </td>
                 </tr>
@@ -171,13 +171,13 @@ const AdminCategories = () => {
                         </div>
                       )}
                     </td>
-                    <td className="py-3 px-4 font-medium">{category.name}</td>
-                    <td className="py-3 px-4 max-w-xs truncate">
+                    <td className="py-3 px-4">{category.name}</td>
+                    <td className="py-3 px-4 max-w-xs truncate font-light">
                       {category.description || "—"}
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`inline-block px-2 py-1 text-xs rounded-full ${
+                        className={`inline-block px-2 py-1 text-xs rounded-full font-medium ${
                           category.isActive
                             ? "bg-green-100 text-green-700"
                             : "bg-white text-black"
@@ -186,7 +186,7 @@ const AdminCategories = () => {
                         {category.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 font-light">
                       <div className="flex space-x-2">
                         <span className="text-sm">
                           {category.images?.length || 0} images
@@ -202,29 +202,29 @@ const AdminCategories = () => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleEdit(category)}
-                          className="text-blue-500 hover:text-blue-700"
+                          className="text-blue-500 hover:text-blue-700 font-medium"
                         >
                           Edit
                         </button>
                         <Link
                           to={`/admin/categories/${category._id}/products`}
-                          className="text-green-500 hover:text-green-700"
+                          className="text-green-500 hover:text-green-700 font-medium"
                         >
                           Products
                         </Link>
                         {deleteId === category._id ? (
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-red-500">Confirm?</span>
+                            <span className="text-sm text-red-500 font-light">Confirm?</span>
                             <button
                               onClick={() => handleDelete(category._id)}
                               disabled={isDeleting}
-                              className="text-red-600 hover:text-red-800"
+                              className="text-red-600 hover:text-red-800 font-medium"
                             >
                               {isDeleting ? "..." : "Yes"}
                             </button>
                             <button
                               onClick={handleCancelDelete}
-                              className="text-black hover:text-black"
+                              className="text-black hover:text-black font-medium"
                             >
                               No
                             </button>
@@ -232,14 +232,14 @@ const AdminCategories = () => {
                         ) : (
                           <button
                             onClick={() => setDeleteId(category._id)}
-                            className="text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700 font-medium"
                           >
                             Delete
                           </button>
                         )}
                       </div>
                       {deleteError && deleteId === category._id && (
-                        <p className="text-red-500 text-xs mt-1">{deleteError}</p>
+                        <p className="text-red-500 text-xs mt-1 font-light">{deleteError}</p>
                       )}
                     </td>
                   </tr>
@@ -254,8 +254,3 @@ const AdminCategories = () => {
 };
 
 export default AdminCategories;
-
-
-
-
-

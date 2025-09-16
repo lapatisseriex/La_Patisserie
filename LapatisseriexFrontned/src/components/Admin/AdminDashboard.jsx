@@ -76,20 +76,20 @@ const AdminDashboard = () => {
   }, [user, locations]);
 
   return (
-    <div className="container mx-auto px-4 py-6 pt-8">
+    <div className="container mx-auto px-4 py-6 pt-8 font-sans">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-black">Admin Dashboard</h1>
-        <p className="text-black">Welcome back, Admin</p>
+        <h1 className="text-2xl font-bold text-black">Admin Dashboard</h1>
+        <p className="text-black font-light">Welcome back, Admin</p>
       </div>
 
       {/* Stats Cards */}
       {loading ? (
         <div className="text-center py-10">
-          <p>Loading dashboard data...</p>
+          <p className="font-light">Loading dashboard data...</p>
         </div>
       ) : error ? (
         <div className="text-center py-10 text-red-500">
-          <p>{error}</p>
+          <p className="font-medium">{error}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -100,11 +100,11 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <h2 className="text-sm font-medium text-black">Total Users</h2>
-                <p className="text-2xl font-semibold text-black">{stats.totalUsers}</p>
+                <p className="text-2xl font-bold text-black">{stats.totalUsers}</p>
               </div>
             </div>
             <div className="mt-4">
-              <a href="/admin/users" className="text-blue-500 text-sm hover:underline">View all users</a>
+              <a href="/admin/users" className="text-blue-500 text-sm hover:underline font-medium">View all users</a>
             </div>
           </div>
           
@@ -115,12 +115,12 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <h2 className="text-sm font-medium text-black">Total Orders</h2>
-                <p className="text-2xl font-semibold text-black">{stats.totalOrders}</p>
+                <p className="text-2xl font-bold text-black">{stats.totalOrders}</p>
               </div>
             </div>
             <div className="mt-4 flex justify-between items-center">
-              <a href="/admin/orders" className="text-green-500 text-sm hover:underline">View all orders</a>
-              <div className="text-amber-500 text-sm font-medium bg-amber-50 px-2 py-1 rounded">
+              <a href="/admin/orders" className="text-green-500 text-sm hover:underline font-medium">View all orders</a>
+              <div className="text-amber-500 text-sm font-bold bg-amber-50 px-2 py-1 rounded">
                 {stats.pendingOrders} pending
               </div>
             </div>
@@ -133,11 +133,11 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <h2 className="text-sm font-medium text-black">Total Products</h2>
-                <p className="text-2xl font-semibold text-black">{stats.totalProducts}</p>
+                <p className="text-2xl font-bold text-black">{stats.totalProducts}</p>
               </div>
             </div>
             <div className="mt-4">
-              <a href="/admin/products" className="text-purple-500 text-sm hover:underline">View all products</a>
+              <a href="/admin/products" className="text-purple-500 text-sm hover:underline font-medium">View all products</a>
             </div>
           </div>
           
@@ -148,11 +148,11 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <h2 className="text-sm font-medium text-black">Delivery Locations</h2>
-                <p className="text-2xl font-semibold text-black">{stats.activeLocations}</p>
+                <p className="text-2xl font-bold text-black">{stats.activeLocations}</p>
               </div>
             </div>
             <div className="mt-4">
-              <a href="/admin/locations" className="text-black text-sm hover:underline">Manage locations</a>
+              <a href="/admin/locations" className="text-black text-sm hover:underline font-medium">Manage locations</a>
             </div>
           </div>
         </div>
@@ -161,34 +161,34 @@ const AdminDashboard = () => {
       {/* Recent Activity Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-black mb-4">Recent Orders</h2>
+          <h2 className="text-lg font-bold text-black mb-4">Recent Orders</h2>
           <div className="text-center py-8">
             <div className="text-white mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
             </div>
-            <p className="text-black">No orders available yet</p>
-            <p className="text-sm text-black mt-2">Order management coming soon</p>
+            <p className="text-black font-medium">No orders available yet</p>
+            <p className="text-sm text-black mt-2 font-light">Order management coming soon</p>
           </div>
           <div className="mt-4">
-            <a href="/admin/orders" className="text-black text-sm hover:underline">View orders page</a>
+            <a href="/admin/orders" className="text-black text-sm hover:underline font-medium">View orders page</a>
           </div>
         </div>
         
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-black mb-4">Recent Users</h2>
+          <h2 className="text-lg font-bold text-black mb-4">Recent Users</h2>
           {loading ? (
             <div className="text-center py-4">
-              <p>Loading user data...</p>
+              <p className="font-light">Loading user data...</p>
             </div>
           ) : error ? (
             <div className="text-center py-4 text-red-500">
-              <p>{error}</p>
+              <p className="font-medium">{error}</p>
             </div>
           ) : recentUsers.length === 0 ? (
             <div className="text-center py-4 text-black">
-              <p>No users found</p>
+              <p className="font-light">No users found</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -196,15 +196,15 @@ const AdminDashboard = () => {
                 <div key={userData._id || i} className="border-b border-white pb-3 last:border-0 last:pb-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center font-medium">
                         {userData.name ? userData.name.charAt(0).toUpperCase() : 'U'}
                       </div>
                       <div className="ml-3">
-                        <p className="font-medium">{userData.name || 'Unnamed User'}</p>
-                        <p className="text-sm text-black">{userData.phone || 'No phone'}</p>
+                        <p>{userData.name || 'Unnamed User'}</p>
+                        <p className="text-sm text-black font-light">{userData.phone || 'No phone'}</p>
                       </div>
                     </div>
-                    <div className="text-sm text-black">
+                    <div className="text-sm text-black font-light">
                       Joined {userData.createdAt 
                         ? new Date(userData.createdAt).toLocaleDateString() 
                         : 'Unknown date'}
@@ -215,7 +215,7 @@ const AdminDashboard = () => {
             </div>
           )}
           <div className="mt-4">
-            <a href="/admin/users" className="text-black text-sm hover:underline">View all users</a>
+            <a href="/admin/users" className="color blue text-sm hover:underline font-medium">View all users</a>
           </div>
         </div>
       </div>
@@ -224,8 +224,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-
-
-
-
