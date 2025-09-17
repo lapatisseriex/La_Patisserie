@@ -110,7 +110,7 @@ const Payment = () => {
 
   if (isOrderComplete) {
     return (
-      <div className="container mx-auto px-4 py-12 min-h-screen">
+      <div className="container mx-auto px-4 py-8 min-h-screen">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8">
           <div className="text-center py-6">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -190,7 +190,7 @@ const Payment = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 pt-8 min-h-screen">
+    <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center mb-6">
           <Link to="/cart" className="flex items-center text-black hover:text-black transition-colors">

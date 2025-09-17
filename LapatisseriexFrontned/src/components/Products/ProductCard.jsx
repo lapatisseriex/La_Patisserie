@@ -19,19 +19,33 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const currentQuantity = getProductQuantity(product._id);
 
-  const discountedPrice =
-    product.variants[0].price && product.variants[0].discount.value
-      ? product.variants[0].price - product.variants[0].discount.value
-      : product.variants[0].price;
+  // Ensure we have variants and handle missing data
+  const variant = product.variants?.[0] || { price: 0, discount: { value: 0 }, stock: 0 };
+  const isActive = product.isActive !== false; // Default to true if undefined
+  const totalStock = product.stock || variant.stock || 0;
 
-  const discountPercentage =
-    product.variants[0].price && product.variants[0].discount.value
-      ? Math.round((product.variants[0].discount.value / product.variants[0].price) * 100)
-      : 0;
+  const discountedPrice = variant.price && variant.discount?.value
+    ? variant.price - variant.discount.value
+    : variant.price || 0;
+
+  const discountPercentage = variant.price && variant.discount?.value
+    ? Math.round((variant.discount.value / variant.price) * 100)
+    : 0;
+
+  // Debug logging for troubleshooting
+  if (!isActive || totalStock === 0) {
+    console.log('Product availability issue:', {
+      productId: product._id,
+      name: product.name,
+      isActive: product.isActive,
+      totalStock,
+      variants: product.variants
+    });
+  }
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
-    if (!product.isActive || product.stock === 0) return;
+    if (!isActive || totalStock === 0) return;
     setIsAddingToCart(true);
     try {
       await addToCart(product, 1);
@@ -44,7 +58,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const handleBuyNow = async (e) => {
     e.stopPropagation();
-    if (!product.isActive || product.stock === 0) return;
+    if (!isActive || totalStock === 0) return;
     try {
       if (currentQuantity === 0) {
         await addToCart(product, 1);
@@ -145,33 +159,49 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           </h3>
 
           {/* Egg/No Egg Indicator */}
-          <div className="mb-2">
-            <span
-              className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${
-                product.hasEgg
-                  ? 'border border-orange-200 bg-white text-orange-600'
-                  : 'border border-green-200 bg-white text-green-600'
-              }`}
-            >
-              <div className="flex items-center gap-1">
-                {/* Triangle SVG */}
-                <svg
-                  className="w-2 h-2"
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M0 10L10 10L5 0L0 10Z"
-                    fill={product.hasEgg ? '#F97316' : '#22C55E'}
-                  />
-                </svg>
-                <span className="uppercase tracking-tight font-medium">
-                  {product.hasEgg ? 'WITH EGG' : 'EGGLESS'}
-                </span>
-              </div>
-            </span>
-          </div>
+         {/* Egg/No Egg Indicator */}
+<div className="mb-2">
+  <span
+    className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${
+      product.hasEgg
+        ? 'border border-orange-200 bg-white text-orange-600'
+        : 'border border-green-200 bg-white text-green-600'
+    }`}
+  >
+    <div className="flex items-center gap-1">
+      {/* Square outline + shape */}
+      <svg
+        className="w-4 h-4"
+        viewBox="0 0 20 20"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Square outline */}
+        <rect
+          x="1"
+          y="1"
+          width="18"
+          height="18"
+          stroke={product.hasEgg ? '#F97316' : '#22C55E'}
+          strokeWidth="2"
+          fill="none"
+        />
+
+        {product.hasEgg ? (
+          // Triangle for WITH EGG
+          <polygon points="10,4 16,16 4,16" fill="#F97316" />
+        ) : (
+          // Circle for EGGLESS
+          <circle cx="10" cy="10" r="5" fill="#22C55E" />
+        )}
+      </svg>
+
+      <span className="uppercase tracking-tight font-medium">
+        {product.hasEgg ? 'WITH EGG' : 'EGGLESS'}
+      </span>
+    </div>
+  </span>
+</div>
+
 
           <p
             className={`text-xs text-gray-700 leading-relaxed mb-2 ${
@@ -184,9 +214,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-baseline gap-1">
-              {discountedPrice !== product.variants[0].price && (
+              {discountedPrice !== variant.price && (
                 <span className="text-gray-500 line-through text-xs">
-                  ₹{Math.round(product.variants[0].price)}
+                  ₹{Math.round(variant.price)}
                 </span>
               )}
               <span
@@ -204,13 +234,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             )}
           </div>
 
-          {product.stock > 0 && product.stock < 15 && (
+          {totalStock > 0 && totalStock < 15 && (
             <span className="text-red-500 font-medium text-sm mb-2">
-              Only {product.stock} left
+              Only {totalStock} left
             </span>
           )}
 
-          {product.stock === 0 && (
+          {totalStock === 0 && (
             <span className="text-gray-500 font-medium text-sm mb-2">
               Out of Stock
             </span>
@@ -237,7 +267,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   e.stopPropagation();
                   handleQuantityChange(currentQuantity + 1);
                 }}
-                disabled={currentQuantity >= product.stock}
+                disabled={currentQuantity >= totalStock}
                 className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 +
@@ -246,9 +276,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           ) : (
             <button
               onClick={handleAddToCart}
-              disabled={!product.isActive || product.stock === 0 || isAddingToCart}
+              disabled={!isActive || totalStock === 0 || isAddingToCart}
               className={`w-full py-2 px-3 text-xs font-medium rounded-md transition-all duration-200 ${
-                !product.isActive || product.stock === 0
+                !isActive || totalStock === 0
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300'
                   : isAddingToCart
                   ? 'bg-gray-200 text-black cursor-wait border border-gray-400'
@@ -268,16 +298,16 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
           <button
             onClick={handleBuyNow}
-            disabled={!product.isActive || product.stock === 0}
+            disabled={!isActive || totalStock === 0}
             className={`w-full py-2 px-3 text-xs font-medium rounded-md transition-all duration-200 ${
-              !product.isActive || product.stock === 0
+              !isActive || totalStock === 0
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-black text-white hover:bg-gray-800'
             }`}
           >
-            {!product.isActive
+            {!isActive
               ? 'Unavailable'
-              : product.stock === 0
+              : totalStock === 0
               ? 'Out of Stock'
               : 'Reserve Yours'}
           </button>

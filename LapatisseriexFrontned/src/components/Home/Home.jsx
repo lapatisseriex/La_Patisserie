@@ -77,12 +77,12 @@ const Home = () => {
   return (
     <div className="bg-white font-sans flex flex-col items-center">
 
-      <section ref={newlyLaunchedRef} className="w-full py-6">
+      <section ref={newlyLaunchedRef} className="w-full">
         <NewlyLaunched products={newlyLaunchedProducts} />
       </section>
 
       {/* Browse Categories Section */}
-      <section className="w-full py-6 bg-white">
+      <section className="w-full py-6 ">
         <CategorySwiper 
           categories={categories} 
           topTrendingRef={topTrendingRef} 

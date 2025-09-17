@@ -1,50 +1,323 @@
+// import React, { useState, useRef, useEffect, memo } from 'react';
+// import { Link } from 'react-router-dom';
+// import { useAuth } from '../../../context/AuthContext/AuthContext';
+// import { 
+//   User, 
+//   Settings, 
+//   Package, 
+//   ShoppingCart, 
+//   LogOut, 
+//   UserCircle, 
+//   Crown,
+//   History,
+//   AlertCircle,
+//   Sparkles,
+//   Power
+// } from 'lucide-react';
+
+// // Using memo to prevent unnecessary re-renders
+// const UserMenu = memo(() => {
+//   const { user, logout, toggleAuthPanel, changeAuthType } = useAuth();
+//   const [isMenuOpen, setIsMenuOpen] = useState(false);
+//   const [isHovered, setIsHovered] = useState(false);
+//   const dropdownRef = useRef(null);
+  
+//   const isAdmin = user?.role === 'admin';
+//   const isProfileIncomplete = user && (!user.name || !user.dob || !user.location);
+  
+//   // Store previous user data to avoid excessive logging
+//   const prevUserRef = useRef({
+//     id: user?.uid,
+//     name: user?.name,
+//     location: user?.location?._id
+//   });
+  
+//   // Debug user information - only when important data changes
+//   useEffect(() => {
+//     if (user) {
+//       const hasImportantChange = 
+//         prevUserRef.current.id !== user.uid ||
+//         prevUserRef.current.name !== user.name ||
+//         prevUserRef.current.location !== user.location?._id;
+        
+//       if (hasImportantChange) {
+//         console.log('UserMenu - User Data Updated:', {
+//           name: user.name,
+//           dob: user.dob,
+//           location: user.location,
+//           phone: user.phone,
+//           isProfileIncomplete
+//         });
+        
+//         // Update the reference
+//         prevUserRef.current = {
+//           id: user.uid,
+//           name: user.name,
+//           location: user.location?._id
+//         };
+//       }
+//     }
+//   }, [user]);
+  
+//   // Close dropdown when clicking outside
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+//         setIsMenuOpen(false);
+//       }
+//     };
+    
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => {
+//       document.removeEventListener("mousedown", handleClickOutside);
+//     };
+//   }, []);
+  
+//   // Handle logout
+//   const handleLogout = async () => {
+//     await logout();
+//     setIsMenuOpen(false);
+//   };
+  
+//   // Handle profile completion
+//   const handleCompleteProfile = () => {
+//     setIsMenuOpen(false);
+//     changeAuthType('profile');
+//     toggleAuthPanel(); // Open the auth panel with profile form
+//   };
+
+//   // Toggle menu
+//   const toggleMenu = () => {
+//     setIsMenuOpen(!isMenuOpen);
+//   };
+
+//   return (
+//     <div className="relative" ref={dropdownRef}>
+//       {/* Main User Button - Clean Light Design */}
+//       <button
+//         onClick={toggleMenu}
+//         onMouseEnter={() => setIsHovered(true)}
+//         onMouseLeave={() => setIsHovered(false)}
+//         className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 border border-transparent hover:border-gray-200 relative"
+//         style={{fontFamily: 'sans-serif'}}
+//         aria-expanded={isMenuOpen}
+//         aria-haspopup="true"
+//       >
+//         <User className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" />
+        
+//         {/* Profile Status Indicator */}
+//         {isProfileIncomplete && (
+//           <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+//         )}
+//       </button>
+      
+//       {/* Dropdown Menu - Clean Light Design */}
+//       {isMenuOpen && (
+//         <div className="absolute right-0 mt-3 w-72 z-50">
+//           {/* Main Menu Container */}
+//           <div className="bg-white shadow-2xl rounded-xl overflow-hidden border border-gray-100">
+            
+//             {/* User Info Header - Light Theme */}
+//             <div className="px-6 py-5 bg-gray-50 border-b border-gray-100">
+//               <div className="flex items-center justify-between">
+//                 <div className="flex items-center gap-3">
+//                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-gray-200 shadow-sm">
+//                     <UserCircle className="h-5 w-5 text-gray-600" />
+//                   </div>
+//                   <div>
+//                     <h3 className="text-base font-medium text-gray-900">
+//                       {user?.name || 'Guest User'}
+//                     </h3>
+//                     <p className="text-xs text-gray-500 mt-1">
+//                       {user?.phone || 'Welcome to La Patisserie'}
+//                     </p>
+//                   </div>
+//                 </div>
+                
+//                 {/* Status Badge */}
+//                 {isAdmin && (
+//                   <div className="px-3 py-1.5 bg-white rounded-full flex items-center gap-1.5 border border-gray-200 shadow-sm">
+//                     <Crown className="h-3 w-3 text-yellow-600" />
+//                     <span className="text-xs font-medium text-gray-700">ADMIN</span>
+//                   </div>
+//                 )}
+//               </div>
+                
+//               {/* Profile Completion Notice - Light Theme */}
+//               {isProfileIncomplete && (
+//                 <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+//                   <div className="flex items-center gap-2">
+//                     <AlertCircle className="h-4 w-4 text-orange-500" />
+//                     <p className="text-xs text-orange-700 font-medium">
+//                       Complete your profile for the full experience
+//                     </p>
+//                   </div>
+//                 </div>
+//               )}
+//             </div>
+            
+//             {/* Menu Items */}
+//             <div className="py-3 px-2">
+//               {isAdmin ? (
+//                 <>
+//                   <MenuItem
+//                     to="/admin/dashboard"
+//                     label="DASHBOARD"
+//                     icon={Settings}
+//                     onClick={() => setIsMenuOpen(false)}
+//                   />
+//                   <MenuItem
+//                     to="/admin/orders"
+//                     label="ORDER MANAGEMENT"
+//                     icon={Package}
+//                     onClick={() => setIsMenuOpen(false)}
+//                   />
+//                 </>
+//               ) : (
+//                 <>
+//                   {/* Complete Profile Button */}
+//                   {isProfileIncomplete && (
+//                     <MenuButton
+//                       onClick={handleCompleteProfile}
+//                       label="COMPLETE PROFILE"
+//                       icon={Sparkles}
+//                       priority
+//                     />
+//                   )}
+                  
+//                   <MenuItem
+//                     to="/profile"
+//                     label="MY PROFILE"
+//                     icon={UserCircle}
+//                     onClick={() => setIsMenuOpen(false)}
+//                   />
+//                   <MenuItem
+//                     to="/orders"
+//                     label="ORDER HISTORY"
+//                     icon={History}
+//                     onClick={() => setIsMenuOpen(false)}
+//                   />
+//                 </>
+//               )}
+              
+//               <MenuItem
+//                 to="/cart"
+//                 label="SHOPPING BOX"
+//                 icon={ShoppingCart}
+//                 onClick={() => setIsMenuOpen(false)}
+//               />
+              
+//               {/* Logout Button - Light Clean Styling */}
+//               <div className="mt-4 px-2">
+//                 <button 
+//                   onClick={handleLogout}
+//                   className="
+//                     w-full px-4 py-3
+//                     bg-red-50 text-red-700 text-sm font-medium
+//                     rounded-xl border border-red-200
+//                     hover:bg-red-100 hover:text-red-800 hover:border-red-300
+//                     transition-all duration-300
+//                     group relative overflow-hidden
+//                     flex items-center justify-center gap-2
+//                   "
+//                 >
+//                   <Power className="h-4 w-4" />
+//                   <span className="relative z-10">SIGN OUT</span>
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// });
+
+// // MenuItem Component - Light Clean Design with Icons
+// const MenuItem = ({ to, label, onClick, icon: IconComponent }) => (
+//   <Link
+//     to={to}
+//     onClick={onClick}
+//     className="
+//       flex items-center gap-3 px-4 py-3 mx-2 mb-1
+//       text-gray-600 text-sm font-medium
+//       hover:text-black hover:bg-gray-50
+//       rounded-lg transition-all duration-300
+//       group relative overflow-hidden
+//       border border-transparent hover:border-gray-200
+//     "
+//     style={{fontFamily: 'sans-serif'}}
+//   >
+//     {IconComponent && (
+//       <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+//         <IconComponent className="h-4 w-4 text-gray-500 group-hover:text-black transition-colors duration-300" />
+//       </div>
+//     )}
+//     <span className="relative z-10">{label}</span>
+//     <div className="absolute left-0 top-0 h-full w-0.5 bg-black transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
+//   </Link>
+// );
+
+// // MenuButton Component - Light Clean Design with Icons
+// const MenuButton = ({ onClick, label, priority = false, icon: IconComponent }) => (
+//   <button
+//     onClick={onClick}
+//     className={`
+//       flex items-center gap-3 w-full px-4 py-3 mx-2 mb-2
+//       text-sm font-medium text-left
+//       rounded-lg transition-all duration-300
+//       group relative overflow-hidden
+//       ${priority 
+//         ? 'bg-black text-white hover:bg-gray-800 border border-gray-200 shadow-sm' 
+//         : 'text-gray-600 hover:bg-gray-50 hover:text-black border border-transparent hover:border-gray-200'
+//       }
+//     `}
+//     style={{fontFamily: 'sans-serif'}}
+//   >
+//     {IconComponent && (
+//       <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+//         <IconComponent className={`h-4 w-4 transition-colors duration-300 ${
+//           priority ? 'text-white' : 'text-gray-500 group-hover:text-black'
+//         }`} />
+//       </div>
+//     )}
+//     <span className="relative z-10">{label}</span>
+//     {!priority && (
+//       <div className="absolute left-0 top-0 h-full w-0.5 bg-black transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
+//     )}
+//   </button>
+// );
+
+// export default UserMenu;
+
+
+
+
+
+
 import React, { useState, useRef, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext/AuthContext';
+import { 
+  User, 
+  Settings, 
+  Package, 
+  ShoppingCart, 
+  UserCircle, 
+  Crown,
+  History,
+  AlertCircle,
+  Sparkles,
+  Power
+} from 'lucide-react';
 
-// Using memo to prevent unnecessary re-renders
 const UserMenu = memo(() => {
   const { user, logout, toggleAuthPanel, changeAuthType } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const dropdownRef = useRef(null);
   
   const isAdmin = user?.role === 'admin';
   const isProfileIncomplete = user && (!user.name || !user.dob || !user.location);
-  
-  // Store previous user data to avoid excessive logging
-  const prevUserRef = useRef({
-    id: user?.uid,
-    name: user?.name,
-    location: user?.location?._id
-  });
-  
-  // Debug user information - only when important data changes
-  useEffect(() => {
-    if (user) {
-      const hasImportantChange = 
-        prevUserRef.current.id !== user.uid ||
-        prevUserRef.current.name !== user.name ||
-        prevUserRef.current.location !== user.location?._id;
-        
-      if (hasImportantChange) {
-        console.log('UserMenu - User Data Updated:', {
-          name: user.name,
-          dob: user.dob,
-          location: user.location,
-          phone: user.phone,
-          isProfileIncomplete
-        });
-        
-        // Update the reference
-        prevUserRef.current = {
-          id: user.uid,
-          name: user.name,
-          location: user.location?._id
-        };
-      }
-    }
-  }, [user]);
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -60,148 +333,100 @@ const UserMenu = memo(() => {
     };
   }, []);
   
-  // Handle logout
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
   };
   
-  // Handle profile completion
   const handleCompleteProfile = () => {
     setIsMenuOpen(false);
     changeAuthType('profile');
-    toggleAuthPanel(); // Open the auth panel with profile form
-  };
-
-  // Toggle menu
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+    toggleAuthPanel();
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Main User Button - Luxurious Design */}
+      {/* Main User Button */}
       <button
-        onClick={toggleMenu}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`
-          group relative px-6 py-3 
-          bg-gradient-to-r from-black to-gray-900
-          text-white font-light tracking-widest
-          border border-gray-800
-          transition-all duration-500 ease-out
-          hover:shadow-2xl hover:shadow-black/30
-          hover:border-gray-600
-          ${isMenuOpen ? 'shadow-2xl shadow-black/30 border-gray-600' : ''}
-          ${isProfileIncomplete ? 'ring-1 ring-white/20' : ''}
-        `}
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-black hover:bg-gray-50 transition-all duration-300 border border-transparent hover:border-gray-200 relative rounded-none"
+        style={{fontFamily: 'sans-serif'}}
         aria-expanded={isMenuOpen}
         aria-haspopup="true"
       >
-        {/* Animated Background Overlay */}
-        <div className={`
-          absolute inset-0 bg-gradient-to-r from-white/5 to-transparent
-          transition-opacity duration-500
-          ${isHovered || isMenuOpen ? 'opacity-100' : 'opacity-0'}
-        `} />
+        <User className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" />
         
-        {/* User Name Display */}
-        <div className="relative flex items-center justify-between min-w-[120px]">
-          <span className="text-sm font-light tracking-wider">
-            {isAdmin 
-              ? 'ADMIN' 
-              : user?.name 
-                ? user.name.split(' ')[0].toUpperCase() 
-                : 'ACCOUNT'
-            }
-          </span>
-          
-          {/* Custom Dropdown Arrow */}
-          <div className={`
-            ml-3 w-0 h-0 
-            border-l-[4px] border-l-transparent
-            border-r-[4px] border-r-transparent
-            border-t-[5px] border-t-white
-            transition-transform duration-300
-            ${isMenuOpen ? 'rotate-180' : ''}
-          `} />
-        </div>
-        
-        {/* Profile Status Indicator */}
         {isProfileIncomplete && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full animate-pulse" />
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 animate-pulse rounded-none" />
         )}
-        
-        {/* Subtle Animation Line */}
-        <div className={`
-          absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-white to-transparent
-          transition-all duration-500
-          ${isHovered || isMenuOpen ? 'w-full' : 'w-0'}
-        `} />
       </button>
       
-      {/* Dropdown Menu - Professional Design */}
+      {/* Dropdown Menu */}
       {isMenuOpen && (
-        <div className="absolute right-0 mt-2 w-64 z-50">
-          {/* Backdrop Blur Effect */}
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-lg" />
-          
-          {/* Main Menu Container */}
-          <div className="relative bg-white/95 backdrop-blur-lg shadow-2xl rounded-lg overflow-hidden border border-gray-200">
+        <div className="absolute right-0 mt-3 w-72 z-50">
+          <div className="bg-white shadow-2xl border border-gray-100 rounded-none overflow-hidden">
             
             {/* User Info Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-black to-gray-900 text-white">
+            <div className="px-6 py-5 bg-gray-50 border-b border-gray-100 rounded-none">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-light tracking-wide">
-                    {user?.name || 'Guest User'}
-                  </h3>
-                  <p className="text-xs text-gray-300 mt-1 font-light tracking-wider">
-                    {user?.phone || 'Welcome'}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white flex items-center justify-center border border-gray-200 shadow-sm rounded-none">
+                    <UserCircle className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium text-gray-900">
+                      {user?.name || 'Guest User'}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {user?.phone || 'Welcome to La Patisserie'}
+                    </p>
+                  </div>
                 </div>
                 
-                {/* Status Badge */}
                 {isAdmin && (
-                  <div className="px-2 py-1 bg-white/10 rounded-full">
-                    <span className="text-xs font-light tracking-widest">ADMIN</span>
+                  <div className="px-3 py-1.5 bg-white flex items-center gap-1.5 border border-gray-200 shadow-sm rounded-none">
+                    <Crown className="h-3 w-3 text-yellow-600" />
+                    <span className="text-xs font-medium text-gray-700">ADMIN</span>
                   </div>
                 )}
               </div>
-              
-              {/* Profile Completion Notice */}
+                
               {isProfileIncomplete && (
-                <div className="mt-3 p-2 bg-white/10 rounded border border-white/20">
-                  <p className="text-xs text-white/90 font-light tracking-wide">
-                    Complete your profile for the full experience
-                  </p>
+                <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-none">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                    <p className="text-xs text-orange-700 font-medium">
+                      Complete your profile for the full experience
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
             
             {/* Menu Items */}
-            <div className="py-2">
+            <div className="py-3 px-2">
               {isAdmin ? (
                 <>
                   <MenuItem
                     to="/admin/dashboard"
                     label="DASHBOARD"
+                    icon={Settings}
                     onClick={() => setIsMenuOpen(false)}
                   />
                   <MenuItem
                     to="/admin/orders"
                     label="ORDER MANAGEMENT"
+                    icon={Package}
                     onClick={() => setIsMenuOpen(false)}
                   />
                 </>
               ) : (
                 <>
-                  {/* Complete Profile Button */}
                   {isProfileIncomplete && (
                     <MenuButton
                       onClick={handleCompleteProfile}
                       label="COMPLETE PROFILE"
+                      icon={Sparkles}
                       priority
                     />
                   )}
@@ -209,11 +434,13 @@ const UserMenu = memo(() => {
                   <MenuItem
                     to="/profile"
                     label="MY PROFILE"
+                    icon={UserCircle}
                     onClick={() => setIsMenuOpen(false)}
                   />
                   <MenuItem
                     to="/orders"
                     label="ORDER HISTORY"
+                    icon={History}
                     onClick={() => setIsMenuOpen(false)}
                   />
                 </>
@@ -222,26 +449,25 @@ const UserMenu = memo(() => {
               <MenuItem
                 to="/cart"
                 label="SHOPPING BOX"
+                icon={ShoppingCart}
                 onClick={() => setIsMenuOpen(false)}
               />
               
-              {/* Logout Button - Special Styling */}
-              <div className="mt-3 px-3">
+              {/* Logout Button */}
+              <div className="mt-4 px-2">
                 <button 
                   onClick={handleLogout}
                   className="
                     w-full px-4 py-3
-                    bg-gradient-to-r from-gray-900 to-black
-                    text-white text-sm font-light tracking-widest
-                    border border-gray-800
-                    hover:shadow-lg hover:shadow-black/20
-                    hover:border-gray-600
+                    bg-red-50 text-red-700 text-sm font-medium
+                    rounded-none border border-red-200
+                    hover:bg-red-100 hover:text-red-800 hover:border-red-300
                     transition-all duration-300
-                    group relative overflow-hidden
+                    flex items-center justify-center gap-2
                   "
                 >
+                  <Power className="h-4 w-4" />
                   <span className="relative z-10">SIGN OUT</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </button>
               </div>
             </div>
@@ -252,52 +478,61 @@ const UserMenu = memo(() => {
   );
 });
 
-// MenuItem Component - Clean Link Design
-const MenuItem = ({ to, label, onClick }) => (
+// MenuItem Component - sharp corners
+const MenuItem = ({ to, label, onClick, icon: IconComponent }) => (
   <Link
     to={to}
     onClick={onClick}
     className="
-      block px-6 py-3
-      text-black text-sm font-light tracking-wider
-      hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100
-      border-b border-gray-100 last:border-b-0
+      flex items-center gap-3 px-4 py-3 mx-2 mb-1
+      text-gray-600 text-sm font-medium
+      hover:text-black hover:bg-gray-50
       transition-all duration-300
       group relative overflow-hidden
+      border border-transparent hover:border-gray-200
+      rounded-none
     "
+    style={{fontFamily: 'sans-serif'}}
   >
+    {IconComponent && (
+      <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+        <IconComponent className="h-4 w-4 text-gray-500 group-hover:text-black transition-colors duration-300" />
+      </div>
+    )}
     <span className="relative z-10">{label}</span>
-    <div className="absolute left-0 top-0 h-full w-1 bg-black transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+    <div className="absolute left-0 top-0 h-full w-0.5 bg-black transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
   </Link>
 );
 
-// MenuButton Component - For Actions
-const MenuButton = ({ onClick, label, priority = false }) => (
+// MenuButton Component - sharp corners
+const MenuButton = ({ onClick, label, priority = false, icon: IconComponent }) => (
   <button
     onClick={onClick}
     className={`
-      block w-full px-6 py-3
-      text-sm font-light tracking-wider text-left
-      border-b border-gray-100
+      flex items-center gap-3 w-full px-4 py-3 mx-2 mb-2
+      text-sm font-medium text-left
       transition-all duration-300
       group relative overflow-hidden
+      rounded-none
       ${priority 
-        ? 'bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900' 
-        : 'text-black hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'
+        ? 'bg-black text-white hover:bg-gray-800 border border-gray-200 shadow-sm' 
+        : 'text-gray-600 hover:bg-gray-50 hover:text-black border border-transparent hover:border-gray-200'
       }
     `}
+    style={{fontFamily: 'sans-serif'}}
   >
+    {IconComponent && (
+      <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+        <IconComponent className={`h-4 w-4 transition-colors duration-300 ${
+          priority ? 'text-white' : 'text-gray-500 group-hover:text-black'
+        }`} />
+      </div>
+    )}
     <span className="relative z-10">{label}</span>
     {!priority && (
-      <div className="absolute left-0 top-0 h-full w-1 bg-black transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+      <div className="absolute left-0 top-0 h-full w-0.5 bg-black transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
     )}
   </button>
 );
 
 export default UserMenu;
-
-
-
-
-
-

@@ -7,36 +7,43 @@ const FloatingCartBar = () => {
   const { cartCount, cartTotal, cartItems } = useCart();
   const navigate = useNavigate();
   const [isScrolling, setIsScrolling] = useState(false);
-  const [scrollTimeout, setScrollTimeout] = useState(null);
 
   // Handle scroll events to hide/show floating cart
   useEffect(() => {
+    let timeoutId = null;
+    let ticking = false;
+
     const handleScroll = () => {
-      // Hide cart when scrolling
-      setIsScrolling(true);
-      
-      // Clear existing timeout
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          // Hide cart when scrolling
+          setIsScrolling(true);
+          
+          // Clear existing timeout
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+          
+          // Set new timeout to show cart when scrolling stops
+          timeoutId = setTimeout(() => {
+            setIsScrolling(false);
+          }, 150);
+          
+          ticking = false;
+        });
+        ticking = true;
       }
-      
-      // Set new timeout to show cart when scrolling stops
-      const newTimeout = setTimeout(() => {
-        setIsScrolling(false);
-      }, 150); // Show cart 150ms after scrolling stops
-      
-      setScrollTimeout(newTimeout);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
-  }, [scrollTimeout]);
+  }, []); // Remove scrollTimeout dependency to prevent recreation
 
   // Only show if there are items in cart
   if (cartCount === 0) return null;

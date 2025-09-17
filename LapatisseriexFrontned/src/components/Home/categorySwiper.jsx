@@ -26,9 +26,11 @@ const CategorySwiperHome = ({
 
   // Handle user scroll interactions
   const handleUserScroll = () => {
-    setIsUserScrolling(true);
-    clearInterval(autoScrollIntervalRef1.current);
-    clearInterval(autoScrollIntervalRef2.current);
+    if (!isUserScrolling) {
+      setIsUserScrolling(true);
+      clearInterval(autoScrollIntervalRef1.current);
+      clearInterval(autoScrollIntervalRef2.current);
+    }
     if (userScrollTimeoutRef.current) clearTimeout(userScrollTimeoutRef.current);
     userScrollTimeoutRef.current = setTimeout(() => {
       setIsUserScrolling(false);
@@ -180,20 +182,40 @@ const CategorySwiperHome = ({
   return (
     <div className="w-full py-6 font-sans">
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 md:px-16">
-        <div className="flex flex-col md:flex-row md:items-start gap-6">
+        <div className="flex flex-col md:flex-row md:items-start md:gap-8">
           
           {/* Text Section */}
-          <div className="w-full md:w-1/3 text-left">
+          <div className="w-full md:w-2/5 text-left">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
               Endless Choices, Find Your Next Favorite
             </h2>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 mb-4">
               Swipe left or right to explore more
             </p>
+            
+            {/* Banner Image - Hidden on mobile, visible on larger devices */}
+            <div className="hidden md:block mt-6">
+              <div className="relative w-full h-48 rounded-lg overflow-hidden shadow-lg">
+                <img
+                  src="/images/new.jpg"
+                  alt="Delicious Cakes Collection"
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  onError={(e) => {
+                    // Fallback to a placeholder if image doesn't exist
+                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial, sans-serif' font-size='16' fill='%236b7280' text-anchor='middle' dy='.3em'%3ECategory Banner%3C/text%3E%3C/svg%3E";
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                <div className="absolute bottom-4 left-4 text-white">
+                  <p className="text-sm font-medium">Fresh Daily</p>
+                  <p className="text-xs opacity-90">Premium Quality Cakes</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Categories Section */}
-          <div className="w-full md:w-1/2 space-y-4">
+          <div className="w-full md:w-3/5 space-y-4 mt-8 md:mt-12">
             <div 
               ref={scrollContainerRef1}
               className="flex overflow-x-auto scrollbar-hide space-x-4 pb-2"

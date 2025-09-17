@@ -82,7 +82,7 @@ const Cart = () => {
   // If cart is empty
   if (cartItems.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 pt-8 min-h-screen">
+      <div className="container mx-auto px-4 py-8 min-h-screen">
         <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
           <div className="text-center py-10">
             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
@@ -103,7 +103,7 @@ const Cart = () => {
   }
   
   return (
-    <div className="container mx-auto px-4 py-8 pt-16">
+    <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center mb-6">
           <Link to="/products" className="flex items-center text-black transition-colors">

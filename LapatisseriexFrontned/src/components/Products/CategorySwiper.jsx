@@ -181,12 +181,19 @@ const CategorySwiper = ({
       </div>
       
       {/* Scroll hint for mobile */}
- 
+      {!loading && categories.length > 0 && (
+        <div className="text-center text-xs text-gray-500 mt-2 lg:hidden">
+          Swipe to see more categories
+        </div>
+      )}
     </div>
   );
 };
 
+CategorySwiper.displayName = 'CategorySwiper';
+
 export default CategorySwiper;
+
 
 
 

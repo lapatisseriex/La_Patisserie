@@ -125,7 +125,15 @@ const Products = () => {
           setTimeout(() => {
             const selectedCategoryRef = categoryRefs.current[selectedCategory];
             if (selectedCategoryRef) {
-              selectedCategoryRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              // Account for fixed header height
+              const headerHeight = window.innerWidth < 768 ? 140 : 130; // Mobile vs Desktop header height
+              const elementPosition = selectedCategoryRef.getBoundingClientRect().top + window.pageYOffset;
+              const offsetPosition = elementPosition - headerHeight - 20; // Extra 20px buffer
+              
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+              });
             }
           }, 500);
         }
@@ -267,7 +275,7 @@ const Products = () => {
     <section ref={productsSectionRef} className="bg-white min-h-screen">
       <div className="container mx-auto px-4 py-4">
         {/* Category Swiper - Sticky Navigation */}
-        <div ref={categorySectionRef} className="sticky top-0 bg-white shadow-sm z-30 mb-4 lg:mb-6 -mx-4 px-4 py-3">
+        <div ref={categorySectionRef} className="category-swiper-container sticky top-[140px] md:top-[130px] bg-white shadow-sm z-30 mb-4 lg:mb-6 -mx-4 px-4 py-3">
           <CategorySwiper
             categories={categories || []}
             loading={loadingCategories}

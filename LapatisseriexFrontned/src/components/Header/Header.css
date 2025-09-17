@@ -13,6 +13,400 @@
   font-family: sans-serif;
 }
 
+/* Premium Navigation Item Animations */
+.nav-item {
+  position: relative;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+/* Desktop Nav Item Hover Effects */
+.nav-item:hover {
+  transform: translateY(-1px);
+}
+
+.nav-item:active {
+  transform: translateY(0);
+}
+
+/* Premium Underline Animation */
+.nav-item .underline-animation {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  transform: translateX(-50%);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-item:hover .underline-animation {
+  width: 100%;
+}
+
+/* Premium Location Dropdown Animations */
+.location-dropdown {
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top center;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Premium Mobile Menu Animations */
+.mobile-menu-premium {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Premium Menu Item Hover Effects */
+.menu-item-premium {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.menu-item-premium:hover::before {
+  left: 100%;
+}
+
+/* Premium Badge Animations */
+.premium-badge {
+  animation: pulse-premium 2s infinite;
+}
+
+@keyframes pulse-premium {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Premium Gradient Overlays */
+.gradient-overlay {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Premium Shadow Effects */
+.premium-shadow {
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.premium-shadow-lg {
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Premium Desktop Navigation */
+.desktop-nav-item {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.desktop-nav-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.desktop-nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: exclude;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.desktop-nav-item:hover::before {
+  opacity: 1;
+}
+
+/* Premium Icon Animations */
+.premium-icon {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-icon:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Premium Badge Styling */
+.premium-badge {
+  background: linear-gradient(135deg, #000, #333);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.premium-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Premium User Menu Button */
+.user-menu-button {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-menu-button:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile Location Dropdown Styles */
+@media (max-width: 768px) {
+  .mobile-location-dropdown {
+    max-width: calc(100vw - 2rem);
+    left: 0;
+    right: auto;
+  }
+  
+  .mobile-location-button {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+  
+  .mobile-location-button .truncate {
+    max-width: 120px;
+  }
+  
+  /* Mobile header is now always sticky */
+  header.fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    transform: translate3d(0, 0, 0) !important;
+  }
+  
+  /* Remove old header hiding behavior */
+  header.fixed.header-hidden {
+    transform: translate3d(0, 0, 0) !important;
+  }
+  
+  /* Location bar hide animation with height collapse */
+  .mobile-location-bar {
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+    will-change: max-height, padding;
+  }
+  
+  /* Category swiper positioning based on location bar visibility */
+  .category-swiper-container {
+    transition: top 0.3s ease-out;
+    z-index: 30; /* Below header (z-50) but above content */
+    margin-top: 8px; /* Additional spacing from header */
+  }
+  
+  /* When location bar is hidden, adjust category swiper position for mobile */
+  @media (max-width: 767px) {
+    body.hide-location-bar .category-swiper-container {
+      top: 98px !important; /* Height of header without location bar + some spacing */
+    }
+  }
+  
+  @media (min-width: 768px) {
+    body.hide-location-bar .category-swiper-container {
+      top: 130px !important; /* Desktop height remains same */
+    }
+  }
+  
+  @media (min-width: 768px) {
+    body.hide-location-bar .category-swiper-container {
+      top: 120px !important; /* Desktop height remains same as location bar is not visible on desktop */
+    }
+  }
+  
+  /* Layout padding adjustments for all pages */
+  main {
+    padding-top: 140px;
+    transition: padding-top 0.3s ease-out;
+  }
+  
+  @media (max-width: 767px) {
+    body.hide-location-bar main {
+      padding-top: 98px; /* Reduced padding when location bar is hidden on mobile */
+    }
+  }
+  
+  @media (min-width: 768px) {
+    main {
+      padding-top: 130px;
+    }
+    
+    body.hide-location-bar main {
+      padding-top: 130px; /* No change on desktop */
+    }
+  }
+  
+  /* Dynamic padding based on header visibility */
+  body.scrolling-down main {
+    padding-top: 100px !important;
+    transition: padding-top 0.2s ease;
+  }
+  
+  body.scrolling-up main {
+    padding-top: 130px !important;
+    transition: padding-top 0.2s ease;
+  }
+  
+  body:not(.scrolled) main {
+    padding-top: 130px !important;
+    transition: padding-top 0.2s ease;
+  }
+  
+  /* Ensure proper header height calculation */
+  body.has-fixed-header {
+    --header-height-mobile: 130px;
+  }
+  
+  /* When header slides up, reduce spacing */
+  body.has-fixed-header.header-hidden {
+    --header-height-mobile: 88px; /* Height without location bar */
+  }
+}
+
+/* Dropdown Animation */
+@keyframes dropdownFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdownFadeIn 0.3s ease-out forwards;
+}
+
+/* Custom Scrollbar for Dropdown */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #64748b, #475569);
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #475569, #334155);
+}
+
+/* Banner with Stars Effect */
+.banner-container {
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.6) 0%, rgba(156, 163, 175, 0.4) 30%, rgba(243, 244, 246, 0.8) 60%, rgba(255, 255, 255, 0.9) 80%, transparent 100%);
+  position: relative;
+  backdrop-filter: blur(1px);
+}
+
+.stars-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(107, 114, 128, 0.8);
+  border-radius: 50%;
+  animation: bounce 2s ease-in-out infinite;
+  box-shadow: 0 0 4px rgba(107, 114, 128, 0.6);
+}
+
+.star-1 {
+  top: 20%;
+  left: 15%;
+  animation-delay: 0s;
+}
+
+.star-2 {
+  top: 60%;
+  right: 20%;
+  animation-delay: 1s;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-8px) scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+/* Add subtle pulse to banner text */
+.banner-container p {
+  animation: textGlow 3s ease-in-out infinite;
+}
+
+@keyframes textGlow {
+  0%, 100% {
+    text-shadow: 0 0 3px rgba(107, 114, 128, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 8px rgba(107, 114, 128, 0.5);
+  }
+}
+
 /* Selected category styling */
 .selected-category img {
   border: 2px solid black;
@@ -103,14 +497,41 @@ button:has(.h-5.w-5.mr-1):hover .h-5.w-5.mr-1 {
   }
 }
 
-/* Mobile menu slide-in animation */
+/* Premium Mobile menu slide-in animation */
 .mobile-menu-overlay {
-  transition: opacity 300ms ease-in-out;
+  transition: opacity 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .mobile-menu {
-  transition: transform 300ms ease-in-out;
+  transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
   font-family: sans-serif;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Premium Mobile Menu Content */
+.mobile-menu-content {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Premium Menu Items */
+.mobile-nav-item {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-nav-item:hover {
+  transform: translateX(2px);
+}
+
+/* Premium Section Dividers */
+.section-divider {
+  background: linear-gradient(90deg, rgba(156, 163, 175, 0.3) 0%, rgba(156, 163, 175, 0.1) 50%, transparent 100%);
+  height: 1px;
 }
 
 /* Fix for small screens */

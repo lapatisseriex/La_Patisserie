@@ -6,7 +6,6 @@ import ScrollToTop from "./ScrollToTop.jsx";
 // Layout
 import Layout from './components/Layout/Layout';
 import AdminLayout from './components/Layout/AdminLayout';
-import SwiggyLayout from './components/Layout/SwiggyLayout';
 
 // Pages
 import ProfilePage from './pages/Profile';
@@ -103,13 +102,11 @@ function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<HomePage />} />
                 <Route path="contact" element={<Newsletter />} />
+                <Route path="products" element={<Products />} />
+                <Route path="favorites" element={<FavoritesPage />} />
+                <Route path="cart" element={<Cart />} />
+                <Route path="payment" element={<Payment />} />
               </Route>
-
-              {/* Product-focused routes with Swiggy-like Layout */}
-              <Route path="/products" element={<SwiggyLayout><Products /></SwiggyLayout>} />
-              <Route path="/favorites" element={<SwiggyLayout><FavoritesPage /></SwiggyLayout>} />
-              <Route path="/cart" element={<SwiggyLayout><Cart /></SwiggyLayout>} />
-              <Route path="/payment" element={<SwiggyLayout><Payment /></SwiggyLayout>} />
               
               {/* Profile and Orders with regular Layout */}
               <Route path="/" element={<Layout />}>

@@ -34,8 +34,8 @@ const HandpickedForYou = () => {
 
   if (loading) {
     return (
-      <section className="w-full py-6 bg-gray-50">
-        <h2 className="text-xl font-bold text-black uppercase tracking-wide mb-4 text-center">
+    <div className="max-w-screen-xl mx-auto px-4">
+        <h2 className="text-xl font-bold text-black uppercase tracking-wide mb-4 text-left">
           Handpicked for You
         </h2>
         <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
@@ -50,12 +50,12 @@ const HandpickedForYou = () => {
             ))}
           </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="w-full py-6 bg-gray-50">
+    <section className="w-full py-6 ">
       <h2 className="text-xl font-bold text-black uppercase tracking-wide mb-4 text-center">
         Handpicked for You
       </h2>
