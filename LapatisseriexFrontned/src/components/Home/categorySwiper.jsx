@@ -1,29 +1,30 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 // Icons
-import { FaStar, FaFire, FaNewspaper, FaHeart } from "react-icons/fa";
+import { FaStar, FaFire, FaNewspaper } from "react-icons/fa";
+import { useProduct } from "../../context/ProductContext/ProductContext"; // Import it here
 
 const CategorySwiperHome = ({
   categories = [],
   loading,
   selectedCategory = null,
   onSelectCategory,
-  topTrendingRef,
   bestSellersRef,
   newlyLaunchedRef,
-  handpickedRef,
-  favoritesRef,
+  bestSellersImage,
+  newlyLaunchedImage
 }) => {
   const navigate = useNavigate();
 
+  // Refs for auto-scroll and user interaction
   const scrollContainerRef1 = useRef(null);
   const scrollContainerRef2 = useRef(null);
   const autoScrollIntervalRef1 = useRef(null);
   const autoScrollIntervalRef2 = useRef(null);
   const userScrollTimeoutRef = useRef(null);
-
   const [isUserScrolling, setIsUserScrolling] = useState(false);
 
+  // Handle user scroll interactions
   const handleUserScroll = () => {
     setIsUserScrolling(true);
     clearInterval(autoScrollIntervalRef1.current);
@@ -41,7 +42,7 @@ const CategorySwiperHome = ({
 
   const handleScrollTo = (sectionRef) => {
     if (sectionRef?.current) {
-      const navbarHeight = 100; // Adjust for fixed navbar
+      const navbarHeight = 100;
       const elementPosition =
         sectionRef.current.getBoundingClientRect().top + window.pageYOffset;
       const offsetPosition = elementPosition - navbarHeight;
@@ -53,19 +54,21 @@ const CategorySwiperHome = ({
     }
   };
 
-  // Auto-scroll logic for both rows
+  // Auto-scroll logic
   useEffect(() => {
     if (isUserScrolling) return;
 
     const scrollStep = 1;
-    
     const scrollContainer1 = scrollContainerRef1.current;
     const scrollContainer2 = scrollContainerRef2.current;
-    
+
     if (!scrollContainer1 || !scrollContainer2) return;
 
     autoScrollIntervalRef1.current = setInterval(() => {
-      if (scrollContainer1.scrollLeft + scrollContainer1.clientWidth >= scrollContainer1.scrollWidth) {
+      if (
+        scrollContainer1.scrollLeft + scrollContainer1.clientWidth >=
+        scrollContainer1.scrollWidth
+      ) {
         scrollContainer1.scrollTo({ left: 0, behavior: "smooth" });
       } else {
         scrollContainer1.scrollBy({ left: scrollStep, behavior: "smooth" });
@@ -73,7 +76,10 @@ const CategorySwiperHome = ({
     }, 50);
 
     autoScrollIntervalRef2.current = setInterval(() => {
-      if (scrollContainer2.scrollLeft + scrollContainer2.clientWidth >= scrollContainer2.scrollWidth) {
+      if (
+        scrollContainer2.scrollLeft + scrollContainer2.clientWidth >=
+        scrollContainer2.scrollWidth
+      ) {
         scrollContainer2.scrollTo({ left: 0, behavior: "smooth" });
       } else {
         scrollContainer2.scrollBy({ left: scrollStep, behavior: "smooth" });
@@ -101,105 +107,156 @@ const CategorySwiperHome = ({
       </div>
     );
   }
-
-  // Define special buttons with refs from props
+  // Now use the first product's image if available, otherwise fallback
   const specialButtons = [
-    { id: "top-trending", name: "Top Trending", icon: <FaStar size={28} className="text-yellow-500" />, ref: topTrendingRef },
-    { id: "best-sellers", name: "Best Sellers", icon: <FaFire size={28} className="text-red-500" />, ref: bestSellersRef },
-    { id: "newly-launched", name: "Newly Launched", icon: <FaNewspaper size={28} className="text-blue-500" />, ref: newlyLaunchedRef }
+    {
+      id: "best-sellers",
+      name: "Best Sellers",
+      image: bestSellersImage || "/images/best-sellers.png",
+      color: "text-red-600",
+      icon: <FaFire className="inline-block mr-1" />,
+      ref: bestSellersRef,
+    },
+    {
+      id: "newly-launched",
+      name: "Newly Launched",
+      image: newlyLaunchedImage || "/images/newlyLaunched.png",
+      color: "text-blue-600",
+      icon: <FaNewspaper className="inline-block mr-1" />,
+      ref: newlyLaunchedRef,
+    },
   ];
-
-  // Combine special buttons with categories
-  const allItems = [...specialButtons, ...categories];
   
-  // Split into two rows - first row gets more items if odd count
-  const half = Math.ceil(allItems.length / 2);
-  const firstRowItems = allItems.slice(0, half);
-  const secondRowItems = allItems.slice(half);
+
+  const interleaveItems = () => {
+    const firstRow = [];
+    const secondRow = [];
+
+    const half = Math.ceil(categories.length / 2);
+    const firstHalf = categories.slice(0, half);
+    const secondHalf = categories.slice(half);
+
+    const totalSpecial = specialButtons.length;
+    const firstCount = Math.ceil(totalSpecial / 2);
+    const secondCount = totalSpecial - firstCount;
+
+    const specialFirst = specialButtons.slice(0, firstCount);
+    const specialSecond = specialButtons.slice(firstCount);
+
+    const firstRowPattern = [2];
+    const secondRowPattern = [1, 3];
+
+    let firstSpecialIndex = 0;
+    for (let i = 0; i < firstHalf.length; i++) {
+      firstRow.push(firstHalf[i]);
+      if (firstSpecialIndex < specialFirst.length && firstRowPattern.includes(i + 1)) {
+        firstRow.push(specialFirst[firstSpecialIndex]);
+        firstSpecialIndex++;
+      }
+    }
+    while (firstSpecialIndex < specialFirst.length) {
+      firstRow.push(specialFirst[firstSpecialIndex]);
+      firstSpecialIndex++;
+    }
+
+    let secondSpecialIndex = 0;
+    for (let i = 0; i < secondHalf.length; i++) {
+      secondRow.push(secondHalf[i]);
+      if (secondSpecialIndex < specialSecond.length && secondRowPattern.includes(i + 1)) {
+        secondRow.push(specialSecond[secondSpecialIndex]);
+        secondSpecialIndex++;
+      }
+    }
+    while (secondSpecialIndex < specialSecond.length) {
+      secondRow.push(specialSecond[secondSpecialIndex]);
+      secondSpecialIndex++;
+    }
+
+    return { firstRow, secondRow };
+  };
+
+  const { firstRow, secondRow } = interleaveItems();
 
   return (
-    <div className="w-full bg-gray-100 py-6 font-sans">
-      <div className="flex flex-col md:flex-row max-w-screen-xl mx-auto px-4 sm:px-6 md:px-16 md:space-x-40">
-        {/* Left text */}
-        <div className="md:w-10/2 text-center md:text-left py-4 mb-6 md:mb-0">
-          <p className="text-sm text-gray-500 uppercase mb-2 font-medium">Discover Categories</p>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-            Browse through our categories and find what inspires you
-          </h2>
-          <p className="text-xs text-gray-500 hidden md:block">
-            Swipe left or right to explore more
-          </p>
-        </div>
-
-        {/* Right content with two scrollable rows */}
-        <div className="md:w-3/5 space-y-4">
-          {/* First row */}
-          <div 
-            ref={scrollContainerRef1}
-            className="flex overflow-x-auto scrollbar-hide space-x-4 pb-2"
-            onScroll={handleUserScroll}
-            onTouchStart={handleUserScroll}
-            onMouseDown={handleUserScroll}
-          >
-            {firstRowItems.map((item) => (
-              <div 
-                key={item.id || item._id}
-                onClick={() => 
-                  specialButtons.some(sb => sb.id === item.id) 
-                    ? handleScrollTo(item.ref) 
-                    : handleCategoryClick(item._id)
-                }
-                className="flex-shrink-0 w-20 text-center cursor-pointer transition-transform hover:scale-105"
-              >
-                <div className="w-20 h-20 mx-auto bg-white rounded-full shadow-md hover:shadow-lg flex items-center justify-center">
-                  {item.icon ? (
-                    item.icon
-                  ) : (
-                    <img
-                      src={item.images?.[0] || '/images/default-category.png'}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded-full"
-                    />
-                  )}
-                </div>
-                <p className="text-xs font-medium text-gray-700 mt-2 truncate px-1">{item.name}</p>
-              </div>
-            ))}
+    <div className="w-full py-6 font-sans">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 md:px-16">
+        <div className="flex flex-col md:flex-row md:items-start gap-6">
+          
+          {/* Text Section */}
+          <div className="w-full md:w-1/3 text-left">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+              Endless Choices, Find Your Next Favorite
+            </h2>
+            <p className="text-xs text-gray-500">
+              Swipe left or right to explore more
+            </p>
           </div>
 
-          {/* Second row */}
-          <div 
-            ref={scrollContainerRef2}
-            className="flex overflow-x-auto scrollbar-hide space-x-4 pb-2"
-            onScroll={handleUserScroll}
-            onTouchStart={handleUserScroll}
-            onMouseDown={handleUserScroll}
-          >
-            {secondRowItems.map((item) => (
-              <div 
-                key={item.id || item._id}
-                onClick={() => 
-                  specialButtons.some(sb => sb.id === item.id) 
-                    ? handleScrollTo(item.ref) 
-                    : handleCategoryClick(item._id)
-                }
-                className="flex-shrink-0 w-20 text-center cursor-pointer transition-transform hover:scale-105"
-              >
-                <div className="w-20 h-20 mx-auto bg-white rounded-full shadow-md hover:shadow-lg flex items-center justify-center">
-                  {item.icon ? (
-                    item.icon
-                  ) : (
+          {/* Categories Section */}
+          <div className="w-full md:w-1/2 space-y-4">
+            <div 
+              ref={scrollContainerRef1}
+              className="flex overflow-x-auto scrollbar-hide space-x-4 pb-2"
+              onScroll={handleUserScroll}
+              onTouchStart={handleUserScroll}
+              onMouseDown={handleUserScroll}
+            >
+              {firstRow.map((item, index) => (
+                <div 
+                  key={item.id || item._id || index}
+                  onClick={() =>
+                    specialButtons.some(sb => sb.id === item.id)
+                      ? handleScrollTo(item.ref)
+                      : handleCategoryClick(item._id)
+                  }
+                  className="flex-shrink-0 w-28 text-center cursor-pointer transition-transform hover:scale-105"
+                >
+                  <div className="w-20 h-20 mx-auto rounded-full shadow-md hover:shadow-lg flex items-center justify-center">
                     <img
-                      src={item.images?.[0] || '/images/default-category.png'}
+                      src={item.image || item.images?.[0] || '/images/default-category.png'}
                       alt={item.name}
-                      className="w-16 h-16 object-cover rounded-full"
+                      className="w-20 h-20 object-cover rounded-full"
                     />
-                  )}
+                  </div>
+                  <p className={`text-xs font-medium mt-2 px-1 ${item.color || "text-gray-700"}`}>
+                    {item.icon || null}{item.name}
+                  </p>
                 </div>
-                <p className="text-xs font-medium text-gray-700 mt-2 truncate px-1">{item.name}</p>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            <div 
+              ref={scrollContainerRef2}
+              className="flex overflow-x-auto scrollbar-hide space-x-4 pb-2"
+              onScroll={handleUserScroll}
+              onTouchStart={handleUserScroll}
+              onMouseDown={handleUserScroll}
+            >
+              {secondRow.map((item, index) => (
+                <div 
+                  key={item.id || item._id || index}
+                  onClick={() =>
+                    specialButtons.some(sb => sb.id === item.id)
+                      ? handleScrollTo(item.ref)
+                      : handleCategoryClick(item._id)
+                  }
+                  className="flex-shrink-0 w-28 text-center cursor-pointer transition-transform hover:scale-105"
+                >
+                  <div className="w-20 h-20 mx-auto rounded-full shadow-md hover:shadow-lg flex items-center justify-center">
+                    <img
+                      src={item.image || item.images?.[0] || '/images/default-category.png'}
+                      alt={item.name}
+                      className="w-20 h-20 object-cover rounded-full"
+                    />
+                  </div>
+                  <p className={`text-xs font-medium mt-2 px-1 ${item.color || "text-gray-700"}`}>
+                    {item.icon || null}{item.name}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
+
         </div>
       </div>
     </div>

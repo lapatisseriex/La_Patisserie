@@ -3,8 +3,6 @@ import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useProduct } from '../../context/ProductContext/ProductContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 
-import BrowseCategories from './BrowseCategories';
-import TopTrending from './TopTrending';
 import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';
 import HandpickedForYou from './HandpickedForYou';
@@ -27,8 +25,6 @@ const Home = () => {
   const { fetchProducts } = useProduct();
   const { isAuthenticated } = useAuth();
 
-  const [categoriesWithProducts, setCategoriesWithProducts] = useState([]);
-  const [topTrendingProducts, setTopTrendingProducts] = useState([]);
   const [bestSellersProducts, setBestSellersProducts] = useState([]);
   const [newlyLaunchedProducts, setNewlyLaunchedProducts] = useState([]);
 
@@ -44,36 +40,10 @@ const Home = () => {
   }, [fetchCategories]);
 
   useEffect(() => {
-    if (!categories.length) return;
-    const loadFirstProducts = async () => {
-      try {
-        const promises = categories.map(async (category) => {
-          const result = await fetchProducts({
-            category: category._id,
-            limit: 1,
-            sort: 'createdAt:-1'
-          });
-          return {
-            ...category,
-            firstProduct: result.products[0] || null
-          };
-        });
-        const results = await Promise.all(promises);
-        setCategoriesWithProducts(results);
-      } catch (err) {
-        console.error("Error fetching first products:", err);
-      }
-    };
-    loadFirstProducts();
-  }, [categories, fetchProducts]);
-
-  useEffect(() => {
     const loadSectionProducts = async () => {
       try {
-        const trending = await fetchProducts({ limit: 3, sort: 'soldCount:-1' });
         const best = await fetchProducts({ limit: 3, sort: 'rating:-1' });
         const newly = await fetchProducts({ limit: 3, sort: 'createdAt:-1' });
-        setTopTrendingProducts(trending.products);
         setBestSellersProducts(best.products);
         setNewlyLaunchedProducts(newly.products);
       } catch (err) {
@@ -107,38 +77,26 @@ const Home = () => {
   return (
     <div className="bg-white font-sans flex flex-col items-center">
 
-      {/* Hero Section */}
-      <section className="w-full py-8 text-center">
-        <h1 ref={headingRef} className="text-3xl font-bold text-gray-900 opacity-0 transform translate-y-4 transition-all duration-500">
-          Welcome to Our Store
-        </h1>
-        <p ref={textRef} className="text-gray-600 mt-2 opacity-0 transform translate-y-4 transition-all duration-500">
-          Explore trending items, best sellers, and the newest arrivals!
-        </p>
+      <section ref={newlyLaunchedRef} className="w-full py-6">
+        <NewlyLaunched products={newlyLaunchedProducts} />
       </section>
 
       {/* Browse Categories Section */}
       <section className="w-full py-6 bg-white">
         <CategorySwiper 
-          categories={categoriesWithProducts} 
+          categories={categories} 
           topTrendingRef={topTrendingRef} 
           bestSellersRef={bestSellersRef} 
           newlyLaunchedRef={newlyLaunchedRef}
           handpickedRef={handpickedRef}
           favoritesRef={favoritesRef}
+          bestSellersImage={bestSellersProducts[0]?.images[0]}
+          newlyLaunchedImage={newlyLaunchedProducts[0]?.images[0]}
         />
       </section>
 
-      <section ref={topTrendingRef} className="w-full py-6">
-        <TopTrending />
-      </section>
-
       <section ref={bestSellersRef} className="w-full py-6">
-        <BestSellers />
-      </section>
-
-      <section ref={newlyLaunchedRef} className="w-full py-6">
-        <NewlyLaunched />
+        <BestSellers products={bestSellersProducts} />
       </section>
 
       <section ref={handpickedRef} className="w-full py-6">
