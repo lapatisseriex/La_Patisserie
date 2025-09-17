@@ -4,7 +4,10 @@ import {
   updateUser, 
   getAllUsers, 
   getUserById,
-  deleteUser 
+  deleteUser,
+  addToFavorites,
+  removeFromFavorites,
+  getFavorites
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -21,6 +24,11 @@ router.put('/:id', updateUser);
 
 // Delete user route (works for admins or users deleting their own accounts)
 router.delete('/:id', deleteUser);
+
+// Favorites routes
+router.get('/favorites', getFavorites);
+router.post('/favorites/:productId', addToFavorites);
+router.delete('/favorites/:productId', removeFromFavorites);
 
 // Admin routes - require admin role
 router.get('/', admin, getAllUsers);

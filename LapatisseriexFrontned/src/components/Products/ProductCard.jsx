@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { Heart } from 'lucide-react';
 import MediaDisplay from '../common/MediaDisplay';
 import ProductImageModal from '../common/ProductImageModal';
 import { useCart } from '../../context/CartContext';
+import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
+import { useAuth } from '../../context/AuthContext/AuthContext';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const { addToCart, getProductQuantity, updateProductQuantity } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const currentQuantity = getProductQuantity(product._id);
@@ -62,25 +67,37 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     setIsImageModalOpen(true);
   };
 
+  const handleFavoriteToggle = async (e) => {
+    e.stopPropagation();
+    if (!user) {
+      // Could show a login prompt here
+      return;
+    }
+    await toggleFavorite(product._id);
+  };
+
   return (
     <div
-      className={`rounded-xl overflow-hidden bg-white shadow-sm transition-all duration-300 w-full ${
+      className={`rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 w-full ${
         featured
-          ? 'h-full'
+          ? 'h-full flex flex-col'
           : compact
-          ? 'min-h-[180px] sm:min-h-[200px] md:min-h-[240px] lg:min-h-[260px]'
-          : 'min-h-[200px] sm:min-h-[220px] md:min-h-[280px] lg:min-h-[300px]'
-      } flex flex-row ${className}`}
+          ? 'flex flex-col'
+          : 'flex flex-row'
+      } ${className}`}
     >
       {/* Product Image */}
       <div
         className={`${
-          compact ? 'w-24 sm:w-28 md:w-32 lg:w-28' : 'w-28 sm:w-32 md:w-36 lg:w-32'
-        } flex-shrink-0 relative`}
+          featured || compact 
+            ? 'w-full aspect-square' 
+            : 'w-24 sm:w-28 md:w-32 flex-shrink-0'
+        } relative`}
       >
-        {/* Mobile: Square aspect ratio, SM and up: Vertical rectangle */}
         <div
-          className="w-full relative cursor-pointer group aspect-square sm:aspect-[3/4] rounded-lg overflow-hidden"
+          className={`w-full relative cursor-pointer group rounded-lg overflow-hidden ${
+            featured || compact ? 'aspect-square' : 'aspect-square sm:aspect-[3/4]'
+          }`}
           onClick={openImageModal}
         >
           <MediaDisplay
@@ -99,6 +116,21 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </svg>
             </div>
           </div>
+
+          {/* Favorite Heart Icon */}
+          <button
+            onClick={handleFavoriteToggle}
+            className={`absolute top-2 left-2 p-1.5 rounded-full transition-all duration-200 ${
+              isFavorite(product._id)
+                ? 'bg-red-500 text-white shadow-md'
+                : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100 hover:text-red-500'
+            }`}
+            title={isFavorite(product._id) ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Heart 
+              className={`w-4 h-4 ${isFavorite(product._id) ? 'fill-current' : ''}`}
+            />
+          </button>
 
           {/* Discount Badge */}
         
@@ -150,17 +182,15 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       {/* Content */}
       <div
         className={`flex-1 ${
-          compact ? 'p-2 sm:p-3 md:p-4 lg:p-5' : 'p-2 sm:p-3 md:p-5 lg:p-6'
+          featured || compact ? 'p-3' : 'p-3 sm:p-4'
         } flex flex-col justify-between`}
       >
         {/* Info */}
         <div>
           <h3
             className={`font-semibold text-black line-clamp-2 ${
-              compact
-                ? 'text-xs sm:text-sm md:text-base'
-                : 'text-sm sm:text-base md:text-lg'
-            } cursor-pointer hover:text-orange-500`}
+              featured ? 'text-sm' : compact ? 'text-xs sm:text-sm' : 'text-sm'
+            } cursor-pointer hover:text-orange-500 mb-1`}
             onClick={openImageModal}
           >
             {product.name}
@@ -196,20 +226,22 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               'Delicious handcrafted treat made with premium ingredients'}
           </p>
 
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-baseline gap-1">
               {discountedPrice !== product.variants[0].price && (
                 <span className="text-gray-500 line-through text-xs">
                   ₹{Math.round(product.variants[0].price)}
                 </span>
               )}
-              <span className="font-bold text-black text-base">
+              <span className={`font-bold text-black ${
+                featured || compact ? 'text-sm' : 'text-base'
+              }`}>
                 ₹{Math.round(discountedPrice)}
               </span>
             </div>
             {/* Green Discount Badge next to price */}
             {discountPercentage > 0 && (
-              <span className="bg-white text-green-500 text-xs font-bold px-2 py-1 rounded-md">
+              <span className="bg-green-50 text-green-600 text-xs font-medium px-2 py-0.5 rounded">
                 {discountPercentage}% OFF
               </span>
             )}
@@ -260,12 +292,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             <button
               onClick={handleAddToCart}
               disabled={!product.isActive || product.stock === 0 || isAddingToCart}
-              className={`w-full ${compact ? 'py-2 px-2 text-xs sm:py-2.5 sm:px-3 sm:text-sm' : 'py-2.5 px-3 text-sm'} rounded-lg font-medium transition-all duration-200 ${
+              className={`w-full py-2 px-3 text-xs font-medium rounded-md transition-all duration-200 ${
                 !product.isActive || product.stock === 0
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300'
                   : isAddingToCart
                   ? 'bg-gray-200 text-black cursor-wait border border-gray-400'
-                  : 'bg-white text-black border-2 border-black hover:bg-gray-50 active:scale-95'
+                  : 'bg-white text-black border border-black hover:bg-gray-50'
               }`}
             >
         
@@ -286,10 +318,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           <button
             onClick={handleBuyNow}
             disabled={!product.isActive || product.stock === 0}
-            className={`w-full ${compact ? 'py-2 px-2 text-xs sm:py-2.5 sm:px-3 sm:text-sm' : 'py-2.5 px-3 text-sm'} rounded-lg font-medium transition-all duration-200 ${
+            className={`w-full py-2 px-3 text-xs font-medium rounded-md transition-all duration-200 ${
               !product.isActive || product.stock === 0
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-black text-white hover:bg-gray-800 active:scale-95'
+                : 'bg-black text-white hover:bg-gray-800'
             }`}
           >
             {!product.isActive ? 'Unavailable' : product.stock === 0 ? 'Out of Stock' : 'Reserve Yours'}

@@ -179,27 +179,12 @@ const Header = ({ isAdminView = false }) => {
     setIsLocationDropdownOpen(false);
     
     if (user) {
-      const selectedLocation = locations.find(loc => loc._id === locationId);
-      
-      if (selectedLocation) {
-        if (user.hostel && user.hostel.name && user.location?._id === locationId) {
-          setUserLocationDisplay(`${user.hostel.name}, ${selectedLocation.area}`);
-        } else {
-          setUserLocationDisplay(`${selectedLocation.area}, ${selectedLocation.city}`);
-        }
-        prevLocationIdRef.current = selectedLocation._id;
-      }
-      
-      updateUserLocation(locationId).then(success => {
-        console.log("Location update success:", success);
-      }).catch(error => {
-        console.error("Location update failed:", error);
-      });
-      
+      // Navigate to profile page instead of directly updating location
+      navigate('/profile');
     } else {
       toggleAuthPanel();
     }
-  }, [user, locations, updateUserLocation, toggleAuthPanel]);
+  }, [user, navigate, toggleAuthPanel]);
   
   // Toggle mobile menu with body scroll lock
   const toggleMobileMenu = () => {
@@ -569,8 +554,8 @@ const Header = ({ isAdminView = false }) => {
                 "
                 style={{fontFamily: 'sans-serif'}}
                 onClick={() => {
-                  setIsLocationDropdownOpen(true);
                   closeMobileMenu();
+                  navigate('/profile');
                 }}
               >
                 CHANGE

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 // Icons
-import { FaStar, FaFire, FaNewspaper } from "react-icons/fa";
+import { FaStar, FaFire, FaNewspaper, FaHeart } from "react-icons/fa";
 
 const CategorySwiperHome = ({
   categories = [],
@@ -11,6 +11,8 @@ const CategorySwiperHome = ({
   topTrendingRef,
   bestSellersRef,
   newlyLaunchedRef,
+  handpickedRef,
+  favoritesRef,
 }) => {
   const navigate = useNavigate();
 

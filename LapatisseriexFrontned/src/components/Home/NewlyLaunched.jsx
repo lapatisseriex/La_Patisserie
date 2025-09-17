@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useProduct } from '../../context/ProductContext/ProductContext';
-import ProductCard from '../products/ProductCard';
+import ProductCard from '../Products/ProductCard';
 
 const NewlyLaunched = () => {
   const { fetchProducts } = useProduct();

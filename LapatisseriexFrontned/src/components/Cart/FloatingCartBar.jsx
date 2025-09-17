@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,6 +6,37 @@ import { motion, AnimatePresence } from 'framer-motion';
 const FloatingCartBar = () => {
   const { cartCount, cartTotal, cartItems } = useCart();
   const navigate = useNavigate();
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [scrollTimeout, setScrollTimeout] = useState(null);
+
+  // Handle scroll events to hide/show floating cart
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hide cart when scrolling
+      setIsScrolling(true);
+      
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      
+      // Set new timeout to show cart when scrolling stops
+      const newTimeout = setTimeout(() => {
+        setIsScrolling(false);
+      }, 150); // Show cart 150ms after scrolling stops
+      
+      setScrollTimeout(newTimeout);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
+  }, [scrollTimeout]);
 
   // Only show if there are items in cart
   if (cartCount === 0) return null;
@@ -16,13 +47,14 @@ const FloatingCartBar = () => {
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-2xl border-t border-gray-200"
-      >
+      {!isScrolling && (
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-2xl border-t border-gray-200"
+        >
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             {/* Cart Info */}
@@ -78,7 +110,8 @@ const FloatingCartBar = () => {
             </div>
           </div>
         </div>
-      </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 };

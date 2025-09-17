@@ -1,13 +1,23 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
+import Product from '../models/productModel.js';
 import firebaseAdmin from '../config/firebase.js';
 
 // @desc    Get current user profile
 // @route   GET /api/users/me
 // @access  Private
 export const getCurrentUser = asyncHandler(async (req, res) => {
-  // Fetch user with populated location and hostel
-  const user = await User.findById(req.user._id).populate('location').populate('hostel');
+  // Fetch user with populated location, hostel, and favorites
+  const user = await User.findOne({ uid: req.user.uid })
+    .populate('location')
+    .populate('hostel')
+    .populate({
+      path: 'favorites',
+      populate: {
+        path: 'category',
+        select: 'name'
+      }
+    });
 
   if (!user) {
     res.status(404);
@@ -29,6 +39,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       address: user.address,
       location: user.location,
       hostel: user.hostel,
+      favorites: user.favorites || [],
       createdAt: user.createdAt
     }
   });
@@ -136,6 +147,93 @@ export const getUsers = asyncHandler(async (req, res) => {
   const users = await User.find({}).populate('location').populate('hostel').sort('-createdAt');
   
   res.status(200).json(users);
+});
+
+// @desc    Add product to favorites
+// @route   POST /api/users/favorites/:productId
+// @access  Private
+export const addToFavorites = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+  const userId = req.user.uid;
+
+  // Check if product exists
+  const product = await Product.findById(productId);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  // Find user and update favorites
+  const user = await User.findOne({ uid: userId });
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Check if product is already in favorites
+  if (user.favorites.includes(productId)) {
+    res.status(400);
+    throw new Error('Product already in favorites');
+  }
+
+  // Add to favorites
+  user.favorites.push(productId);
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Product added to favorites'
+  });
+});
+
+// @desc    Remove product from favorites
+// @route   DELETE /api/users/favorites/:productId
+// @access  Private
+export const removeFromFavorites = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+  const userId = req.user.uid;
+
+  // Find user and update favorites
+  const user = await User.findOne({ uid: userId });
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Remove from favorites
+  user.favorites = user.favorites.filter(fav => fav.toString() !== productId);
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Product removed from favorites'
+  });
+});
+
+// @desc    Get user's favorite products
+// @route   GET /api/users/favorites
+// @access  Private
+export const getFavorites = asyncHandler(async (req, res) => {
+  const userId = req.user.uid;
+
+  // Find user with populated favorites
+  const user = await User.findOne({ uid: userId }).populate({
+    path: 'favorites',
+    populate: {
+      path: 'category',
+      select: 'name'
+    }
+  });
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  res.status(200).json({
+    success: true,
+    favorites: user.favorites || []
+  });
 });
 
 // @desc    Delete user (admin only or self)

@@ -7,6 +7,8 @@ import BrowseCategories from './BrowseCategories';
 import TopTrending from './TopTrending';
 import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';
+import HandpickedForYou from './HandpickedForYou';
+import FavoritesSection from './FavoritesSection';
 import CategorySwiper from './categorySwiper';
 
 const Home = () => {
@@ -18,6 +20,8 @@ const Home = () => {
   const topTrendingRef = useRef(null);
   const bestSellersRef = useRef(null);
   const newlyLaunchedRef = useRef(null);
+  const handpickedRef = useRef(null);
+  const favoritesRef = useRef(null);
 
   const { categories, fetchCategories } = useCategory();
   const { fetchProducts } = useProduct();
@@ -119,7 +123,9 @@ const Home = () => {
           categories={categoriesWithProducts} 
           topTrendingRef={topTrendingRef} 
           bestSellersRef={bestSellersRef} 
-          newlyLaunchedRef={newlyLaunchedRef} 
+          newlyLaunchedRef={newlyLaunchedRef}
+          handpickedRef={handpickedRef}
+          favoritesRef={favoritesRef}
         />
       </section>
 
@@ -135,6 +141,13 @@ const Home = () => {
         <NewlyLaunched />
       </section>
 
+      <section ref={handpickedRef} className="w-full py-6">
+        <HandpickedForYou />
+      </section>
+
+      <section ref={favoritesRef} className="w-full py-6">
+        <FavoritesSection />
+      </section>
 
     </div>
   );

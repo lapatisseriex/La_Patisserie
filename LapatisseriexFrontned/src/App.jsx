@@ -6,9 +6,11 @@ import ScrollToTop from "./ScrollToTop.jsx";
 // Layout
 import Layout from './components/Layout/Layout';
 import AdminLayout from './components/Layout/AdminLayout';
+import SwiggyLayout from './components/Layout/SwiggyLayout';
 
 // Pages
 import ProfilePage from './pages/Profile';
+import FavoritesPage from './pages/Favorites';
 
 // Home Components
 import Home from './components/Home/Home';
@@ -38,6 +40,7 @@ import { LocationProvider } from './context/LocationContext/LocationContext';
 import { HostelProvider } from './context/HostelContext/HostelContext';
 import { CategoryProvider } from './context/CategoryContext/CategoryContext';
 import { ProductProvider } from './context/ProductContext/ProductContext';
+import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
 
 // Main Homepage that combines all sections
 const HomePage = () => {
@@ -87,7 +90,8 @@ function App() {
         <HostelProvider>
           <CategoryProvider>
             <ProductProvider>
-              <CartProvider>
+              <FavoritesProvider>
+                <CartProvider>
                 <Router>
                 <ScrollToTop />
                   {/* Auth Modal - available on all pages */}
@@ -95,14 +99,20 @@ function App() {
                 
             <Routes>
              
-              {/* Main Layout Routes */}
+              {/* Home with regular Layout */}
               <Route path="/" element={<Layout />}>
                 <Route index element={<HomePage />} />
-                <Route path="products" element={<Products />} />
-                
-                {/* Protected Routes */}
-                <Route path="cart" element={<Cart />} />
-                <Route path="payment" element={<Payment />} />
+                <Route path="contact" element={<Newsletter />} />
+              </Route>
+
+              {/* Product-focused routes with Swiggy-like Layout */}
+              <Route path="/products" element={<SwiggyLayout><Products /></SwiggyLayout>} />
+              <Route path="/favorites" element={<SwiggyLayout><FavoritesPage /></SwiggyLayout>} />
+              <Route path="/cart" element={<SwiggyLayout><Cart /></SwiggyLayout>} />
+              <Route path="/payment" element={<SwiggyLayout><Payment /></SwiggyLayout>} />
+              
+              {/* Profile and Orders with regular Layout */}
+              <Route path="/" element={<Layout />}>
                 <Route path="profile" element={
                   <PrivateRoute>
                     {/* Use the dedicated ProfilePage component */}
@@ -116,7 +126,6 @@ function App() {
                     <div>Orders Page</div>
                   </PrivateRoute>
                 } />
-                <Route path="contact" element={<Newsletter />} />
               </Route>
               
               {/* Admin Routes with custom AdminLayout */}
@@ -138,7 +147,8 @@ function App() {
               </Route>
             </Routes>
           </Router>
-              </CartProvider>
+                </CartProvider>
+              </FavoritesProvider>
             </ProductProvider>
           </CategoryProvider>
         </HostelProvider>

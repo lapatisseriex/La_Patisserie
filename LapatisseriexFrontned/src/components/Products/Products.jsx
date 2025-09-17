@@ -173,9 +173,9 @@ const Products = () => {
           <h2 className="text-xl md:text-2xl font-bold text-black">{title}</h2>
         </div>
         
-        {/* Mobile: Vertical Stack Layout */}
+        {/* Mobile: 2-Column Grid Layout */}
         <div className="block md:hidden">
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             {products.map(product => (
               <motion.div
                 key={product._id}
@@ -228,9 +228,9 @@ const Products = () => {
           <h2 className="text-xl md:text-2xl font-bold text-black">{title}</h2>
         </div>
         
-        {/* Mobile: Vertical Stack Layout */}
+        {/* Mobile: 2-Column Grid Layout */}
         <div className="block md:hidden">
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             {featuredItems.map(product => (
               <motion.div
                 key={product._id}
@@ -264,10 +264,10 @@ const Products = () => {
   };
 
   return (
-    <section ref={productsSectionRef} className="bg-gradient-to-b from-white to-gray-100/20 min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
+    <section ref={productsSectionRef} className="bg-white min-h-screen">
+      <div className="container mx-auto px-4 py-4">
         {/* Category Swiper - Sticky Navigation */}
-        <div ref={categorySectionRef} className="sticky top-[100px] md:top-[120px] bg-white/95 backdrop-blur-sm z-40 shadow-sm mb-4 lg:mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3">
+        <div ref={categorySectionRef} className="sticky top-0 bg-white shadow-sm z-30 mb-4 lg:mb-6 -mx-4 px-4 py-3">
           <CategorySwiper
             categories={categories || []}
             loading={loadingCategories}

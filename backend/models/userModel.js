@@ -45,6 +45,10 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Hostel',
     },
+    favorites: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+    }],
     lastLogin: {
       type: Date,
       default: Date.now,
