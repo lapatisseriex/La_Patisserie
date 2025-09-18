@@ -451,7 +451,7 @@ const Products = () => {
             className={`category-swiper-container transition-all duration-300 shadow-sm z-30 mb-4 lg:mb-6 -mx-4 px-4 py-3 ${
               isCategoryStickyActive 
                 ? 'sticky bg-white' 
-                : 'relative bg-blue-50'
+                : 'relative bg-white'
             }`}
             style={isCategoryStickyActive ? { 
               position: 'sticky', 
