@@ -34,6 +34,7 @@ const ProductDisplayPage = () => {
   
   // Scroll detection states for sticky mini navbar
   const [showStickyNavbar, setShowStickyNavbar] = useState(false);
+  const [showStickyBreadcrumb, setShowStickyBreadcrumb] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [scrollingUp, setScrollingUp] = useState(false);
 
@@ -134,36 +135,41 @@ const ProductDisplayPage = () => {
     }
   }, [product?.images, isHoveringImage]);
 
-  // Scroll detection for sticky mini navbar
+  // Scroll detection for sticky mini navbar and breadcrumb
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      const isMobile = window.innerWidth < 768;
       
-      // Check if user has scrolled past the main product info section
-      const shouldShowNavbar = currentScrollY > 500; // Increased threshold for better UX
+      // Show navbar when user scrolls DOWN past the Reserve button (around 600px)
+      const shouldShowNavbar = currentScrollY > 600;
       
-      // Determine scroll direction - only show when scrolling up
-      const isScrollingUp = currentScrollY < lastScrollY && currentScrollY > 200;
+      // Show breadcrumb when user scrolls past initial content
+      // On mobile, show at 150px; on desktop, show at 200px to avoid overlap issues
+      const breadcrumbThreshold = isMobile ? 150 : 200;
+      const shouldShowBreadcrumb = currentScrollY > breadcrumbThreshold;
       
-      setScrollingUp(isScrollingUp);
       setShowStickyNavbar(shouldShowNavbar);
+      setShowStickyBreadcrumb(shouldShowBreadcrumb);
       setLastScrollY(currentScrollY);
     };
 
-    // Debounced scroll listener for better performance
-    let timeoutId;
-    const debouncedScrollListener = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        requestAnimationFrame(handleScroll);
-      }, 10);
+    // Throttled scroll listener
+    let ticking = false;
+    const scrollListener = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', debouncedScrollListener, { passive: true });
+    window.addEventListener('scroll', scrollListener, { passive: true });
     
     return () => {
-      window.removeEventListener('scroll', debouncedScrollListener);
-      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', scrollListener);
     };
   }, [lastScrollY]);
 
@@ -250,110 +256,169 @@ const ProductDisplayPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Sticky Mini Navbar - Shows on scroll up */}
-      <div className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-lg transition-transform duration-300 ${
-        showStickyNavbar && scrollingUp ? 'translate-y-0' : '-translate-y-full'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 py-3">
-          <div className="flex items-center justify-between gap-4">
-            {/* Product Info */}
-            <div className="flex items-center gap-4 flex-1">
-              {/* Small Product Image */}
-              <div className="w-12 h-12 border border-gray-300 overflow-hidden flex-shrink-0">
-                <MediaDisplay
-                  src={product.images?.[selectedImageIndex] || product.images?.[0]}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              
-              {/* Product Details */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-black truncate">
-                  {product.name}
-                </h3>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-black font-bold">
-                    ₹{Math.round(discountedPrice)}
-                  </span>
-                  {discountPercentage > 0 && (
-                    <>
-                      <span className="text-gray-500 line-through">
-                        ₹{selectedVariant.price}
-                      </span>
-                      <span className="bg-green-500 text-white px-1 py-0.5 text-xs font-bold">
-                        {discountPercentage}% OFF
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              {/* Quantity Controls */}
-              {currentCartQuantity > 0 ? (
-                <div className="flex items-center bg-gray-100 border border-gray-300">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuantityChange(currentCartQuantity - 1);
-                    }}
-                    className="w-8 h-8 flex items-center justify-center text-black hover:bg-gray-200 transition-colors text-sm"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="px-3 py-1 text-black font-medium text-sm min-w-[2rem] text-center">
-                    {currentCartQuantity}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuantityChange(currentCartQuantity + 1);
-                    }}
-                    disabled={currentCartQuantity >= totalStock}
-                    className="w-8 h-8 flex items-center justify-center text-black hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
+      {/* Sticky Breadcrumb - Shows on scroll */}
+      {product && (
+        <div className={`fixed left-0 right-0 z-20 transition-all duration-300 ease-out ${
+          showStickyBreadcrumb 
+            ? 'translate-y-0 opacity-100' 
+            : '-translate-y-full opacity-0'
+        }`}
+        style={{
+          top: 'var(--header-height, 130px)'
+        }}>
+          <div className="bg-gray-50 border-b border-gray-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
+              <nav className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
                 <button
-                  onClick={handleAddToCart}
-                  disabled={!product?.isActive || totalStock === 0 || isAddingToCart}
-                  className={`px-4 py-2 text-xs font-medium border transition-all duration-200 ${
-                    !product?.isActive || totalStock === 0
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300'
-                      : isAddingToCart
-                      ? 'bg-gray-200 text-black cursor-wait border-gray-400'
-                      : 'bg-white text-black border-black hover:bg-gray-50'
-                  }`}
+                  onClick={() => navigate('/')}
+                  className="text-gray-600 hover:text-black transition-colors hover:underline truncate"
                 >
-                  {isAddingToCart ? 'Adding...' : 'Add to Box'}
+                  Home
                 </button>
-              )}
-
-              {/* Buy Now Button */}
-              <button
-                onClick={handleBuyNow}
-                disabled={!product?.isActive || totalStock === 0}
-                className={`px-4 py-2 text-xs font-medium transition-all duration-200 ${
-                  !product?.isActive || totalStock === 0
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-black text-white hover:bg-gray-800'
-                }`}
-              >
-                {!product?.isActive
-                  ? 'Unavailable'
-                  : totalStock === 0
-                  ? 'Out of Stock'
-                  : 'Reserve Yours'}
-              </button>
+                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                
+                {product?.category?.name && (
+                  <>
+                    <button
+                      onClick={() => navigate(`/products?category=${product.category._id}`)}
+                      className="text-gray-600 hover:text-black transition-colors hover:underline truncate"
+                    >
+                      {product.category.name}
+                    </button>
+                    <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                  </>
+                )}
+                
+                <span className="text-black font-medium truncate max-w-[150px] sm:max-w-none">
+                  {product?.name}
+                </span>
+              </nav>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Enhanced Sticky Mini Navbar - Shows on scroll down past product info */}
+      {product && (
+        <div className={`fixed left-0 right-0 z-10 transition-all duration-300 ease-out ${
+          showStickyNavbar 
+            ? 'translate-y-0 opacity-100' 
+            : '-translate-y-full opacity-0'
+        }`}
+        style={{
+          top: showStickyBreadcrumb 
+            ? 'calc(var(--header-height, 130px) + 36px)' // Header height + breadcrumb height (36px including padding)
+            : 'var(--header-height, 130px)'
+        }}>
+        {/* Backdrop blur for better visual separation */}
+        <div className="bg-white border-t border-gray-200 shadow-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 sm:py-3">
+            <div className="flex items-center justify-between gap-3 sm:gap-6">
+              
+              {/* Left: Product Info */}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {/* Product Thumbnail */}
+                <div className="w-10 h-10 sm:w-12 sm:h-12 border border-gray-300 overflow-hidden flex-shrink-0 bg-gray-50">
+                  <MediaDisplay
+                    src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                {/* Product Details - Center on mobile, left-aligned on desktop */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs sm:text-sm font-semibold text-black truncate leading-tight">
+                    {product.name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-sm sm:text-base font-bold text-black">
+                      ₹{Math.round(discountedPrice)}
+                    </span>
+                    {discountPercentage > 0 && (
+                      <>
+                        <span className="text-xs text-gray-500 line-through">
+                          ₹{selectedVariant.price}
+                        </span>
+                        <span className=" text-green-500 px-1.5 py-0.5 text-xs font-bold leading-none">
+                          {discountPercentage}% OFF
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Action Buttons */}
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                {/* Quantity Controls or Add to Cart */}
+                {currentCartQuantity > 0 ? (
+                  <div className="flex items-center bg-gray-50 border border-gray-300 h-9 sm:h-10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuantityChange(currentCartQuantity - 1);
+                      }}
+                      className="w-8 sm:w-9 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors"
+                    >
+                      <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                    </button>
+                    <span className="px-2 sm:px-3 text-black font-semibold text-sm min-w-[2rem] text-center">
+                      {currentCartQuantity}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuantityChange(currentCartQuantity + 1);
+                      }}
+                      disabled={currentCartQuantity >= totalStock}
+                      className="w-8 sm:w-9 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={!product?.isActive || totalStock === 0 || isAddingToCart}
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border transition-all duration-200 h-9 sm:h-10 ${
+                      !product?.isActive || totalStock === 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300'
+                        : isAddingToCart
+                        ? 'bg-gray-200 text-black cursor-wait border-gray-400'
+                        : 'bg-white text-black border-black hover:bg-gray-50'
+                    }`}
+                  >
+                    {isAddingToCart ? (
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent animate-spin"></div>
+                        <span className="hidden sm:inline">Adding...</span>
+                      </div>
+                    ) : (
+                      'Add to Box'
+                    )}
+                  </button>
+                )}
+
+                {/* Prominent Reserve Yours Button */}
+                <button
+                  onClick={handleBuyNow}
+                  disabled={!product?.isActive || totalStock === 0}
+                  className={`px-3 sm:px-5 py-2 text-xs sm:text-sm font-semibold transition-all duration-200 h-9 sm:h-10 ${
+                    !product?.isActive || totalStock === 0
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-black text-white hover:bg-gray-800 shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  <span className="hidden sm:inline">Reserve Yours</span>
+                  <span className="sm:hidden">Reserve</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      )}
       
       {/* Clean Header */}
       <div className="bg-white border-b border-gray-200">
