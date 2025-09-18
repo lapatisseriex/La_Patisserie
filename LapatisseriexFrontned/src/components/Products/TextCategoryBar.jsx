@@ -95,17 +95,16 @@ const TextCategoryBar = ({
     return () => clearTimeout(timeoutId);
   }, [selectedCategory, mounted]);
 
-  // Handler for "All Categories" selection
   const handleAllCategories = () => {
     onSelectCategory(null);
   };
 
   return (
     <div className="w-full bg-white relative">
-      {/* Scrollable categories container - centered layout */}
-      <div 
+      {/* Scrollable categories container - responsive layout */}
+      <div
         ref={containerRef}
-        className="flex overflow-x-auto space-x-6 md:space-x-8 lg:space-x-10 px-4 py-4 scrollbar-hide scroll-smooth relative z-10 justify-center"
+        className="flex overflow-x-auto space-x-4 md:space-x-6 lg:space-x-8 xl:space-x-10 px-4 py-4 scrollbar-hide scroll-smooth relative z-10 justify-start md:justify-center"
         style={{
           scrollbarWidth: 'none', /* Firefox */
           msOverflowStyle: 'none', /* IE and Edge */

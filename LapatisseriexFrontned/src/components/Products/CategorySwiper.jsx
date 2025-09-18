@@ -129,7 +129,7 @@ const CategorySwiper = ({
   }, [selectedCategory]);
 
   return (
-    <div className="max-w-[95%] mx-auto py-2">
+    <div className="max-w-[95%] mx-auto py-12 md:py-2">
       <h2 className="text-lg font-bold text-black mb-2 text-center sm:text-left">All Categories</h2>
 
       {/* Scrollable categories container */}

@@ -42,6 +42,9 @@ const Products = () => {
   const [showTextCategoryBar, setShowTextCategoryBar] = useState(false);
   const lastScrollY = useRef(0);
 
+  // Add state for scrollY debug display
+  const [scrollY, setScrollY] = useState(0);
+
   // Initial navigation state - for 10-second non-sticky period when coming from home page
   const [isInitialLoad, setIsInitialLoad] = useState(false);
   const [showInitialNonSticky, setShowInitialNonSticky] = useState(false);
@@ -234,30 +237,80 @@ const Products = () => {
     loadAllCategoryProducts();
   }, [fetchProducts, categories, selectedCategory]);
 
-  // Scroll detection for dynamic sticky behavior
+  // ========================================================================================
+  // SCROLL SWITCHING LOGIC - CONTROLS WHEN CATEGORYSWIPER SWITCHES TO TEXTCATEGORYSWIPER
+  // ========================================================================================
+  // To MODIFY SWITCHING THRESHOLDS:
+  // 1. AT_TOP_THRESHOLD: Controls when scrolling up shows categorySwiper (currently: 60)
+  // 2. TEXT_BAR_THRESHOLD: Controls when scrolling down shows textCategorySwiper (currently: 200)
+  // 3. STICKY_BAR_THRESHOLD: Controls when categorySwiper becomes sticky (currently: 150)
+  //
+  // RECOMENDED: Always keep AT_TOP_THRESHOLD < STICKY_BAR_THRESHOLD < TEXT_BAR_THRESHOLD
+  // ========================================================================================
+
   useEffect(() => {
+    let ticking = false;
+    let scrollTimeout;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Simple logic: show text bar when scrolled past 200px
-      const shouldShowTextBar = currentScrollY > 200;
-      setShowTextCategoryBar(shouldShowTextBar);
-      
-      // Update other scroll states for debugging
-      const direction = currentScrollY > lastScrollY.current ? 'down' : 'up';
-      setScrollDirection(direction);
-      
-      const atTop = currentScrollY <= 10;
-      setIsAtTop(atTop);
-      
-      // For the full swiper, only make it sticky when scrolling down
-      const shouldBeSticky = direction === 'down' && currentScrollY > 150 && !shouldShowTextBar;
-      setIsCategoryStickyActive(shouldBeSticky);
-      
-      lastScrollY.current = currentScrollY;
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          setScrollY(currentScrollY); // Update scrollY for debug display
+
+          // ========================================================================================
+          // SWITCHING THRESHOLDS - MODIFY THESE VALUES TO CONTROL SWITCHING BEHAVIOR
+          // ========================================================================================
+          const AT_TOP_THRESHOLD = 90;        // [MODIFY THIS] When scrollY is below this, show categorySwiper
+          const TEXT_BAR_THRESHOLD = 90;     // [MODIFY THIS] When scrollY exceeds this, show textCategorySwiper
+          const STICKY_BAR_THRESHOLD = 90;   // [MODIFY THIS] When scrollY exceeds this, make categorySwiper sticky
+          // ========================================================================================
+
+          // SMOOTH SWITCHING LOGIC - Prevents ghosting and ensures consistent behavior
+          const atTop = currentScrollY <= AT_TOP_THRESHOLD;
+          const hasScrolledEnoughForTextBar = currentScrollY >= TEXT_BAR_THRESHOLD;
+          const shouldBeSticky = currentScrollY >= STICKY_BAR_THRESHOLD && !hasScrolledEnoughForTextBar;
+
+          // KEY SWITCHING LOGIC: Ensure only ONE bar is visible at a time
+          if (atTop) {
+            // AT TOP: Show categorySwiper, hide textCategorySwiper
+            setShowTextCategoryBar(false);
+            setIsCategoryStickyActive(false);
+          } else if (hasScrolledEnoughForTextBar) {
+            // SCROLLED DOWN ENOUGH: Show textCategorySwiper, hide categorySwiper
+            setShowTextCategoryBar(true);
+            setIsCategoryStickyActive(false);
+          } else if (shouldBeSticky) {
+            // TRANSITION ZONE: Show categorySwiper as sticky, hide textCategorySwiper
+            setShowTextCategoryBar(false);
+            setIsCategoryStickyActive(true);
+          } else {
+            // DEFAULT FALLBACK: Show categorySwiper without sticky, hide text
+            setShowTextCategoryBar(false);
+            setIsCategoryStickyActive(false);
+          }
+
+          // Track scroll direction for potential future use
+          const newDirection = currentScrollY > lastScrollY.current ? 'down' : 'up';
+          if (newDirection !== scrollDirection) {
+            setScrollDirection(newDirection);
+          }
+
+          setIsAtTop(atTop);
+          lastScrollY.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+
+      // Debounce scroll end detection
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        // Handle any scroll end cleanup if needed
+      }, 100);
     };
 
-    // Touch event handlers to detect user interaction
+    // Touch interaction handlers for faster response
     const handleTouchStart = () => {
       userInteractingRef.current = true;
     };
@@ -265,19 +318,21 @@ const Products = () => {
     const handleTouchEnd = () => {
       setTimeout(() => {
         userInteractingRef.current = false;
-      }, 1000); // Wait 1 second after touch ends
+      }, 300); // Optimized for smooth touch scrolling
     };
 
+    // Add scroll event listeners
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
+      clearTimeout(scrollTimeout);
     };
-  }, []); // Empty dependency array - set up once
+  }, [scrollDirection]); // Track scrollDirection changes
 
   const handleSelectCategory = (categoryId) => {
     console.log('Category selected:', categoryId);
@@ -343,16 +398,16 @@ const Products = () => {
         
         {/* Mobile: 2-Column Grid Layout */}
         <div className="block md:hidden">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 auto-rows-fr">
             {products.map(product => (
               <motion.div
                 key={product._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="w-full"
+                className="w-full h-full"
               >
-                <ProductCard product={product} className="w-full h-auto transition-shadow duration-300" compact={true} />
+                <ProductCard product={product} className="w-full h-full transition-shadow duration-300 flex flex-col" compact={true} />
               </motion.div>
             ))}
           </div>
@@ -384,56 +439,48 @@ const Products = () => {
   };
 
   return (
-    <section ref={productsSectionRef} className="bg-white min-h-screen pt-0">{/* Removed any default top padding */}
-      {/* Debug indicator - remove this in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-2 right-2 bg-black text-white p-2 rounded text-xs z-50">
-          <div>ScrollY: {typeof window !== 'undefined' ? window.scrollY : 0}</div>
-          <div>ShowTextBar: {showTextCategoryBar ? 'ON' : 'OFF'}</div>
-          <div>Sticky: {isCategoryStickyActive ? 'ON' : 'OFF'}</div>
-          <div>Selected: {selectedCategory || 'None'}</div>
-        </div>
-      )}
-      
-      {/* Text Category Bar - Outside container for better sticky behavior */}
-      {showTextCategoryBar && (
-        <div 
-          className="text-category-bar-container sticky bg-red-500 shadow-lg z-40 border-b border-gray-200 w-full"
-          style={{ 
-            position: 'sticky', 
-            top: '110px',
-            zIndex: 40,
-            minHeight: '50px'
-          }}
-        >
-          {/* Simple Image Background Banner */}
-          <div 
-            className="relative overflow-hidden" 
-            style={{ 
-              height: '80px',
-              backgroundImage: 'url(/images/cake1.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
-          >
-            {/* Dark overlay for text readability */}
-            <div className="absolute inset-0 bg-black/40"></div>
-            
-            {/* Content */}
-            <div className="relative z-10 flex items-center justify-center h-full px-4">
-              <div className="text-center">
-                <h3 className="text-white font-medium text-lg md:text-xl">
-                  Browse Our Categories
-                </h3>
-                <p className="text-white/90 text-sm mt-1">
-                  Discover amazing cakes and treats
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <TextCategoryBar
+    <section ref={productsSectionRef} className="bg-white min-h-screen pt-0">{/* Removed any default top padding */}      
+      {/* ======================================================================================== */}
+      {/* DESKTOP LEFT PADDING CONTROL: Modify the padding values in the className below */}
+      {/* Current: md:pl-8 lg:pl-16 xl:pl-24 (increases from 2rem to 3rem to 6rem on larger screens) */}
+      {/* NOTE: Mobile (below md) uses px-4 and is not affected */}
+      {/* ======================================================================================== */}
+
+      {/* Always render both bars with smooth opacity transitions */}
+      <div
+        className="text-category-bar-container fixed top-0 left-0 right-0 bg-white shadow-lg z-40 border-b border-gray-200 w-full"
+        style={{
+          top: window.innerWidth < 768 ? '110px' : '130px',
+          zIndex: showTextCategoryBar ? 40 : 30,
+          opacity: showTextCategoryBar ? 1 : 0,
+          transform: showTextCategoryBar ? 'translateY(0)' : 'translateY(-4px)',
+          transition: 'all 0.4s ease-out, opacity 0.3s ease-out'
+        }}
+      >
+        <TextCategoryBar
+          categories={categories || []}
+          loading={loadingCategories}
+          error={categoryError}
+          selectedCategory={activeViewCategory}
+          onSelectCategory={handleSelectCategory}
+        />
+      </div>
+
+      {/* Fixed category swiper container - must match text bar spacing */}
+      <div
+        ref={categorySectionRef}
+        className="fixed top-0 left-0 right-0 bg-white shadow-lg z-30 border-b border-gray-200"
+        style={{
+          top: window.innerWidth < 768 ? '110px' : '130px',
+          zIndex: !showTextCategoryBar ? 30 : 25,
+          opacity: !showTextCategoryBar ? 1 : 0,
+          transform: !showTextCategoryBar ? 'translateY(0)' : 'translateY(4px)',
+          transition: 'all 0.4s ease-out, opacity 0.3s ease-out',
+          pointerEvents: !showTextCategoryBar ? 'auto' : 'none'
+        }}
+      >
+        <div className="px-4 py-2 md:pl-8 lg:pl-16 xl:pl-48 md:pr-4">
+          <CategorySwiper
             categories={categories || []}
             loading={loadingCategories}
             error={categoryError}
@@ -441,33 +488,12 @@ const Products = () => {
             onSelectCategory={handleSelectCategory}
           />
         </div>
-      )}
+      </div>
 
-      <div className="container mx-auto px-4 pt-0 pb-4">{/* Removed top padding */}
-        {/* Category Navigation - Only show full swiper when not showing text bar */}
-        {!showTextCategoryBar && (
-          <div 
-            ref={categorySectionRef} 
-            className={`category-swiper-container transition-all duration-300 shadow-sm z-30 mb-4 lg:mb-6 -mx-4 px-4 py-3 ${
-              isCategoryStickyActive 
-                ? 'sticky bg-white' 
-                : 'relative bg-white'
-            }`}
-            style={isCategoryStickyActive ? { 
-              position: 'sticky', 
-              top: scrollDirection === 'up' ? '110px' : '120px',
-              zIndex: 30
-            } : {}}
-          >
-            <CategorySwiper
-              categories={categories || []}
-              loading={loadingCategories}
-              error={categoryError}
-              selectedCategory={activeViewCategory}
-              onSelectCategory={handleSelectCategory}
-            />
-          </div>
-        )}
+      {/* Add padding to content to prevent overlap with fixed bars */}
+      <div className="container mx-auto px-4 pt-4 pb-4" style={{
+        paddingTop: window.innerWidth < 768 ? '145px' : '120px'
+      }}>
 
         {/* Main Content */}
         {isLoading ? (
