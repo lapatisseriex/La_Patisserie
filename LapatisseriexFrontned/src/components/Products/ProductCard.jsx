@@ -89,14 +89,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   return (
     <div
-      className={`rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 h-72 ${
-        featured
-          ? 'h-full flex flex-col'
-          : compact
-          ? 'flex flex-col'
-          : 'flex flex-row'
-      } ${className}`}
-    >
+    className={`
+      rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300
+      flex ${featured || compact ? 'flex-col' : 'flex-row'}
+      h-full
+      ${className}
+    `}
+  >
       {/* Product Image */}
       <div
         className={`${
@@ -158,51 +157,48 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             {product.name}
           </h3>
 
-          {/* Egg/No Egg Indicator */}
          {/* Egg/No Egg Indicator */}
-<div className="mb-2">
-  <span
-    className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${
-      product.hasEgg
-        ? 'border border-orange-200 bg-white text-orange-600'
-        : 'border border-green-200 bg-white text-green-600'
-    }`}
-  >
-    <div className="flex items-center gap-1">
-      {/* Square outline + shape */}
-      <svg
-        className="w-4 h-4"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Square outline */}
-        <rect
-          x="1"
-          y="1"
-          width="18"
-          height="18"
-          stroke={product.hasEgg ? '#F97316' : '#22C55E'}
-          strokeWidth="2"
-          fill="none"
-        />
+      <div className="mb-2">
+        <span
+          className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${
+            product.hasEgg
+              ? 'border border-orange-200 bg-white text-orange-600'
+              : 'border border-green-200 bg-white text-green-600'
+          }`}
+        >
+        <div className="flex items-center gap-1">
+          {/* Square outline + shape */}
+          <svg
+            className="w-4 h-4"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Square outline */}
+            <rect
+              x="1"
+              y="1"
+              width="18"
+              height="18"
+              stroke={product.hasEgg ? '#F97316' : '#22C55E'}
+              strokeWidth="2"
+              fill="none"
+            />
 
-        {product.hasEgg ? (
-          // Triangle for WITH EGG
-          <polygon points="10,4 16,16 4,16" fill="#F97316" />
-        ) : (
-          // Circle for EGGLESS
-          <circle cx="10" cy="10" r="5" fill="#22C55E" />
-        )}
-      </svg>
+            {product.hasEgg ? (
+              // Triangle for WITH EGG
+              <polygon points="10,4 16,16 4,16" fill="#F97316" />
+            ) : (
+              // Circle for EGGLESS
+              <circle cx="10" cy="10" r="5" fill="#22C55E" />
+            )}
+          </svg>
 
-      <span className="uppercase tracking-tight font-medium">
-        {product.hasEgg ? 'WITH EGG' : 'EGGLESS'}
+          <span className="uppercase tracking-tight font-medium">
+            {product.hasEgg ? 'WITH EGG' : 'EGGLESS'}
+          </span>
+        </div>
       </span>
     </div>
-  </span>
-</div>
-
-
           <p
             className={`text-xs text-gray-700 leading-relaxed mb-2 ${
               compact ? 'line-clamp-1 sm:line-clamp-2' : 'line-clamp-2'
