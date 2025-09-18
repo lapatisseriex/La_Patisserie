@@ -63,7 +63,7 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
 
       <Swiper
         ref={swiperRef}
-        modules={[Navigation, Pagination, A11y, Autoplay]}
+        mo  dules={[Navigation, Pagination, A11y, Autoplay]}
         navigation={{
           prevEl: navigationPrevRef.current,
           nextEl: navigationNextRef.current,
@@ -83,14 +83,15 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
           768: { slidesPerView: 3, slidesPerGroup: 1 },
           1024: { slidesPerView: 4, slidesPerGroup: 1 },
         }}
-        className="pb-8"
+        className="pb-8 !h-full" // force swiper container to full height
       >
         {products.map((product) => (
-          <SwiperSlide key={product._id || product.id}>
-            <ProductCard product={product} />
+          <SwiperSlide key={product._id || product.id} className="!h-full flex">
+            <ProductCard product={product} className="flex-1 product-card" />
           </SwiperSlide>
         ))}
       </Swiper>
+
 
       {viewAllLink && (
         <div className="text-center mt-6 sm:hidden">
@@ -107,10 +108,3 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
 };
 
 export default ProductGrid;
-
-
-
-
-
-
-

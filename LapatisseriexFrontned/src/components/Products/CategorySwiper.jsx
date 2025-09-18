@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
 const CategorySwiper = ({
   categories = [],
@@ -9,10 +9,17 @@ const CategorySwiper = ({
 }) => {
   const containerRef = useRef(null);
   const categoryRefs = useRef({});
+  const isScrollingRef = useRef(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Set mounted flag after initial render
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Auto-scroll to active category when selectedCategory changes
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !mounted) return;
 
     // Function to check if we need auto-scroll (mobile/tablet devices)
     const shouldAutoScroll = () => {
@@ -35,6 +42,9 @@ const CategorySwiper = ({
       }
 
       if (targetElement && containerRef.current) {
+        // Set scrolling flag
+        isScrollingRef.current = true;
+        
         // Check if element is already in view
         const container = containerRef.current;
         const elementRect = targetElement.getBoundingClientRect();
@@ -51,11 +61,16 @@ const CategorySwiper = ({
             block: 'nearest'
           });
         }
+        
+        // Reset scrolling flag after animation completes
+        setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 1000);
       }
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [selectedCategory]);
+  }, [selectedCategory, mounted]);
 
   // Handle window resize to re-check if auto-scroll is needed
   useEffect(() => {
@@ -71,6 +86,8 @@ const CategorySwiper = ({
               : categoryRefs.current[selectedCategory];
             
             if (targetElement) {
+              isScrollingRef.current = true;
+              
               const container = containerRef.current;
               const elementRect = targetElement.getBoundingClientRect();
               const containerRect = container.getBoundingClientRect();
@@ -85,6 +102,10 @@ const CategorySwiper = ({
                   block: 'nearest'
                 });
               }
+              
+              setTimeout(() => {
+                isScrollingRef.current = false;
+              }, 1000);
             }
           }
         }, 100);
@@ -99,6 +120,11 @@ const CategorySwiper = ({
   const handleAllCategories = () => {
     onSelectCategory(null); // Passing null to indicate all categories
   };
+
+  // Debug: Log the selected category
+  useEffect(() => {
+    console.log('CategorySwiper received selectedCategory:', selectedCategory);
+  }, [selectedCategory]);
 
   return (
     <div className="max-w-[95%] mx-auto py-2">
@@ -117,13 +143,15 @@ const CategorySwiper = ({
         {!loading && (
           <div
             ref={(el) => categoryRefs.current['all'] = el}
-            className={`flex-shrink-0 w-20 cursor-pointer ${
-              selectedCategory === null ? 'lg:border-0 lg:shadow-none border-2 border-black rounded-lg shadow-md' : ''
+            className={`flex-shrink-0 w-20 cursor-pointer transition-all duration-200 ${
+              selectedCategory === null 
+                ? 'border-2 border-black rounded-lg shadow-md' 
+                : 'border-2 border-transparent'
             }`}
             onClick={handleAllCategories}
           >
             <div className="flex flex-col items-center justify-center h-full">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white mb-1 border border-white shadow-sm">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white mb-1 border border-gray-200 shadow-sm">
                 <span className="text-xs font-medium text-black">All</span>
               </div>
               <span className="text-xs text-center text-black">All Categories</span>
@@ -137,8 +165,8 @@ const CategorySwiper = ({
               .map((_, index) => (
                 <div key={`loading-${index}`} className="flex-shrink-0 w-20 h-20">
                   <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full bg-white animate-pulse"></div>
-                    <div className="w-10 h-2 bg-white animate-pulse rounded mt-2"></div>
+                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+                    <div className="w-10 h-2 bg-gray-200 animate-pulse rounded mt-2"></div>
                   </div>
                 </div>
               ))
@@ -147,13 +175,15 @@ const CategorySwiper = ({
               <div
                 key={category._id || category.id}
                 ref={(el) => categoryRefs.current[category._id || category.id] = el}
-                className={`flex-shrink-0 w-20 cursor-pointer ${
-                  selectedCategory === (category._id || category.id) ? 'lg:border-0 lg:shadow-none border-2 border-black rounded-lg shadow-md' : ''
+                className={`flex-shrink-0 w-20 cursor-pointer transition-all duration-200 ${
+                  selectedCategory === (category._id || category.id) 
+                    ? 'border-2 border-black rounded-lg shadow-md' 
+                    : 'border-2 border-transparent'
                 }`}
                 onClick={() => onSelectCategory(category._id || category.id)}
               >
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full overflow-hidden mb-1 border border-white shadow-sm">
+                  <div className="w-10 h-10 rounded-full overflow-hidden mb-1 border border-gray-200 shadow-sm">
                     <img
                       src={category.featuredImage || (category.images?.[0] || '')}
                       alt={category.name}
@@ -193,8 +223,3 @@ const CategorySwiper = ({
 CategorySwiper.displayName = 'CategorySwiper';
 
 export default CategorySwiper;
-
-
-
-
-

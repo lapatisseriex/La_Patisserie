@@ -29,27 +29,39 @@ const Products = () => {
   const categoryRefs = useRef({});
   
   // Observer for scroll tracking
-  const [observer, setObserver] = useState(null);
+  const observerRef = useRef(null);
+  const isScrollingRef = useRef(false);
 
   // Initialize Intersection Observer
   useEffect(() => {
     const options = {
       root: null,
-      rootMargin: '0px',
-      threshold: 0.3, // Trigger when 30% of element is visible
+      rootMargin: '-30% 0px -40% 0px', // Adjusted for better detection
+      threshold: 0.2, // Increased threshold for more reliable detection
     };
 
     const observerInstance = new IntersectionObserver((entries) => {
+      // If we're programmatically scrolling, ignore observer callbacks
+      if (isScrollingRef.current) return;
+      
+      let mostVisibleEntry = null;
+      let highestRatio = 0;
+      
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          // Extract category ID from element id
-          const categoryId = entry.target.id.replace('category-section-', '');
-          setActiveViewCategory(categoryId === 'all' ? null : categoryId);
+        if (entry.isIntersecting && entry.intersectionRatio > highestRatio) {
+          highestRatio = entry.intersectionRatio;
+          mostVisibleEntry = entry;
         }
       });
+      
+      if (mostVisibleEntry) {
+        // Extract category ID from element id
+        const categoryId = mostVisibleEntry.target.id.replace('category-section-', '');
+        setActiveViewCategory(categoryId === 'all' ? null : categoryId);
+      }
     }, options);
     
-    setObserver(observerInstance);
+    observerRef.current = observerInstance;
     
     return () => {
       if (observerInstance) {
@@ -78,18 +90,20 @@ const Products = () => {
 
   // Setup observers on category sections
   useEffect(() => {
-    if (observer && Object.keys(categoryRefs.current).length > 0) {
+    if (observerRef.current && Object.keys(categoryRefs.current).length > 0) {
       // Disconnect all previous observations
-      observer.disconnect();
+      observerRef.current.disconnect();
       
       // Observe each category section
       Object.values(categoryRefs.current).forEach(ref => {
         if (ref) {
-          observer.observe(ref);
+          observerRef.current.observe(ref);
         }
       });
+      
+      console.log('Observers set up for categories:', Object.keys(categoryRefs.current));
     }
-  }, [observer, productsByCategory, allProducts]);
+  }, [productsByCategory, allProducts]);
 
   // Load products for all categories
   useEffect(() => {
@@ -125,6 +139,9 @@ const Products = () => {
           setTimeout(() => {
             const selectedCategoryRef = categoryRefs.current[selectedCategory];
             if (selectedCategoryRef) {
+              // Set scrolling flag to prevent observer from firing
+              isScrollingRef.current = true;
+              
               // Account for fixed header height
               const headerHeight = window.innerWidth < 768 ? 140 : 130; // Mobile vs Desktop header height
               const elementPosition = selectedCategoryRef.getBoundingClientRect().top + window.pageYOffset;
@@ -134,6 +151,11 @@ const Products = () => {
                 top: offsetPosition,
                 behavior: 'smooth'
               });
+              
+              // Reset scrolling flag after animation completes
+              setTimeout(() => {
+                isScrollingRef.current = false;
+              }, 1000);
             }
           }, 500);
         }
@@ -149,8 +171,12 @@ const Products = () => {
   }, [fetchProducts, categories, selectedCategory]);
 
   const handleSelectCategory = (categoryId) => {
+    console.log('Category selected:', categoryId);
     setSelectedCategory(categoryId);
     setActiveViewCategory(categoryId);
+    
+    // Set scrolling flag to prevent observer from firing
+    isScrollingRef.current = true;
     
     // Scroll to the selected category section
     setTimeout(() => {
@@ -159,8 +185,20 @@ const Products = () => {
         : categoryRefs.current['all'];
         
       if (targetRef) {
-        targetRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const headerHeight = window.innerWidth < 768 ? 140 : 130;
+        const elementPosition = targetRef.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = elementPosition - headerHeight - 20;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
       }
+      
+      // Reset scrolling flag after animation completes
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 1000);
     }, 100);
   };
   
@@ -168,6 +206,11 @@ const Products = () => {
   const setCategoryRef = useCallback((element, categoryId) => {
     if (element) {
       categoryRefs.current[categoryId || 'all'] = element;
+      
+      // Observe the element if observer exists
+      if (observerRef.current) {
+        observerRef.current.observe(element);
+      }
     }
   }, []);
 
@@ -223,54 +266,6 @@ const Products = () => {
     );
   };
 
-  // Function to render featured products (larger display)
-  const renderFeaturedProducts = (products, title) => {
-    if (!products || products.length === 0) return null;
-    
-    // Take up to 3 featured products
-    const featuredItems = products.slice(0, 3);
-    
-    return (
-      <div className="mb-12">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl md:text-2xl font-bold text-black">{title}</h2>
-        </div>
-        
-        {/* Mobile: 2-Column Grid Layout */}
-        <div className="block md:hidden">
-          <div className="grid grid-cols-2 gap-3">
-            {featuredItems.map(product => (
-              <motion.div
-                key={product._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="w-full"
-              >
-                <ProductCard product={product} className="w-full h-auto transition-shadow duration-300" compact={false} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop: Grid Layout */}
-        <div className="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {featuredItems.map(product => (
-            <motion.div
-              key={product._id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="w-full"
-            >
-              <ProductCard product={product} className="w-full h-full transition-shadow duration-300" featured={true} />
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <section ref={productsSectionRef} className="bg-white min-h-screen">
       <div className="container mx-auto px-4 py-4">
@@ -305,38 +300,8 @@ const Products = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4 }}
             >
-              {/* Selected Category Section (displayed at the top if a category is selected) */}
-              {selectedCategory && categories.map(category => {
-                if (category._id !== selectedCategory) return null;
-                const categoryProducts = productsByCategory[category._id];
-                
-                return (
-                  <div 
-                    key={`selected-${category._id}`}
-                    ref={(el) => setCategoryRef(el, category._id)}
-                    id={`category-section-${category._id}`}
-                    className="mb-16"
-                  >
-                    {/* Category Header */}
-                    <div className="mb-8">
-                      <h1 className="text-2xl lg:text-3xl font-bold text-black">
-                        {category.name}
-                      </h1>
-                      <p className="text-black text-sm lg:text-base mt-1">
-                        {categoryProducts?.length || 0} delicious treats
-                      </p>
-                    </div>
-                    
-                    {/* Featured Products from selected category */}
-                 
-                  </div>
-                );
-              })}
-              
               {/* All Products Section with categories */}
               <div className="mt-8">
-              
-                
                 {/* Display products by category */}
                 <div className="mt-16">
                   <h2 className="text-2xl lg:text-3xl font-bold text-black mb-8">
@@ -352,8 +317,6 @@ const Products = () => {
                         id={`category-section-${category._id}`}
                         className={`mb-16 ${isSelectedCategory ? 'bg-gray-50 p-4 rounded-xl' : ''}`}
                       >
-                     
-                        
                         {renderProductRow(productsByCategory[category._id], category.name)}
                       </div>
                     );
