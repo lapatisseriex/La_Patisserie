@@ -1,6 +1,7 @@
 import express from 'express';
 import { 
   getProducts,
+  getProduct,
   createProduct, 
   updateProduct, 
   deleteProduct,
@@ -12,6 +13,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getProducts);
+router.get('/:id', getProduct);
 
 // Admin only routes
 router.post('/', protect, admin, createProduct);

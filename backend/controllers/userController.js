@@ -236,6 +236,81 @@ export const getFavorites = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Add product to recently viewed
+// @route   POST /api/users/recently-viewed/:productId
+// @access  Private
+export const addRecentlyViewed = asyncHandler(async (req, res) => {
+  const userId = req.user.uid;
+  const { productId } = req.params;
+
+  // Find user
+  const user = await User.findOne({ uid: userId });
+  
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Verify product exists
+  const product = await Product.findById(productId);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  // Remove existing entry if it exists (to update timestamp)
+  user.recentlyViewed = user.recentlyViewed.filter(
+    item => item.productId.toString() !== productId
+  );
+
+  // Add to front of recently viewed (limit to 20 items)
+  user.recentlyViewed.unshift({
+    productId: productId,
+    viewedAt: new Date()
+  });
+
+  // Keep only latest 20 recently viewed items
+  if (user.recentlyViewed.length > 20) {
+    user.recentlyViewed = user.recentlyViewed.slice(0, 20);
+  }
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Product added to recently viewed'
+  });
+});
+
+// @desc    Get user's recently viewed products
+// @route   GET /api/users/recently-viewed
+// @access  Private
+export const getRecentlyViewed = asyncHandler(async (req, res) => {
+  const userId = req.user.uid;
+
+  // Find user with populated recently viewed products
+  const user = await User.findOne({ uid: userId }).populate({
+    path: 'recentlyViewed.productId',
+    populate: {
+      path: 'category',
+      select: 'name'
+    }
+  });
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Filter out any null products (in case products were deleted)
+  const validRecentlyViewed = user.recentlyViewed.filter(item => item.productId);
+
+  res.status(200).json({
+    success: true,
+    recentlyViewed: validRecentlyViewed || []
+  });
+});
+
 // @desc    Delete user (admin only or self)
 // @route   DELETE /api/users/:id
 // @access  Private/Admin

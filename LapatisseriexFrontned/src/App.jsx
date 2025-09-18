@@ -10,6 +10,7 @@ import AdminLayout from './components/Layout/AdminLayout';
 // Pages
 import ProfilePage from './pages/Profile';
 import FavoritesPage from './pages/Favorites';
+import ProductDisplayPage from './pages/ProductDisplayPage';
 
 // Home Components
 import Home from './components/Home/Home';
@@ -40,6 +41,7 @@ import { HostelProvider } from './context/HostelContext/HostelContext';
 import { CategoryProvider } from './context/CategoryContext/CategoryContext';
 import { ProductProvider } from './context/ProductContext/ProductContext';
 import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
+import { RecentlyViewedProvider } from './context/RecentlyViewedContext/RecentlyViewedContext';
 
 // Main Homepage that combines all sections
 const HomePage = () => {
@@ -90,7 +92,8 @@ function App() {
           <CategoryProvider>
             <ProductProvider>
               <FavoritesProvider>
-                <CartProvider>
+                <RecentlyViewedProvider>
+                  <CartProvider>
                 <Router>
                 <ScrollToTop />
                   {/* Auth Modal - available on all pages */}
@@ -103,6 +106,7 @@ function App() {
                 <Route index element={<HomePage />} />
                 <Route path="contact" element={<Newsletter />} />
                 <Route path="products" element={<Products />} />
+                <Route path="product/:productId" element={<ProductDisplayPage />} />
                 <Route path="favorites" element={<FavoritesPage />} />
                 <Route path="cart" element={<Cart />} />
                 <Route path="payment" element={<Payment />} />
@@ -145,6 +149,7 @@ function App() {
             </Routes>
           </Router>
                 </CartProvider>
+                </RecentlyViewedProvider>
               </FavoritesProvider>
             </ProductProvider>
           </CategoryProvider>

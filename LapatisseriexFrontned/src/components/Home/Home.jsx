@@ -7,6 +7,7 @@ import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';
 import HandpickedForYou from './HandpickedForYou';
 import FavoritesSection from './FavoritesSection';
+import RecentlyViewedSection from './RecentlyViewedSection';
 import CategorySwiper from './categorySwiper';
 
 const Home = () => {
@@ -79,6 +80,11 @@ const Home = () => {
 
       <section ref={newlyLaunchedRef} className="w-full">
         <NewlyLaunched products={newlyLaunchedProducts} />
+      </section>
+
+      {/* Recently Viewed Section - Shows only for authenticated users */}
+      <section className="w-full">
+        <RecentlyViewedSection />
       </section>
 
       {/* Browse Categories Section */}

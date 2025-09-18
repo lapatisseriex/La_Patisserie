@@ -7,7 +7,9 @@ import {
   deleteUser,
   addToFavorites,
   removeFromFavorites,
-  getFavorites
+  getFavorites,
+  addRecentlyViewed,
+  getRecentlyViewed
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -29,6 +31,10 @@ router.delete('/:id', deleteUser);
 router.get('/favorites', getFavorites);
 router.post('/favorites/:productId', addToFavorites);
 router.delete('/favorites/:productId', removeFromFavorites);
+
+// Recently viewed routes
+router.get('/recently-viewed', getRecentlyViewed);
+router.post('/recently-viewed/:productId', addRecentlyViewed);
 
 // Admin routes - require admin role
 router.get('/', admin, getAllUsers);

@@ -1,23 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { Heart } from 'lucide-react';
 import MediaDisplay from '../common/MediaDisplay';
-import ProductImageModal from '../common/ProductImageModal';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isHoveringImage, setIsHoveringImage] = useState(false);
   const { addToCart, getProductQuantity, updateProductQuantity } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
+  const { trackProductView } = useRecentlyViewed();
   const navigate = useNavigate();
 
   const currentQuantity = getProductQuantity(product._id);
+
+  // Auto-slide functionality for multiple images - very slow and smooth
+  useEffect(() => {
+    if (product.images && product.images.length > 1 && !isHoveringImage) {
+      const interval = setInterval(() => {
+        setCurrentImageIndex((prevIndex) => 
+          (prevIndex + 1) % product.images.length
+        );
+      }, 4500); // Change image every 4.5 seconds for very slow, smooth experience
+
+      return () => clearInterval(interval);
+    }
+  }, [product.images, isHoveringImage]);
 
   // Ensure we have variants and handle missing data
   const variant = product.variants?.[0] || { price: 0, discount: { value: 0 }, stock: 0 };
@@ -74,11 +88,6 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     updateProductQuantity(product._id, newQuantity);
   };
 
-  const openImageModal = (e) => {
-    e.stopPropagation();
-    setIsImageModalOpen(true);
-  };
-
   const handleFavoriteToggle = async (e) => {
     e.stopPropagation();
     if (!user) {
@@ -87,9 +96,20 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     await toggleFavorite(product._id);
   };
 
+  const handleCardClick = async () => {
+    // Track the product view for logged-in users
+    if (user && product._id) {
+      await trackProductView(product._id);
+    }
+    
+    // Navigate to product display page
+    navigate(`/product/${product._id}`);
+  };
+
   return (
     <div
-      className={`rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300 h-72 ${
+      onClick={handleCardClick}
+      className={`overflow-hidden bg-white shadow-sm hover:shadow-lg transition-all duration-500 ease-in-out hover:scale-[1.02] h-72 cursor-pointer border border-gray-200 ${
         featured
           ? 'h-full flex flex-col'
           : compact
@@ -104,25 +124,30 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         } relative`}
       >
         <div
-          className={`w-full relative cursor-pointer group rounded-lg overflow-hidden ${
+          className={`w-full relative group overflow-hidden ${
             featured || compact ? 'aspect-square' : 'aspect-square sm:aspect-[3/4]'
           }`}
-          onClick={openImageModal}
+          onMouseEnter={() => setIsHoveringImage(true)}
+          onMouseLeave={() => setIsHoveringImage(false)}
         >
           <MediaDisplay
             src={product.images?.[currentImageIndex] || null}
             alt={product.name}
-            className="w-full h-full"
+            className="w-full h-full transition-all duration-1000 ease-in-out group-hover:scale-105"
+            style={{
+              transition: 'opacity 1.2s ease-in-out, transform 1.2s ease-in-out',
+              opacity: 1
+            }}
             aspectRatio="auto"
             objectFit="cover"
           />
 
           <button
             onClick={handleFavoriteToggle}
-            className={`absolute top-2 left-2 p-1.5 rounded-full transition-all duration-200 ${
+            className={`absolute top-2 left-2 p-1.5 transition-all duration-200 border ${
               isFavorite(product._id)
-                ? 'bg-red-500 text-white shadow-md'
-                : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100 hover:text-red-500'
+                ? 'bg-red-500 text-white shadow-md border-red-500'
+                : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100 hover:text-red-500 border-gray-300'
             }`}
             title={isFavorite(product._id) ? 'Remove from favorites' : 'Add to favorites'}
           >
@@ -131,13 +156,19 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             />
           </button>
 
+          {/* Discount Badge on Image */}
+       
+
+          {/* Image dots indicator for multiple images - smooth and clean */}
           {product.images && product.images.length > 1 && (
-            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1.5">
               {product.images.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    index === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'
+                  className={`w-1.5 h-1.5 transition-all duration-500 ease-in-out ${
+                    index === currentImageIndex
+                      ? 'bg-white shadow-lg scale-110'
+                      : 'bg-white bg-opacity-50 hover:bg-opacity-75'
                   }`}
                 />
               ))}
@@ -152,8 +183,8 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           <h3
             className={`font-semibold text-black line-clamp-2 ${
               featured ? 'text-sm' : compact ? 'text-xs sm:text-sm' : 'text-sm'
-            } cursor-pointer hover:text-orange-500 mb-1`}
-            onClick={openImageModal}
+            } cursor-pointer hover:text-pink-500 mb-1`}
+            onClick={handleCardClick}
           >
             {product.name}
           </h3>
@@ -162,10 +193,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
          {/* Egg/No Egg Indicator */}
 <div className="mb-2">
   <span
-    className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${
+    className={`inline-flex items-center text-xs px-2 py-0.5 border ${
       product.hasEgg
-        ? 'border border-orange-200 bg-white text-orange-600'
-        : 'border border-green-200 bg-white text-green-600'
+        ? 'border-orange-200 bg-white text-red-600'
+        : 'border-green-200 bg-white text-green-600'
     }`}
   >
     <div className="flex items-center gap-1">
@@ -176,19 +207,21 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         xmlns="http://www.w3.org/2000/svg"
       >
         {/* Square outline */}
-        <rect
-          x="1"
-          y="1"
-          width="18"
-          height="18"
-          stroke={product.hasEgg ? '#F97316' : '#22C55E'}
-          strokeWidth="2"
-          fill="none"
-        />
+      <rect
+  x="1"
+  y="1"
+  width="18"
+  height="18"
+  stroke={product.hasEgg ? '#FF0000' : '#22C55E'} 
+  strokeWidth="2"
+  fill="none"
+/>
+
 
         {product.hasEgg ? (
-          // Triangle for WITH EGG
-          <polygon points="10,4 16,16 4,16" fill="#F97316" />
+        // Triangle for WITH EGG
+<polygon points="10,4 16,16 4,16" fill="#FF0000" />
+
         ) : (
           // Circle for EGGLESS
           <circle cx="10" cy="10" r="5" fill="#22C55E" />
@@ -228,7 +261,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </span>
             </div>
             {discountPercentage > 0 && (
-              <span className="bg-green-50 text-green-600 text-xs font-medium px-2 py-0.5 rounded">
+              <span className=" text-green-500 text-xs font-xs px-2 py-1   transition-transform duration-200">
                 {discountPercentage}% OFF
               </span>
             )}
@@ -249,13 +282,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
         <div className={`${compact ? 'space-y-1 sm:space-y-2' : 'space-y-2'}`}>
           {currentQuantity > 0 ? (
-            <div className="flex items-center justify-center bg-white rounded-lg p-2 border border-gray-200">
+            <div className="flex items-center justify-center bg-white p-2 border border-gray-200">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleQuantityChange(currentQuantity - 1);
                 }}
-                className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black hover:bg-gray-50"
+                className="w-6 h-6 flex items-center justify-center bg-white text-black transition-colors border border-black hover:bg-gray-50"
               >
                 −
               </button>
@@ -268,7 +301,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   handleQuantityChange(currentQuantity + 1);
                 }}
                 disabled={currentQuantity >= totalStock}
-                className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black transition-colors border border-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="w-6 h-6 flex items-center justify-center bg-white text-black transition-colors border border-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 +
               </button>
@@ -277,12 +310,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             <button
               onClick={handleAddToCart}
               disabled={!isActive || totalStock === 0 || isAddingToCart}
-              className={`w-full py-2 px-3 text-xs font-medium rounded-md transition-all duration-200 ${
+              className={`w-full py-2 px-3 text-xs font-medium transition-all duration-200 border ${
                 !isActive || totalStock === 0
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300'
                   : isAddingToCart
-                  ? 'bg-gray-200 text-black cursor-wait border border-gray-400'
-                  : 'bg-white text-black border border-black hover:bg-gray-50'
+                  ? 'bg-gray-200 text-black cursor-wait border-gray-400'
+                  : 'bg-white text-black border-black hover:bg-gray-50'
               }`}
             >
               {isAddingToCart ? (
@@ -299,7 +332,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           <button
             onClick={handleBuyNow}
             disabled={!isActive || totalStock === 0}
-            className={`w-full py-2 px-3 text-xs font-medium rounded-md transition-all duration-200 ${
+            className={`w-full py-2 px-3 text-xs font-medium transition-all duration-200 ${
               !isActive || totalStock === 0
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-black text-white hover:bg-gray-800'
@@ -313,15 +346,6 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           </button>
         </div>
       </div>
-
-      {isImageModalOpen && (
-        <ProductImageModal
-          isOpen={isImageModalOpen}
-          images={product.images || []}
-          initialIndex={currentImageIndex}
-          onClose={() => setIsImageModalOpen(false)}
-        />
-      )}
     </div>
   );
 };

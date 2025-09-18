@@ -102,6 +102,39 @@ export const getProducts = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get single product by ID
+// @route   GET /api/products/:id
+// @access  Public
+export const getProduct = asyncHandler(async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id)
+      .populate({
+        path: 'category',
+        select: 'name images description isActive'
+      });
+
+    if (!product) {
+      res.status(404);
+      throw new Error('Product not found');
+    }
+
+    // For non-admin users, don't return inactive products
+    if (!product.isActive && (!req.user || req.user.role !== 'admin')) {
+      res.status(404);
+      throw new Error('Product not found');
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    // Handle invalid ObjectId format
+    if (error.name === 'CastError') {
+      res.status(404);
+      throw new Error('Product not found');
+    }
+    throw error;
+  }
+});
+
 // @desc    Create a new product
 // @route   POST /api/products
 // @access  Admin only
