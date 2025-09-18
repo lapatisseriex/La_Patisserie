@@ -5,6 +5,7 @@ import ProductCard from './ProductCard';
 import { useProduct } from '../../context/ProductContext/ProductContext';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import CategorySwiper from './CategorySwiper';
+import TextCategoryBar from './TextCategoryBar';
 
 const Products = () => {
   const { fetchProducts } = useProduct();
@@ -31,6 +32,21 @@ const Products = () => {
   // Observer for scroll tracking
   const observerRef = useRef(null);
   const isScrollingRef = useRef(false);
+  const userInteractingRef = useRef(false);
+
+  // Scroll detection for dynamic sticky behavior
+  const [scrollDirection, setScrollDirection] = useState('down');
+  const [isAtTop, setIsAtTop] = useState(true);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+  const [isCategoryStickyActive, setIsCategoryStickyActive] = useState(true);
+  const [showTextCategoryBar, setShowTextCategoryBar] = useState(false);
+  const lastScrollY = useRef(0);
+
+  // Initial navigation state - for 10-second non-sticky period when coming from home page
+  const [isInitialLoad, setIsInitialLoad] = useState(false);
+  const [showInitialNonSticky, setShowInitialNonSticky] = useState(false);
+  const stickyTimeoutRef = useRef(null);
+  const previousCategoryRef = useRef(null);
 
   // Initialize Intersection Observer
   useEffect(() => {
@@ -70,18 +86,66 @@ const Products = () => {
     };
   }, []);
 
-  // Sync category from URL
+  // Sync category from URL and detect navigation from home page
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const categoryId = params.get('category');
+    console.log('URL changed, categoryId:', categoryId, 'previousCategory:', previousCategoryRef.current);
+    
+    // Check if this is a category change (different from previous selection)
+    const isCategoryChange = categoryId && categoryId !== previousCategoryRef.current;
+    console.log('Is category change:', isCategoryChange, 'from:', previousCategoryRef.current, 'to:', categoryId);
+    
     if (categoryId) {
+      // If this is category change, show non-sticky for 10 seconds
+      if (isCategoryChange) {
+        console.log('Setting initial non-sticky for 10 seconds');
+        
+    // Only auto-scroll on larger screens or if coming from a different page
+        // Avoid aggressive auto-scroll on mobile that interferes with user scrolling
+        if (window.innerWidth >= 768 && !userInteractingRef.current) {
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 100);
+        }
+        
+        // Clear any existing timeout
+        if (stickyTimeoutRef.current) {
+          clearTimeout(stickyTimeoutRef.current);
+        }
+        
+        setIsInitialLoad(true);
+        setShowInitialNonSticky(true);
+        setIsCategoryStickyActive(false);
+        
+        // After 10 seconds, make it sticky
+        stickyTimeoutRef.current = setTimeout(() => {
+          console.log('10 seconds passed, making sticky again');
+          setShowInitialNonSticky(false);
+          setIsCategoryStickyActive(true);
+        }, 10000);
+      }
+      
       setSelectedCategory(categoryId);
       setActiveViewCategory(categoryId);
+      previousCategoryRef.current = categoryId;
     } else {
       setSelectedCategory(null);
       setActiveViewCategory(null);
+      setIsInitialLoad(false);
+      setShowInitialNonSticky(false);
+      previousCategoryRef.current = null;
     }
   }, [location.search]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (stickyTimeoutRef.current) {
+        clearTimeout(stickyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Load categories
   useEffect(() => {
@@ -134,8 +198,8 @@ const Products = () => {
         
         setProductsByCategory(productsByCat);
         
-        // Scroll to selected category if any
-        if (selectedCategory) {
+        // Scroll to selected category if any (only on larger screens)
+        if (selectedCategory && window.innerWidth >= 768 && !userInteractingRef.current) {
           setTimeout(() => {
             const selectedCategoryRef = categoryRefs.current[selectedCategory];
             if (selectedCategoryRef) {
@@ -170,6 +234,51 @@ const Products = () => {
     loadAllCategoryProducts();
   }, [fetchProducts, categories, selectedCategory]);
 
+  // Scroll detection for dynamic sticky behavior
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Simple logic: show text bar when scrolled past 200px
+      const shouldShowTextBar = currentScrollY > 200;
+      setShowTextCategoryBar(shouldShowTextBar);
+      
+      // Update other scroll states for debugging
+      const direction = currentScrollY > lastScrollY.current ? 'down' : 'up';
+      setScrollDirection(direction);
+      
+      const atTop = currentScrollY <= 10;
+      setIsAtTop(atTop);
+      
+      // For the full swiper, only make it sticky when scrolling down
+      const shouldBeSticky = direction === 'down' && currentScrollY > 150 && !shouldShowTextBar;
+      setIsCategoryStickyActive(shouldBeSticky);
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    // Touch event handlers to detect user interaction
+    const handleTouchStart = () => {
+      userInteractingRef.current = true;
+    };
+
+    const handleTouchEnd = () => {
+      setTimeout(() => {
+        userInteractingRef.current = false;
+      }, 1000); // Wait 1 second after touch ends
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []); // Empty dependency array - set up once
+
   const handleSelectCategory = (categoryId) => {
     console.log('Category selected:', categoryId);
     setSelectedCategory(categoryId);
@@ -178,28 +287,36 @@ const Products = () => {
     // Set scrolling flag to prevent observer from firing
     isScrollingRef.current = true;
     
-    // Scroll to the selected category section
-    setTimeout(() => {
-      const targetRef = categoryId 
-        ? categoryRefs.current[categoryId]
-        : categoryRefs.current['all'];
+    // Only auto-scroll on larger screens to avoid interfering with mobile touch scrolling
+    if (window.innerWidth >= 768 && !userInteractingRef.current) {
+      // Scroll to the selected category section
+      setTimeout(() => {
+        const targetRef = categoryId 
+          ? categoryRefs.current[categoryId]
+          : categoryRefs.current['all'];
+          
+        if (targetRef) {
+          const headerHeight = window.innerWidth < 768 ? 140 : 130;
+          const elementPosition = targetRef.getBoundingClientRect().top + window.pageYOffset;
+          const offsetPosition = elementPosition - headerHeight - 20;
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
         
-      if (targetRef) {
-        const headerHeight = window.innerWidth < 768 ? 140 : 130;
-        const elementPosition = targetRef.getBoundingClientRect().top + window.pageYOffset;
-        const offsetPosition = elementPosition - headerHeight - 20;
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-      }
-      
-      // Reset scrolling flag after animation completes
+        // Reset scrolling flag after animation completes
+        setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 1000);
+      }, 100);
+    } else {
+      // On mobile, just reset the scrolling flag without auto-scrolling
       setTimeout(() => {
         isScrollingRef.current = false;
-      }, 1000);
-    }, 100);
+      }, 100);
+    }
   };
   
   // Function to register category ref
@@ -267,11 +384,56 @@ const Products = () => {
   };
 
   return (
-    <section ref={productsSectionRef} className="bg-white min-h-screen">
-      <div className="container mx-auto px-4 py-4">
-        {/* Category Swiper - Sticky Navigation */}
-        <div ref={categorySectionRef} className="category-swiper-container sticky top-[140px] md:top-[130px] bg-white shadow-sm z-30 mb-4 lg:mb-6 -mx-4 px-4 py-3">
-          <CategorySwiper
+    <section ref={productsSectionRef} className="bg-white min-h-screen pt-0">{/* Removed any default top padding */}
+      {/* Debug indicator - remove this in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-2 right-2 bg-black text-white p-2 rounded text-xs z-50">
+          <div>ScrollY: {typeof window !== 'undefined' ? window.scrollY : 0}</div>
+          <div>ShowTextBar: {showTextCategoryBar ? 'ON' : 'OFF'}</div>
+          <div>Sticky: {isCategoryStickyActive ? 'ON' : 'OFF'}</div>
+          <div>Selected: {selectedCategory || 'None'}</div>
+        </div>
+      )}
+      
+      {/* Text Category Bar - Outside container for better sticky behavior */}
+      {showTextCategoryBar && (
+        <div 
+          className="text-category-bar-container sticky bg-red-500 shadow-lg z-40 border-b border-gray-200 w-full"
+          style={{ 
+            position: 'sticky', 
+            top: '110px',
+            zIndex: 40,
+            minHeight: '50px'
+          }}
+        >
+          {/* Simple Image Background Banner */}
+          <div 
+            className="relative overflow-hidden" 
+            style={{ 
+              height: '80px',
+              backgroundImage: 'url(/images/cake1.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            }}
+          >
+            {/* Dark overlay for text readability */}
+            <div className="absolute inset-0 bg-black/40"></div>
+            
+            {/* Content */}
+            <div className="relative z-10 flex items-center justify-center h-full px-4">
+              <div className="text-center">
+                <h3 className="text-white font-medium text-lg md:text-xl">
+                  Browse Our Categories
+                </h3>
+                <p className="text-white/90 text-sm mt-1">
+                  Discover amazing cakes and treats
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <TextCategoryBar
             categories={categories || []}
             loading={loadingCategories}
             error={categoryError}
@@ -279,10 +441,37 @@ const Products = () => {
             onSelectCategory={handleSelectCategory}
           />
         </div>
+      )}
+
+      <div className="container mx-auto px-4 pt-0 pb-4">{/* Removed top padding */}
+        {/* Category Navigation - Only show full swiper when not showing text bar */}
+        {!showTextCategoryBar && (
+          <div 
+            ref={categorySectionRef} 
+            className={`category-swiper-container transition-all duration-300 shadow-sm z-30 mb-4 lg:mb-6 -mx-4 px-4 py-3 ${
+              isCategoryStickyActive 
+                ? 'sticky bg-white' 
+                : 'relative bg-blue-50'
+            }`}
+            style={isCategoryStickyActive ? { 
+              position: 'sticky', 
+              top: scrollDirection === 'up' ? '110px' : '120px',
+              zIndex: 30
+            } : {}}
+          >
+            <CategorySwiper
+              categories={categories || []}
+              loading={loadingCategories}
+              error={categoryError}
+              selectedCategory={activeViewCategory}
+              onSelectCategory={handleSelectCategory}
+            />
+          </div>
+        )}
 
         {/* Main Content */}
         {isLoading ? (
-          <div className="flex justify-center items-center h-64 lg:h-96">
+          <div className="flex justify-center items-center min-h-screen bg-white">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-400 mx-auto"></div>
               <p className="text-black mt-4">Loading delicious products...</p>
