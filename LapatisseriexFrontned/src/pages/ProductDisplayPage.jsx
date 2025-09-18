@@ -94,16 +94,25 @@ const ProductDisplayPage = () => {
           // Load products from the same category
           if (productData.category) {
             try {
-              const categoryProducts = await fetchProducts({
+              const categoryProductsResponse = await fetchProducts({
                 category: productData.category._id,
                 limit: 6,
                 isActive: true
               });
               
-              const filteredCategoryProducts = categoryProducts
-                .filter(p => p._id !== productId)
-                .slice(0, 3);
-              setSameCategoryProducts(filteredCategoryProducts);
+              // Handle different response structures
+              const categoryProducts = categoryProductsResponse?.products || categoryProductsResponse || [];
+              
+              // Ensure categoryProducts is an array before filtering
+              if (Array.isArray(categoryProducts)) {
+                const filteredCategoryProducts = categoryProducts
+                  .filter(p => p._id !== productId)
+                  .slice(0, 3);
+                setSameCategoryProducts(filteredCategoryProducts);
+              } else {
+                console.warn('Category products is not an array:', categoryProducts);
+                setSameCategoryProducts([]);
+              }
             } catch (categoryError) {
               console.error('Error loading category products:', categoryError);
               setSameCategoryProducts([]);

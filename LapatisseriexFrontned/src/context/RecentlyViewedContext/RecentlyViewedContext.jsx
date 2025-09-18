@@ -36,6 +36,13 @@ export const RecentlyViewedProvider = ({ children }) => {
       // Get auth token
       const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
+      
+      // Check if user is still authenticated
+      if (!auth.currentUser) {
+        console.warn('User is not authenticated, cannot add to recently viewed');
+        return;
+      }
+      
       const idToken = await auth.currentUser.getIdToken(true);
 
       await axios.post(
@@ -54,7 +61,10 @@ export const RecentlyViewedProvider = ({ children }) => {
       
     } catch (err) {
       console.error('Error adding to recently viewed:', err);
-      setError(err.response?.data?.message || 'Failed to add to recently viewed');
+      // Don't set error state for authentication issues, just log them
+      if (err.message && !err.message.includes('auth')) {
+        setError(err.response?.data?.message || 'Failed to add to recently viewed');
+      }
     }
   }, [API_URL, user]);
 
@@ -73,6 +83,14 @@ export const RecentlyViewedProvider = ({ children }) => {
       // Get auth token
       const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
+      
+      // Check if user is still authenticated
+      if (!auth.currentUser) {
+        console.warn('User is not authenticated, cannot fetch recently viewed');
+        setRecentlyViewed([]);
+        return [];
+      }
+      
       const idToken = await auth.currentUser.getIdToken(true);
 
       const response = await axios.get(
@@ -90,7 +108,10 @@ export const RecentlyViewedProvider = ({ children }) => {
       
     } catch (err) {
       console.error('Error fetching recently viewed:', err);
-      setError(err.response?.data?.message || 'Failed to load recently viewed');
+      // Don't set error state for authentication issues, just log them
+      if (err.message && !err.message.includes('auth')) {
+        setError(err.response?.data?.message || 'Failed to load recently viewed');
+      }
       setRecentlyViewed([]);
       return [];
     } finally {

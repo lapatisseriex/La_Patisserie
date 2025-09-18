@@ -64,16 +64,28 @@ export const ProductProvider = ({ children }) => {
       console.log(`Products API response status: ${response.status}`);
       console.log(`Products fetched: ${response.data.products?.length || 0}`);
       
+      let productsData = [];
+      let responseData = response.data;
+      
       if (response.data && response.data.products) {
+        productsData = response.data.products;
         // Update the state
-        setProducts(response.data.products);
+        setProducts(productsData);
+      } else if (Array.isArray(response.data)) {
+        // Handle case where API returns array directly
+        productsData = response.data;
+        responseData = { products: productsData };
+        setProducts(productsData);
       } else {
         console.error('Invalid product data format:', response.data);
+        productsData = [];
+        responseData = { products: [] };
+        setProducts([]);
       }
       
-      // Store the result in cache
+      // Store the result in cache with normalized structure
       requestCache.current.set(cacheKey, {
-        data: response.data,
+        data: responseData,
         timestamp: now
       });
       
@@ -81,7 +93,7 @@ export const ProductProvider = ({ children }) => {
       requestInProgress.current.delete(cacheKey);
       
       setLoading(false);
-      return response.data;
+      return responseData;
     } catch (err) {
       console.error("Error fetching products:", err);
       setError("Failed to load products");
