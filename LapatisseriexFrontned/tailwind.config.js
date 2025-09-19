@@ -36,6 +36,8 @@ module.exports = {
         'fadeIn': 'fadeIn 0.5s ease-in-out',
         'slideIn': 'slideIn 0.5s ease-in-out',
         'pulse-subtle': 'pulse 2s infinite ease-in-out',
+        'growWidth': 'growWidth 3s ease-in-out forwards',
+        'spin': 'spin 1s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -49,6 +51,14 @@ module.exports = {
         pulse: {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.05)' },
+        },
+        growWidth: {
+          '0%': { width: '0%' },
+          '100%': { width: '100%' },
+        },
+        spin: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
         },
       },
     },

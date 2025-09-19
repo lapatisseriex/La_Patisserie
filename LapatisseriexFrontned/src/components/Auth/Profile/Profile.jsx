@@ -2,8 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext/AuthContext';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
-import { MapPin, Check, Building } from 'lucide-react';
-import DebugUserData from './DebugUserData';
+import ProfileImageUpload from './ProfileImageUpload';
+import GlobalLoadingOverlay from '../../common/GlobalLoadingOverlay';
+import EmailVerification from '../EmailVerification';
+import { 
+  User, 
+  Phone, 
+  Calendar, 
+  Heart, 
+  MapPin, 
+  Flag,
+  Check,
+  ChevronDown,
+  Building,
+  Mail
+} from 'lucide-react';
 
 const Profile = () => {
   const { user, updateProfile, authError, loading, isNewUser } = useAuth();
@@ -11,33 +24,66 @@ const Profile = () => {
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // Local saving state for more control
   
-  // Initialize form with user values if available
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    dob: user?.dob || '',
-    location: user?.location?._id || '',
-    hostel: user?.hostel?._id || ''
-  });
+  // Common CSS classes for form fields
+  const inputClasses = `w-full pl-10 pr-4 py-3 border border-gray-300 rounded-none 
+    focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300
+    hover:border-gray-400 focus:shadow-md ${!isEditMode ? 'bg-gray-50 text-gray-700' : 'animate-fadeIn'}`;
   
-  // Debug initial form data
-  console.log("Initial form data:", formData);
-  console.log("Initial user data:", user);
+  const selectClasses = `w-full pl-10 pr-8 py-3 border border-gray-300 rounded-none 
+    focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300
+    hover:border-gray-400 focus:shadow-md appearance-none ${!isEditMode ? 'bg-gray-50 text-gray-700' : 'animate-fadeIn'}`;
+  
+  // Initialize form with expanded user data
+  // Helper function to create initial form data (also useful when adding new fields in the future)
+  const createInitialFormData = (userData = {}, savedData = {}) => {
+    return {
+      // Personal information
+      name: savedData.name || userData.name || '',
+      phone: userData.phone || '',  // Phone cannot be changed
+      email: savedData.email || userData.email || '',
+      dob: savedData.dob || (userData.dob ? formatDate(userData.dob) : ''),
+      gender: savedData.gender || userData.gender || '',
+      anniversary: savedData.anniversary || (userData.anniversary ? formatDate(userData.anniversary) : ''),
+      
+      // Location information
+      country: savedData.country || userData.country || 'India',
+      location: savedData.location || (typeof userData.location === 'object' ? userData.location?._id || '' : userData.location || ''),
+      hostel: savedData.hostel || (typeof userData.hostel === 'object' ? userData.hostel?._id || '' : userData.hostel || ''),
+      
+      // Add any new fields here in the future, following the same pattern:
+      // newField: savedData.newField || userData.newField || defaultValue,
+    };
+  };
+
+  // Format date helper function (moved here for clarity)
+  const formatDate = (dateValue) => {
+    if (!dateValue) return '';
+    try {
+      const date = new Date(dateValue);
+      return !isNaN(date.getTime()) ? date.toISOString().split('T')[0] : '';
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return '';
+    }
+  };
+
+  // Initialize form data
+  const [formData, setFormData] = useState(createInitialFormData(user));
+  
+  // Email verification state
+  const [isEmailVerified, setIsEmailVerified] = useState(user?.isEmailVerified || false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
   
   // Fetch locations only once on mount
-  // Use a ref to track if locations have been fetched
   const hasRunLocationsFetch = useRef(false);
   
   useEffect(() => {
-    // Only fetch locations if they haven't been fetched yet
     if (!hasRunLocationsFetch.current) {
-      console.log("Fetching locations...");
       fetchLocations().then(result => {
-        console.log("Locations fetched:", result);
-        
-        // Ensure locations were loaded successfully
         if (result && result.length > 0) {
-          // If user has no location selected yet but we have locations, select the first one by default
           if (!formData.location && result.length > 0) {
             setFormData(prev => ({
               ...prev,
@@ -45,7 +91,6 @@ const Profile = () => {
             }));
           }
         }
-        // Mark as fetched
         hasRunLocationsFetch.current = true;
       });
     }
@@ -55,7 +100,6 @@ const Profile = () => {
   useEffect(() => {
     if (formData.location) {
       fetchHostelsByLocation(formData.location).then(hostelsData => {
-        // If user had a hostel selected but it's not in the new location, clear it
         if (formData.hostel && !hostelsData.find(h => h._id === formData.hostel)) {
           setFormData(prev => ({
             ...prev,
@@ -72,9 +116,95 @@ const Profile = () => {
     }
   }, [formData.location]);
 
-  // Format today's date for max value in date input
+  // Format today's date for max value in date inputs
   const today = new Date().toISOString().split('T')[0];
   
+  // Restore edit mode state from localStorage if available
+  useEffect(() => {
+    const savedEditMode = localStorage.getItem('profileEditMode');
+    if (savedEditMode === 'true') {
+      setIsEditMode(true);
+      
+      // If in edit mode, try to recover form data from localStorage
+      try {
+        const savedFormData = localStorage.getItem('profileFormData');
+        if (savedFormData) {
+          const parsedFormData = JSON.parse(savedFormData);
+          console.log("Recovering form data after refresh:", parsedFormData);
+          
+          // First get cached user data for fallback
+          let cachedUserData = {};
+          try {
+            const cachedUser = localStorage.getItem('cachedUser');
+            if (cachedUser) {
+              cachedUserData = JSON.parse(cachedUser);
+            }
+          } catch (err) {
+            console.error("Error parsing cached user:", err);
+          }
+          
+          // Make sure email is always available for verification status check
+          if (!parsedFormData.email) {
+            if (cachedUserData.email) {
+              parsedFormData.email = cachedUserData.email;
+            } else if (user?.email) {
+              parsedFormData.email = user.email;
+            }
+            console.log("Email missing in saved form data, using fallback email:", parsedFormData.email);
+          }
+          
+          // Make sure all date fields are correctly formatted
+          // This ensures anniversary and other date fields persist properly
+          if (parsedFormData.dob && !(parsedFormData.dob instanceof String) && typeof parsedFormData.dob !== 'string') {
+            parsedFormData.dob = formatDate(parsedFormData.dob);
+          }
+          
+          if (parsedFormData.anniversary && !(parsedFormData.anniversary instanceof String) && typeof parsedFormData.anniversary !== 'string') {
+            parsedFormData.anniversary = formatDate(parsedFormData.anniversary);
+          }
+          
+          // Use our helper function for consistent form data recovery with proper precedence
+          // This ensures all fields including anniversary are restored properly
+          const mergedUserData = {
+            ...user,
+            ...cachedUserData,
+            // Format specific fields as needed
+            location: typeof user?.location === 'object' ? user?.location?._id || '' : user?.location || '',
+            hostel: typeof user?.hostel === 'object' ? user?.hostel?._id || '' : user?.hostel || '',
+          };
+          
+          const restoredForm = createInitialFormData(mergedUserData, parsedFormData);
+          console.log("Restored form data with anniversary:", restoredForm);
+          setFormData(restoredForm);
+          
+          // Also restore email verification status if available
+          if (parsedFormData.hasOwnProperty('isEmailVerified')) {
+            setIsEmailVerified(parsedFormData.isEmailVerified);
+            console.log("Restored email verification status:", parsedFormData.isEmailVerified);
+          } else if (cachedUserData.hasOwnProperty('isEmailVerified')) {
+            setIsEmailVerified(cachedUserData.isEmailVerified);
+            console.log("Using cached user's email verification status:", cachedUserData.isEmailVerified);
+          } else if (user?.email && parsedFormData.email === user.email) {
+            // If we have the same email as user, use user's verification status
+            setIsEmailVerified(user.isEmailVerified || false);
+            console.log("Using user's email verification status:", user.isEmailVerified);
+          }
+          
+          // Re-save the complete form data to localStorage to ensure consistency
+          const dataToCache = {
+            ...restoredForm,
+            isEmailVerified: parsedFormData.isEmailVerified !== undefined 
+              ? parsedFormData.isEmailVerified 
+              : (user?.isEmailVerified || false)
+          };
+          localStorage.setItem('profileFormData', JSON.stringify(dataToCache));
+        }
+      } catch (error) {
+        console.error("Error recovering form data:", error);
+      }
+    }
+  }, []);
+
   // Clear local error when authError changes
   useEffect(() => {
     if (authError) {
@@ -85,103 +215,171 @@ const Profile = () => {
     }
   }, [authError]);
   
-  // Debug user information
+  // Update email verification status if user object changes
   useEffect(() => {
-    if (user) {
-      console.log('Profile Component - User Data:', {
-        user,
-        name: user.name,
-        dob: user.dob,
-        location: user.location,
-        locationId: user.location?._id
-      });
+    if (user && user.email && !isEditMode) {
+      console.log("User email/verification status updated:", user.email, user.isEmailVerified);
+      if (formData.email === user.email) {
+        // Only update verification status if we're displaying the same email
+        setIsEmailVerified(user.isEmailVerified || false);
+      }
     }
-  }, [user]);
-
-  // Track previous user data to avoid unnecessary updates
-  const prevUserRef = useRef({
-    name: null,
-    dob: null,
-    locationId: null
-  });
+  }, [user?.email, user?.isEmailVerified]);
+  
+  // Debug helper to verify form data - especially date fields - are correctly persisting
+  useEffect(() => {
+    // This will run whenever formData changes
+    console.log("CURRENT FORM DATA STATE:", {
+      ...formData,
+      isEmailVerified,
+      isEditMode
+    });
+    
+    console.log("Anniversary date field:", formData.anniversary);
+    console.log("Email field:", formData.email);
+    
+    // Check localStorage for comparison
+    try {
+      const savedFormData = localStorage.getItem('profileFormData');
+      if (savedFormData) {
+        const parsed = JSON.parse(savedFormData);
+        console.log("LOCALSTORAGE profileFormData:", {
+          ...parsed,
+          anniversary: parsed.anniversary || "NOT SET",
+          email: parsed.email || "NOT SET"
+        });
+      }
+    } catch (err) {
+      console.error("Error checking localStorage:", err);
+    }
+  }, [formData, isEmailVerified, isEditMode]);
   
   // useEffect to sync form data with user data - run ONLY ONCE when component mounts
   const userDataInitialized = useRef(false);
   
   useEffect(() => {
-    // Only run this once when the user data is first available
     if (user && !userDataInitialized.current) {
-      // Get current values
-      const currentName = user.name || '';
       const currentLocationId = typeof user.location === 'object' ? user.location?._id : user.location;
       const currentHostelId = typeof user.hostel === 'object' ? user.hostel?._id : user.hostel;
       
-      console.log('Setting initial form data with:', {
-        name: currentName,
-        dob: user.dob,
-        locationObject: user.location,
-        locationId: currentLocationId,
-        hostelObject: user.hostel,
-        hostelId: currentHostelId
-      });
-      
-      // Format date correctly for the date input
-      let formattedDob = '';
-      if (user.dob) {
-        try {
-          // Try to format the date if it's a valid date string
-          const dobDate = new Date(user.dob);
-          if (!isNaN(dobDate.getTime())) {
-            formattedDob = dobDate.toISOString().split('T')[0];
-          } else {
-            formattedDob = user.dob; // Use as is if not a valid date
-          }
-        } catch (error) {
-          console.error("Error formatting date:", error);
-          formattedDob = user.dob; // Use as is if there's an error
+      // COMPREHENSIVE DATA RECOVERY: Try all possible sources for profile data
+      // First, get cached user data from localStorage
+      let cachedUserData = {};
+      try {
+        const cachedUser = localStorage.getItem('cachedUser');
+        if (cachedUser) {
+          cachedUserData = JSON.parse(cachedUser) || {};
         }
+      } catch (error) {
+        console.error("Error parsing cached user data:", error);
+        cachedUserData = {};
       }
       
-      // Set the form data once
-      setFormData({
-        name: currentName,
-        dob: formattedDob,
-        location: currentLocationId || '',
-        hostel: currentHostelId || ''
-      });
+      // Then, check for saved form data (has highest priority)
+      let savedFormData = {};
+      try {
+        const profileFormData = localStorage.getItem('profileFormData');
+        if (profileFormData) {
+          savedFormData = JSON.parse(profileFormData) || {};
+          console.log("Recovered saved form data:", savedFormData);
+        }
+      } catch (error) {
+        console.error("Error recovering form data from localStorage:", error);
+        savedFormData = {};
+      }
       
-      // Store the initial values
-      prevUserRef.current = {
-        name: currentName,
-        dob: user.dob,
-        locationId: currentLocationId,
-        hostelId: currentHostelId
+      // Now use our helper function to create the initial form data with proper precedence:
+      // savedFormData > cachedUserData > user object from backend
+      
+      // First merge cachedUserData with the user object
+      const mergedUserData = {
+        ...user,
+        ...cachedUserData,
+        // Keep the nested objects properly formatted
+        location: currentLocationId || '',
+        hostel: currentHostelId || '',
       };
       
-      // Mark as initialized
+      // Then create the form data with proper precedence
+      const initialFormData = createInitialFormData(mergedUserData, savedFormData);
+      console.log("Setting initial form data:", initialFormData);
+      
+      // Update form data state
+      setFormData(initialFormData);
+      
+      // Set email verification status with proper precedence
+      const verificationStatus = 
+        savedFormData.isEmailVerified !== undefined ? savedFormData.isEmailVerified :
+        cachedUserData.isEmailVerified !== undefined ? cachedUserData.isEmailVerified :
+        (user.isEmailVerified || false);
+      
+      setIsEmailVerified(verificationStatus);
+      console.log('Email verification status set to:', verificationStatus, 'for email:', initialFormData.email);
+      
+      // Save the complete form data to localStorage for refresh protection
+      const dataToCache = {
+        ...initialFormData,
+        isEmailVerified: verificationStatus
+      };
+      localStorage.setItem('profileFormData', JSON.stringify(dataToCache));
+      
+      console.log("Form data initialized completely with all fields preserved");
+      
       userDataInitialized.current = true;
     }
   }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // If email is changing, reset verification status
+    if (name === 'email' && value !== formData.email) {
+      setIsEmailVerified(false);
+      setShowEmailVerification(!!value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
+    }
+    
+    // Special handling for date fields to ensure proper formatting
+    let processedValue = value;
+    
+    if ((name === 'dob' || name === 'anniversary') && value) {
+      // Ensure date fields are properly formatted as strings
+      try {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          processedValue = date.toISOString().split('T')[0];
+          console.log(`Formatted ${name} date:`, processedValue);
+        }
+      } catch (err) {
+        console.error(`Error formatting ${name}:`, err);
+      }
+    }
+    
+    // Update form data
     setFormData({
       ...formData,
-      [name]: value
+      [name]: processedValue
     });
     
-    // If location changes, clear hostel selection
     if (name === 'location') {
       setFormData(prev => ({
         ...prev,
-        location: value,
-        hostel: '' // Clear hostel when location changes
+        location: processedValue,
+        hostel: ''
       }));
     }
+    
+    // If we're in edit mode, immediately update localStorage for persistence
+    // This ensures even partial changes are saved during editing
+    if (isEditMode && (name === 'anniversary' || name === 'dob' || name === 'email')) {
+      const currentData = {
+        ...formData,
+        [name]: processedValue,
+        isEmailVerified: name === 'email' ? false : isEmailVerified
+      };
+      localStorage.setItem('profileFormData', JSON.stringify(currentData));
+      console.log(`Updated ${name} in localStorage:`, processedValue);
+    }
   };
-
-  // Check if we're in the Auth Modal or standalone page
-  const isStandalonePage = window.location.pathname === "/profile";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -191,266 +389,587 @@ const Profile = () => {
       return;
     }
     
-    if (!formData.dob) {
-      setLocalError('Please enter your date of birth');
+    // Validate that email is verified if provided
+    if (formData.email && !isEmailVerified) {
+      setLocalError('Please verify your email address before saving');
+      // Show email verification component
+      setShowEmailVerification(true);
       return;
     }
     
-    if (!formData.location) {
-      setLocalError('Please select your delivery location');
-      return;
-    }
-    
-    // Reset error and success message
     setLocalError('');
     setSuccessMessage('');
     
-    // Create a copy of the form data to submit
-    const profileData = {
+    // Set both loading states to ensure animations show
+    setIsSaving(true);
+    console.log("🔄 Setting isSaving to TRUE"); // Debug log
+    
+    // Scroll to the top to make loading indicator visible
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Create a clean copy of form data with date fields properly formatted
+    const profileData = { 
       ...formData,
-      // Ensure the date is properly formatted
-      dob: formData.dob, // The date input already provides a valid ISO date string
+      // Ensure date fields are properly formatted
+      dob: typeof formData.dob === 'string' ? formData.dob : formatDate(formData.dob),
+      anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary)
     };
     
+    // Save complete form data to localStorage for refresh protection
+    // This ensures we have a backup of all fields in case we need to restore after refresh
+    const formDataToSave = {
+      ...profileData,
+      isEmailVerified: isEmailVerified
+    };
+    
+    // Log the data being saved, with special attention to anniversary field
+    console.log("Saving complete form data with anniversary:", formDataToSave.anniversary);
+    
+    localStorage.setItem('profileFormData', JSON.stringify(formDataToSave));
+    
     console.log("Submitting profile data:", profileData);
+    console.log("Gender being submitted:", profileData.gender);
     
-    // Update profile
-    const success = await updateProfile(profileData);
-    
-    if (success) {
-      setSuccessMessage('Profile updated successfully!');
-      // On standalone page, success message will persist
-      // In modal, it might be cleared when the auth panel is closed
+    try {
+      const success = await updateProfile(profileData);
+      
+      if (success) {
+        setSuccessMessage('Profile updated successfully!');
+        setIsEditMode(false);
+        localStorage.removeItem('profileEditMode');
+        
+        // Even on successful update, ensure we keep the email and anniversary in localStorage
+        const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
+        cachedUser.email = formData.email || cachedUser.email || '';
+        cachedUser.anniversary = formData.anniversary || cachedUser.anniversary || '';
+        cachedUser.isEmailVerified = isEmailVerified;
+        localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
+        
+        console.log("Successfully updated profile, preserved email and anniversary in cache");
+      }
+    } catch (error) {
+      console.error("Error in profile update:", error);
+      setLocalError("Failed to update profile. Please try again.");
+    } finally {
+      // Use a slight delay to ensure loading state is visible even on fast connections
+      setTimeout(() => {
+        console.log("🛑 Setting isSaving to FALSE"); // Debug log
+        setIsSaving(false);
+      }, 1500); // Increased delay for better visibility
     }
   };
 
+  const handleCancel = () => {
+    if (user) {
+      // IMPORTANT: Instead of resetting to user values completely, we need to preserve
+      // certain fields like email and anniversary from the current form data
+      
+      // Get the current form data values we want to preserve
+      const currentEmail = formData.email || user.email || '';
+      const currentAnniversary = formData.anniversary || formatDate(user.anniversary) || '';
+      const currentEmailVerified = isEmailVerified;
+      
+      // Log current values to verify we're preserving them
+      console.log("Preserving current values on cancel:", {
+        email: currentEmail,
+        anniversary: currentAnniversary,
+        isEmailVerified: currentEmailVerified
+      });
+      
+      // Create form data while keeping the existing values
+      setFormData({
+        name: user.name || '',
+        phone: user.phone || '',
+        email: currentEmail, // Keep the existing email
+        dob: formatDate(user.dob) || '',
+        gender: user.gender || '',
+        anniversary: currentAnniversary, // Keep the existing anniversary
+        country: user.country || 'India',
+        location: typeof user.location === 'object' ? user.location?._id || '' : user.location || '',
+        hostel: typeof user.hostel === 'object' ? user.hostel?._id || '' : user.hostel || ''
+      });
+      
+      // Keep the existing verification status
+      setIsEmailVerified(currentEmailVerified);
+    }
+    
+    setIsEditMode(false);
+    localStorage.removeItem('profileEditMode');
+    
+    setShowEmailVerification(false);
+    
+    // Update the cached user data to include preserved values
+    if (user) {
+      const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
+      
+      // Keep the email verification status
+      cachedUser.isEmailVerified = isEmailVerified;
+      
+      // Keep email and anniversary from the form data
+      cachedUser.email = formData.email || user.email || '';
+      cachedUser.anniversary = formData.anniversary || user.anniversary || '';
+      
+      // Keep other fields
+      if (user.dob) {
+        cachedUser.dob = user.dob;
+      }
+      
+      localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
+      console.log("Updated cached user data with preserved email and anniversary:", cachedUser);
+    }
+    
+    // Clear error and success messages
+    setLocalError('');
+    setSuccessMessage('');
+  };
+
+  const handleEditProfile = () => {
+    setIsEditMode(true);
+    localStorage.setItem('profileEditMode', 'true');
+    setLocalError('');
+    setSuccessMessage('');
+    
+    // Get the current verification status, either from the form or from the user object
+    const currentEmailVerificationStatus = formData.email && user?.email && formData.email === user.email
+      ? (user?.isEmailVerified || false)
+      : isEmailVerified;
+    
+    // Update verification status state
+    setIsEmailVerified(currentEmailVerificationStatus);
+    
+    // Ensure all date fields are properly formatted strings before saving
+    const formDataToSave = {
+      ...formData,
+      // Explicitly format date fields to ensure consistency
+      dob: typeof formData.dob === 'string' ? formData.dob : formatDate(formData.dob),
+      anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary),
+      isEmailVerified: currentEmailVerificationStatus
+    };
+    
+    // Always save the complete current form data to localStorage for consistency
+    // This ensures we have a backup of all fields even after multiple refreshes
+    localStorage.setItem('profileFormData', JSON.stringify(formDataToSave));
+    
+    console.log("Entering edit mode with complete form data:", formDataToSave);
+  };
+
+
+
+
+
+  // Show a loading spinner when the page is initially loading (before user data is fetched)
+  if (loading && !user) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 flex flex-col items-center justify-center min-h-[300px]">
+        <div className="relative w-16 h-16">
+          <div className="absolute top-0 right-0 bottom-0 left-0 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+          <div className="absolute top-1 right-1 bottom-1 left-1 border-4 border-gray-200 border-b-transparent rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+        </div>
+        <p className="mt-4 text-gray-500 font-medium">Loading your profile...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="py-6">
-      <form className="space-y-5" onSubmit={handleSubmit}>
-        <div className="flex flex-col items-center mb-2">
-          <img src="/images/logo.png" alt="Dessertify Logo" className="h-16 w-16 mb-3" />
-          <h2 className="text-2xl font-bold text-black">
-            {isNewUser ? 'Complete Your Profile' : 'Your Profile'}
-          </h2>
-          <p className="text-sm text-black mt-1">
-            {isNewUser 
-              ? 'Just a few more details to get started' 
-              : 'Update your information below'
-            }
-          </p>
-          
-          {/* Profile completion notice for new users */}
-          {isNewUser && (
-            <div className="mt-3 bg-amber-50 p-3 rounded-md text-left">
-              <p className="text-sm text-amber-800 flex items-start">
-                <span className="mr-2 mt-0.5 text-amber-600">⚠️</span>
-                <span>
-                  Your account was created after phone verification, but we need 
-                  these additional details to complete your profile.
-                </span>
-              </p>
-            </div>
-          )}
-          
-          {/* Success message */}
-          {successMessage && (
-            <div className="mt-3 bg-green-50 p-3 rounded-md text-left">
-              <p className="text-sm text-green-800 flex items-center">
-                <Check className="w-4 h-4 mr-2 text-green-600" />
-                {successMessage}
-              </p>
-            </div>
-          )}
+    <div className="max-w-4xl mx-auto p-6 relative">
+      {/* Global loading overlay - shown when saving */}
+      {isSaving && (
+        <>
+          {console.log("🎬 Rendering GlobalLoadingOverlay")}
+          <GlobalLoadingOverlay 
+            message="Saving your profile..." 
+            key={`loading-${Date.now()}`} // Force a fresh instance
+          />
+        </>
+      )}
+      
+      <div className="mb-6 flex flex-col md:flex-row items-center gap-6">
+        <div className="mb-4 md:mb-0">
+          {/* Profile Image Upload Component */}
+          <ProfileImageUpload isEditMode={isEditMode} />
         </div>
-        
-        <div className="space-y-2">
-          <label htmlFor="name" className="block text-sm font-medium text-black">
-            Full Name
-          </label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </span>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              placeholder="Enter your full name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              className="w-full border-2 border-black/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors"
-            />
+        <div className="flex flex-1 justify-between items-center w-full">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">My Profile</h2>
+            <p className="text-gray-600">Update your personal information</p>
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          <label htmlFor="dob" className="block text-sm font-medium text-black">
-            Date of Birth
-          </label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </span>
-            <input
-              type="date"
-              id="dob"
-              name="dob"
-              value={formData.dob || ''}
-              onChange={handleChange}
-              max={today}
-              required
-              disabled={loading}
-              className="w-full border-2 border-black/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors"
-            />
-            {formData.dob && (
-              <div className="mt-2 text-xs text-black">
-                Selected date: {formData.dob}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <label htmlFor="location" className="block text-sm font-medium text-black">
-            Delivery Location
-          </label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
-              <MapPin className="h-5 w-5" />
-            </span>
-            <select
-              id="location"
-              name="location"
-              value={formData.location || ''}
-              onChange={handleChange}
-              required
-              disabled={loading || locationsLoading}
-              className="w-full border-2 border-black/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors appearance-none"
+          {!isEditMode && (
+            <button
+              onClick={handleEditProfile}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
             >
-              <option value="">Select delivery location</option>
-              {locations && locations.length > 0 ? (
-                locations.map(location => (
-                  <option key={location._id} value={location._id}>
-                    {location.area}, {location.city} - {location.pincode}
-                    {user?.location?._id === location._id && " (Current)"}
-                  </option>
-                ))
-              ) : (
-                <option value="" disabled>Loading locations...</option>
-              )}
-            </select>
-            {/* Debug location data */}
-            <div className="mt-1 text-xs text-black">
-              {formData.location && `Selected location ID: ${formData.location}`}
-            </div>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+              Edit Profile
+            </button>
+          )}
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Loading Indicator - More prominent and fixed positioned */}
+        {loading && (
+          <div className="fixed top-0 left-0 right-0 z-50 bg-black bg-opacity-80 py-3 shadow-lg animate-fadeIn">
+            <div className="container mx-auto">
+              <div className="flex items-center justify-center">
+                <div className="mr-3 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
+                </div>
+                <div>
+                  <p className="text-white font-medium">Saving your profile... Please wait while we update your information</p>
+                </div>
+              </div>
             </div>
           </div>
-          <p className="text-amber-600 text-sm italic">
-            Currently, we deliver only to the available locations shown above.
-          </p>
-        </div>
+        )}
         
-        {/* Hostel Selection */}
-        {formData.location && (
-          <div className="space-y-2">
-            <label htmlFor="hostel" className="block text-sm font-medium text-black">
-              Hostel/Residence
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
-                <Building className="h-5 w-5" />
-              </span>
-              <select
-                id="hostel"
-                name="hostel"
-                value={formData.hostel || ''}
-                onChange={handleChange}
-                disabled={loading || hostelsLoading || !formData.location}
-                className="w-full border-2 border-black/30 pl-10 py-3 px-4 rounded-md focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors appearance-none"
-              >
-                <option value="">Select hostel/residence (Optional)</option>
-                {hostels && hostels.length > 0 ? (
-                  hostels.map(hostel => (
-                    <option key={hostel._id} value={hostel._id}>
-                      {hostel.name}
-                      {hostel.address && ` - ${hostel.address}`}
-                      {user?.hostel?._id === hostel._id && " (Current)"}
-                    </option>
-                  ))
-                ) : formData.location ? (
-                  <option value="" disabled>
-                    {hostelsLoading ? 'Loading hostels...' : 'No hostels available in this location'}
-                  </option>
-                ) : (
-                  <option value="" disabled>Select a location first</option>
-                )}
-              </select>
-              {/* Debug hostel data */}
-              <div className="mt-1 text-xs text-black">
-                {formData.hostel && `Selected hostel ID: ${formData.hostel}`}
-              </div>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        {/* Secondary Loading Indicator (in-form) */}
+        {loading && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 animate-fadeIn relative overflow-hidden mb-4 shadow-md">
+            <div className="absolute bottom-0 left-0 h-1 bg-blue-500 animate-growWidth"></div>
+            <div className="flex items-center">
+              <div className="mr-3 flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </div>
+              <div>
+                <p className="text-blue-800 font-medium">Saving your profile...</p>
+                <p className="text-blue-600 text-sm">Please wait while we update your information</p>
+              </div>
             </div>
-            <p className="text-blue-600 text-sm italic">
-              Select your hostel or residence for more accurate delivery.
-            </p>
+          </div>
+        )}
+        
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4 animate-fadeIn relative overflow-hidden">
+            <div className="absolute bottom-0 left-0 h-1 bg-green-500 animate-growWidth"></div>
+            <div className="flex items-center">
+              <div className="bg-green-100 p-1.5 rounded-full mr-3">
+                <Check className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-green-800 font-medium">{successMessage}</p>
+                <p className="text-green-600 text-sm">Your profile has been updated successfully</p>
+              </div>
+            </div>
           </div>
         )}
         
         {localError && (
-          <p className="text-red-500 text-sm">{localError}</p>
-        )}
-        
-        {/* Missing fields warning */}
-        {(!formData.name.trim() || !formData.dob || !formData.location) && (
-          <div className="bg-amber-50 p-3 rounded-md">
-            <p className="text-sm text-amber-800">
-              <span className="font-medium">Please complete all fields:</span>
-              <ul className="mt-1 ml-4 list-disc">
-                {!formData.name.trim() && <li>Full name is required</li>}
-                {!formData.dob && <li>Date of birth is required</li>}
-                {!formData.location && <li>Delivery location is required</li>}
-              </ul>
-            </p>
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 animate-fadeIn relative overflow-hidden">
+            <div className="absolute bottom-0 left-0 h-1 bg-red-500 animate-growWidth"></div>
+            <div className="flex items-center">
+              <div className="bg-red-100 p-1.5 rounded-full mr-3 flex items-center justify-center">
+                <span className="text-red-600 font-bold text-lg leading-none">!</span>
+              </div>
+              <p className="text-red-800 font-medium">{localError}</p>
+            </div>
           </div>
         )}
-        
-        <button 
-          type="submit" 
-          disabled={loading || !formData.name.trim() || !formData.dob || !formData.location}
-          className={`w-full bg-black text-white py-3 px-4 rounded-md transition-colors shadow-md ${
-            loading || !formData.name.trim() || !formData.dob || !formData.location
-              ? 'opacity-60 cursor-not-allowed' 
-              : 'hover:bg-black'
-          }`}
-        >
-          {loading ? 'Saving...' : 'Save Profile'}
-        </button>
-        
-        {/* Debug component for development */}
-        {/* <DebugUserData user={user} formData={formData} locations={locations} /> */}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Name Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Name <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Arun"
+                required
+                readOnly={!isEditMode}
+                disabled={loading}
+                className={inputClasses}
+              />
+            </div>
+          </div>
+
+          {/* Mobile Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Mobile <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <div className="flex">
+                <div className="relative">
+                  <select className="pl-10 pr-8 py-3 border border-gray-300 rounded-none rounded-r-none bg-gray-50 text-gray-600 appearance-none transition-all duration-300">
+                    <option value="+91">🇮🇳</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Enter mobile number"
+                  disabled={true}
+                  className="flex-1 px-4 py-3 border border-l-0 border-gray-300 rounded-none rounded-r-none bg-gray-50 text-gray-600 transition-all duration-300"
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Email Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Email <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="email@example.com"
+                readOnly={!isEditMode || isEmailVerified}
+                disabled={loading || isEmailVerified}
+                className={inputClasses}
+              />
+              {isEmailVerified && (
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
+                  <Check className="h-3 w-3 mr-1" /> Verified
+                </span>
+              )}
+            </div>
+          </div>
+
+
+
+          {/* Gender Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Gender <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                disabled={!isEditMode || loading}
+                className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                  !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                }`}
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+          
+          {/* Date of Birth Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Date of Birth <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="date"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+                max={today}
+                readOnly={!isEditMode}
+                disabled={loading}
+                className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                  !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                }`}
+              />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+
+
+          {/* Date of Anniversary Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Date of Anniversary</label>
+            <div className="relative">
+              <Heart className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="date"
+                name="anniversary"
+                value={formData.anniversary}
+                onChange={handleChange}
+                max={today}
+                readOnly={!isEditMode}
+                disabled={loading}
+                className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                  !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                }`}
+              />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Delivery Location */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Delivery Location <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  name="location"
+                  value={formData.location || ''}
+                  onChange={handleChange}
+                  disabled={loading || locationsLoading || !isEditMode}
+                  required
+                  className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                    !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                  }`}
+                >
+                  <option value="">Select delivery location</option>
+                  {locations && locations.length > 0 ? (
+                    locations.map(location => (
+                      <option key={location._id} value={location._id}>
+                        {location.area}, {location.city} - {location.pincode}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>Loading locations...</option>
+                  )}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Country Field */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  disabled={loading || !isEditMode}
+                  className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                    !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                  }`}
+                >
+                  <option value="India">India</option>
+                  <option value="USA">USA</option>
+                  <option value="UK">UK</option>
+                  <option value="Canada">Canada</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Hostel Selection */}
+          {formData.location && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Hostel/Residence</label>
+              <div className="relative">
+                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  name="hostel"
+                  value={formData.hostel || ''}
+                  onChange={handleChange}
+                  disabled={loading || hostelsLoading || !isEditMode}
+                  className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                    !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                  }`}
+                >
+                  <option value="">Select hostel/residence (Optional)</option>
+                  {hostels && hostels.length > 0 ? (
+                    hostels.map(hostel => (
+                      <option key={hostel._id} value={hostel._id}>
+                        {hostel.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>
+                      {hostelsLoading ? 'Loading hostels...' : 'No hostels available'}
+                    </option>
+                  )}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons - only show in edit mode */}
+        {isEditMode && (
+          <div className="flex items-center justify-start space-x-4 pt-6">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={loading}
+              className="px-8 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              CANCEL
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !formData.name.trim()}
+              className="px-8 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden"
+            >
+              <span className={`flex items-center justify-center gap-2 ${loading ? 'opacity-0' : 'opacity-100'}`}>
+                SAVE
+              </span>
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-sm font-medium">SAVING</span>
+                  </div>
+                </div>
+              )}
+            </button>
+          </div>
+        )}
       </form>
+      
+      {/* Email Verification Section - Only shown when email is edited but not verified */}
+      {isEditMode && formData.email && !isEmailVerified && (
+        <div className="mt-8">
+          <EmailVerification 
+            email={formData.email}
+            setEmail={(email) => setFormData({...formData, email})}
+            isVerified={isEmailVerified}
+            setIsVerified={setIsEmailVerified}
+            onVerificationSuccess={(email) => {
+              setFormData(prev => ({...prev, email}));
+              setIsEmailVerified(true);
+              
+              // Update user data in context
+              updateUser({
+                email,
+                isEmailVerified: true
+              });
+              
+              setSuccessMessage("Email verified successfully!");
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
 export default Profile;
-
-
-
-
-

@@ -202,11 +202,15 @@
     max-width: calc(100vw - 2rem);
     left: 0;
     right: auto;
+    position: fixed !important;
+    z-index: 999 !important; /* Ensure highest z-index */
   }
   
   .mobile-location-button {
     font-size: 0.75rem;
     padding: 4px 8px;
+    position: relative;
+    z-index: 60;
   }
   
   .mobile-location-button .truncate {
@@ -419,6 +423,24 @@
 }
 
 /* Padding is now handled in Layout.jsx directly */
+
+/* Fix for mobile location dropdown positioning */
+@media (max-width: 768px) {
+  .location-dropdown-container {
+    position: relative !important;
+    z-index: 999 !important;
+  }
+  
+  .location-dropdown-container > div {
+    position: fixed !important;
+    top: auto;
+    left: 0;
+    width: 80vw;
+    max-width: 300px;
+    z-index: 999 !important;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+  }
+}
 
 /* Fix for category swiper issues */
 .category-swiper {

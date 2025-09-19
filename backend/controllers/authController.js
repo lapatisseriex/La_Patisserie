@@ -572,8 +572,10 @@ export const verifyToken = asyncHandler(async (req, res) => {
         name: user.name,
         role: user.role,
         dob: formattedDob, // Use formatted date
+        gender: user.gender || '',
         location: user.location || null,
         hostel: user.hostel || null,
+        profilePhoto: user.profilePhoto || { url: '', public_id: '' }, // Include profile photo
         isProfileIncomplete // Add flag for profile completion status
       }
     });

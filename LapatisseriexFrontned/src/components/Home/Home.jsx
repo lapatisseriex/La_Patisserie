@@ -22,12 +22,13 @@ const Home = () => {
   const handpickedRef = useRef(null);
   const favoritesRef = useRef(null);
 
-  const { categories, fetchCategories } = useCategory();
+  const { categories, fetchCategories, loading: categoriesLoading } = useCategory();
   const { fetchProducts } = useProduct();
   const { isAuthenticated } = useAuth();
 
   const [bestSellersProducts, setBestSellersProducts] = useState([]);
   const [newlyLaunchedProducts, setNewlyLaunchedProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -43,12 +44,15 @@ const Home = () => {
   useEffect(() => {
     const loadSectionProducts = async () => {
       try {
+        setProductsLoading(true);
         const best = await fetchProducts({ limit: 3, sort: 'rating:-1' });
         const newly = await fetchProducts({ limit: 3, sort: 'createdAt:-1' });
         setBestSellersProducts(best.products);
         setNewlyLaunchedProducts(newly.products);
       } catch (err) {
         console.error("Error loading section products:", err);
+      } finally {
+        setProductsLoading(false);
       }
     };
     loadSectionProducts();
@@ -79,7 +83,7 @@ const Home = () => {
     <div className="bg-white font-sans flex flex-col items-center">
 
       <section ref={newlyLaunchedRef} className="w-full">
-        <NewlyLaunched products={newlyLaunchedProducts} />
+        <NewlyLaunched products={newlyLaunchedProducts} loading={productsLoading} />
       </section>
 
       {/* Recently Viewed Section - Shows only for authenticated users */}
@@ -90,7 +94,8 @@ const Home = () => {
       {/* Browse Categories Section */}
       <section className="w-full py-6 ">
         <CategorySwiper 
-          categories={categories} 
+          categories={categories}
+          loading={categoriesLoading}
           topTrendingRef={topTrendingRef} 
           bestSellersRef={bestSellersRef} 
           newlyLaunchedRef={newlyLaunchedRef}
@@ -102,7 +107,7 @@ const Home = () => {
       </section>
 
       <section ref={bestSellersRef} className="w-full py-6">
-        <BestSellers products={bestSellersProducts} />
+        <BestSellers products={bestSellersProducts} loading={productsLoading} />
       </section>
 
       <section ref={handpickedRef} className="w-full py-6">

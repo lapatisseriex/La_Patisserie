@@ -12,6 +12,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const { addToCart, getProductQuantity, updateProductQuantity } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
@@ -93,7 +94,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     if (!user) {
       return;
     }
-    await toggleFavorite(product._id);
+    
+    setIsTogglingFavorite(true);
+    try {
+      await toggleFavorite(product._id);
+    } finally {
+      setIsTogglingFavorite(false);
+    }
   };
 
   const handleCardClick = async () => {
@@ -109,7 +116,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   return (
     <div
       onClick={handleCardClick}
-      className={`overflow-hidden bg-white shadow-sm hover:shadow-lg transition-all duration-500 ease-in-out hover:scale-[1.02] h-72 cursor-pointer border border-gray-200 ${
+      className={`overflow-hidden bg-white shadow-sm transition-all duration-500 ease-in-out h-72 cursor-pointer border border-gray-200 ${
         featured
           ? 'h-full flex flex-col'
           : compact
@@ -118,42 +125,68 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       } ${className}`}
     >
       {/* Product Image */}
-      <div
-        className={`${
-          featured || compact ? 'w-full aspect-square' : 'w-28 sm:w-32 md:w-36 flex-shrink-0'
-        } relative`}
-      >
         <div
-          className={`w-full relative group overflow-hidden ${
-            featured || compact ? 'aspect-square' : 'aspect-square sm:aspect-[3/4]'
-          }`}
-          onMouseEnter={() => setIsHoveringImage(true)}
-          onMouseLeave={() => setIsHoveringImage(false)}
+          className={`${
+            featured || compact ? 'w-full aspect-square' : 'w-28 sm:w-32 md:w-36 flex-shrink-0'
+          } relative`}
         >
-          <MediaDisplay
-            src={product.images?.[currentImageIndex] || null}
-            alt={product.name}
-            className="w-full h-full transition-all duration-1000 ease-in-out group-hover:scale-105"
-            style={{
-              transition: 'opacity 1.2s ease-in-out, transform 1.2s ease-in-out',
-              opacity: 1
-            }}
-            aspectRatio="auto"
-            objectFit="cover"
-          />
-
-          <button
-            onClick={handleFavoriteToggle}
-            className={`absolute top-2 left-2 p-1.5 transition-all duration-200 border ${
-              isFavorite(product._id)
-                ? 'bg-red-500 text-white shadow-md border-red-500'
-                : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100 hover:text-red-500 border-gray-300'
+          <div
+            className={`w-full relative group overflow-hidden ${
+          featured || compact ? 'aspect-square' : 'aspect-square sm:aspect-[3/4]'
             }`}
-            title={isFavorite(product._id) ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <Heart
-              className={`w-4 h-4 ${isFavorite(product._id) ? 'fill-current' : ''}`}
+            <MediaDisplay
+          src={product.images?.[currentImageIndex] || null}
+          alt={product.name}
+          className="w-full h-full transition-all duration-1000 ease-in-out"
+          style={{
+            transition: 'opacity 1.2s ease-in-out, transform 1.2s ease-in-out',
+            opacity: 1
+          }}
+          aspectRatio="auto"
+          objectFit="cover"
             />
+
+            <button
+          onClick={handleFavoriteToggle}
+          disabled={isTogglingFavorite}
+          className={`absolute top-2 left-2 p-2 transition-all duration-300 ease-out rounded-full backdrop-blur-sm ${
+            isFavorite(product._id)
+              ? 'bg-gradient-to-r from-pink-500 to-red-500 text-white shadow-lg shadow-pink-500/30 scale-110'
+              : 'bg-white/90 text-gray-600 shadow-md'
+          } ${isTogglingFavorite ? 'opacity-70 cursor-not-allowed animate-pulse' : ''}`}
+          title={isFavorite(product._id) ? 'Remove from favorites' : 'Add to favorites'}
+            >
+          {isTogglingFavorite ? (
+            <div className="relative w-4 h-4">
+              {/* Cupcake loading animation */}
+                <div className="relative">
+                  <div className="w-4 h-3 bg-gradient-to-b from-pink-300 to-pink-400 rounded-t-full animate-pulse"></div>
+                  <div className="w-3 h-2 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-b-sm mx-auto animate-bounce"></div>
+                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-red-400 rounded-full animate-ping"></div>
+                </div>
+              </div>
+            ) : (
+              <Heart
+                className={`w-4 h-4 transition-all duration-300 ease-out ${
+                  isFavorite(product._id) 
+                    ? 'fill-current scale-110 animate-bounce' 
+                    : ''
+                }`}
+              />
+            )}
+            
+            {/* Floating hearts animation when favorited */}
+            {isFavorite(product._id) && !isTogglingFavorite && (
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-1 -right-1 text-pink-300 text-xs animate-bounce" style={{ animationDelay: '0.2s' }}>
+                  💖
+                </div>
+                <div className="absolute -bottom-1 -left-1 text-red-300 text-xs animate-bounce" style={{ animationDelay: '0.4s' }}>
+                  ❤
+                </div>
+              </div>
+            )}
           </button>
 
           {/* Discount Badge on Image */}
@@ -168,7 +201,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   className={`w-1.5 h-1.5 transition-all duration-500 ease-in-out ${
                     index === currentImageIndex
                       ? 'bg-white shadow-lg scale-110'
-                      : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+                      : 'bg-white bg-opacity-50'
                   }`}
                 />
               ))}
@@ -183,7 +216,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           <h3
             className={`font-semibold text-black line-clamp-2 ${
               featured ? 'text-sm' : compact ? 'text-xs sm:text-sm' : 'text-sm'
-            } cursor-pointer hover:text-pink-500 mb-1`}
+            } cursor-pointer mb-1`}
             onClick={handleCardClick}
           >
             {product.name}

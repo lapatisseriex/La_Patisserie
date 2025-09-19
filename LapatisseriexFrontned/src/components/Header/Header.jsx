@@ -140,6 +140,11 @@ const Header = ({ isAdminView = false }) => {
       // Always track scrolled state for shadow
       setIsScrolled(currentScrollY > 10);
       
+      // If location dropdown is open and the user scrolls, close it
+      if (isLocationDropdownOpen && Math.abs(currentScrollY - lastScrollY) > 1) {
+        setIsLocationDropdownOpen(false);
+      }
+      
       // New behavior for location bar
       if (currentScrollY > lastScrollY && currentScrollY > 50) {
         // Scrolling down - hide location bar on all pages
@@ -193,7 +198,7 @@ const Header = ({ isAdminView = false }) => {
       }
       document.body.classList.remove('scrolled', 'scrolling-down', 'scrolling-up', 'header-hidden');
     };
-  }, [lastScrollY, scrollDirection, isScrollingDown, isProductsPage]);
+  }, [lastScrollY, scrollDirection, isScrollingDown, isProductsPage, isLocationDropdownOpen]);
 
   // Separate useEffect for DOM class manipulation to avoid excessive updates
   useEffect(() => {
@@ -382,7 +387,7 @@ const Header = ({ isAdminView = false }) => {
       
       {/* Mobile Location Bar - Part of sticky header with conditional visibility */}
       {!isAdminView && (
-        <div className={`mobile-location-bar md:hidden bg-white border-b border-gray-100 z-[56] overflow-hidden transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
+        <div className={`mobile-location-bar md:hidden bg-white border-b border-gray-100 z-[56] ${isLocationDropdownOpen ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
           <div className="px-3">
             <div className="flex justify-start">
               <div className="relative" ref={locationDropdownRef}>
@@ -401,7 +406,7 @@ const Header = ({ isAdminView = false }) => {
               
                 {/* Mobile Location Dropdown */}
                 {isLocationDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-64 bg-white shadow-xl rounded-lg overflow-hidden z-[60] border border-gray-100" style={{fontFamily: 'sans-serif'}}>
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white shadow-xl rounded-lg overflow-hidden z-[70] border border-gray-100" style={{fontFamily: 'sans-serif'}}>
                     <div className="px-3 py-2 bg-black text-white border-b border-gray-800">
                       <h3 className="text-xs font-medium tracking-wider">DELIVERY LOCATIONS</h3>
                     </div>

@@ -3,14 +3,31 @@ import { Link } from 'react-router-dom';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import ProductCard from '../Products/ProductCard';
+import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 import { ArrowRight } from 'lucide-react';
 
 const FavoritesSection = () => {
   const { favorites, loading } = useFavorites();
   const { user } = useAuth();
 
+  // Show loading state for authenticated users
+  if (user && loading) {
+    return (
+      <section className="w-full py-6">
+        <div className="max-w-screen-xl mx-auto">
+          <PremiumSectionSkeleton 
+            variant="products" 
+            count={3}
+            title="Your Favorites"
+            showHeader={true}
+          />
+        </div>
+      </section>
+    );
+  }
+
   // Don't show the section if user is not logged in or has no favorites
-  if (!user || !favorites || favorites.length === 0 || loading) {
+  if (!user || !favorites || favorites.length === 0) {
     return null;
   }
 
@@ -18,25 +35,31 @@ const FavoritesSection = () => {
   const displayFavorites = favorites.slice(0, 3);
 
   return (
-    <section className="w-full py-10 ">
-      <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <h2 className="text-xl font-bold text-black uppercase tracking-wide mb-4 text-left">
-          Favorites For You
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <section className="w-full py-6">
+      <div className="max-w-screen-xl mx-auto px-4">
+        <div className="mb-8 space-y-3">
+          <h2 className="text-2xl font-bold text-black tracking-wide text-left">
+            Your Favorites
+          </h2>
+        
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {displayFavorites.map(product => (
-            <ProductCard key={product._id} product={product} />
+            <div key={product._id} className="transform hover:scale-105 transition-transform duration-300">
+              <ProductCard product={product} />
+            </div>
           ))}
         </div>
         
         {/* Show View All link if there are more than 3 favorites */}
         {favorites.length > 3 && (
-          <div className="text-left mt-6">
+          <div className="text-left mt-8">
             <Link 
               to="/favorites" 
-              className="inline-flex items-center text-sm text-gray-600 hover:text-black transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all duration-300"
             >
-              View All {favorites.length} Favorites <ArrowRight className="w-4 h-4 ml-1" />
+              View All {favorites.length} Favorites <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>
         )}

@@ -2,6 +2,7 @@ import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
 import firebaseAdmin from '../config/firebase.js';
+import { deleteFromCloudinary } from '../utils/cloudinary.js';
 
 // @desc    Get current user profile
 // @route   GET /api/users/me
@@ -24,8 +25,9 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Format the date of birth for the response
+  // Format dates for the response
   const formattedDob = user.dob ? user.dob.toISOString().split('T')[0] : null;
+  const formattedAnniversary = user.anniversary ? user.anniversary.toISOString().split('T')[0] : null;
 
   res.status(200).json({
     success: true,
@@ -34,11 +36,15 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       phone: user.phone,
       name: user.name,
       role: user.role,
-      dob: formattedDob, // Use formatted date
-      email: user.email,
-      address: user.address,
+      dob: formattedDob,
+      anniversary: formattedAnniversary,
+      gender: user.gender || '',
+      city: user.city,
+      pincode: user.pincode,
+      country: user.country,
       location: user.location,
       hostel: user.hostel,
+      profilePhoto: user.profilePhoto || { url: '', public_id: '' },
       favorites: user.favorites || [],
       createdAt: user.createdAt
     }
@@ -65,24 +71,43 @@ export const updateUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
   
-  // Update fields
-  const { name, dob, email, address, location, hostel, role } = req.body;
+  // Update fields - including all the new profile fields
+  const { 
+    name, 
+    dob, 
+    anniversary, 
+    gender,
+    city, 
+    pincode, 
+    country, 
+    location, 
+    hostel, 
+    role 
+  } = req.body;
   
   if (name) user.name = name;
   if (dob) {
-    // Ensure date is properly formatted
     try {
       user.dob = new Date(dob);
     } catch (err) {
       console.error("Invalid date format:", err);
-      // If parsing fails, use the string as is
       user.dob = dob;
     }
   }
-  if (email) user.email = email;
-  if (address) user.address = address;
+  if (gender !== undefined) user.gender = gender;
+  if (anniversary) {
+    try {
+      user.anniversary = new Date(anniversary);
+    } catch (err) {
+      console.error("Invalid anniversary date format:", err);
+      user.anniversary = anniversary;
+    }
+  }
+  if (city !== undefined) user.city = city || null;
+  if (pincode !== undefined) user.pincode = pincode || null;
+  if (country !== undefined) user.country = country || 'India';
   if (location) user.location = location;
-  if (hostel !== undefined) user.hostel = hostel || null; // Allow clearing hostel with empty string
+  if (hostel !== undefined) user.hostel = hostel || null;
   
   // Only admins can update roles
   if (role && req.user.role === 'admin') {
@@ -95,8 +120,9 @@ export const updateUser = asyncHandler(async (req, res) => {
   // Fetch updated user with populated location and hostel
   const updatedUser = await User.findOne({ uid: userId }).populate('location').populate('hostel');
   
-  // Format the date of birth for the response
+  // Format dates for the response
   const formattedDob = updatedUser.dob ? updatedUser.dob.toISOString().split('T')[0] : null;
+  const formattedAnniversary = updatedUser.anniversary ? updatedUser.anniversary.toISOString().split('T')[0] : null;
   
   res.status(200).json({
     success: true,
@@ -105,11 +131,15 @@ export const updateUser = asyncHandler(async (req, res) => {
       phone: updatedUser.phone,
       name: updatedUser.name,
       role: updatedUser.role,
-      dob: formattedDob, // Use formatted date
-      email: updatedUser.email,
-      address: updatedUser.address,
+      dob: formattedDob,
+      anniversary: formattedAnniversary,
+      gender: updatedUser.gender || '',
+      city: updatedUser.city,
+      pincode: updatedUser.pincode,
+      country: updatedUser.country,
       location: updatedUser.location,
-      hostel: updatedUser.hostel
+      hostel: updatedUser.hostel,
+      profilePhoto: updatedUser.profilePhoto || { url: '', public_id: '' }
     }
   });
 });
@@ -353,4 +383,73 @@ export const deleteUser = asyncHandler(async (req, res) => {
       throw new Error(`Failed to delete user: ${error.message}`);
     }
   }
+});
+
+// @desc    Update user's profile photo
+// @route   PUT /api/users/me/photo
+// @access  Private
+export const updateProfilePhoto = asyncHandler(async (req, res) => {
+  const { url, public_id } = req.body;
+  
+  if (!url || !public_id) {
+    res.status(400);
+    throw new Error('Profile photo URL and public_id are required');
+  }
+  
+  const user = await User.findOne({ uid: req.user.uid });
+  
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+  
+  // If user already has a profile photo, delete the old one from Cloudinary
+  if (user.profilePhoto && user.profilePhoto.public_id) {
+    try {
+      await deleteFromCloudinary(user.profilePhoto.public_id);
+    } catch (error) {
+      console.error('Error deleting old profile photo:', error);
+      // Continue anyway even if delete fails
+    }
+  }
+  
+  // Update user's profile photo
+  user.profilePhoto = { url, public_id };
+  await user.save();
+  
+  res.status(200).json({
+    success: true,
+    profilePhoto: user.profilePhoto
+  });
+});
+
+// @desc    Delete user's profile photo
+// @route   DELETE /api/users/me/photo
+// @access  Private
+export const deleteProfilePhoto = asyncHandler(async (req, res) => {
+  const user = await User.findOne({ uid: req.user.uid });
+  
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+  
+  // If user has a profile photo, delete it from Cloudinary
+  if (user.profilePhoto && user.profilePhoto.public_id) {
+    try {
+      await deleteFromCloudinary(user.profilePhoto.public_id);
+    } catch (error) {
+      console.error('Error deleting profile photo:', error);
+      // Continue anyway even if delete fails
+    }
+  }
+  
+  // Remove profile photo data
+  user.profilePhoto = { url: '', public_id: '' };
+  await user.save();
+  
+  res.status(200).json({
+    success: true,
+    message: 'Profile photo deleted successfully'
+  });
 });

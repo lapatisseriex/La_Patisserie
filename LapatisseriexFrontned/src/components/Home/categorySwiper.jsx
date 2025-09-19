@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import PremiumSectionSkeleton from "../common/PremiumSectionSkeleton";
 // Icons
 import { FaStar, FaFire, FaNewspaper } from "react-icons/fa";
 import { useProduct } from "../../context/ProductContext/ProductContext"; // Import it here
@@ -96,9 +97,14 @@ const CategorySwiperHome = ({
 
   if (loading) {
     return (
-      <div className="text-center py-4 font-sans">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-      </div>
+      <section className="w-full py-6">
+        <div className="max-w-screen-xl mx-auto">
+          <PremiumSectionSkeleton 
+            variant="category-swiper" 
+            showHeader={false}
+          />
+        </div>
+      </section>
     );
   }
 

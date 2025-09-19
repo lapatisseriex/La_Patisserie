@@ -12,6 +12,22 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      sparse: true,  // This allows null/undefined values to not trigger unique constraint
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationOTP: {
+      type: String,
+    },
+    emailVerificationOTPExpires: {
+      type: Date,
+    },
     name: {
       type: String,
       trim: true,
@@ -19,23 +35,26 @@ const userSchema = new mongoose.Schema(
     dob: {
       type: Date,
     },
+    anniversary: {
+      type: Date,
+    },
+    city: {
+      type: String,
+      trim: true,
+    },
+    pincode: {
+      type: String,
+      trim: true,
+    },
+    country: {
+      type: String,
+      trim: true,
+      default: 'India',
+    },
     role: {
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
-    },
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      sparse: true, // Allows multiple null values (not required)
-      match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address']
-    },
-    address: {
-      street: String,
-      city: String,
-      state: String,
-      postalCode: String,
     },
     location: {
       type: mongoose.Schema.Types.ObjectId,
@@ -44,6 +63,15 @@ const userSchema = new mongoose.Schema(
     hostel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Hostel',
+    },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other', ''],
+      default: ''
+    },
+    profilePhoto: {
+      url: { type: String, default: '' },
+      public_id: { type: String, default: '' }
     },
     favorites: [{
       type: mongoose.Schema.Types.ObjectId,

@@ -60,7 +60,10 @@ export const AuthProvider = ({ children }) => {
       if (firebaseUser) {
         try {
           // Get ID token
-          const idToken = await firebaseUser.getIdToken();
+          const idToken = await firebaseUser.getIdToken(true); // Force refresh token
+          
+          // Store token in localStorage for API requests
+          localStorage.setItem('authToken', idToken);
           
           // Verify with backend
           const response = await axios.post(`${API_URL}/auth/verify`, { idToken });
@@ -184,8 +187,11 @@ export const AuthProvider = ({ children }) => {
       // Get authenticated user
       const firebaseUser = result.user;
       
-      // Get ID token to verify with backend
-      const idToken = await firebaseUser.getIdToken();
+      // Get ID token to verify with backend (force refresh)
+      const idToken = await firebaseUser.getIdToken(true);
+      
+      // Store token in localStorage for API requests
+      localStorage.setItem('authToken', idToken);
       
       // Get location ID if stored (for signup)
       const locationId = localStorage.getItem('temp_location_id');
@@ -245,6 +251,9 @@ export const AuthProvider = ({ children }) => {
       // Get fresh ID token
       const idToken = await auth.currentUser.getIdToken(true);
       
+      // Store token in localStorage for API requests
+      localStorage.setItem('authToken', idToken);
+      
       console.log("Sending profile update to backend:", profileData);
       
       // Send profile update to backend
@@ -255,6 +264,7 @@ export const AuthProvider = ({ children }) => {
       );
       
       console.log("Profile update response:", response.data);
+      console.log("Response user object:", JSON.stringify(response.data.user, null, 2));
       
       // Update local user data
       setUser(prevUser => {
@@ -263,6 +273,10 @@ export const AuthProvider = ({ children }) => {
           ...response.data.user
         };
         console.log("Updated user in state:", updatedUser);
+        
+        // Update cached user data in localStorage
+        localStorage.setItem('cachedUser', JSON.stringify(updatedUser));
+        
         return updatedUser;
       });
       
@@ -289,8 +303,9 @@ export const AuthProvider = ({ children }) => {
     try {
       await signOut(auth);
       setUser(null);
-      // Clear cached user data on logout
+      // Clear cached data on logout
       localStorage.removeItem('cachedUser');
+      localStorage.removeItem('authToken');
       return true;
     } catch (error) {
       console.error("Error logging out:", error);
@@ -316,6 +331,56 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update specific user fields (for profile photo, etc.)
+  const updateUser = (userData) => {
+    if (!user) {
+      setAuthError("You must be logged in to update user data");
+      return false;
+    }
+
+    console.log('Updating user with data:', userData);
+    
+    // Make sure we're creating a new object reference to trigger re-renders
+    setUser(prevUser => {
+      const updatedUser = {
+        ...prevUser,
+        ...userData
+      };
+      console.log('Updated user object:', updatedUser);
+      return updatedUser;
+    });
+
+    // Update the cached user data
+    const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
+    const updatedCache = {
+      ...cachedUser,
+      ...userData
+    };
+    console.log('Updating cached user data:', updatedCache);
+    localStorage.setItem('cachedUser', JSON.stringify(updatedCache));
+  };
+  
+  // Email verification functions
+  const updateEmailVerificationState = (email, isVerified = true) => {
+    if (!user) return;
+    
+    const userData = {
+      email,
+      isEmailVerified: isVerified
+    };
+    
+    // Update user in state
+    updateUser(userData);
+    
+    // Also update the cached user data directly
+    const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
+    cachedUser.email = email;
+    cachedUser.isEmailVerified = isVerified;
+    localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
+    
+    console.log('Email verification state updated:', { email, isVerified });
+  };
+
   // Change auth type (login, signup, otp, profile)
   const changeAuthType = (type) => {
     setAuthType(type);
@@ -334,6 +399,8 @@ export const AuthProvider = ({ children }) => {
     sendOTP,
     verifyOTP,
     updateProfile,
+    updateUser,
+    updateEmailVerificationState,
     logout,
     toggleAuthPanel,
     changeAuthType,

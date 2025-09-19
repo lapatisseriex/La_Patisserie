@@ -1,5 +1,5 @@
 import asyncHandler from 'express-async-handler';
-import { uploadToCloudinary, generateSignature } from '../utils/cloudinary.js';
+import { uploadToCloudinary, generateSignature, deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
 
 // @desc    Upload image or video to Cloudinary
 // @route   POST /api/upload
@@ -57,5 +57,32 @@ export const getUploadSignature = asyncHandler(async (req, res) => {
     console.error('Signature generation error:', error);
     res.status(500);
     throw new Error(`Failed to generate signature: ${error.message}`);
+  }
+});
+
+// @desc    Upload user profile photo to Cloudinary
+// @route   POST /api/upload/profile
+// @access  Private (any authenticated user)
+export const uploadProfilePhoto = asyncHandler(async (req, res) => {
+  if (!req.body.file) {
+    res.status(400);
+    throw new Error('No file data provided');
+  }
+
+  try {
+    // Upload to Cloudinary in 'profile_photos' folder
+    const result = await uploadToCloudinary(req.body.file, { 
+      folder: 'la_patisserie/profile_photos',
+      resource_type: 'image'
+    });
+    
+    res.status(200).json({
+      url: result.url,
+      public_id: result.public_id
+    });
+  } catch (error) {
+    console.error('Profile photo upload error:', error);
+    res.status(400);
+    throw new Error(`Profile photo upload failed: ${error.message}`);
   }
 });
