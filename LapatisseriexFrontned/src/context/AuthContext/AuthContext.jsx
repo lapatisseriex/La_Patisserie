@@ -56,6 +56,9 @@ export const AuthProvider = ({ children }) => {
       }
     }
     
+    // Clear any potentially corrupted profile form data
+    localStorage.removeItem('profileFormData');
+    
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -68,12 +71,30 @@ export const AuthProvider = ({ children }) => {
           // Verify with backend
           const response = await axios.post(`${API_URL}/auth/verify`, { idToken });
           
-          // Create the user object with data from backend
+          // Get saved user data (if any) to restore fields like email and anniversary
+          let savedUserData = {};
+          try {
+            const savedDataString = localStorage.getItem('savedUserData');
+            if (savedDataString) {
+              savedUserData = JSON.parse(savedDataString);
+              console.log('Found saved user data to restore:', savedUserData);
+            }
+          } catch (error) {
+            console.error('Error parsing saved user data:', error);
+          }
+          
+          // Create the user object with data from backend, preserving saved fields
           const userData = {
             uid: firebaseUser.uid,
             phone: firebaseUser.phoneNumber,
-            ...response.data.user
+            ...response.data.user,
+            // Restore saved fields if they don't exist in the response
+            email: response.data.user.email || savedUserData.email || null,
+            anniversary: response.data.user.anniversary || savedUserData.anniversary || null,
+            isEmailVerified: response.data.user.isEmailVerified || savedUserData.isEmailVerified || false
           };
+          
+          console.log('Restored user data with saved fields:', userData);
           
           // Set user state
           setUser(userData);
@@ -81,11 +102,51 @@ export const AuthProvider = ({ children }) => {
           // Cache user data in localStorage
           localStorage.setItem('cachedUser', JSON.stringify(userData));
           
+          // Clear any potentially corrupted profile form data
+          localStorage.removeItem('profileFormData');
+          
           setIsNewUser(response.data.isNewUser || false);
           
           // If new user, show profile completion form
           if (response.data.isNewUser) {
             setAuthType('profile');
+          }
+          
+          // Get fresh user data from /api/users/me to ensure we have the latest
+          try {
+            const meResponse = await axios.get(`${API_URL}/users/me`, { 
+              headers: { Authorization: `Bearer ${idToken}` } 
+            });
+            
+            if (meResponse.data.success) {
+              // Get saved user data (if any)
+              let savedUserData = {};
+              try {
+                const savedDataString = localStorage.getItem('savedUserData');
+                if (savedDataString) {
+                  savedUserData = JSON.parse(savedDataString);
+                  console.log('Found saved user data to restore for me endpoint:', savedUserData);
+                }
+              } catch (error) {
+                console.error('Error parsing saved user data:', error);
+              }
+              
+              // Update user state with the fresh data, preserving saved fields
+              const freshUserData = {
+                uid: firebaseUser.uid,
+                phone: firebaseUser.phoneNumber,
+                ...meResponse.data.user,
+                // Restore saved fields if they don't exist in the response
+                email: meResponse.data.user.email || savedUserData.email || null,
+                anniversary: meResponse.data.user.anniversary || savedUserData.anniversary || null,
+                isEmailVerified: meResponse.data.user.isEmailVerified || savedUserData.isEmailVerified || false
+              };
+              
+              setUser(freshUserData);
+              localStorage.setItem('cachedUser', JSON.stringify(freshUserData));
+            }
+          } catch (meError) {
+            console.error("Error fetching fresh user data:", meError);
           }
         } catch (error) {
           console.error("Error verifying user with backend:", error);
@@ -93,8 +154,10 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         setUser(null);
-        // Clear cached user data when logged out
+        // Clear cached user data when logged out but keep savedUserData
         localStorage.removeItem('cachedUser');
+        localStorage.removeItem('profileFormData');
+        // Note: We're not removing 'savedUserData' so it can be restored on next login
       }
       setLoading(false);
     });
@@ -181,6 +244,9 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
       setLoading(true);
       
+      // Clear any potentially corrupted profile form data
+      localStorage.removeItem('profileFormData');
+      
       // Confirm OTP
       const result = await confirmationResult.confirm(otp);
       
@@ -214,6 +280,27 @@ export const AuthProvider = ({ children }) => {
         // Format date if needed
         dob: userData.dob ? userData.dob : null,
       });
+      
+      // Get fresh user data from /api/users/me to ensure we have the latest
+      try {
+        const meResponse = await axios.get(`${API_URL}/users/me`, { 
+          headers: { Authorization: `Bearer ${idToken}` } 
+        });
+        
+        if (meResponse.data.success) {
+          // Update user state with the fresh data
+          const freshUserData = {
+            uid: firebaseUser.uid,
+            phone: firebaseUser.phoneNumber,
+            ...meResponse.data.user
+          };
+          
+          setUser(freshUserData);
+          localStorage.setItem('cachedUser', JSON.stringify(freshUserData));
+        }
+      } catch (meError) {
+        console.error("Error fetching fresh user data:", meError);
+      }
       
       setIsNewUser(response.data.isNewUser || false);
       
@@ -266,6 +353,13 @@ export const AuthProvider = ({ children }) => {
       console.log("Profile update response:", response.data);
       console.log("Response user object:", JSON.stringify(response.data.user, null, 2));
       
+      // Check if this is an admin update on another user's account
+      // If it is, don't update the current user's data in localStorage
+      if (response.data.isAdminUpdate) {
+        console.log("Admin update detected - not updating local user data");
+        return true;
+      }
+      
       // Update local user data
       setUser(prevUser => {
         const updatedUser = {
@@ -301,11 +395,44 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
+      // Save user email, name, anniversary date, and other important fields before logout for persistence
+      let savedUserData = {};
+      if (user) {
+        // Extract only what we need to preserve
+        const { email, name, anniversary, isEmailVerified, gender, dob, country, location, hostel } = user;
+        savedUserData = { 
+          email, 
+          name,
+          anniversary, 
+          isEmailVerified,
+          gender,
+          dob,
+          country,
+          location,
+          hostel
+        };
+        
+        // Make sure email and verification status are preserved
+        if (!savedUserData.email && user.email) {
+          savedUserData.email = user.email;
+        }
+        
+        if (savedUserData.isEmailVerified === undefined && user.isEmailVerified !== undefined) {
+          savedUserData.isEmailVerified = user.isEmailVerified;
+        }
+        
+        localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
+        console.log('Saving user data before logout:', savedUserData);
+      }
+      
       await signOut(auth);
       setUser(null);
-      // Clear cached data on logout
+      
+      // Clear cached data on logout, but keep savedUserData
       localStorage.removeItem('cachedUser');
       localStorage.removeItem('authToken');
+      localStorage.removeItem('profileFormData');
+      
       return true;
     } catch (error) {
       console.error("Error logging out:", error);
@@ -372,11 +499,17 @@ export const AuthProvider = ({ children }) => {
     // Update user in state
     updateUser(userData);
     
-    // Also update the cached user data directly
+    // Update the cached user data
     const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
     cachedUser.email = email;
     cachedUser.isEmailVerified = isVerified;
     localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
+    
+    // ALSO update the savedUserData for persistence across sessions
+    const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
+    savedUserData.email = email;
+    savedUserData.isEmailVerified = isVerified;
+    localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
     
     console.log('Email verification state updated:', { email, isVerified });
   };

@@ -11,6 +11,7 @@ import AdminLayout from './components/Layout/AdminLayout';
 import ProfilePage from './pages/Profile';
 import FavoritesPage from './pages/Favorites';
 import ProductDisplayPage from './pages/ProductDisplayPage';
+import EmailDemo from './pages/EmailDemo';
 
 // Home Components
 import Home from './components/Home/Home';
@@ -110,6 +111,7 @@ function App() {
                 <Route path="favorites" element={<FavoritesPage />} />
                 <Route path="cart" element={<Cart />} />
                 <Route path="payment" element={<Payment />} />
+                <Route path="email-demo" element={<EmailDemo />} />
               </Route>
               
               {/* Profile and Orders with regular Layout */}

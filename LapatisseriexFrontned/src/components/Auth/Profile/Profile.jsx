@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext/AuthContext';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
+import { emailService } from '../../../services/apiService';
 import ProfileImageUpload from './ProfileImageUpload';
 import GlobalLoadingOverlay from '../../common/GlobalLoadingOverlay';
 import EmailVerification from '../EmailVerification';
+import axios from 'axios';
 import { 
   User, 
   Phone, 
@@ -19,7 +21,7 @@ import {
 } from 'lucide-react';
 
 const Profile = () => {
-  const { user, updateProfile, authError, loading, isNewUser } = useAuth();
+  const { user, updateProfile, authError, loading, isNewUser, updateUser } = useAuth();
   const { locations, loading: locationsLoading, fetchLocations } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
   const [localError, setLocalError] = useState('');
@@ -39,6 +41,11 @@ const Profile = () => {
   // Initialize form with expanded user data
   // Helper function to create initial form data (also useful when adding new fields in the future)
   const createInitialFormData = (userData = {}, savedData = {}) => {
+    // Log the input data for debugging
+    console.log('Creating initial form data with:');
+    console.log('User data:', userData);
+    console.log('Saved data:', savedData);
+    
     return {
       // Personal information
       name: savedData.name || userData.name || '',
@@ -70,11 +77,59 @@ const Profile = () => {
     }
   };
 
-  // Initialize form data
-  const [formData, setFormData] = useState(createInitialFormData(user));
+  // Get saved user data from localStorage
+  const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
   
-  // Email verification state
-  const [isEmailVerified, setIsEmailVerified] = useState(user?.isEmailVerified || false);
+  // Log for debugging
+  console.log('Profile component initializing with:');
+  console.log('User data:', user);
+  console.log('Saved user data:', savedUserData);
+  
+  // Initialize form data with user and saved data
+  const [formData, setFormData] = useState(createInitialFormData(user, savedUserData));
+  
+  // Email verification state - prioritize saved data for persistence
+  const [isEmailVerified, setIsEmailVerified] = useState(savedUserData?.isEmailVerified || user?.isEmailVerified || false);
+  
+  // Add debugging log for verification status
+  console.log('Initial email verification status:', isEmailVerified);
+  console.log('Email value in form:', formData.email);
+  
+  // Effect to check email verification status from server on mount
+  useEffect(() => {
+    const checkEmailStatus = async () => {
+      try {
+        const status = await emailService.checkVerificationStatus();
+        console.log('Email verification status from server:', status);
+        
+        if (status.email) {
+          // Update form data with server email
+          setFormData(prev => ({
+            ...prev,
+            email: status.email
+          }));
+          
+          // Update verification status
+          setIsEmailVerified(status.isEmailVerified);
+          
+          // Update saved data for persistence
+          const savedData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
+          savedData.email = status.email;
+          savedData.isEmailVerified = status.isEmailVerified;
+          localStorage.setItem('savedUserData', JSON.stringify(savedData));
+          
+          console.log('Updated email and verification status from server');
+        }
+      } catch (error) {
+        console.error('Error checking email verification status:', error);
+      }
+    };
+    
+    // Only check if we have a user
+    if (user && user.uid) {
+      checkEmailStatus();
+    }
+  }, [user]);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   
   // Fetch locations only once on mount
@@ -254,11 +309,40 @@ const Profile = () => {
     }
   }, [formData, isEmailVerified, isEditMode]);
   
-  // useEffect to sync form data with user data - run ONLY ONCE when component mounts
+  // useEffect to sync form data with user data - runs both on component mount and when user data changes
   const userDataInitialized = useRef(false);
   
   useEffect(() => {
-    if (user && !userDataInitialized.current) {
+    // Fetch fresh user data from the server first to ensure we have the latest
+    const fetchFreshUserData = async () => {
+      try {
+        // Only make this call if we're already authenticated and have a token
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data.success) {
+            // Update cached user data with fresh data
+            localStorage.setItem('cachedUser', JSON.stringify(response.data.user));
+            console.log('Fetched fresh user data from server:', response.data.user);
+            
+            // Clear any potentially corrupted form data
+            localStorage.removeItem('profileFormData');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching fresh user data:', error);
+      }
+    };
+    
+    // Call the function to fetch fresh data
+    if (!userDataInitialized.current) {
+      fetchFreshUserData();
+    }
+    
+    if (user) {
       const currentLocationId = typeof user.location === 'object' ? user.location?._id : user.location;
       const currentHostelId = typeof user.hostel === 'object' ? user.hostel?._id : user.hostel;
       
@@ -431,6 +515,10 @@ const Profile = () => {
     console.log("Gender being submitted:", profileData.gender);
     
     try {
+      // IMPORTANT: Check if this is the admin's profile
+      const isAdmin = user?.role === 'admin';
+      console.log('Is admin user:', isAdmin);
+      
       const success = await updateProfile(profileData);
       
       if (success) {
@@ -446,6 +534,26 @@ const Profile = () => {
         localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
         
         console.log("Successfully updated profile, preserved email and anniversary in cache");
+        
+        // For admin users, we want to make sure we get a fresh copy of our own data
+        if (isAdmin) {
+          try {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+              const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/me`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              
+              if (response.data.success) {
+                // Update cached user data with fresh data
+                localStorage.setItem('cachedUser', JSON.stringify(response.data.user));
+                console.log('Admin refreshed own user data from server:', response.data.user);
+              }
+            }
+          } catch (error) {
+            console.error('Error refreshing admin user data:', error);
+          }
+        }
       }
     } catch (error) {
       console.error("Error in profile update:", error);
@@ -730,8 +838,8 @@ const Profile = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="email@example.com"
-                readOnly={!isEditMode || isEmailVerified}
-                disabled={loading || isEmailVerified}
+                readOnly={!isEditMode}
+                disabled={loading}
                 className={inputClasses}
               />
               {isEmailVerified && (
@@ -945,9 +1053,12 @@ const Profile = () => {
         )}
       </form>
       
-      {/* Email Verification Section - Only shown when email is edited but not verified */}
-      {isEditMode && formData.email && !isEmailVerified && (
+      {/* Email Verification Section - Always shown when email exists */}
+      {formData.email && (
         <div className="mt-8">
+          <div className="border-t border-gray-200 pt-6 mb-4">
+            <h4 className="text-lg font-medium">Email Management</h4>
+          </div>
           <EmailVerification 
             email={formData.email}
             setEmail={(email) => setFormData({...formData, email})}
@@ -963,11 +1074,20 @@ const Profile = () => {
                 isEmailVerified: true
               });
               
+              // Also ensure the email is saved locally for persistence
+              const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
+              savedUserData.email = email;
+              savedUserData.isEmailVerified = true;
+              localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
+              
               setSuccessMessage("Email verified successfully!");
             }}
+            showChangeEmail={isEditMode} // Only show change option in edit mode
           />
         </div>
       )}
+      
+
     </div>
   );
 };

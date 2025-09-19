@@ -132,6 +132,31 @@ export const emailService = {
       console.error('Error checking verification status:', error);
       return { isEmailVerified: false };
     }
+  },
+  
+  // Update verified email address
+  updateEmail: async (email) => {
+    try {
+      const response = await api.post('/email/update', { email });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Verify updated email with OTP
+  verifyUpdatedEmail: async (otp) => {
+    try {
+      const response = await api.post('/email/verify-update', { otp });
+      // Update localStorage to ensure verification persists after refresh
+      const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
+      cachedUser.isEmailVerified = true;
+      cachedUser.email = response.data.email;
+      localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
   }
 };
 

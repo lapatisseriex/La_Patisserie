@@ -4,7 +4,9 @@ import {
   sendEmailVerification,
   verifyEmail,
   resendEmailVerification,
-  getVerificationStatus
+  getVerificationStatus,
+  updateEmail,
+  verifyNewEmail
 } from '../controllers/emailController.js';
 
 const router = express.Router();
@@ -14,5 +16,9 @@ router.post('/send-verification', protect, sendEmailVerification);
 router.post('/verify', protect, verifyEmail);
 router.post('/resend-verification', protect, resendEmailVerification);
 router.get('/verification-status', protect, getVerificationStatus);
+
+// Email update routes
+router.post('/update', protect, updateEmail);
+router.post('/verify-update', protect, verifyNewEmail);
 
 export default router;

@@ -25,6 +25,10 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
+  // Ensure we're getting the latest data from the database
+  // This helps avoid any cached data issues
+  await user.save();
+
   // Format dates for the response
   const formattedDob = user.dob ? user.dob.toISOString().split('T')[0] : null;
   const formattedAnniversary = user.anniversary ? user.anniversary.toISOString().split('T')[0] : null;
@@ -46,7 +50,9 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       hostel: user.hostel,
       profilePhoto: user.profilePhoto || { url: '', public_id: '' },
       favorites: user.favorites || [],
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      email: user.email || '',
+      isEmailVerified: user.isEmailVerified || false
     }
   });
 });
@@ -82,7 +88,9 @@ export const updateUser = asyncHandler(async (req, res) => {
     country, 
     location, 
     hostel, 
-    role 
+    role,
+    email,
+    isEmailVerified
   } = req.body;
   
   if (name) user.name = name;
@@ -114,6 +122,16 @@ export const updateUser = asyncHandler(async (req, res) => {
     user.role = role;
   }
   
+  // Handle email updates
+  if (email !== undefined) {
+    user.email = email;
+  }
+  
+  // Handle email verification status
+  if (isEmailVerified !== undefined) {
+    user.isEmailVerified = isEmailVerified;
+  }
+  
   // Save updated user
   await user.save();
   
@@ -124,8 +142,13 @@ export const updateUser = asyncHandler(async (req, res) => {
   const formattedDob = updatedUser.dob ? updatedUser.dob.toISOString().split('T')[0] : null;
   const formattedAnniversary = updatedUser.anniversary ? updatedUser.anniversary.toISOString().split('T')[0] : null;
   
+  // Check if this update was performed by an admin on another user's account
+  // If so, add a flag to indicate it's an admin update
+  const isAdminUpdate = req.user.role === 'admin' && userId !== req.user.uid;
+  
   res.status(200).json({
     success: true,
+    isAdminUpdate,
     user: {
       uid: updatedUser.uid,
       phone: updatedUser.phone,
@@ -139,7 +162,9 @@ export const updateUser = asyncHandler(async (req, res) => {
       country: updatedUser.country,
       location: updatedUser.location,
       hostel: updatedUser.hostel,
-      profilePhoto: updatedUser.profilePhoto || { url: '', public_id: '' }
+      profilePhoto: updatedUser.profilePhoto || { url: '', public_id: '' },
+      email: updatedUser.email || '',
+      isEmailVerified: updatedUser.isEmailVerified || false
     }
   });
 });

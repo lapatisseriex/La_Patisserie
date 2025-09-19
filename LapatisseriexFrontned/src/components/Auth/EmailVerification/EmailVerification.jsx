@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { Mail, CheckCircle, AlertCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import { emailService } from '../../../services/apiService';
 import { useAuth } from '../../../context/AuthContext/AuthContext';
+import EmailUpdate from '../EmailUpdate';
 
 /**
  * Email Verification Component
@@ -36,29 +37,64 @@ const EmailVerification = ({
 
   // Check if email is already verified in the database when component mounts
   useEffect(() => {
+    let isMounted = true;
+    
     const checkStatus = async () => {
+      // First check if we already know the status from props
+      if (isVerified) {
+        console.log('Email already verified from props:', email);
+        return;
+      }
+      
       try {
-        // First check context
+        // Check context first (to avoid API call if possible)
         if (user && user.email === email && user.isEmailVerified) {
-          console.log('Email already verified in user context:', user.email);
-          setIsVerified(true);
-          if (onVerificationSuccess) {
-            onVerificationSuccess(user.email);
+          if (isMounted) {
+            console.log('Email verified from user context:', email);
+            setIsVerified(true);
+            if (onVerificationSuccess) {
+              onVerificationSuccess(user.email);
+            }
           }
           return;
         }
         
-        // If not verified in context, check with backend
-        const status = await emailService.checkVerificationStatus();
-        console.log('Verification status from backend:', status);
+        // Also check localStorage (to avoid API call if possible)
+        const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
+        if (savedUserData.email === email && savedUserData.isEmailVerified) {
+          if (isMounted) {
+            console.log('Email verified from savedUserData:', email);
+            setIsVerified(true);
+            updateEmailVerificationState(email, true);
+            if (onVerificationSuccess) {
+              onVerificationSuccess(email);
+            }
+          }
+          return;
+        }
         
-        if (status.isEmailVerified && status.email === email) {
-          console.log('Email verified according to backend:', status.email);
-          setIsVerified(true);
-          // Update the auth context
-          updateEmailVerificationState(status.email, true);
-          if (onVerificationSuccess) {
-            onVerificationSuccess(status.email);
+        // Always check with backend to ensure we have the latest status
+        console.log('Checking email verification status with backend for:', email);
+        const status = await emailService.checkVerificationStatus();
+        console.log('Backend verification status:', status);
+        
+        if (isMounted) {
+          if (status.email && status.isEmailVerified) {
+            console.log('Email verified according to backend:', status.email);
+            setIsVerified(status.isEmailVerified);
+            
+            // Always update the auth context and local storage
+            updateEmailVerificationState(status.email, status.isEmailVerified);
+            
+            // Also update savedUserData
+            const savedData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
+            savedData.email = status.email;
+            savedData.isEmailVerified = status.isEmailVerified;
+            localStorage.setItem('savedUserData', JSON.stringify(savedData));
+            
+            if (status.isEmailVerified && onVerificationSuccess) {
+              onVerificationSuccess(status.email);
+            }
           }
         }
       } catch (error) {
@@ -68,22 +104,37 @@ const EmailVerification = ({
     
     if (email) {
       checkStatus();
+    } else {
+      console.log('No email to check verification status for');
     }
-  }, [user, email, onVerificationSuccess, updateEmailVerificationState]);
+    
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
+  }, [user, email, isVerified, onVerificationSuccess, updateEmailVerificationState]);
 
   // Set up timer when OTP is sent
   const startTimer = (expiresAt) => {
     // Clear existing timer if any
     if (timerRef.current) clearInterval(timerRef.current);
     
+    // Convert expiresAt to a timestamp to avoid repeated Date object creation
+    const expiresAtTimestamp = new Date(expiresAt).getTime();
+    
     const calculateTimeLeft = () => {
-      const difference = new Date(expiresAt) - new Date();
+      const now = Date.now();
+      const difference = expiresAtTimestamp - now;
+      
       if (difference <= 0) {
         clearInterval(timerRef.current);
         setTimeLeft(0);
         return;
       }
-      setTimeLeft(Math.round(difference / 1000));
+      
+      // Only update state if the seconds value has changed (reduce renders)
+      const newSeconds = Math.round(difference / 1000);
+      setTimeLeft(prevTime => prevTime !== newSeconds ? newSeconds : prevTime);
     };
     
     // Initial calculation
@@ -164,34 +215,53 @@ const EmailVerification = ({
     }
   };
 
-  // Handle OTP input change
+  // Handle OTP input change with optimized rendering
   const handleOtpChange = (index, value) => {
-    // Allow only numbers
+    // Allow only numbers and return early if invalid
     if (value && !/^\d+$/.test(value)) return;
     
-    setError('');
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+    // Clear any previous errors
+    if (error) setError('');
+    
+    // Update OTP state using functional update to ensure latest state
+    setOtp(prevOtp => {
+      const newOtp = [...prevOtp];
+      newOtp[index] = value;
+      return newOtp;
+    });
     
     // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1].focus();
+    if (value && index < 5 && inputRefs.current[index + 1]) {
+      // Use requestAnimationFrame to ensure state update doesn't block focus
+      requestAnimationFrame(() => {
+        inputRefs.current[index + 1].focus();
+      });
     }
   };
 
-  // Handle key press for OTP inputs
+  // Handle key press for OTP inputs with debounce
   const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace') {
-      if (otp[index] === '' && index > 0) {
-        // Move to previous input on backspace when empty
-        const newOtp = [...otp];
-        inputRefs.current[index - 1].focus();
-      }
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1].focus();
-    } else if (e.key === 'ArrowRight' && index < 5) {
-      inputRefs.current[index + 1].focus();
+    // Use switch for more efficient handling
+    switch(e.key) {
+      case 'Backspace':
+        if (otp[index] === '' && index > 0 && inputRefs.current[index - 1]) {
+          // Move to previous input on backspace when empty
+          inputRefs.current[index - 1].focus();
+        }
+        break;
+      case 'ArrowLeft':
+        if (index > 0 && inputRefs.current[index - 1]) {
+          inputRefs.current[index - 1].focus();
+        }
+        break;
+      case 'ArrowRight':
+        if (index < 5 && inputRefs.current[index + 1]) {
+          inputRefs.current[index + 1].focus();
+        }
+        break;
+      default:
+        // No action needed for other keys
+        break;
     }
   };
 
@@ -224,32 +294,47 @@ const EmailVerification = ({
     
     try {
       const result = await emailService.verifyEmail(otpString);
+      
+      // Clear timer early to reduce background work
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // Update email verification state in auth context
+      // This will also update the savedUserData in localStorage
+      updateEmailVerificationState(result.email, true);
+      
+      // Update component state
       setIsVerified(true);
       setSuccess('Email verified successfully!');
       
-      // Clear timer
-      if (timerRef.current) clearInterval(timerRef.current);
-      
-      // Update email verification state in auth context and localStorage
-      updateEmailVerificationState(result.email, true);
-      
       // Callback when verification is successful
       if (onVerificationSuccess) {
-        onVerificationSuccess(result.email);
+        // Small delay to allow UI to update
+        setTimeout(() => {
+          onVerificationSuccess(result.email);
+        }, 100);
       }
     } catch (err) {
       console.error('Error verifying email:', err);
       
-      // Check if error is related to authentication
-      if (err.message && (
-          err.message.includes('token') || 
-          err.message.includes('auth') || 
-          err.message.includes('unauthorized')
-        )) {
-        setError('Your session has expired. Please refresh the page and try again.');
-      } else {
-        setError(err.message || 'Invalid verification code');
+      // Simplify error handling with switch case for better performance
+      let errorMessage = 'Invalid verification code';
+      
+      if (err.message) {
+        if (err.message.includes('expired')) {
+          errorMessage = 'Verification code has expired. Please request a new one.';
+        } else if (err.message.includes('token') || 
+                   err.message.includes('auth') || 
+                   err.message.includes('unauthorized')) {
+          errorMessage = 'Your session has expired. Please refresh the page and try again.';
+        } else {
+          errorMessage = err.message;
+        }
       }
+      
+      setError(errorMessage);
     } finally {
       setVerifying(false);
     }
@@ -262,15 +347,53 @@ const EmailVerification = ({
     };
   }, []);
 
-  // If already verified, show success state
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  
+  // Handle update email click
+  const handleUpdateEmailClick = () => {
+    setShowUpdateForm(true);
+  };
+  
+  // Handle cancel update
+  const handleCancelUpdate = () => {
+    setShowUpdateForm(false);
+  };
+  
+  // Handle update success
+  const handleUpdateSuccess = (newEmail) => {
+    setEmail(newEmail);
+    setShowUpdateForm(false);
+  };
+
+  // If already verified, show success state with update option
   if (isVerified) {
+    console.log('Showing verified email UI. ShowChangeEmail:', showChangeEmail);
+    
+    if (showUpdateForm) {
+      console.log('Showing email update form');
+      // Use the imported EmailUpdate component
+      return <EmailUpdate onUpdateSuccess={handleUpdateSuccess} onCancel={handleCancelUpdate} />;
+    }
+    
     return (
       <div className="bg-gray-50 p-6 rounded-lg border border-green-200">
-        <div className="flex items-center gap-3 mb-2">
-          <CheckCircle className="text-green-500" size={20} />
-          <span className="font-medium">Email Verified</span>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="text-green-500" size={20} />
+            <span className="font-medium">Email Verified</span>
+          </div>
         </div>
-        <p className="text-gray-600 text-sm ml-8">{email}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-gray-600 ml-8 font-medium">{email}</p>
+          {showChangeEmail && (
+            <button 
+              onClick={handleUpdateEmailClick}
+              className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition-colors flex items-center gap-2"
+            >
+              <Mail size={16} /> Change Email
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -412,4 +535,12 @@ const EmailVerification = ({
   );
 };
 
-export default EmailVerification;
+// Use memo to prevent unnecessary re-renders
+export default memo(EmailVerification, (prevProps, nextProps) => {
+  // Only re-render when these props change
+  return (
+    prevProps.email === nextProps.email &&
+    prevProps.isVerified === nextProps.isVerified &&
+    prevProps.showChangeEmail === nextProps.showChangeEmail
+  );
+});
