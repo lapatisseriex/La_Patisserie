@@ -229,15 +229,24 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
 
   return (
     <div className="product-form">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">{isEditing ? 'Edit Product' : 'Add New Product'}</h2>
-        <button type="button" onClick={onClose} className="text-black hover:text-black">
+      {/* Header - Responsive layout with proper spacing */}
+      {/* RULE: To adjust header spacing/padding, change the mb-6 (bottom margin) value */}
+      {/* Larger numbers create more space below header, smaller numbers create less space */}
+      <div className="flex flex-row justify-between items-center gap-2 mb-8">
+        <h2 className="text-xl sm:text-2xl font-semibold">
+          {isEditing ? 'Edit Product' : 'Add New Product'}
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-black hover:text-black p-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
+        >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
+
 
       {/* Error/Success */}
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center">{error}</div>}
@@ -261,7 +270,11 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         </nav>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+        {/* RULE: To adjust vertical spacing between form elements, change space-y-8 */}
+        {/* Increased spacing for better spacious mobile layout */}
+        {/* Increase for more space: space-y-10, reduce for less space: space-y-6 */}
+        {/* Add responsive spacing with sm:space-y-8 to customize per screen size */}
         {/* BASIC TAB */}
         {activeTab === 'basic' && (
           <>
@@ -307,14 +320,54 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         {activeTab === 'media' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-black">Images*</label>
-              <MediaUploader type="image" onUploadComplete={handleImageUpload} />
-              <MediaPreview media={formData.images} onRemove={handleRemoveImage} type="image"/>
+              <label className="block text-sm font-medium text-black">Images <span className="text-red-500">*</span></label>
+
+              {formData.images.length > 0 && (
+                <div className="mb-4">
+                  <div className="mb-2 text-sm text-black flex items-center font-light">
+                    <span className="mr-2">✅</span> {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} uploaded
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <MediaPreview
+                      mediaUrls={formData.images}
+                      onRemove={handleRemoveImage}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="border-2 border-dashed border-white rounded-md p-6 bg-gray-100">
+                <MediaUploader type="image" onUploadComplete={handleImageUpload} />
+                <p className="text-xs text-black mt-3 text-center font-light">
+                  Add product images for display.<br />
+                  <span className="text-red-500 font-medium">At least one image is required.</span>
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-black mt-4">Videos</label>
-              <MediaUploader type="video" onUploadComplete={handleVideoUpload} />
-              <MediaPreview media={formData.videos} onRemove={handleRemoveVideo} type="video"/>
+
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-black">Videos (Optional)</label>
+
+              {formData.videos.length > 0 && (
+                <div className="mb-4">
+                  <div className="mb-2 text-sm text-black flex items-center font-light">
+                    <span className="mr-2">✅</span> {formData.videos.length} video{formData.videos.length !== 1 ? 's' : ''} uploaded
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <MediaPreview
+                      mediaUrls={formData.videos}
+                      onRemove={handleRemoveVideo}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="border-2 border-dashed border-white rounded-md p-6 bg-gray-100">
+                <MediaUploader type="video" onUploadComplete={handleVideoUpload} />
+                <p className="text-xs text-black mt-3 text-center font-light">
+                  Add promotional videos for this product (optional)
+                </p>
+              </div>
             </div>
           </>
         )}
@@ -342,6 +395,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                       <option value="kg">kg</option>
                       <option value="lb">lb</option>
                       <option value="oz">oz</option>
+                      <option value="ml">ml</option>
                     </select>
                   </div>
                   

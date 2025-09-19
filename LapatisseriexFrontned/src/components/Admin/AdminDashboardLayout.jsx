@@ -63,7 +63,7 @@ const AdminDashboardLayout = () => {
             {isSidebarOpen ? (
               <FaChevronLeft className="h-5 w-5" />
             ) : (
-              <FaChevronRight className="h-5 w-5" />
+              <FaChevronRight className="h-5 w-5 text-black" />
             )}
           </button>
         </div>
@@ -147,28 +147,11 @@ const AdminDashboardLayout = () => {
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top header bar */}
-        <header className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <button 
-            onClick={toggleSidebar}
-            className="p-1 rounded-md hover:bg-gray-100 md:hidden"
-          >
-            <FaBars className="h-5 w-5 text-gray-700" />
-          </button>
-          
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="font-medium text-gray-800">{user?.name || 'Admin'}</p>
-              <p className="text-sm text-gray-500 font-light">Administrator</p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
-            </div>
-          </div>
-        </header>
-        
-        {/* Main content area */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-6">
+        {/* Main content area - Spacious and responsive padding */}
+        {/* RULE: To adjust vertical spacing between header and dashboard content, change the p-4 sm:p-6 md:p-8 values */}
+        {/* For more spacing, use p-6 sm:p-8 md:p-10. For less, use p-3 sm:p-4 md:p-6 */}
+        {/* NOTE: This controls the padding AROUND the dashboard content area */}
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 md:p-8">
           <Outlet />
         </main>
       </div>

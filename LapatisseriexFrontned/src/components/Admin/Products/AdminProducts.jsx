@@ -227,17 +227,25 @@ const AdminProducts = () => {
         </div>
       </div>
 
-      {/* Product Form Modal */}
+      {/* Product Form Modal - Fixed height with scrolling content */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <ProductForm 
-              product={editingProduct} 
-              onClose={handleCloseForm} 
-              preSelectedCategory={selectedCategory}
-            />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-4 sm:p-6 md:p-8 lg:p-10">
+        <div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[95vh] sm:h-[90vh] md:h-[85vh] shadow-2xl flex flex-col">
+
+          {/* Header / padding wrapper */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+              <ProductForm
+                product={editingProduct}
+                onClose={handleCloseForm}
+                preSelectedCategory={selectedCategory}
+              />
+            </div>
           </div>
+
         </div>
+      </div>
+      
       )}
 
       {/* Products Count */}
@@ -396,8 +404,3 @@ const AdminProducts = () => {
 };
 
 export default AdminProducts;
-
-
-
-
-

@@ -279,7 +279,7 @@ const Products = () => {
       }
     };
     
-    loadAllCategoryProducts();
+    loadInitialProducts();
   }, [fetchProducts, categories, selectedCategory]);
 
   // ========================================================================================

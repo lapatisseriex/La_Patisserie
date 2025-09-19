@@ -148,20 +148,34 @@ const CategoryForm = ({ category = null, onClose }) => {
 
   return (
     <div className="category-form" style={{ fontFamily: 'sans-serif' }}>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">
+      {/* Header - Responsive layout with proper spacing */}
+      {/* RULE: To adjust header spacing/padding, change the mb-6 (bottom margin) value */}
+      {/* Larger numbers create more space below header, smaller numbers create less space */}
+      <div className="flex flex-row justify-between items-center gap-2 mb-2">
+        <h2 className="text-lg sm:text-xl font-bold">
           {isEditing ? 'Edit Category' : 'Add New Category'}
         </h2>
         <button
           type="button"
           onClick={onClose}
-          className="text-black hover:text-black"
+          className="text-black hover:text-black p-1"
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          <svg
+            className="w-5 h-5 sm:w-6 sm:h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       </div>
+
 
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center font-medium">
@@ -182,6 +196,9 @@ const CategoryForm = ({ category = null, onClose }) => {
       )}
 
       <form onSubmit={handleSubmit}>
+        {/* RULE: To adjust vertical spacing between form elements, change space-y-6 */}
+        {/* Increase for more space: space-y-8, reduce for less space: space-y-4 */}
+        {/* Add responsive spacing with sm:space-y-6 to customize per screen size */}
         {/* Category Name */}
         <div className="mb-4">
           <label htmlFor="name" className="block text-sm font-medium text-black mb-1">

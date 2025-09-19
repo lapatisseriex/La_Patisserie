@@ -115,16 +115,24 @@ const AdminCategories = () => {
         </div>
       )}
 
-      {/* Category Form Modal */}
+      {/* Category Form Modal - Fixed height with scrolling content */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ fontFamily: 'sans-serif' }}>
-            <CategoryForm 
-              category={editingCategory} 
-              onClose={handleCloseForm} 
-            />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-2 sm:p-4 md:p-6">
+<div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[70vh] sm:h-[65vh] md:h-[60vh] shadow-2xl flex flex-col">
+
+          {/* Header / padding wrapper */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-3 sm:p-4 md:p-6">
+              <CategoryForm
+                category={editingCategory}
+                onClose={handleCloseForm}
+              />
+            </div>
           </div>
+
         </div>
+      </div>
+
       )}
 
       {/* Categories List */}

@@ -3,6 +3,7 @@ import { FaUsers, FaShoppingCart, FaMapMarkerAlt, FaList, FaCheckCircle } from '
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -17,12 +18,28 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
-  
+  const [authReady, setAuthReady] = useState(false);
+
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Wait for Firebase auth to be ready
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setAuthReady(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!user || user.role !== 'admin') {
+      // Only proceed if auth is ready and we have both user and locations
+      if (!authReady || !user || !locations) {
+        return;
+      }
+
+      if (user.role !== 'admin') {
         setError("Unauthorized access");
         setLoading(false);
         return;
@@ -30,29 +47,29 @@ const AdminDashboard = () => {
 
       try {
         setLoading(true);
-        
+        setError(null);
+
         // Get ID token for authentication
-        const { getAuth } = await import('firebase/auth');
         const auth = getAuth();
         const idToken = await auth.currentUser.getIdToken(true);
         const headers = { Authorization: `Bearer ${idToken}` };
-        
+
         // Fetch users from the admin endpoint
         const usersResponse = await axios.get(`${API_URL}/admin/users`, { headers });
         const usersData = usersResponse.data || [];
-        
+
         console.log("User data fetched:", usersData);
-        
+
         // Set recent users (last 5)
         // Make sure we're sorting correctly based on the actual data structure
-        const sortedUsers = Array.isArray(usersData) ? 
-          [...usersData].sort((a, b) => 
+        const sortedUsers = Array.isArray(usersData) ?
+          [...usersData].sort((a, b) =>
             new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-          ).slice(0, 5) : 
+          ).slice(0, 5) :
           [];
-        
+
         setRecentUsers(sortedUsers);
-        
+
         // Update the stats with real data
         setStats({
           totalUsers: Array.isArray(usersData) ? usersData.length : 0,
@@ -61,7 +78,7 @@ const AdminDashboard = () => {
           totalProducts: 0, // We're setting this to 0 as requested
           activeLocations: locations ? locations.filter(loc => loc.isActive).length : 0
         });
-        
+
         setLoading(false);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -70,15 +87,18 @@ const AdminDashboard = () => {
       }
     };
 
-    if (user && locations) {
+    if (authReady && user && locations) {
       fetchDashboardData();
+    } else if (authReady && user && user.role !== 'admin') {
+      setError("Unauthorized access");
+      setLoading(false);
     }
-  }, [user, locations]);
+  }, [authReady, user, locations]);
 
   return (
-    <div className="container mx-auto px-4 py-6 pt-8 font-sans">
+    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 font-sans">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-black">Admin Dashboard</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-black">Admin Dashboard</h1>
         <p className="text-black font-light">Welcome back, Admin</p>
       </div>
 

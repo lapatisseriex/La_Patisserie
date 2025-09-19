@@ -45,8 +45,15 @@ const Profile = () => {
     console.log('Creating initial form data with:');
     console.log('User data:', userData);
     console.log('Saved data:', savedData);
-    
-    return {
+
+    // Extract IDs from userData if they are objects
+    const userLocationId = typeof userData.location === 'object' ? userData.location?._id || '' : userData.location || '';
+    const userHostelId = typeof userData.hostel === 'object' ? userData.hostel?._id || '' : userData.hostel || '';
+
+    console.log('Extracted user location ID:', userLocationId, 'from:', userData.location);
+    console.log('Extracted user hostel ID:', userHostelId, 'from:', userData.hostel);
+
+    const result = {
       // Personal information
       name: savedData.name || userData.name || '',
       phone: userData.phone || '',  // Phone cannot be changed
@@ -54,15 +61,17 @@ const Profile = () => {
       dob: savedData.dob || (userData.dob ? formatDate(userData.dob) : ''),
       gender: savedData.gender || userData.gender || '',
       anniversary: savedData.anniversary || (userData.anniversary ? formatDate(userData.anniversary) : ''),
-      
+
       // Location information
       country: savedData.country || userData.country || 'India',
-      location: savedData.location || (typeof userData.location === 'object' ? userData.location?._id || '' : userData.location || ''),
-      hostel: savedData.hostel || (typeof userData.hostel === 'object' ? userData.hostel?._id || '' : userData.hostel || ''),
-      
-      // Add any new fields here in the future, following the same pattern:
-      // newField: savedData.newField || userData.newField || defaultValue,
+      location: savedData.location || userLocationId,  // Prioritize savedData.location (now as ID), fallback to extracted ID
+      hostel: savedData.hostel || userHostelId,  // Prioritize savedData.hostel (now as ID), fallback to extracted ID
     };
+
+    console.log('Final hostel data (should be ID):', result.hostel, 'type:', typeof result.hostel);
+    console.log('Final location data (should be ID):', result.location, 'type:', typeof result.location);
+
+    return result;
   };
 
   // Format date helper function (moved here for clarity)
@@ -80,10 +89,11 @@ const Profile = () => {
   // Get saved user data from localStorage
   const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
   
-  // Log for debugging
-  console.log('Profile component initializing with:');
-  console.log('User data:', user);
-  console.log('Saved user data:', savedUserData);
+    // Log for debugging
+    console.log('Profile component initializing with:');
+    console.log('User data:', user);
+    console.log('Saved user data:', savedUserData);
+    console.log('Hostel persistence check - savedUserData.hostel:', savedUserData.hostel, 'type:', typeof savedUserData.hostel);
   
   // Initialize form data with user and saved data
   const [formData, setFormData] = useState(createInitialFormData(user, savedUserData));
@@ -151,16 +161,37 @@ const Profile = () => {
     }
   }, []);
 
+  // Fetch hostels on mount if location exists (for display in read-only view)
+  useEffect(() => {
+    if (formData.location && hostels.length === 0 && !hostelsLoading && !isEditMode) {
+      console.log('Fetching hostels on profile load - location already selected:', formData.location);
+      fetchHostelsByLocation(formData.location).catch(error => {
+        console.error('Error fetching hostels on profile load:', error);
+      });
+    }
+  }, []); // Only run once on mount
+
   // Fetch hostels when location changes
   useEffect(() => {
     if (formData.location) {
+      console.log('Fetching hostels for location:', formData.location);
       fetchHostelsByLocation(formData.location).then(hostelsData => {
-        if (formData.hostel && !hostelsData.find(h => h._id === formData.hostel)) {
-          setFormData(prev => ({
-            ...prev,
-            hostel: ''
-          }));
+        console.log('Fetched hostels:', hostelsData);
+        if (formData.hostel && hostelsData.length > 0) {
+          // Check if current hostel exists in the fetched data
+          const currentHostelExists = hostelsData.find(h => h._id === formData.hostel);
+          if (!currentHostelExists) {
+            console.log('Current hostel not found in fetched data, clearing selection');
+            setFormData(prev => ({
+              ...prev,
+              hostel: ''
+            }));
+          } else {
+            console.log('Current hostel verified:', formData.hostel);
+          }
         }
+      }).catch(error => {
+        console.error('Error fetching hostels:', error);
       });
     } else {
       clearHostels();
@@ -170,6 +201,28 @@ const Profile = () => {
       }));
     }
   }, [formData.location]);
+
+  // Fetch hostels when entering edit mode if location is already selected
+  // This ensures fresh data from context even if hostel was previously selected
+  useEffect(() => {
+    if (isEditMode && formData.location && !hostelsLoading) {
+      console.log('Entering edit mode - ensuring hostels are fetched for location:', formData.location);
+      fetchHostelsByLocation(formData.location).then(hostelsData => {
+        console.log('Fresh hostels fetched for edit mode:', hostelsData);
+        if (formData.hostel && hostelsData.length > 0) {
+          const currentHostelExists = hostelsData.find(h => h._id === formData.hostel);
+          if (!currentHostelExists) {
+            console.log('Saved hostel not found in fresh data, it will be cleared if location changes');
+            // Don't clear here, let the user handle it if they change location
+          } else {
+            console.log('Saved hostel verified in fresh data:', formData.hostel);
+          }
+        }
+      }).catch(error => {
+        console.error('Error fetching fresh hostels for edit mode:', error);
+      });
+    }
+  }, [isEditMode, formData.location]);
 
   // Format today's date for max value in date inputs
   const today = new Date().toISOString().split('T')[0];
@@ -513,6 +566,7 @@ const Profile = () => {
     
     console.log("Submitting profile data:", profileData);
     console.log("Gender being submitted:", profileData.gender);
+    console.log("Hostel data being submitted:", profileData.hostel, "type:", typeof profileData.hostel);
     
     try {
       // IMPORTANT: Check if this is the admin's profile
@@ -520,13 +574,24 @@ const Profile = () => {
       console.log('Is admin user:', isAdmin);
       
       const success = await updateProfile(profileData);
-      
+
       if (success) {
         setSuccessMessage('Profile updated successfully!');
         setIsEditMode(false);
         localStorage.removeItem('profileEditMode');
-        
-        // Even on successful update, ensure we keep the email and anniversary in localStorage
+
+        // Even on successful update, ensure we keep location and hostel permanently in savedUserData
+        // This provides persistent data across sessions, similar to how the header works
+        const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
+        savedUserData.location = formData.location;
+        savedUserData.hostel = formData.hostel;
+        savedUserData.email = formData.email;
+        savedUserData.anniversary = formData.anniversary;
+        savedUserData.isEmailVerified = isEmailVerified;
+        localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
+        console.log('Permanently saved location and hostel to savedUserData:', savedUserData.location, savedUserData.hostel);
+
+        // Also update cached user for immediate availability
         const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
         cachedUser.email = formData.email || cachedUser.email || '';
         cachedUser.anniversary = formData.anniversary || cachedUser.anniversary || '';
@@ -990,29 +1055,56 @@ const Profile = () => {
               <label className="block text-sm font-medium text-gray-700">Hostel/Residence</label>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <select
-                  name="hostel"
-                  value={formData.hostel || ''}
-                  onChange={handleChange}
-                  disabled={loading || hostelsLoading || !isEditMode}
-                  className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
-                    !isEditMode ? 'bg-gray-50 text-gray-700' : ''
-                  }`}
-                >
-                  <option value="">Select hostel/residence (Optional)</option>
-                  {hostels && hostels.length > 0 ? (
-                    hostels.map(hostel => (
-                      <option key={hostel._id} value={hostel._id}>
-                        {hostel.name}
+                {!isEditMode ? (
+                  // Read-only display showing the selected hostel name
+                  // Try to get name from user context (cached data with full objects) first, then context lookup
+                  <div className={`${inputClasses} cursor-not-allowed flex items-center justify-between`}>
+                    <span>
+                      {(() => {
+                        if (!formData.hostel) return 'No hostel selected';
+
+                        // First, try to get name from user's hostel object (in cached user data)
+                        if (user?.hostel && typeof user.hostel === 'object' && user.hostel._id === formData.hostel) {
+                          return user.hostel.name || 'Unknown Hostel';
+                        }
+
+                        // Then try context lookup if hostels are loaded
+                        if (hostels && hostels.length > 0) {
+                          const hostelObj = hostels.find(h => h._id === formData.hostel);
+                          if (hostelObj) return hostelObj.name;
+                        }
+
+                        // Finally, show loading state if we have an ID but haven't found the name yet
+                        return 'Loading hostel details...';
+                      })()}
+                    </span>
+                  </div>
+                ) : (
+                  // Edit mode with select dropdown
+                  <select
+                    name="hostel"
+                    value={formData.hostel || ''}
+                    onChange={handleChange}
+                    disabled={loading || hostelsLoading}
+                    className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none`}
+                  >
+                    <option value="">Select hostel/residence (Optional)</option>
+                    {hostels && hostels.length > 0 ? (
+                      hostels.map(hostel => (
+                        <option key={hostel._id} value={hostel._id}>
+                          {hostel.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>
+                        {hostelsLoading ? 'Loading hostels...' : 'No hostels available'}
                       </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>
-                      {hostelsLoading ? 'Loading hostels...' : 'No hostels available'}
-                    </option>
-                  )}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    )}
+                  </select>
+                )}
+                {isEditMode && (
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                )}
               </div>
             </div>
           )}

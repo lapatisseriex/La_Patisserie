@@ -524,47 +524,24 @@ const Header = ({ isAdminView = false }) => {
                 
                 {/* Location Dropdown */}
                 {isLocationDropdownOpen && (
-                  <div 
-                    className="absolute top-full left-0 mt-3 w-72 bg-white shadow-2xl rounded-lg overflow-hidden z-50 border border-gray-200 transform opacity-0 scale-95 animate-dropdown" 
+                  <div
+                    className="absolute top-full left-0 mt-3 w-56 bg-white shadow-2xl rounded-lg overflow-hidden z-50 border border-gray-200 transform opacity-0 scale-95 animate-dropdown"
                     style={{fontFamily: 'sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
                     onMouseLeave={() => setIsLocationDropdownOpen(false)}
                   >
                     <div className="px-4 py-3 bg-gradient-to-r from-gray-900 to-black text-white border-b border-gray-700">
-                      <h3 className="text-xs font-medium tracking-wider">AVAILABLE DELIVERY LOCATIONS</h3>
+                      <h3 className="text-xs font-medium tracking-wider">SETTINGS</h3>
                     </div>
-                    {locationsLoading ? (
-                      <div className="p-5 text-center">
-                        <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-black"></div>
-                        <p className="mt-2 text-sm text-gray-600">Loading locations...</p>
-                      </div>
-                    ) : locations.length > 0 ? (
-                      <ul className="py-2 max-h-60 sm:max-h-72 overflow-y-auto custom-scrollbar">
-                        {locations.map((location, index) => (
-                          <li key={location._id} className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 transition-all duration-200" style={{animationDelay: `${index * 50}ms`}}>
-                            <button
-                              className={`w-full text-left px-4 py-3 text-xs sm:text-sm transition-all duration-200 hover:pl-6 ${
-                                user?.location?._id === location._id
-                                  ? 'bg-gradient-to-r from-gray-100 to-gray-50 text-black font-medium border-l-3 border-black shadow-sm'
-                                  : 'text-gray-700 hover:text-black'
-                              }`}
-                              onClick={() => handleLocationSelect(location._id)}
-                              style={{fontFamily: 'sans-serif'}}
-                            >
-                              <span className="flex items-center">
-                                <MapPin className="h-3 w-3 mr-2 opacity-60" />
-                                {location.area}, {location.city}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="p-4 text-center text-xs sm:text-sm text-gray-500">No delivery locations available</div>
-                    )}
-                    <div className="p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-white border-t border-gray-200">
-                      <p className="text-xs text-gray-500 italic text-center" style={{fontFamily: 'sans-serif'}}>
-                        ✨ Orders can only be placed in these locations
-                      </p>
+                    <div className="p-2">
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-200"
+                        style={{fontFamily: 'sans-serif'}}
+                        onClick={() => setIsLocationDropdownOpen(false)}
+                      >
+                        <Settings className="h-4 w-4 text-gray-600" />
+                        <span>Edit in settings</span>
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -573,29 +550,40 @@ const Header = ({ isAdminView = false }) => {
           </div>
           
           {/* Navigation Links - Desktop (user/cart section) - Premium Design */}
-          <div className="hidden md:flex items-center space-x-3">
-            
+          <div className="hidden md:flex items-center space-x-4">
+
             {user && (
               <>
+                {/* Admin Dashboard Button - Show only for admins - Positioned first */}
+                {user.role === 'admin' && (
+                  <div className="bg-black rounded-lg">
+                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-white hover:bg-gray-800 rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
+                      <Settings className="h-5 w-5 text-white group-hover:text-gray-200 transition-colors duration-300" />
+                      <span className="ml-2 text-sm font-medium">Dashboard</span>
+                    </Link>
+                  </div>
+                )}
+
                 {/* User Menu - Uses role-based display */}
                 <UserMenu />
-                   {/* Favorites Link - Premium Design with Tooltip */}
-              {user && (
-                <div className="tooltip">
-                  <div className="tooltip-content">
-                    <div className="animate-bounce text-orange-400 -rotate-10 text-xl font-black select-none">Favorites</div>
+
+                {/* Favorites Link - Premium Design with Tooltip */}
+                {user && (
+                  <div className="tooltip">
+                    <div className="tooltip-content">
+                      <div className="animate-bounce text-orange-400 -rotate-10 text-xl font-black select-none">Favorites</div>
+                    </div>
+                    <Link to="/favorites" className="flex items-center px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
+                      <Heart className="h-4 w-4 text-gray-600 group-hover:text-red-500 transition-colors duration-300" />
+                      {favorites?.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
+                          {favorites.length}
+                        </span>
+                      )}
+                    </Link>
                   </div>
-                  <Link to="/favorites" className="flex items-center px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
-                    <Heart className="h-4 w-4 text-gray-600 group-hover:text-red-500 transition-colors duration-300" />
-                    {favorites?.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
-                        {favorites.length}
-                      </span>
-                    )}
-                  </Link>
-                </div>
-              )}
-                
+                )}
+
                 {/* Cart component - Premium Design with Tooltip */}
                 <div className="tooltip">
                   <div className="tooltip-content">
@@ -678,27 +666,27 @@ const Header = ({ isAdminView = false }) => {
     ></div>
     
     {/* Mobile Menu - Outside header for proper stacking */}
-    <div 
+    <div
       className={`md:hidden fixed inset-y-0 right-0 w-[85%] max-w-sm z-[9999] transform transition-transform duration-300 ease-in-out ${
         isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'
       } flex flex-col bg-white`}
       style={{fontFamily: 'sans-serif'}}
     >
-        <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-white">
+        <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white">
           <Link to="/" className="flex items-center" onClick={() => closeMobileMenu()}>
             <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-10" />
             <span className="cake-logo-text ml-2 text-base font-medium">La Patisserie</span>
           </Link>
-          <button 
-            className="text-gray-600 hover:text-black p-1 rounded hover:bg-gray-50 transition-colors duration-200"
+          <button
+            className="text-gray-600 hover:text-black p-2 rounded-md hover:bg-gray-50 transition-colors duration-200"
             onClick={toggleMobileMenu}
             aria-label="Close menu"
           >
-            <X className="h-5 w-5" />
+            <X className="h-6 w-6" />
           </button>
         </div>
-        
-        <div className="px-6 py-4 bg-gray-50 flex-1 overflow-y-auto">
+
+        <div className="px-6 py-6 bg-gray-50 flex-1 overflow-y-auto">
           {/* Mobile Search - Compact Design */}
           <div className="relative mb-8">
             <input 

@@ -441,31 +441,25 @@ export const AuthProvider = ({ children }) => {
       // Save user email, name, anniversary date, and other important fields before logout for persistence
       let savedUserData = {};
       if (user) {
-        // Extract only what we need to preserve
-        const { email, name, anniversary, isEmailVerified, gender, dob, country, location, hostel } = user;
-        savedUserData = { 
-          email, 
-          name,
-          anniversary, 
-          isEmailVerified,
-          gender,
-          dob,
-          country,
-          location,
-          hostel
+        // Extract only what we need to preserve - save location/hostel as IDs, not full objects
+        const locationId = typeof user.location === 'object' ? user.location?._id || user.location : user.location || '';
+        const hostelId = typeof user.hostel === 'object' ? user.hostel?._id || user.hostel : user.hostel || '';
+
+        savedUserData = {
+          email: user.email || '',
+          name: user.name || '',
+          anniversary: user.anniversary || '',
+          isEmailVerified: user.isEmailVerified || false,
+          gender: user.gender || '',
+          dob: user.dob || '',
+          country: user.country || 'India',
+          location: locationId,  // Save as ID, not full object
+          hostel: hostelId  // Save as ID, not full object
         };
-        
-        // Make sure email and verification status are preserved
-        if (!savedUserData.email && user.email) {
-          savedUserData.email = user.email;
-        }
-        
-        if (savedUserData.isEmailVerified === undefined && user.isEmailVerified !== undefined) {
-          savedUserData.isEmailVerified = user.isEmailVerified;
-        }
-        
+
         localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
-        console.log('Saving user data before logout:', savedUserData);
+        console.log('Saving user data before logout (IDs only for location/hostel):', savedUserData);
+        console.log('Hostel data type on save:', typeof savedUserData.hostel, 'value:', savedUserData.hostel);
       }
       
       await signOut(auth);
@@ -591,8 +585,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export default AuthContext;
-
-
-
-
-
