@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
 import { useProduct } from '../context/ProductContext/ProductContext';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext/AuthContext';
 import MediaDisplay from '../components/common/MediaDisplay';
 import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
+import './ProductDisplayPage-mobile.css';
 
 const ProductDisplayPage = () => {
   const { productId } = useParams();
@@ -18,6 +19,17 @@ const ProductDisplayPage = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { fetchRecentlyViewed, trackProductView } = useRecentlyViewed();
   const { user } = useAuth();
+  
+  // Add custom CSS for ProductDisplayPage to hide header on mobile
+  useEffect(() => {
+    // Add class to body when component mounts
+    document.body.classList.add('product-display-page-mobile');
+    
+    return () => {
+      // Remove class when component unmounts
+      document.body.classList.remove('product-display-page-mobile');
+    };
+  }, []);
 
   const [product, setProduct] = useState(null);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
@@ -31,6 +43,30 @@ const ProductDisplayPage = () => {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isCareInstructionsOpen, setIsCareInstructionsOpen] = useState(false);
   const [isDeliveryInfoOpen, setIsDeliveryInfoOpen] = useState(false);
+  
+  // Reference to the main "Reserve Yours" button to determine when to show sticky bar
+  const reserveButtonRef = useRef(null);
+  // Offset for sticky bar to sit below desktop header
+  const [stickyTopOffset, setStickyTopOffset] = useState(0);
+
+  // Measure header height on desktop so sticky bar doesn't hide under it
+  useEffect(() => {
+    const computeOffset = () => {
+      const isDesktop = window.innerWidth >= 768;
+      if (isDesktop) {
+        const headerEl = document.querySelector('header');
+        const headerHeight = headerEl ? headerEl.offsetHeight : 0;
+        setStickyTopOffset(headerHeight);
+      } else {
+        // On mobile header is hidden for this page
+        setStickyTopOffset(0);
+      }
+    };
+
+    computeOffset();
+    window.addEventListener('resize', computeOffset);
+    return () => window.removeEventListener('resize', computeOffset);
+  }, []);
   
   // Scroll detection states for sticky mini navbar
   const [showStickyNavbar, setShowStickyNavbar] = useState(false);
@@ -144,28 +180,35 @@ const ProductDisplayPage = () => {
     }
   }, [product?.images, isHoveringImage]);
 
-  // Scroll detection for sticky mini navbar and breadcrumb
+  // Scroll detection for sticky mini navbar based on "Reserve Yours" button position (all devices)
   useEffect(() => {
+    const getReserveButtonAbsoluteTop = () => {
+      if (reserveButtonRef.current) {
+        const rect = reserveButtonRef.current.getBoundingClientRect();
+        // Use bottom edge so the bar appears after the whole button has passed
+        return rect.bottom + window.scrollY;
+      }
+      // Fallback if ref isn't available yet
+      return 600;
+    };
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      const isMobile = window.innerWidth < 768;
-      
-      // Show navbar when user scrolls DOWN past the Reserve button (around 600px)
-      const shouldShowNavbar = currentScrollY > 600;
-      
-      // Show breadcrumb when user scrolls past initial content
-      // On mobile, show at 150px; on desktop, show at 200px to avoid overlap issues
-      const breadcrumbThreshold = isMobile ? 150 : 200;
-      const shouldShowBreadcrumb = currentScrollY > breadcrumbThreshold;
-      
-      setShowStickyNavbar(shouldShowNavbar);
-      setShowStickyBreadcrumb(shouldShowBreadcrumb);
+      const reserveTop = getReserveButtonAbsoluteTop();
+      // Small offset so it appears just after crossing the button
+      const shouldShowNavbar = currentScrollY > reserveTop - 50;
+
+      if (shouldShowNavbar !== showStickyNavbar) {
+        setShowStickyNavbar(shouldShowNavbar);
+      }
+      // Breadcrumbs are removed in UI; keep hidden
+      if (showStickyBreadcrumb) setShowStickyBreadcrumb(false);
       setLastScrollY(currentScrollY);
     };
 
     // Throttled scroll listener
     let ticking = false;
-    const scrollListener = () => {
+    const onScroll = () => {
       if (!ticking) {
         requestAnimationFrame(() => {
           handleScroll();
@@ -175,12 +218,23 @@ const ProductDisplayPage = () => {
       }
     };
 
-    window.addEventListener('scroll', scrollListener, { passive: true });
-    
-    return () => {
-      window.removeEventListener('scroll', scrollListener);
+    // Recalculate on resize as layout shifts can change positions
+    const onResize = () => {
+      handleScroll();
     };
-  }, [lastScrollY]);
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+
+    // Initial check after mount to ensure DOM is ready
+    const timeoutId = setTimeout(() => handleScroll(), 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [reserveButtonRef, showStickyNavbar, showStickyBreadcrumb]);
 
   const handleAddToCart = async () => {
     if (!product || totalStock === 0) return;
@@ -241,7 +295,12 @@ const ProductDisplayPage = () => {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center bg-white border border-black p-12 rounded-none shadow-lg">
-          <h2 className="text-2xl font-bold text-black mb-4">Product Not Found</h2>
+          <h2 className="text-2xl font-bold mb-4" style={{ 
+            background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+          }}>Product Not Found</h2>
           <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
           <button
             onClick={() => navigate('/')}
@@ -265,59 +324,18 @@ const ProductDisplayPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Sticky Breadcrumb - Shows on scroll */}
-      {product && (
-        <div className={`fixed left-0 right-0 z-20 transition-all duration-300 ease-out ${
-          showStickyBreadcrumb 
-            ? 'translate-y-0 opacity-100' 
-            : '-translate-y-full opacity-0'
-        }`}
-        style={{
-          top: 'var(--header-height, 130px)'
-        }}>
-          <div className="bg-gray-50 border-b border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
-              <nav className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
-                <button
-                  onClick={() => navigate('/')}
-                  className="text-gray-600 hover:text-black transition-colors hover:underline truncate"
-                >
-                  Home
-                </button>
-                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                
-                {product?.category?.name && (
-                  <>
-                    <button
-                      onClick={() => navigate(`/products?category=${product.category._id}`)}
-                      className="text-gray-600 hover:text-black transition-colors hover:underline truncate"
-                    >
-                      {product.category.name}
-                    </button>
-                    <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                  </>
-                )}
-                
-                <span className="text-black font-medium truncate max-w-[150px] sm:max-w-none">
-                  {product?.name}
-                </span>
-              </nav>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Sticky Breadcrumb - completely removed */}
 
-      {/* Enhanced Sticky Mini Navbar - Shows on scroll down past product info */}
+      {/* Enhanced Sticky Mini Navbar - Shows on scroll down past Reserve button (all devices) */}
       {product && (
-        <div className={`fixed left-0 right-0 z-10 transition-all duration-300 ease-out ${
+        <div className={`fixed left-0 right-0 z-50 transition-all duration-300 ease-out ${
           showStickyNavbar 
             ? 'translate-y-0 opacity-100' 
             : '-translate-y-full opacity-0'
         }`}
         style={{
-          top: showStickyBreadcrumb 
-            ? 'calc(var(--header-height, 130px) + 36px)' // Header height + breadcrumb height (36px including padding)
-            : 'var(--header-height, 130px)'
+          top: stickyTopOffset, // Below header on desktop, top on mobile
+          zIndex: 100 // Ensure above page content and header if necessary
         }}>
         {/* Backdrop blur for better visual separation */}
         <div className="bg-white border-t border-gray-200 shadow-md">
@@ -418,6 +436,7 @@ const ProductDisplayPage = () => {
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-black text-white hover:bg-gray-800 shadow-md hover:shadow-lg'
                   }`}
+                  data-role="sticky-reserve"
                 >
                   <span className="hidden sm:inline">Reserve Yours</span>
                   <span className="sm:hidden">Reserve</span>
@@ -429,75 +448,116 @@ const ProductDisplayPage = () => {
         </div>
       )}
       
-      {/* Clean Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-black hover:text-gray-700 transition-colors group"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">Back to Products</span>
-            </button>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleFavoriteToggle}
-                className={`p-2 transition-colors ${
-                  isFavorite(product._id)
-                    ? 'text-red-600'
-                    : 'text-gray-600 hover:text-black'
-                }`}
-              >
-                <Heart className={`w-5 h-5 ${isFavorite(product._id) ? 'fill-current' : ''}`} />
-              </button>
-              <button className="p-2 text-gray-600 hover:text-black transition-colors">
-                <Share2 className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Breadcrumb Navigation */}
-      <div className="bg-gray-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-3">
-          <nav className="flex items-center space-x-2 text-sm">
-            <button
-              onClick={() => navigate('/')}
-              className="text-gray-600 hover:text-black transition-colors hover:underline"
-            >
-              Home
-            </button>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-            
-            {product?.category?.name && (
-              <>
-                <button
-                  onClick={() => navigate(`/products?category=${product.category._id}`)}
-                  className="text-gray-600 hover:text-black transition-colors hover:underline"
-                >
-                  {product.category.name}
-                </button>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
-              </>
-            )}
-            
-            <span className="text-black font-medium truncate">
-              {product?.name}
-            </span>
-          </nav>
-        </div>
-      </div>
+      {/* Clean Header - completely removed */}
+      
+      {/* Breadcrumb Navigation - completely removed */}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Image Gallery - Left Side */}
+          {/* Image Gallery */}
           <div className="lg:col-span-7">
-            <div className="sticky top-4 flex gap-4">
+            {/* Mobile Image Display Layout (based on reference image) */}
+            <div className="md:hidden">
+              <div className="relative w-full">
+                {/* Mobile Image Container */}
+                <div className="relative w-full overflow-hidden">
+                  <div 
+                    className="relative w-full aspect-square cursor-pointer"
+                    onClick={handleImageZoom}
+                  >
+                    <MediaDisplay
+                      src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* Navigation Controls - Back Arrow and Search */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(-1);
+                        }}
+                        className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                      >
+                        <ArrowLeft className="w-5 h-5 text-gray-700" />
+                      </button>
+                    </div>
+                    
+                    {/* Search and Share Icons */}
+                    <div className="absolute top-3 right-3 flex gap-2 z-10">
+                      <button 
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                      >
+                        <div className="w-5 h-5 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          </svg>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                      >
+                        <div className="w-5 h-5 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                          </svg>
+                        </div>
+                      </button>
+                    </div>
+                    
+                    {/* Bottom Action Buttons */}
+                    <div className="absolute bottom-3 left-3 right-3 flex justify-between z-10">
+                      <button 
+                        className="w-10 h-10 bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                      >
+                        <div className="w-5 h-5 flex items-center justify-center text-white">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20v-6M6 20V10M18 20V4"></path>
+                          </svg>
+                        </div>
+                      </button>
+                      <button 
+                        className="w-10 h-10 bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                      >
+                        <div className="w-5 h-5 flex items-center justify-center text-white">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="12" r="4"></circle>
+                          </svg>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Image dots indicator for multiple images */}
+                {product.images && product.images.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+                    {product.images.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-2 h-2 transition-all duration-300 ${
+                          index === selectedImageIndex
+                            ? 'bg-white scale-110'
+                            : 'bg-white/50 hover:bg-white/80'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Desktop Image Display Layout - Original Layout */}
+            <div className="hidden md:flex sticky top-4 gap-4">
               {/* Thumbnail Images - Left Side */}
               {product.images && product.images.length > 1 && (
                 <div className="flex flex-col gap-2 w-20 md:w-24 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
@@ -533,38 +593,21 @@ const ProductDisplayPage = () => {
                     <MediaDisplay
                       src={product.images?.[selectedImageIndex] || product.images?.[0]}
                       alt={product.name}
-                      className="w-full h-full object-cover transition-all duration-1000 ease-in-out group-hover:scale-105"
+                      className="w-full h-full object-cover"
                       style={{
-                        transition: 'opacity 1s ease-in-out, transform 1s ease-in-out',
                         opacity: 1
                       }}
                     />
                     
-                    {/* Zoom Overlay */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
-                      <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {/* Zoom icon always visible */}
+                    <div className="absolute inset-0 bg-black bg-opacity-5 transition-all flex items-center justify-center">
+                      <ZoomIn className="w-8 h-8 text-white opacity-70" />
                     </div>
                     
                     {/* Stock Status */}
                     {totalStock === 0 && (
                       <div className="absolute top-4 right-4 bg-black text-white px-3 py-1 text-sm">
                         Out of Stock
-                      </div>
-                    )}
-
-                    {/* Image dots indicator for multiple images - only show on mobile when thumbnails are hidden */}
-                    {product.images && product.images.length > 1 && (
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 md:hidden">
-                        {product.images.map((_, index) => (
-                          <div
-                            key={index}
-                            className={`w-2 h-2 transition-all duration-300 ${
-                              index === selectedImageIndex
-                                ? 'bg-black scale-110'
-                                : 'bg-gray-400 hover:bg-gray-600'
-                            }`}
-                          />
-                        ))}
                       </div>
                     )}
                   </div>
@@ -579,7 +622,12 @@ const ProductDisplayPage = () => {
               
               {/* Product Title & Info */}
               <div className="space-y-4">
-                <h1 className="text-2xl md:text-3xl font-medium text-black leading-tight">
+                <h1 className="text-2xl md:text-3xl font-medium leading-tight" style={{ 
+                  background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+                }}>
                   {product.name}
                 </h1>
                 
@@ -714,6 +762,7 @@ const ProductDisplayPage = () => {
                     onClick={handleBuyNow}
                     disabled={totalStock === 0}
                     className="w-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-400 font-medium py-4 px-6 transition-colors text-lg"
+                    ref={reserveButtonRef}
                   >
                     {totalStock === 0 ? 'Out of Stock' : 'Reserve Yours'}
                   </button>
@@ -880,7 +929,12 @@ const ProductDisplayPage = () => {
         {(recentlyViewed.length > 0 || sameCategoryProducts.length > 0) && (
           <section className="mt-16">
             <div className="text-center mb-8 border-b border-gray-200 pb-6">
-              <h2 className="text-2xl font-semibold text-black mb-2">
+              <h2 className="text-2xl font-semibold mb-2" style={{ 
+                background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+              }}>
                 {user && recentlyViewed.length > 0 ? "Recently Viewed" : "You Might Also Like"}
               </h2>
               <p className="text-gray-600">

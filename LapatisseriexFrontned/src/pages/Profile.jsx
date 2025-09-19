@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext/AuthContext';
 import Profile from '../components/Auth/Profile/Profile';
 import './ProfileStyles.css';
+import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
+import ProductCard from '../components/Products/ProductCard';
 import { 
   User, 
   Package, 
@@ -27,6 +29,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('main');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const { favorites, loading: favLoading, error: favError, fetchFavorites } = useFavorites();
   
   // Log user data to check profile photo
   console.log('Profile Page - User data:', user);
@@ -36,6 +39,13 @@ const ProfilePage = () => {
     await logout();
     navigate('/');
   };
+
+  // Ensure favorites are refreshed when user switches to the Favorites tab
+  useEffect(() => {
+    if (activeTab === 'favorites' && user) {
+      fetchFavorites();
+    }
+  }, [activeTab, user, fetchFavorites]);
 
   if (loading) {
     return (
@@ -346,7 +356,12 @@ const ProfilePage = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">My Favorites</h3>
+              <div>
+                <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">My Favorites</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {favorites?.length ? `${favorites.length} item${favorites.length !== 1 ? 's' : ''}` : 'No items yet'}
+                </p>
+              </div>
               <Link 
                 to="/favorites" 
                 className="px-5 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
@@ -354,19 +369,52 @@ const ProfilePage = () => {
                 View All Favorites
               </Link>
             </div>
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                <Heart className="h-10 w-10 text-gray-500" />
+
+            {/* Loading state */}
+            {favLoading && (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-black mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading your favorites...</p>
               </div>
-              <h4 className="text-xl font-serif font-medium text-black mb-3">No Favorites Yet</h4>
-              <p className="text-gray-600 mb-6">Save your favorite items for quick access</p>
-              <Link 
-                to="/products" 
-                className="inline-flex items-center px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
-              >
-                Discover Products
-              </Link>
-            </div>
+            )}
+
+            {/* Error state */}
+            {!favLoading && favError && (
+              <div className="bg-red-50 rounded-lg border border-red-200 p-6 text-center shadow-md">
+                <p className="text-red-600 font-medium">{favError}</p>
+                <button
+                  onClick={() => fetchFavorites()}
+                  className="mt-3 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* Favorites grid (show up to 6) */}
+            {!favLoading && !favError && favorites && favorites.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {favorites.slice(0, 6).map((product) => (
+                  <div key={product._id} className="w-full">
+                    <ProductCard product={product} compact={true} className="w-full h-full" />
+                  </div>
+                ))}
+              </div>
+            ) : (!favLoading && !favError && (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
+                  <Heart className="h-10 w-10 text-gray-500" />
+                </div>
+                <h4 className="text-xl font-serif font-medium text-black mb-3">No Favorites Yet</h4>
+                <p className="text-gray-600 mb-6">Save your favorite items for quick access</p>
+                <Link 
+                  to="/products" 
+                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
+                >
+                  Discover Products
+                </Link>
+              </div>
+            ))}
           </div>
         );
 

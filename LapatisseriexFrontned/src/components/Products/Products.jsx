@@ -201,8 +201,9 @@ const Products = () => {
         
         setProductsByCategory(productsByCat);
         
-        // Scroll to selected category if any (only on larger screens)
-        if (selectedCategory && window.innerWidth >= 768 && !userInteractingRef.current) {
+        // Scroll to selected category if any (on all screens, including mobile)
+        // This specifically supports landing from Home with ?category=... on mobile
+        if (selectedCategory && !userInteractingRef.current) {
           setTimeout(() => {
             const selectedCategoryRef = categoryRefs.current[selectedCategory];
             if (selectedCategoryRef) {
@@ -393,7 +394,12 @@ const Products = () => {
     return (
       <div className="mb-12">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl md:text-2xl font-bold text-black">{title}</h2>
+          <h2 className="text-xl md:text-2xl font-bold" style={{ 
+            background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+          }}>{title}</h2>
         </div>
         
         {/* Mobile: 2-Column Grid Layout */}
@@ -519,7 +525,12 @@ const Products = () => {
               <div className="mt-8">
                 {/* Display products by category */}
                 <div className="mt-16">
-                  <h2 className="text-2xl lg:text-3xl font-bold text-black mb-8">
+                  <h2 className="text-2xl lg:text-3xl font-bold mb-8" style={{ 
+                    background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+                  }}>
                     All Categories
                   </h2>
                   {categories.map(category => {

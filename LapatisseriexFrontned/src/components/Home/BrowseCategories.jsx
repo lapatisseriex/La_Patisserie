@@ -40,7 +40,7 @@ const BrowseCategories = ({ categories }) => {
         {displayCategories.length > 1 && (
           <div className="w-1/2 grid grid-cols-2 gap-4 lg:gap-5">
             {displayCategories.slice(1, 5).map((category, index) => (
-              <div key={category._id} className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition-shadow duration-300">
+              <div key={category._id} className="bg-white rounded-lg overflow-hidden shadow">
                 <Link to={`/products?category=${category._id}`} className="block h-full">
                   <div className="relative h-full flex flex-col">
                     <img 
@@ -60,7 +60,7 @@ const BrowseCategories = ({ categories }) => {
       </div>      {/* Second row for desktop - 4 equal columns */}
       <div className="hidden md:grid grid-cols-4 gap-4 lg:gap-5 mt-4 lg:mt-5">
         {displayCategories.slice(5, 9).map((category, index) => (
-          <div key={category._id} className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition-shadow duration-300">
+          <div key={category._id} className="bg-white rounded-lg overflow-hidden shadow">
             <Link to={`/products?category=${category._id}`} className="block h-full">
               <div className="relative h-full flex flex-col">
                 <img 

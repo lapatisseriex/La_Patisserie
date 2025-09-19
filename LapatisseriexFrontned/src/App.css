@@ -33,13 +33,9 @@ body {
   font-family: 'Quicksand', sans-serif;
 }
 
-/* Modern button hover effects */
+/* Button styles without hover transform */
 button, a {
   transition: all 0.3s ease;
-}
-
-button:hover, a:hover {
-  transform: translateY(-2px);
 }
 
 /* Enhanced typography */

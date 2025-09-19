@@ -12,16 +12,38 @@ const api = axios.create({
   },
 });
 
-// Get Firebase auth instance
-const auth = getAuth();
+// Lazy Firebase auth accessor to avoid failures before app initialization
+let _auth;
+const getAuthSafe = () => {
+  if (_auth) return _auth;
+  try {
+    _auth = getAuth();
+  } catch (e) {
+    // Firebase app not initialized yet; return undefined and try again later
+    _auth = undefined;
+  }
+  return _auth;
+};
+
+// In-memory caches for GET requests and in-flight de-duplication
+const requestCache = new Map(); // key -> { data, expiry }
+const inFlight = new Map(); // key -> Promise
+
+const buildKey = (method, url, paramsOrData) => {
+  try {
+    return `${method.toUpperCase()} ${url} :: ${JSON.stringify(paramsOrData || {})}`;
+  } catch {
+    return `${method.toUpperCase()} ${url}`;
+  }
+};
 
 // Function to get a fresh token
 const getFreshToken = async () => {
   try {
-    const currentUser = auth.currentUser;
+    const currentUser = getAuthSafe()?.currentUser;
     if (currentUser) {
-      // Force refresh the token
-      const token = await currentUser.getIdToken(true);
+      // Do NOT force refresh every time; let backend 401 trigger refresh path
+      const token = await currentUser.getIdToken();
       localStorage.setItem('authToken', token);
       return token;
     }
@@ -35,7 +57,7 @@ const getFreshToken = async () => {
 // Add a request interceptor to include auth token
 api.interceptors.request.use(
   async (config) => {
-    // Always try to get a fresh token before making API requests
+    // Try to get a valid token (no forced refresh). If absent, request proceeds unauthenticated.
     const token = await getFreshToken();
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
@@ -61,7 +83,10 @@ api.interceptors.response.use(
       
       try {
         // Try to get a fresh token
-        const newToken = await getFreshToken();
+        const newToken = await (async () => {
+          const currentUser = getAuthSafe()?.currentUser;
+          return currentUser ? currentUser.getIdToken(true) : null;
+        })();
         if (newToken) {
           // Update the header with the new token
           originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
@@ -78,6 +103,43 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Helper for GET with de-duplication and optional caching
+// usage: apiGet('/users/favorites', { params: {}, cache: true, cacheTTL: 30000, dedupe: true })
+export const apiGet = async (url, options = {}) => {
+  const { params, cache = false, cacheTTL = 30000, dedupe = true, headers } = options;
+  const key = buildKey('GET', url, params);
+
+  // Return cached if valid
+  if (cache && requestCache.has(key)) {
+    const { data, expiry } = requestCache.get(key);
+    if (!expiry || expiry > Date.now()) {
+      return data;
+    }
+    // Expired
+    requestCache.delete(key);
+  }
+
+  // De-duplicate in-flight
+  if (dedupe && inFlight.has(key)) {
+    return inFlight.get(key);
+  }
+
+  const reqPromise = api
+    .get(url, { params, headers })
+    .then((resp) => {
+      if (cache) {
+        requestCache.set(key, { data: resp.data, expiry: cacheTTL ? Date.now() + cacheTTL : undefined });
+      }
+      return resp.data;
+    })
+    .finally(() => {
+      inFlight.delete(key);
+    });
+
+  if (dedupe) inFlight.set(key, reqPromise);
+  return reqPromise;
+};
 
 // Email verification services
 export const emailService = {

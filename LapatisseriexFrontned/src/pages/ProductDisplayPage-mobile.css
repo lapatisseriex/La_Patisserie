@@ -1,0 +1,30 @@
+/* ProductDisplayPage-mobile.css */
+/* Hide header and breadcrumbs on mobile for ProductDisplayPage */
+@media (max-width: 767px) {
+  /* Hide main header */
+  body.product-display-page-mobile header {
+    display: none !important;
+  }
+  
+  /* Hide breadcrumbs */
+  body.product-display-page-mobile .bg-gray-50.border-b.border-gray-200 {
+    display: none !important;
+  }
+  
+  /* Remove padding at top that accounts for header space */
+  body.product-display-page-mobile main {
+    padding-top: 0 !important;
+  }
+  
+  /* Ensure no spacing at the top of the container */
+  body.product-display-page-mobile .max-w-7xl {
+    padding-top: 0 !important;
+  }
+  
+  /* Show sticky product bar at the top */
+  body.product-display-page-mobile [class*="fixed left-0 right-0"] {
+    top: 0 !important;
+    position: fixed !important;
+    z-index: 50 !important;
+  }
+}

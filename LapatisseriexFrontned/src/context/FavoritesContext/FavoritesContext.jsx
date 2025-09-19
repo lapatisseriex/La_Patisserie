@@ -1,6 +1,7 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../AuthContext/AuthContext';
+import api, { apiGet } from '../../services/apiService';
 
 const FavoritesContext = createContext();
 
@@ -11,6 +12,36 @@ export const FavoritesProvider = ({ children }) => {
   const { user } = useAuth();
 
   const API_URL = import.meta.env.VITE_API_URL;
+  const fetchingRef = useRef(false);
+  const favoritesRef = useRef([]);
+
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const cacheKey = (uid) => `favorites_cache_${uid}`;
+
+  const readCache = () => {
+    if (!user?.uid) return null;
+    try {
+      const raw = localStorage.getItem(cacheKey(user.uid));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed.timestamp && parsed.timestamp + CACHE_TTL > Date.now()) {
+        return parsed.favorites || [];
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeCache = (data) => {
+    if (!user?.uid) return;
+    try {
+      localStorage.setItem(
+        cacheKey(user.uid),
+        JSON.stringify({ favorites: data, timestamp: Date.now() })
+      );
+    } catch {}
+  };
 
   // Fetch user's favorites
   const fetchFavorites = async () => {
@@ -20,24 +51,31 @@ export const FavoritesProvider = ({ children }) => {
     }
 
     try {
-      setLoading(true);
+      // Only show spinner if we don't have cached data displayed
+      const hasData = favoritesRef.current && favoritesRef.current.length > 0;
+      if (!hasData) setLoading(true);
       setError(null);
+      if (fetchingRef.current) return; // guard against rapid re-entry
+      fetchingRef.current = true;
 
-      // Get ID token from Firebase
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
-      const idToken = await auth.currentUser.getIdToken(true);
-
-      const response = await axios.get(`${API_URL}/users/favorites`, {
-        headers: { Authorization: `Bearer ${idToken}` }
+      // Use apiGet with de-dup and short cache to minimize redundant calls
+      const data = await apiGet('/users/favorites', {
+        cache: true,
+        cacheTTL: 15000,
+        dedupe: true
       });
 
-      setFavorites(response.data.favorites || []);
+      const list = data.favorites || [];
+      setFavorites(list);
+      favoritesRef.current = list;
+      writeCache(list);
     } catch (err) {
       console.error('Error fetching favorites:', err);
       setError('Failed to load favorites');
       setFavorites([]);
+      favoritesRef.current = [];
     } finally {
+      fetchingRef.current = false;
       setLoading(false);
     }
   };
@@ -49,27 +87,26 @@ export const FavoritesProvider = ({ children }) => {
       return false;
     }
 
-    // Optimistic update - add immediately to UI with placeholder
-    const placeholderProduct = { _id: productId, name: 'Loading...', images: [] };
-    setFavorites(prevFavorites => [...prevFavorites, placeholderProduct]);
+  // Avoid duplicating if already present in UI
+    setFavorites(prev => {
+      const next = prev.some(f => f._id === productId) ? prev : [...prev, { _id: productId, name: 'Loading...', images: [] }];
+      favoritesRef.current = next;
+      writeCache(next);
+      return next;
+    });
 
     try {
-      // Get ID token from Firebase
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
-      const idToken = await auth.currentUser.getIdToken(true);
-
-      const response = await axios.post(`${API_URL}/users/favorites/${productId}`, {}, {
-        headers: { Authorization: `Bearer ${idToken}` }
-      });
+      // Auth headers handled by apiService interceptor
+      const response = await api.post(`/users/favorites/${productId}`, {});
 
       // Update with actual product data if returned by API
       if (response.data.product) {
-        setFavorites(prevFavorites => 
-          prevFavorites.map(fav => 
-            fav._id === productId ? response.data.product : fav
-          )
-        );
+        setFavorites(prevFavorites => {
+          const next = prevFavorites.map(fav => fav._id === productId ? response.data.product : fav);
+          favoritesRef.current = next;
+          writeCache(next);
+          return next;
+        });
       }
 
       return true;
@@ -78,9 +115,12 @@ export const FavoritesProvider = ({ children }) => {
       setError(err.response?.data?.message || 'Failed to add to favorites');
       
       // Rollback optimistic update on error
-      setFavorites(prevFavorites => 
-        prevFavorites.filter(fav => fav._id !== productId)
-      );
+      setFavorites(prevFavorites => {
+        const next = prevFavorites.filter(fav => fav._id !== productId);
+        favoritesRef.current = next;
+        writeCache(next);
+        return next;
+      });
       
       return false;
     }
@@ -99,14 +139,8 @@ export const FavoritesProvider = ({ children }) => {
     );
 
     try {
-      // Get ID token from Firebase
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
-      const idToken = await auth.currentUser.getIdToken(true);
-
-      await axios.delete(`${API_URL}/users/favorites/${productId}`, {
-        headers: { Authorization: `Bearer ${idToken}` }
-      });
+      // Auth headers handled by apiService interceptor
+      await api.delete(`/users/favorites/${productId}`);
 
       return true;
     } catch (err) {
@@ -115,7 +149,12 @@ export const FavoritesProvider = ({ children }) => {
       
       // Rollback optimistic update on error
       if (favoriteItem) {
-        setFavorites(prevFavorites => [...prevFavorites, favoriteItem]);
+        setFavorites(prevFavorites => {
+          const next = [...prevFavorites, favoriteItem];
+          favoritesRef.current = next;
+          writeCache(next);
+          return next;
+        });
       }
       
       return false;
@@ -138,6 +177,18 @@ export const FavoritesProvider = ({ children }) => {
 
   // Fetch favorites when user changes
   useEffect(() => {
+    // Load from cache immediately for instant UI
+    const cached = readCache();
+    if (cached && cached.length) {
+      setFavorites(cached);
+      favoritesRef.current = cached;
+      setLoading(false);
+    } else {
+      // Reset if no cache
+      setFavorites([]);
+      favoritesRef.current = [];
+    }
+    // Always revalidate in background
     fetchFavorites();
   }, [user]);
 

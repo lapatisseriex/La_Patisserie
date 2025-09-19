@@ -192,8 +192,13 @@ const CategorySwiperHome = ({
           
           {/* Text Section */}
           <div className="w-full md:w-2/5 text-left">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-              Endless Choices, Find Your Next Favorite
+            <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ 
+              background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+            }}>
+              Delightful Pastries & Elegant Cakes
             </h2>
             <p className="text-xs text-gray-500 mb-4">
               Swipe left or right to explore more

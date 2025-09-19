@@ -116,7 +116,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   return (
     <div
       onClick={handleCardClick}
-      className={`overflow-hidden bg-white shadow-sm transition-all duration-500 ease-in-out h-72 cursor-pointer border border-gray-200 ${
+      className={`overflow-hidden bg-white shadow-sm h-72 cursor-pointer border border-gray-200 ${
         featured
           ? 'h-full flex flex-col'
           : compact

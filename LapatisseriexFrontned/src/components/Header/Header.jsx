@@ -471,10 +471,23 @@ const Header = ({ isAdminView = false }) => {
           <div className="hidden md:flex items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center header-logo-text">
-                <span className="text-lg sm:text-xl md:text-2xl font-bold text-black truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'sans-serif'}}>La Patisserie</span>
+                <span className="cake-logo-text text-lg sm:text-xl md:text-2xl font-bold truncate max-w-[120px] sm:max-w-none">
+                  La Patisserie
+                  <div className="sugar-sprinkles">
+                    {[...Array(15)].map((_, i) => (
+                      <span 
+                        key={i} 
+                        className="sprinkle" 
+                        style={{
+                          left: `${Math.random() * 100}%`,
+                          top: `${Math.random() * 100}%`,
+                          animationDelay: `${Math.random() * 0.5}s`
+                        }}
+                      />
+                    ))}
+                  </div>
+                </span>
               </Link>
-              
-           
             </div>
             
             {/* Navigation Links moved next to logo text on the same line - Premium Design */}
@@ -566,27 +579,37 @@ const Header = ({ isAdminView = false }) => {
               <>
                 {/* User Menu - Uses role-based display */}
                 <UserMenu />
-                   {/* Favorites Link - Premium Design */}
+                   {/* Favorites Link - Premium Design with Tooltip */}
               {user && (
-                <Link to="/favorites" className="flex items-center px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
-                  <Heart className="h-4 w-4 text-gray-600 group-hover:text-red-500 transition-colors duration-300" />
-                  {favorites?.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
-                      {favorites.length}
-                    </span>
-                  )}
-                </Link>
+                <div className="tooltip">
+                  <div className="tooltip-content">
+                    <div className="animate-bounce text-orange-400 -rotate-10 text-xl font-black select-none">Favorites</div>
+                  </div>
+                  <Link to="/favorites" className="flex items-center px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
+                    <Heart className="h-4 w-4 text-gray-600 group-hover:text-red-500 transition-colors duration-300" />
+                    {favorites?.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
+                        {favorites.length}
+                      </span>
+                    )}
+                  </Link>
+                </div>
               )}
                 
-                {/* Cart component - Premium Design */}
-                <Link to="/cart" className="flex items-center px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
-                  <ShoppingBag className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" />
-                  {memoizedCartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
-                      {memoizedCartCount}
-                    </span>
-                  )}
-                </Link>
+                {/* Cart component - Premium Design with Tooltip */}
+                <div className="tooltip">
+                  <div className="tooltip-content">
+                    <div className="animate-bounce text-orange-400 -rotate-10 text-xl font-black select-none">Cart</div>
+                  </div>
+                  <Link to="/cart" className="flex items-center px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
+                    <ShoppingBag className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" />
+                    {memoizedCartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
+                        {memoizedCartCount}
+                      </span>
+                    )}
+                  </Link>
+                </div>
               </>
             )}
             
@@ -664,7 +687,7 @@ const Header = ({ isAdminView = false }) => {
         <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-white">
           <Link to="/" className="flex items-center" onClick={() => closeMobileMenu()}>
             <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-10" />
-            <span className="ml-2 text-base font-medium text-black" style={{fontFamily: 'sans-serif'}}>La Patisserie</span>
+            <span className="cake-logo-text ml-2 text-base font-medium">La Patisserie</span>
           </Link>
           <button 
             className="text-gray-600 hover:text-black p-1 rounded hover:bg-gray-50 transition-colors duration-200"

@@ -7,6 +7,7 @@ import {
   signOut
 } from 'firebase/auth';
 import axios from 'axios';
+import api from '../../services/apiService';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -62,8 +63,8 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Get ID token
-          const idToken = await firebaseUser.getIdToken(true); // Force refresh token
+          // Get ID token (avoid forced refresh to reduce quota usage)
+          const idToken = await firebaseUser.getIdToken();
           
           // Store token in localStorage for API requests
           localStorage.setItem('authToken', idToken);
@@ -114,9 +115,8 @@ export const AuthProvider = ({ children }) => {
           
           // Get fresh user data from /api/users/me to ensure we have the latest
           try {
-            const meResponse = await axios.get(`${API_URL}/users/me`, { 
-              headers: { Authorization: `Bearer ${idToken}` } 
-            });
+            // Use shared api instance so the interceptor attaches token and handles 401 refresh
+            const meResponse = await api.get(`/users/me`);
             
             if (meResponse.data.success) {
               // Get saved user data (if any)
@@ -150,6 +150,13 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (error) {
           console.error("Error verifying user with backend:", error);
+          // If we hit quota or network issues, keep cached user so app remains usable
+          if (!user) {
+            const cached = localStorage.getItem('cachedUser');
+            if (cached) {
+              try { setUser(JSON.parse(cached)); } catch {}
+            }
+          }
           setAuthError("Failed to verify authentication with server");
         }
       } else {

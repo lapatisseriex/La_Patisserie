@@ -100,11 +100,11 @@ const TextCategoryBar = ({
   };
 
   return (
-    <div className="w-full bg-white relative">
+    <div className="w-full bg-white relative shadow-sm">
       {/* Scrollable categories container - responsive layout */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto space-x-4 md:space-x-6 lg:space-x-8 xl:space-x-10 px-4 py-4 scrollbar-hide scroll-smooth relative z-10 justify-start md:justify-center"
+        className="flex overflow-x-auto space-x-6 md:space-x-8 lg:space-x-10 xl:space-x-12 px-6 py-5 scrollbar-hide scroll-smooth relative z-10 justify-start md:justify-center border-b border-gray-100"
         style={{
           scrollbarWidth: 'none', /* Firefox */
           msOverflowStyle: 'none', /* IE and Edge */
@@ -116,21 +116,21 @@ const TextCategoryBar = ({
             ref={(el) => categoryRefs.current['all'] = el}
             className={`flex-shrink-0 cursor-pointer transition-all duration-300 relative group ${
               selectedCategory === null 
-                ? 'text-black font-semibold' 
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'text-black font-medium' 
+                : 'text-gray-500 hover:text-black'
             }`}
             onClick={handleAllCategories}
           >
-            <span className="text-sm md:text-base whitespace-nowrap py-3 px-1 relative">
+            <span className="text-sm md:text-base whitespace-nowrap py-3 px-2 relative tracking-wide">
               All Categories
               {/* Hover effect underline */}
-              <div className={`absolute bottom-1 left-1 right-1 h-0.5 bg-gray-300 transition-all duration-300 ${
+              <div className={`absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200 transition-all duration-300 ${
                 selectedCategory === null ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
               }`} />
             </span>
             {/* Active state underline */}
             <div 
-              className={`absolute bottom-1 left-1 right-1 h-0.5 bg-black transition-all duration-300 ${
+              className={`absolute bottom-0 left-0 right-0 h-[2px] bg-black transition-all duration-300 ${
                 selectedCategory === null ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'
               }`}
             />
@@ -142,7 +142,7 @@ const TextCategoryBar = ({
               .fill(0)
               .map((_, index) => (
                 <div key={`loading-${index}`} className="flex-shrink-0">
-                  <div className="w-16 md:w-20 lg:w-24 h-6 md:h-7 bg-gray-200 animate-pulse rounded-md"></div>
+                  <div className="w-16 md:w-20 lg:w-24 h-6 md:h-7 bg-gray-100 animate-pulse rounded-sm"></div>
                 </div>
               ))
           : categories.length > 0
@@ -152,21 +152,21 @@ const TextCategoryBar = ({
                 ref={(el) => categoryRefs.current[category._id || category.id] = el}
                 className={`flex-shrink-0 cursor-pointer transition-all duration-300 relative group ${
                   selectedCategory === (category._id || category.id) 
-                    ? 'text-black font-semibold' 
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'text-black font-medium' 
+                    : 'text-gray-500 hover:text-black'
                 }`}
                 onClick={() => onSelectCategory(category._id || category.id)}
               >
-                <span className="text-sm md:text-base whitespace-nowrap py-3 px-1 relative">
+                <span className="text-sm md:text-base whitespace-nowrap py-3 px-2 relative tracking-wide">
                   {category.name}
                   {/* Hover effect underline */}
-                  <div className={`absolute bottom-1 left-1 right-1 h-0.5 bg-gray-300 transition-all duration-300 ${
+                  <div className={`absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200 transition-all duration-300 ${
                     selectedCategory === (category._id || category.id) ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
                   }`} />
                 </span>
                 {/* Active state underline */}
                 <div 
-                  className={`absolute bottom-1 left-1 right-1 h-0.5 bg-black transition-all duration-300 ${
+                  className={`absolute bottom-0 left-0 right-0 h-[2px] bg-black transition-all duration-300 ${
                     selectedCategory === (category._id || category.id) ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'
                   }`}
                 />
@@ -174,18 +174,18 @@ const TextCategoryBar = ({
             ))
           : error ? (
             <div className="flex-shrink-0">
-              <div className="text-center text-sm text-red-500 py-3 px-4">Failed to load categories</div>
+              <div className="text-center text-sm text-gray-900 py-3 px-4">Failed to load categories</div>
             </div>
           ) : (
             <div className="flex-shrink-0">
-              <div className="text-center text-sm text-gray-500 py-3 px-4">No categories available</div>
+              <div className="text-center text-sm text-gray-600 py-3 px-4">No categories available</div>
             </div>
           )}
       </div>
       
       {/* Subtle scroll indicators */}
-      <div className="absolute top-0 left-0 w-6 h-full bg-gradient-to-r from-white to-transparent pointer-events-none" />
-      <div className="absolute top-0 right-0 w-6 h-full bg-gradient-to-l from-white to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 w-12 h-full bg-gradient-to-r from-white to-transparent pointer-events-none" />
+      <div className="absolute top-0 right-0 w-12 h-full bg-gradient-to-l from-white to-transparent pointer-events-none" />
     </div>
   );
 };

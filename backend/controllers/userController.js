@@ -318,15 +318,15 @@ export const addRecentlyViewed = asyncHandler(async (req, res) => {
     item => item.productId.toString() !== productId
   );
 
-  // Add to front of recently viewed (limit to 20 items)
+  // Add to front of recently viewed (limit to 3 items)
   user.recentlyViewed.unshift({
     productId: productId,
     viewedAt: new Date()
   });
 
-  // Keep only latest 20 recently viewed items
-  if (user.recentlyViewed.length > 20) {
-    user.recentlyViewed = user.recentlyViewed.slice(0, 20);
+  // Keep only latest 3 recently viewed items
+  if (user.recentlyViewed.length > 3) {
+    user.recentlyViewed = user.recentlyViewed.slice(0, 3);
   }
 
   await user.save();
@@ -358,7 +358,12 @@ export const getRecentlyViewed = asyncHandler(async (req, res) => {
   }
 
   // Filter out any null products (in case products were deleted)
-  const validRecentlyViewed = user.recentlyViewed.filter(item => item.productId);
+  let validRecentlyViewed = user.recentlyViewed.filter(item => item.productId);
+
+  // Ensure we only return the latest 3 items
+  if (validRecentlyViewed.length > 3) {
+    validRecentlyViewed = validRecentlyViewed.slice(0, 3);
+  }
 
   res.status(200).json({
     success: true,
