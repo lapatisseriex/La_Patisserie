@@ -148,6 +148,9 @@ function App() {
                   <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
                 </Route>
               </Route>
+              
+              {/* Catch-all route for any undefined paths */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
                 </CartProvider>
