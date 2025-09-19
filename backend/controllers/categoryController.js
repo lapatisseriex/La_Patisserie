@@ -2,6 +2,7 @@ import asyncHandler from 'express-async-handler';
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
 import { deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
+import { cache } from '../utils/cache.js';
 
 // @desc    Get all categories
 // @route   GET /api/categories
@@ -192,7 +193,20 @@ export const deleteCategory = asyncHandler(async (req, res) => {
 // @route   GET /api/categories/:id/products
 // @access  Public
 export const getCategoryProducts = asyncHandler(async (req, res) => {
-  const category = await Category.findById(req.params.id);
+  const categoryId = req.params.id;
+  const cacheKey = `category-products-${categoryId}`;
+  
+  // Check if we have cached data
+  const cachedProducts = cache.get(cacheKey);
+  if (cachedProducts) {
+    console.log(`Using cached products for category: ${categoryId}`);
+    return res.status(200).json(cachedProducts);
+  }
+  
+  // No cache hit, fetch from database
+  console.log(`Cache miss for category: ${categoryId}, fetching from database`);
+  
+  const category = await Category.findById(categoryId);
   
   if (!category) {
     res.status(404);
@@ -201,9 +215,12 @@ export const getCategoryProducts = asyncHandler(async (req, res) => {
   
   // Find products for this category
   const products = await Product.find({ 
-    category: req.params.id,
+    category: categoryId,
     isActive: true
   }).sort('-createdAt');
+  
+  // Store in cache for 5 minutes (300 seconds)
+  cache.set(cacheKey, products, 300);
   
   res.status(200).json(products);
 });

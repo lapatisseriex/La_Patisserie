@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from './ProductCard';
+import ProductCardSkeleton from './ProductCardSkeleton';
 import { useProduct } from '../../context/ProductContext/ProductContext';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import CategorySwiper from './CategorySwiper';
@@ -51,12 +52,36 @@ const Products = () => {
   const stickyTimeoutRef = useRef(null);
   const previousCategoryRef = useRef(null);
 
-  // Initialize Intersection Observer
+  // Function to load products for a specific category
+  const loadCategoryProducts = useCallback(async (categoryId) => {
+    // Skip if we already have products for this category
+    if (productsByCategory[categoryId] && productsByCategory[categoryId].length > 0) {
+      return;
+    }
+    
+    try {
+      const result = await fetchProducts({
+        limit: 20,
+        category: categoryId,
+        sort: 'createdAt:-1',
+      });
+      
+      // Update the products for this category
+      setProductsByCategory(prev => ({
+        ...prev,
+        [categoryId]: result.products || []
+      }));
+    } catch (err) {
+      console.error(`Error loading products for category ${categoryId}:`, err);
+    }
+  }, [fetchProducts, productsByCategory]);
+
+  // Initialize Intersection Observer with lazy loading
   useEffect(() => {
     const options = {
       root: null,
-      rootMargin: '-30% 0px -40% 0px', // Adjusted for better detection
-      threshold: 0.2, // Increased threshold for more reliable detection
+      rootMargin: '-20% 0px -30% 0px', // Increased visibility area to preload earlier
+      threshold: 0.1, // Lower threshold to detect sooner
     };
 
     const observerInstance = new IntersectionObserver((entries) => {
@@ -67,9 +92,19 @@ const Products = () => {
       let highestRatio = 0;
       
       entries.forEach((entry) => {
-        if (entry.isIntersecting && entry.intersectionRatio > highestRatio) {
-          highestRatio = entry.intersectionRatio;
-          mostVisibleEntry = entry;
+        if (entry.isIntersecting) {
+          // For any intersecting category section, load its products
+          const categoryId = entry.target.id.replace('category-section-', '');
+          if (categoryId !== 'all') {
+            // Start loading category products when it comes into view
+            loadCategoryProducts(categoryId);
+          }
+          
+          // Track which one is most visible for active category highlight
+          if (entry.intersectionRatio > highestRatio) {
+            highestRatio = entry.intersectionRatio;
+            mostVisibleEntry = entry;
+          }
         }
       });
       
@@ -87,7 +122,7 @@ const Products = () => {
         observerInstance.disconnect();
       }
     };
-  }, []);
+  }, [loadCategoryProducts]);
 
   // Sync category from URL and detect navigation from home page
   useEffect(() => {
@@ -172,37 +207,46 @@ const Products = () => {
     }
   }, [productsByCategory, allProducts]);
 
-  // Load products for all categories
+  // Load products more efficiently - load all products first, then only selected category if needed
+  // Load products in two stages: first a small batch of general products, then specific categories as needed
   useEffect(() => {
-    const loadAllCategoryProducts = async () => {
+    const loadInitialProducts = async () => {
       if (!categories.length) return;
       
       setIsLoading(true);
       setError(null);
       
       try {
-        // First get all products
+        // Load a minimal set of products for initial display (just 20)
+        // This speeds up initial page load significantly
         const allProductsResult = await fetchProducts({
-          limit: 100,
+          limit: 20,
           sort: 'createdAt:-1',
         });
         setAllProducts(allProductsResult.products || []);
         
-        // Then get products for each category
+        // Initialize an empty products by category object
         const productsByCat = {};
-        for (const category of categories) {
+        
+        // If we have a selected category, pre-load only that specific category's products
+        // This ensures the user's selected category loads first
+        if (selectedCategory) {
+          console.log(`Pre-loading selected category: ${selectedCategory}`);
           const result = await fetchProducts({
             limit: 20,
-            category: category._id,
+            category: selectedCategory,
             sort: 'createdAt:-1',
           });
-          productsByCat[category._id] = result.products || [];
+          productsByCat[selectedCategory] = result.products || [];
+          
+          // For visible categories near the selected one, prefetch them in the background
+          // This will be handled by the intersection observer instead
         }
         
         setProductsByCategory(productsByCat);
+        setIsLoading(false);
         
         // Scroll to selected category if any (on all screens, including mobile)
-        // This specifically supports landing from Home with ?category=... on mobile
         if (selectedCategory && !userInteractingRef.current) {
           setTimeout(() => {
             const selectedCategoryRef = categoryRefs.current[selectedCategory];
@@ -388,8 +432,15 @@ const Products = () => {
   }, []);
 
   // Function to render product row (responsive: vertical on mobile, horizontal on desktop)
-  const renderProductRow = (products, title) => {
-    if (!products || products.length === 0) return null;
+  const renderProductRow = (products, title, categoryId) => {
+    // If there's no products array yet for this category, it's still loading
+    const isLoading = !products;
+    
+    // If there are no products and we're not loading, don't render anything
+    if (!isLoading && (!products || products.length === 0)) return null;
+    
+    // Create placeholder skeletons for loading state
+    const skeletons = Array(4).fill(0).map((_, i) => i);
     
     return (
       <div className="mb-12">
@@ -405,17 +456,27 @@ const Products = () => {
         {/* Mobile: 2-Column Grid Layout */}
         <div className="block md:hidden">
           <div className="grid grid-cols-2 gap-3 auto-rows-fr">
-            {products.map(product => (
-              <motion.div
-                key={product._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="w-full h-full"
-              >
-                <ProductCard product={product} className="w-full h-full transition-shadow duration-300 flex flex-col" compact={true} />
-              </motion.div>
-            ))}
+            {isLoading ? (
+              // Show skeletons when loading
+              skeletons.map(index => (
+                <div key={`skeleton-${categoryId}-${index}`} className="w-full h-full">
+                  <ProductCardSkeleton />
+                </div>
+              ))
+            ) : (
+              // Show actual products when loaded
+              products.map(product => (
+                <motion.div
+                  key={product._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full h-full"
+                >
+                  <ProductCard product={product} className="w-full h-full transition-shadow duration-300 flex flex-col" compact={true} />
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
 
@@ -424,17 +485,27 @@ const Products = () => {
           <div className="relative">
             <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide scroll-smooth snap-x"
                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {products.map(product => (
-                <motion.div
-                  key={product._id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex-shrink-0 w-64 md:w-80 snap-start"
-                >
-                  <ProductCard product={product} className="w-full transition-shadow duration-300" />
-                </motion.div>
-              ))}
+              {isLoading ? (
+                // Show skeletons when loading
+                skeletons.map(index => (
+                  <div key={`skeleton-desktop-${categoryId}-${index}`} className="flex-shrink-0 w-64 md:w-80 snap-start">
+                    <ProductCardSkeleton />
+                  </div>
+                ))
+              ) : (
+                // Show actual products when loaded
+                products.map(product => (
+                  <motion.div
+                    key={product._id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-shrink-0 w-64 md:w-80 snap-start"
+                  >
+                    <ProductCard product={product} className="w-full transition-shadow duration-300" />
+                  </motion.div>
+                ))
+              )}
             </div>
             {/* Gradient fade effect for scroll indication */}
             <div className="absolute top-0 right-0 w-16 h-full bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none"></div>
@@ -543,7 +614,7 @@ const Products = () => {
                         id={`category-section-${category._id}`}
                         className={`mb-16 ${isSelectedCategory ? 'bg-gray-50 p-4 rounded-xl' : ''}`}
                       >
-                        {renderProductRow(productsByCategory[category._id], category.name)}
+                        {renderProductRow(productsByCategory[category._id], category.name, category._id)}
                       </div>
                     );
                   })}

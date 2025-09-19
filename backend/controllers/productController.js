@@ -2,6 +2,7 @@ import asyncHandler from 'express-async-handler';
 import Product from '../models/productModel.js';
 import Category from '../models/categoryModel.js';
 import { deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
+import { cache } from '../utils/cache.js';
 
 // @desc    Get all products with optional filtering
 // @route   GET /api/products
@@ -79,20 +80,49 @@ export const getProducts = asyncHandler(async (req, res) => {
   // Calculate pagination
   const skip = (page - 1) * limit;
   
-  // Execute query
-  const products = await Product.find(filter)
-    .populate({
-      path: 'category',
-      select: 'name images description isActive',
-      // Don't filter out inactive categories for admin views
-      match: req.user?.role === 'admin' ? {} : { isActive: true }
-    })
-    .sort('-createdAt')
-    .skip(skip)
-    .limit(Number(limit));
+  // Create a cache key based on the query parameters
+  const queryHash = JSON.stringify({
+    filter,
+    skip,
+    limit,
+    isAdmin: req.user?.role === 'admin'
+  });
+  
+  // Generate a cache key from the hash
+  const cacheKey = `products-${Buffer.from(queryHash).toString('base64')}`;
+  
+  // Check if we have a cache hit
+  const cachedData = cache.get(cacheKey);
+  let products, totalProducts;
+  
+  if (cachedData) {
+    console.log('Cache hit for products query');
+    products = cachedData.products;
+    totalProducts = cachedData.totalProducts;
+  } else {
+    console.log('Cache miss for products query, fetching from database');
+    
+    // Execute query
+    products = await Product.find(filter)
+      .populate({
+        path: 'category',
+        select: 'name images description isActive',
+        // Don't filter out inactive categories for admin views
+        match: req.user?.role === 'admin' ? {} : { isActive: true }
+      })
+      .sort('-createdAt')
+      .skip(skip)
+      .limit(Number(limit));
 
-  // Get total count for pagination
-  const totalProducts = await Product.countDocuments(filter);
+    // Get total count for pagination
+    totalProducts = await Product.countDocuments(filter);
+    
+    // Store in cache - shorter timeout (2 minutes) for product listing
+    // Admin requests aren't cached (they need fresh data)
+    if (!req.user?.role === 'admin') {
+      cache.set(cacheKey, { products, totalProducts }, 120);
+    }
+  }
   
   res.status(200).json({
     products,

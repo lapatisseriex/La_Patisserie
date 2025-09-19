@@ -43,6 +43,30 @@ export const AuthProvider = ({ children }) => {
   // Backend API URL from environment variable
   const API_URL = import.meta.env.VITE_API_URL;
 
+  // Handle authentication expiration events
+  useEffect(() => {
+    const handleAuthExpired = (event) => {
+      console.log('Auth expired event received');
+      // Clear user data
+      setUser(null);
+      // Show login modal
+      setAuthType('login');
+      setIsAuthPanelOpen(true);
+      
+      // Show error if available
+      if (event.detail?.error) {
+        setAuthError('Your session has expired. Please log in again.');
+      }
+    };
+    
+    // Listen for auth expired events from apiService
+    window.addEventListener('auth:expired', handleAuthExpired);
+    
+    return () => {
+      window.removeEventListener('auth:expired', handleAuthExpired);
+    };
+  }, []);
+
   // Load cached user data from localStorage first
   useEffect(() => {
     // Check for cached user data first
@@ -254,14 +278,22 @@ export const AuthProvider = ({ children }) => {
       // Clear any potentially corrupted profile form data
       localStorage.removeItem('profileFormData');
       
+      // Track verification start time to measure performance
+      const verifyStartTime = Date.now();
+      console.log('OTP verification started');
+      
       // Confirm OTP
       const result = await confirmationResult.confirm(otp);
+      console.log(`OTP confirmed in ${Date.now() - verifyStartTime}ms`);
       
       // Get authenticated user
       const firebaseUser = result.user;
       
       // Get ID token to verify with backend (force refresh)
+      console.log('Getting ID token');
+      const tokenStartTime = Date.now();
       const idToken = await firebaseUser.getIdToken(true);
+      console.log(`ID token obtained in ${Date.now() - tokenStartTime}ms`);
       
       // Store token in localStorage for API requests
       localStorage.setItem('authToken', idToken);
@@ -270,10 +302,14 @@ export const AuthProvider = ({ children }) => {
       const locationId = localStorage.getItem('temp_location_id');
       
       // Verify with backend
+      console.log('Verifying with backend');
+      const backendStartTime = Date.now();
       const response = await axios.post(`${API_URL}/auth/verify`, { 
         idToken,
-        locationId // Include locationId if available
+        locationId, // Include locationId if available
+        phone: firebaseUser.phoneNumber // Explicitly send phone number
       });
+      console.log(`Backend verification completed in ${Date.now() - backendStartTime}ms`);
       
       // Clear stored location ID
       localStorage.removeItem('temp_location_id');

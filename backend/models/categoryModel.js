@@ -38,6 +38,10 @@ categorySchema.virtual('featuredImage').get(function() {
 categorySchema.set('toJSON', { virtuals: true });
 categorySchema.set('toObject', { virtuals: true });
 
+// Add indexes to improve query performance
+categorySchema.index({ name: 1 }); // For sorting by name
+categorySchema.index({ isActive: 1 }); // For filtering active categories
+
 const Category = mongoose.model('Category', categorySchema);
 
 export default Category;

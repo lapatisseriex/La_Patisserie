@@ -46,6 +46,16 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
+// Import cache and set up cleanup interval
+import { cache } from './utils/cache.js';
+// Clean expired cache entries every 15 minutes
+setInterval(() => {
+  const cleaned = cache.cleanExpired();
+  if (cleaned > 0) {
+    console.log(`Cache cleanup: removed ${cleaned} expired items`);
+  }
+}, 15 * 60 * 1000);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

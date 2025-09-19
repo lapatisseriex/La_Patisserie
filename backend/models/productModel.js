@@ -98,6 +98,12 @@ productSchema.pre('save', async function(next) {
   next();
 });
 
+// Add indexes to improve query performance
+productSchema.index({ category: 1 }); // For category-based queries
+productSchema.index({ isActive: 1 }); // For active status filtering
+productSchema.index({ createdAt: -1 }); // For sorting by newest
+productSchema.index({ name: 'text', description: 'text' }); // For text search
+
 // Include virtuals in JSON
 productSchema.set('toJSON', { virtuals: true });
 productSchema.set('toObject', { virtuals: true });

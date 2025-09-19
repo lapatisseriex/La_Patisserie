@@ -34,20 +34,42 @@ export const ProductProvider = ({ children }) => {
       
       const queryString = queryParams.toString();
 
-      // Generate a unique cache key that includes a timestamp to avoid stale data
-      // For admin views (checking for isActive=all) or category filtering, we'll always bypass cache
-      const isAdminView = filters.isActive === 'all';
-      const hasCategoryFilter = filters.category !== undefined;
-      const shouldBypassCache = isAdminView || hasCategoryFilter;
-      const cacheKey = `products-${queryString}-${shouldBypassCache ? Date.now() : ''}`;
+      // Generate a unique cache key based only on the actual query parameters
+      const cacheKey = `products-${queryString}`;
       
-      // For admin view or category filtering, always get fresh data
+      // Only bypass cache for admin views, keep cache for category pages
+      const isAdminView = filters.isActive === 'all';
+      const shouldBypassCache = isAdminView;
+      
+      // Improved caching: category pages now use cache for 5 minutes (300000ms)
+      const CACHE_TIMEOUT = 300000; // 5 minutes
+      
+      // Check for valid cache entry
       const cachedResult = shouldBypassCache ? null : requestCache.current.get(cacheKey);
       const now = Date.now();
       
-      if (!shouldBypassCache && cachedResult && (now - cachedResult.timestamp < 15000)) {
-        console.log(`Using cached product data for key: ${cacheKey}`);
+      if (!shouldBypassCache && cachedResult && (now - cachedResult.timestamp < CACHE_TIMEOUT)) {
+        console.log(`Using cached product data for key: ${cacheKey} (age: ${(now - cachedResult.timestamp)/1000}s)`);
+        setLoading(false); // Ensure loading state is correct even when using cache
         return cachedResult.data;
+      }
+      
+      // Prevent duplicate in-flight requests for the same data
+      if (requestInProgress.current.get(cacheKey)) {
+        console.log(`Request already in progress for: ${cacheKey}, waiting...`);
+        // Wait for the existing request to complete instead of making a duplicate
+        // Poll every 100ms to see if the request completes
+        let attempts = 0;
+        while (requestInProgress.current.get(cacheKey) && attempts < 100) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        // Check if data is in cache after waiting
+        const resultAfterWait = requestCache.current.get(cacheKey);
+        if (resultAfterWait) {
+          return resultAfterWait.data;
+        }
       }
       
       // Mark this request as in progress
@@ -91,6 +113,19 @@ export const ProductProvider = ({ children }) => {
       
       // Request is no longer in progress
       requestInProgress.current.delete(cacheKey);
+      
+      // Clean up old cache entries if cache gets too large (more than 20 entries)
+      if (requestCache.current.size > 20) {
+        // Get all cache keys sorted by timestamp (oldest first)
+        const sortedCacheKeys = [...requestCache.current.entries()]
+          .sort((a, b) => a[1].timestamp - b[1].timestamp)
+          .map(entry => entry[0]);
+          
+        // Remove the 5 oldest entries
+        for (let i = 0; i < 5 && i < sortedCacheKeys.length; i++) {
+          requestCache.current.delete(sortedCacheKeys[i]);
+        }
+      }
       
       setLoading(false);
       return responseData;
