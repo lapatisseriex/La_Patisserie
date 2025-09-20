@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useProduct } from '../../context/ProductContext/ProductContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
-import { fetchDynamicCategoryImages } from '../../services/dynamicCategoryService';
 
 import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';
@@ -30,10 +29,6 @@ const Home = () => {
   const [bestSellersProducts, setBestSellersProducts] = useState([]);
   const [newlyLaunchedProducts, setNewlyLaunchedProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
-  const [dynamicCategoryImages, setDynamicCategoryImages] = useState({
-    bestSeller: { categoryImage: null },
-    newlyLaunched: { categoryImage: null }
-  });
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -54,12 +49,6 @@ const Home = () => {
         const newly = await fetchProducts({ limit: 3, sort: 'createdAt:-1' });
         setBestSellersProducts(best.products);
         setNewlyLaunchedProducts(newly.products);
-        
-        // Fetch dynamic category images
-        const dynamicImages = await fetchDynamicCategoryImages();
-        if (dynamicImages) {
-          setDynamicCategoryImages(dynamicImages);
-        }
       } catch (err) {
         console.error("Error loading section products:", err);
       } finally {
@@ -112,8 +101,8 @@ const Home = () => {
           newlyLaunchedRef={newlyLaunchedRef}
           handpickedRef={handpickedRef}
           favoritesRef={favoritesRef}
-          bestSellersImage={dynamicCategoryImages.bestSeller?.categoryImage || bestSellersProducts[0]?.images[0]}
-          newlyLaunchedImage={dynamicCategoryImages.newlyLaunched?.categoryImage || newlyLaunchedProducts[0]?.images[0]}
+          bestSellersImage={bestSellersProducts[0]?.images[0]}
+          newlyLaunchedImage={newlyLaunchedProducts[0]?.images[0]}
         />
       </section>
 
