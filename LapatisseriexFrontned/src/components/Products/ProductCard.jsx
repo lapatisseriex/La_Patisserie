@@ -45,6 +45,20 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const productRating = getProductRating(product._id);
 
+  // Deterministic rating count like "3.9K" for display purposes (consistent per product)
+  const getRatingCount = (productId) => {
+    if (!productId) return '3.9K';
+    let hash = 0;
+    for (let i = 0; i < productId.length; i++) {
+      hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+      hash |= 0; // 32-bit
+    }
+    const base = Math.abs(hash % 9000) + 1000; // 1,000 - 9,999
+    const k = (base / 1000).toFixed(1);
+    return `${k.replace(/\.0$/, '')}K`;
+  };
+  const ratingCountDisplay = getRatingCount(product._id);
+
   // Auto-slide functionality for multiple images - very slow and smooth
   useEffect(() => {
     if (product.images && product.images.length > 1 && !isHoveringImage) {
@@ -317,23 +331,14 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
           {/* Rating and Welcome Offer */}
           <div className="flex items-center justify-between mb-2 gap-1 flex-wrap">
-            {/* Star Rating */}
-            <div className="flex items-center gap-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <svg
-                  className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 fill-current"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                <span className="text-xs text-gray-600 font-medium">
-                  {productRating.rating}
-                </span>
+            {/* Rating chip */}
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-full px-2 py-0.5 shadow-sm">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 text-white text-[9px] leading-none">★</span>
+                <span className="text-xs font-medium text-gray-900">{productRating.rating}</span>
+                <span className="text-xs text-gray-600">|</span>
+                <span className="text-xs text-gray-600">{ratingCountDisplay}</span>
               </div>
-              <span className="text-xs text-green-600 font-medium">
-                ({productRating.percentage}%)
-              </span>
             </div>
 
             {/* Welcome Offer or Special Text */}
@@ -367,7 +372,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </span>
             </div>
             {discountPercentage > 0 && (
-              <span className="text-green-500 text-xs font-medium px-1.5 py-0.5 bg-green-50 rounded-full">
+              <span className="text-green-500 text-xs font-medium px-1.5 py-0.5  rounded-full">
                 {discountPercentage}% OFF
               </span>
             )}

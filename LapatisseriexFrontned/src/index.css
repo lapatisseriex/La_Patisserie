@@ -68,6 +68,14 @@ body {
   padding-top: env(safe-area-inset-top, 0);
 }
 
+/* When product image modal is open on large devices, hide header and floating cart */
+@media (min-width: 768px) {
+  body.image-modal-open header,
+  body.image-modal-open .floating-cart-bar {
+    display: none !important;
+  }
+}
+
 /* Make sure the homepage container has proper spacing */
 .homepage-container {
   padding-top: 0;  /* No extra padding needed */

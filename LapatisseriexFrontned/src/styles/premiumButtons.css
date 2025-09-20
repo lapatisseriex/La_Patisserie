@@ -1,0 +1,140 @@
+/* Premium button styles for Product Display page and beyond */
+:root {
+  --gold-1: #d4af37; /* light gold */
+  --gold-2: #b88a35; /* deeper gold */
+}
+
+/* Base resets */
+.btn-premium-outline,
+.btn-premium-solid {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem; /* match Tailwind rounded-lg */
+  overflow: hidden;
+  transition: transform 180ms ease, box-shadow 220ms ease, filter 220ms ease, letter-spacing 200ms ease;
+  will-change: transform, box-shadow, filter;
+}
+
+/* Outline button: black outline, subtle gold micro-interactions */
+.btn-premium-outline {
+  background: transparent;
+  color: #0a0a0a;
+  border: 2px solid #0a0a0a;
+}
+
+.btn-premium-outline:hover:not(:disabled),
+.btn-premium-outline:focus-visible:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -8px rgba(0,0,0,0.35), 0 0 0 2px rgba(0,0,0,0.04) inset;
+  letter-spacing: 0.2px;
+}
+
+/* Gold shimmer sweep */
+.btn-premium-outline::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(120deg, transparent 0%, transparent 35%, rgba(212,175,55,0.25) 50%, transparent 65%, transparent 100%);
+  transform: translateX(-120%);
+  transition: transform 500ms ease;
+  pointer-events: none;
+}
+.btn-premium-outline:hover::before,
+.btn-premium-outline:focus-visible::before {
+  transform: translateX(120%);
+}
+
+/* Corner sparkles */
+.btn-premium-outline::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gold-1);
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(212,175,55,0.8));
+  transition: opacity 180ms ease;
+}
+.btn-premium-outline:hover::after,
+.btn-premium-outline:active::after,
+.btn-premium-outline:focus-visible::after {
+  opacity: 1;
+}
+
+.btn-premium-outline:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+.btn-premium-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Solid black premium: glossy sheen sweep */
+.btn-premium-solid {
+  background: #000;
+  color: #fff;
+  border: 2px solid #000;
+  box-shadow: 0 10px 22px -12px rgba(0,0,0,0.6);
+}
+
+.btn-premium-solid:hover:not(:disabled),
+.btn-premium-solid:focus-visible:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px -14px rgba(0,0,0,0.75);
+}
+
+/* Shine sweep */
+.btn-premium-solid::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  height: 100%;
+  width: 120%;
+  background: linear-gradient(110deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.28) 20%, rgba(255,255,255,0.15) 35%, rgba(255,255,255,0) 60%);
+  transform: skewX(-18deg);
+  transition: left 520ms ease;
+  pointer-events: none;
+}
+
+.btn-premium-solid:hover::before,
+.btn-premium-solid:focus-visible::before,
+.btn-premium-solid:active::before {
+  left: 140%;
+}
+
+.btn-premium-solid:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(1.02);
+}
+
+.btn-premium-solid:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Optional gold-accent text utility for icons/labels */
+.text-gold-soft { color: var(--gold-1); }
+
+/* Mobile sizing helper to keep small footprint like product card reserve */
+.btn-sm-compact { padding: 0.5rem 0.75rem; font-size: 0.75rem; height: 2.25rem; border-radius: 0.5rem; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .btn-premium-outline,
+  .btn-premium-solid {
+    transition: none;
+  }
+  .btn-premium-outline::before,
+  .btn-premium-solid::before {
+    display: none;
+  }
+}

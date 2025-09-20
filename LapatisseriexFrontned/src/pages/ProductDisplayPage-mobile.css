@@ -14,6 +14,7 @@
   /* Remove padding at top that accounts for header space */
   body.product-display-page-mobile main {
     padding-top: 0 !important;
+    background-color: #f9fafb !important; /* Light gray background for mobile */
   }
   
   /* Ensure no spacing at the top of the container */
@@ -26,5 +27,23 @@
     top: 0 !important;
     position: fixed !important;
     z-index: 50 !important;
+  }
+  
+  /* Enhanced styling for mobile product cards */
+  body.product-display-page-mobile .bg-white.rounded-lg {
+    margin-bottom: 16px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+  }
+  
+  /* Consistent spacing for all layered content */
+  body.product-display-page-mobile .bg-gray-50.rounded-lg {
+    margin: 8px 0 !important;
+    border: 1px solid rgba(229,231,235,1) !important;
+  }
+  
+  /* Space between sections */
+  body.product-display-page-mobile .space-y-4 > * {
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
   }
 }

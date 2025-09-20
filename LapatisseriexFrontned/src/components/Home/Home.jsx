@@ -9,6 +9,8 @@ import HandpickedForYou from './HandpickedForYou';
 import FavoritesSection from './FavoritesSection';
 import RecentlyViewedSection from './RecentlyViewedSection';
 import CategorySwiper from './categorySwiper';
+import PageLoadingAnimation from '../common/PageLoadingAnimation';
+import AdvertisementBanner from './AdvertisementBanner';
 
 const Home = () => {
   const headingRef = useRef(null);
@@ -30,6 +32,7 @@ const Home = () => {
   const [newlyLaunchedProducts, setNewlyLaunchedProducts] = useState([]);
   const [specialImages, setSpecialImages] = useState({ bestSeller: null, newlyLaunched: null });
   const [productsLoading, setProductsLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -94,6 +97,21 @@ const Home = () => {
     };
   }, [getSpecialImages, specialImagesVersion]); // Add specialImagesVersion to dependencies
 
+  // Manage overall page loading state
+  useEffect(() => {
+    // Check if all critical data has loaded
+    const checkLoadingComplete = () => {
+      if (!categoriesLoading && !productsLoading) {
+        // Add a small delay to ensure smooth transition
+        setTimeout(() => {
+          setPageLoading(false);
+        }, 1500); // Show loading for at least 1.5 seconds
+      }
+    };
+    
+    checkLoadingComplete();
+  }, [categoriesLoading, productsLoading]);
+
   useEffect(() => {
     const fadeInElements = (element, delay) => {
       setTimeout(() => {
@@ -116,11 +134,21 @@ const Home = () => {
   };
 
   return (
-    <div className="bg-white font-sans flex flex-col items-center">
+    <>
+      {/* Page Loading Animation */}
+      <PageLoadingAnimation isVisible={pageLoading} />
+      
+      {/* Main Content */}
+      <div className={`bg-white font-sans flex flex-col items-center transition-opacity duration-500 ${pageLoading ? 'opacity-0' : 'opacity-100'}`}>
 
-      <section ref={newlyLaunchedRef} className="w-full">
-        <NewlyLaunched products={newlyLaunchedProducts} loading={productsLoading} />
-      </section>
+        {/* Advertisement Banner Section - Combined Video and Image Carousel */}
+        <section className="w-full">
+          <AdvertisementBanner />
+        </section>
+
+        <section ref={newlyLaunchedRef} className="w-full">
+          <NewlyLaunched products={newlyLaunchedProducts} loading={productsLoading} />
+        </section>
 
       {/* Recently Viewed Section - Shows only for authenticated users */}
       <section className="w-full">
@@ -155,6 +183,7 @@ const Home = () => {
       </section>
 
     </div>
+    </>
   );
 };
 

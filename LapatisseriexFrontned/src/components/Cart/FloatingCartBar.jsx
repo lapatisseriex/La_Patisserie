@@ -60,7 +60,7 @@ const FloatingCartBar = () => {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-2xl border-t border-gray-200"
+          className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-2xl border-t border-gray-200 floating-cart-bar"
         >
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
