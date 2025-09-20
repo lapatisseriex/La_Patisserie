@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getAuth } from 'firebase/auth';
+import { useSidebar } from './AdminDashboardLayout';
 import BannerForm from './BannerForm';
 import BannerPreview from './BannerPreview';
 
@@ -154,6 +155,7 @@ const SortableBannerItem = ({ banner, onEdit, onDelete, onToggleStatus, onPrevie
 };
 
 const AdminBannerManagement = () => {
+  const { closeSidebarIfOpen } = useSidebar();
   const [banners, setBanners] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingBanner, setEditingBanner] = useState(null);
@@ -354,8 +356,12 @@ const AdminBannerManagement = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+        <div className="max-w-7xl mx-auto pl-8 pr-4 sm:px-6 lg:px-8">
+          {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
+          {/* Tweak right padding: change pr-4 to desired value (e.g., pr-6 for more, pr-2 for less) */}
+          <div className="flex justify-between items-center py-6 mb-0 md:mb-8">
+            {/* Tweak header margin: change mb-0 md:mb-8 to desired values (e.g., mb-2 md:mb-6 for less spacing) */}
+            {/* Tweak header padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Banner Management</h1>
               <p className="mt-1 text-sm text-gray-500">
@@ -364,12 +370,13 @@ const AdminBannerManagement = () => {
             </div>
             <button
               onClick={() => {
+                closeSidebarIfOpen(); // Close sidebar only if it's open
                 setEditingBanner(null);
                 setShowForm(true);
               }}
-              className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 shadow-sm"
+              className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 font-medium"
             >
-              + Add New Banner
+              Add New Banner
             </button>
           </div>
         </div>
@@ -443,10 +450,13 @@ const AdminBannerManagement = () => {
               <p className="mt-1 text-sm text-gray-500">Get started by creating your first banner.</p>
               <div className="mt-6">
                 <button
-                  onClick={() => setShowForm(true)}
-                  className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  onClick={() => {
+                    closeSidebarIfOpen(); // Close sidebar only if it's open
+                    setShowForm(true);
+                  }}
+                  className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 font-medium"
                 >
-                  + Add Banner
+                  Add New Banner
                 </button>
               </div>
             </div>

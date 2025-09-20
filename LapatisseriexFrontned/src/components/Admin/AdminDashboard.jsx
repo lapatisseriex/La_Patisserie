@@ -96,8 +96,11 @@ const AdminDashboard = () => {
   }, [authReady, user, locations]);
 
   return (
-    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 font-sans">
-      <div className="mb-8">
+    <div className="container mx-auto pl-8 pr-4 py-6 md:px-6 md:py-8 font-sans">
+      {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
+      {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
+      <div className="mb-2 md:mb-8">
+        {/* Tweak header margin: change mb-0 md:mb-8 to desired values (e.g., mb-2 md:mb-6 for less spacing) */}
         <h1 className="text-2xl md:text-3xl font-bold text-black">Admin Dashboard</h1>
         <p className="text-black font-light">Welcome back, Admin</p>
       </div>

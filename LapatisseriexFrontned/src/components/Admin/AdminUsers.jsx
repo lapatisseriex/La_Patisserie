@@ -47,8 +47,11 @@ const AdminUsers = () => {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-6 pt-8 font-sans">
-      <div className="mb-6">
+    <div className="container mx-auto pl-8 pr-4 py-6 pt-8 font-sans">
+      {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
+      {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
+      <div className="mb-0 md:mb-6">
+        {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
         <h1 className="text-2xl font-bold text-black">User Management</h1>
         <p className="text-black font-light">View and manage user accounts</p>
       </div>

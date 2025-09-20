@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProduct } from '../../../context/ProductContext/ProductContext';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
+import { useSidebar } from '../AdminDashboardLayout';
 import ProductForm from './ProductForm';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +11,7 @@ import { Link } from 'react-router-dom';
 const AdminProducts = () => {
   const { products, loading, error, fetchProducts, deleteProduct } = useProduct();
   const { categories, fetchCategories } = useCategory();
+  const { closeSidebarIfOpen } = useSidebar();
   
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -94,12 +96,14 @@ const AdminProducts = () => {
 
   // Open form for creating a new product
   const handleAddNew = () => {
+    closeSidebarIfOpen(); // Close sidebar only if it's open
     setEditingProduct(null);
     setShowForm(true);
   };
 
   // Open form for editing an existing product
   const handleEdit = (product) => {
+    closeSidebarIfOpen(); // Close sidebar only if it's open
     setEditingProduct(product);
     setShowForm(true);
   };
@@ -166,24 +170,35 @@ const AdminProducts = () => {
 
   return (
     <div className="admin-products">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Products</h1>
-          <div className="mt-2 flex space-x-4">
-            <Link to="/admin/products" className="text-black font-medium border-b-2 border-white">
-              Products
-            </Link>
-            <Link to="/admin/categories" className="text-black hover:text-black">
-              Categories
-            </Link>
+      <div className="mb-0 md:mb-6 pl-8">
+        {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
+        {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
+        <div className="flex justify-between items-start md:items-center">
+          <div className="flex-1">
+            <h1 className="text-2xl font-semibold">Products</h1>
+            <div className="mt-4 flex flex-col space-y-4">
+              {/* Links row */}
+              <div className="flex space-x-4">
+                <Link to="/admin/products" className="text-black font-medium border-b-2 border-white">
+                  Products
+                </Link>
+                <Link to="/admin/categories" className="text-black hover:text-black">
+                  Categories
+                </Link>
+              </div>
+
+              {/* Button row - right aligned */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleAddNew}
+                  className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 font-medium"
+                >
+                  Add New Product
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        <button
-          onClick={handleAddNew}
-          className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600"
-        >
-          Add New Product
-        </button>
       </div>
 
       {error && (
@@ -227,25 +242,24 @@ const AdminProducts = () => {
         </div>
       </div>
 
-      {/* Product Form Modal - Fixed height with scrolling content */}
+      {/* Product Form Modal - Positioned within admin layout boundaries */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-4 sm:p-6 md:p-8 lg:p-10">
-        <div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[95vh] sm:h-[90vh] md:h-[85vh] shadow-2xl flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-24 md:pt-28">
+          <div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] shadow-2xl flex flex-col mx-4 sm:mx-6 md:mx-8 lg:mx-10">
 
-          {/* Header / padding wrapper */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-4 sm:p-6 md:p-8 lg:p-10">
-              <ProductForm
-                product={editingProduct}
-                onClose={handleCloseForm}
-                preSelectedCategory={selectedCategory}
-              />
+            {/* Header / padding wrapper */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+                <ProductForm
+                  product={editingProduct}
+                  onClose={handleCloseForm}
+                  preSelectedCategory={selectedCategory}
+                />
+              </div>
             </div>
-          </div>
 
+          </div>
         </div>
-      </div>
-      
       )}
 
       {/* Products Count */}

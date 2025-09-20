@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
+import { useSidebar } from '../AdminDashboardLayout';
 import CategoryForm from './CategoryForm';
 import SpecialCategoryImages from './SpecialCategoryImages';
 import { Link } from 'react-router-dom';
@@ -11,6 +12,7 @@ import { normalizeImageUrl } from '../../../utils/imageUtils';
  */
 const AdminCategories = () => {
   const { categories, loading, error, fetchCategories, deleteCategory, reprocessCategoryImages } = useCategory();
+  const { closeSidebarIfOpen } = useSidebar();
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -52,12 +54,14 @@ const AdminCategories = () => {
 
   // Open form for creating a new category
   const handleAddNew = () => {
+    closeSidebarIfOpen(); // Close sidebar only if it's open
     setEditingCategory(null);
     setShowForm(true);
   };
 
   // Open form for editing an existing category
   const handleEdit = (category) => {
+    closeSidebarIfOpen(); // Close sidebar only if it's open
     setEditingCategory(category);
     setShowForm(true);
   };
@@ -117,26 +121,37 @@ const AdminCategories = () => {
 
   return (
     <div className="admin-categories" style={{ fontFamily: 'sans-serif' }}>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Categories</h1>
-          <div className="mt-2 flex space-x-4">
-            <Link to="/admin/products" className="text-black hover:text-black font-light">
-              Products
-            </Link>
-            <Link to="/admin/categories" className="text-black font-bold border-b-2 border-black">
-              Categories
-            </Link>
+      <div className="mb-0 md:mb-6 pl-8">
+        {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
+        {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
+        <div className="flex justify-between items-start md:items-center">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold">Categories</h1>
+            <div className="mt-4 flex flex-col space-y-4">
+              {/* Links row */}
+              <div className="flex space-x-4">
+                <Link to="/admin/products" className="text-black hover:text-black font-light">
+                  Products
+                </Link>
+                <Link to="/admin/categories" className="text-black font-bold border-b-2 border-black">
+                  Categories
+                </Link>
+              </div>
+
+              {/* Button row - right aligned */}
+              {activeTab === 'categories' && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleAddNew}
+                    className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 font-medium"
+                  >
+                    Add New Category
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        {activeTab === 'categories' && (
-          <button
-            onClick={handleAddNew}
-            className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 font-medium"
-          >
-            Add New Category
-          </button>
-        )}
       </div>
 
       {/* Tab Navigation */}
@@ -176,24 +191,23 @@ const AdminCategories = () => {
       {/* Tab Content */}
       {activeTab === 'categories' ? (
         <>
-          {/* Category Form Modal - Fixed height with scrolling content */}
+          {/* Category Form Modal - Positioned within admin layout boundaries */}
           {showForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999] p-2 sm:p-4 md:p-6">
-    <div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[70vh] sm:h-[65vh] md:h-[60vh] shadow-2xl flex flex-col">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-24 md:pt-28">
+              <div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] shadow-2xl flex flex-col mx-4 sm:mx-6 md:mx-8 lg:mx-10">
 
-              {/* Header / padding wrapper */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-3 sm:p-4 md:p-6">
-                  <CategoryForm
-                    category={editingCategory}
-                    onClose={handleCloseForm}
-                  />
+                {/* Header / padding wrapper */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+                    <CategoryForm
+                      category={editingCategory}
+                      onClose={handleCloseForm}
+                    />
+                  </div>
                 </div>
+
               </div>
-
             </div>
-          </div>
-
           )}
 
           {/* Categories List */}
