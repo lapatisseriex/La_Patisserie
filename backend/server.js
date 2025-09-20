@@ -17,6 +17,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import hostelRoutes from './routes/hostelRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
+import bannerRoutes from './routes/bannerRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -68,6 +69,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/hostels', hostelRoutes);
 app.use('/api/image-reprocess', imageReprocessRoutes);
+app.use('/api/banners', bannerRoutes);
 
 
 // Root route

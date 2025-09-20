@@ -10,7 +10,8 @@ import {
   FaSignOutAlt,
   FaBars,
   FaChevronLeft,
-  FaChevronRight
+  FaChevronRight,
+  FaImage
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 
@@ -113,6 +114,15 @@ const AdminDashboardLayout = () => {
               >
                 <FaList className="mr-3 flex-shrink-0" />
                 <span className={!isSidebarOpen ? 'hidden' : ''}>Categories</span>
+              </Link>
+            </li>
+            <li>
+              <Link 
+                to="/admin/banners" 
+                className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/banners' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+              >
+                <FaImage className="mr-3 flex-shrink-0" />
+                <span className={!isSidebarOpen ? 'hidden' : ''}>Banners</span>
               </Link>
             </li>
             <li>

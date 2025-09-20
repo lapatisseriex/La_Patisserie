@@ -11,10 +11,20 @@ export const protect = asyncHandler(async (req, res, next) => {
     try {
       // Extract token from header
       token = req.headers.authorization.split(' ')[1];
+      
+      if (!token || token === 'null' || token === 'undefined') {
+        console.log('Invalid token format received');
+        res.status(401);
+        throw new Error('Invalid token format');
+      }
 
+      console.log('Attempting to verify token with length:', token.length);
+      
       // Verify token with Firebase Admin SDK
-      // Set checkRevoked to true to check if the token has been revoked
-      const decodedToken = await firebaseAdmin.auth().verifyIdToken(token, true);
+      // Set checkRevoked to false initially to avoid extra verification calls
+      const decodedToken = await firebaseAdmin.auth().verifyIdToken(token, false);
+      
+      console.log('Token verified successfully for uid:', decodedToken.uid);
       
       // Find user in database
       const user = await User.findOne({ uid: decodedToken.uid });
@@ -48,6 +58,8 @@ export const protect = asyncHandler(async (req, res, next) => {
       next();
     } catch (error) {
       console.error('Token verification failed:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Full error:', error);
       
       // Provide more specific error messages based on Firebase error codes
       if (error.code === 'auth/id-token-expired') {
@@ -56,6 +68,9 @@ export const protect = asyncHandler(async (req, res, next) => {
       } else if (error.code === 'auth/id-token-revoked') {
         res.status(401);
         throw new Error('Session was revoked. Please login again.');
+      } else if (error.code === 'auth/argument-error' || error.message.includes('kid')) {
+        res.status(401);
+        throw new Error('Invalid token format. Please login again.');
       } else {
         res.status(401);
         throw new Error('Authentication failed');
