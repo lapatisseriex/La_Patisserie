@@ -21,6 +21,30 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const currentQuantity = getProductQuantity(product._id);
 
+  // Generate consistent random rating for each product based on product ID
+  const getProductRating = (productId) => {
+    if (!productId) return { rating: 4.5, percentage: 85 };
+    
+    // Simple hash function to generate consistent "random" numbers from product ID
+    let hash = 0;
+    for (let i = 0; i < productId.length; i++) {
+      const char = productId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    
+    // Use hash to generate rating between 4.0-5.0 and percentage between 80-100
+    const rating = (4.0 + (Math.abs(hash) % 100) / 100).toFixed(1);
+    const percentage = 80 + (Math.abs(hash * 7) % 21); // 80-100%
+    
+    return { 
+      rating: parseFloat(rating), 
+      percentage: Math.floor(percentage) 
+    };
+  };
+
+  const productRating = getProductRating(product._id);
+
   // Auto-slide functionality for multiple images - very slow and smooth
   useEffect(() => {
     if (product.images && product.images.length > 1 && !isHoveringImage) {
@@ -116,23 +140,27 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   return (
     <div
       onClick={handleCardClick}
-      className={`overflow-hidden bg-white shadow-sm h-72 cursor-pointer border border-gray-200 ${
+      className={`overflow-hidden bg-white cursor-pointer transition-all duration-200 ${
         featured
-          ? 'h-full flex flex-col'
+          ? 'h-full flex flex-col rounded-lg'
           : compact
-          ? 'flex flex-col'
-          : 'flex flex-row'
+          ? 'flex flex-col rounded-lg max-w-sm mx-auto'
+          : 'flex flex-row rounded-lg'
       } ${className}`}
     >
       {/* Product Image */}
         <div
           className={`${
-            featured || compact ? 'w-full aspect-square' : 'w-28 sm:w-32 md:w-36 flex-shrink-0'
+            featured || compact 
+              ? 'w-full' 
+              : 'w-32 sm:w-36 md:w-40 lg:w-44 flex-shrink-0'
           } relative`}
         >
           <div
-            className={`w-full relative group overflow-hidden ${
-          featured || compact ? 'aspect-square' : 'aspect-square sm:aspect-[3/4]'
+            className={`w-full relative group overflow-hidden rounded-lg ${
+          featured || compact 
+            ? 'aspect-square' 
+            : 'aspect-square'
             }`}
           >
             <MediaDisplay
@@ -150,132 +178,177 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             <button
           onClick={handleFavoriteToggle}
           disabled={isTogglingFavorite}
-          className={`absolute top-2 left-2 p-2 transition-all duration-300 ease-out rounded-full backdrop-blur-sm ${
+          className={`absolute top-2 right-2 p-2 ${
             isFavorite(product._id)
-              ? 'bg-gradient-to-r from-pink-500 to-red-500 text-white shadow-lg shadow-pink-500/30 scale-110'
-              : 'bg-white/90 text-gray-600 shadow-md'
-          } ${isTogglingFavorite ? 'opacity-70 cursor-not-allowed animate-pulse' : ''}`}
+              ? 'text-red-500'
+              : 'text-gray-600'
+          } ${isTogglingFavorite ? 'opacity-70 cursor-not-allowed' : ''}`}
           title={isFavorite(product._id) ? 'Remove from favorites' : 'Add to favorites'}
             >
-          {isTogglingFavorite ? (
-            <div className="relative w-4 h-4">
-              {/* Cupcake loading animation */}
-                <div className="relative">
-                  <div className="w-4 h-3 bg-gradient-to-b from-pink-300 to-pink-400 rounded-t-full animate-pulse"></div>
-                  <div className="w-3 h-2 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-b-sm mx-auto animate-bounce"></div>
-                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-red-400 rounded-full animate-ping"></div>
-                </div>
-              </div>
-            ) : (
-              <Heart
-                className={`w-4 h-4 transition-all duration-300 ease-out ${
-                  isFavorite(product._id) 
-                    ? 'fill-current scale-110 animate-bounce' 
-                    : ''
-                }`}
-              />
-            )}
-            
-            {/* Floating hearts animation when favorited */}
-            {isFavorite(product._id) && !isTogglingFavorite && (
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute -top-1 -right-1 text-pink-300 text-xs animate-bounce" style={{ animationDelay: '0.2s' }}>
-                  💖
-                </div>
-                <div className="absolute -bottom-1 -left-1 text-red-300 text-xs animate-bounce" style={{ animationDelay: '0.4s' }}>
-                  ❤
-                </div>
-              </div>
-            )}
+          <Heart
+            className={`w-4 h-4 stroke-red-500 stroke-2 ${
+              isFavorite(product._id) 
+                ? 'fill-current' 
+                : 'fill-none'
+            }`}
+          />
           </button>
 
           {/* Discount Badge on Image */}
        
+          {/* Egg/No Egg Indicator - positioned in bottom left corner of image */}
+          <div className="absolute bottom-2 left-2">
+            <span
+              className={`inline-flex items-center ${
+                product.hasEgg
+                  ? 'text-red-600'
+                  : 'text-green-600'
+              }`}
+            >
+              <div className="flex items-center gap-1">
+                {/* Square outline + shape */}
+                <svg
+                  className="w-4 h-4 bg-white rounded"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Square outline */}
+                  <rect
+                    x="1"
+                    y="1"
+                    width="18"
+                    height="18"
+                    stroke={product.hasEgg ? '#FF0000' : '#22C55E'} 
+                    strokeWidth="2"
+                    fill="none"
+                  />
 
-          {/* Image dots indicator for multiple images - smooth and clean */}
-          {product.images && product.images.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1.5">
-              {product.images.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-1.5 h-1.5 transition-all duration-500 ease-in-out ${
-                    index === currentImageIndex
-                      ? 'bg-white shadow-lg scale-110'
-                      : 'bg-white bg-opacity-50'
-                  }`}
-                />
-              ))}
+                  {product.hasEgg ? (
+                    // Triangle for WITH EGG
+                    <polygon points="10,4 16,16 4,16" fill="#FF0000" />
+                  ) : (
+                    // Circle for EGGLESS
+                    <circle cx="10" cy="10" r="5" fill="#22C55E" />
+                  )}
+                </svg>
+              </div>
+            </span>
+          </div>
+
+          {/* Add to Cart Button or Quantity Controls - positioned in bottom right corner of image */}
+          {currentQuantity === 0 ? (
+            <button
+              onClick={handleAddToCart}
+              disabled={!isActive || totalStock === 0 || isAddingToCart}
+              className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-semibold transition-all duration-300 ease-out rounded-lg border ${
+                !isActive || totalStock === 0
+                  ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
+                  : isAddingToCart
+                  ? 'bg-white text-red-500 border-red-500 cursor-wait scale-95'
+                  : 'bg-white text-red-500 border-red-500 hover:bg-red-50 hover:scale-105 shadow-sm transform active:scale-95'
+              }`}
+            >
+              {isAddingToCart ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-gray-400 mr-1"></div>
+                  Adding...
+                </div>
+              ) : (
+                'Add'
+              )}
+            </button>
+          ) : (
+            <div className="absolute bottom-2 right-2 flex items-center bg-white border border-red-500 rounded-lg shadow-sm">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleQuantityChange(currentQuantity - 1);
+                }}
+                className="w-7 h-7 flex items-center justify-center bg-transparent text-red-500 transition-all duration-200 hover:bg-red-50 hover:scale-110 active:scale-95 rounded-l-lg font-medium"
+              >
+                −
+              </button>
+              <span className="px-3 py-1 font-semibold text-red-500 text-xs min-w-[1.5rem] text-center border-l border-r border-red-500">
+                {currentQuantity}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleQuantityChange(currentQuantity + 1);
+                }}
+                disabled={currentQuantity >= totalStock}
+                className="w-7 h-7 flex items-center justify-center bg-transparent text-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-50 hover:scale-110 active:scale-95 rounded-r-lg font-medium"
+              >
+                +
+              </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Content Section */}
-      <div className={`flex-1 ${featured || compact ? 'p-3' : 'p-3 sm:p-4'} flex flex-col justify-between`}>
-        <div>
+  {/* Content Section */}
+  <div className={`flex-1 ${
+    featured || compact 
+      ? 'p-3 sm:p-4' 
+      : 'p-2 sm:p-3 md:p-4'
+  } flex flex-col justify-between`}>
+        <div className="space-y-1 sm:space-y-2">
           <h3
-            className={`font-semibold text-black line-clamp-2 ${
-              featured ? 'text-sm' : compact ? 'text-xs sm:text-sm' : 'text-sm'
-            } cursor-pointer mb-1`}
+            className={`font-semibold text-black line-clamp-1 leading-tight ${
+              featured 
+                ? 'text-sm sm:text-base' 
+                : compact 
+                ? 'text-sm' 
+                : 'text-xs sm:text-sm md:text-base'
+            } cursor-pointer mb-1 hover:text-gray-700 transition-colors`}
             onClick={handleCardClick}
           >
             {product.name}
           </h3>
 
-          {/* Egg/No Egg Indicator */}
-         {/* Egg/No Egg Indicator */}
-<div className="mb-2">
-  <span
-    className={`inline-flex items-center text-xs px-2 py-0.5 border ${
-      product.hasEgg
-        ? 'border-orange-200 bg-white text-red-600'
-        : 'border-green-200 bg-white text-green-600'
-    }`}
-  >
-    <div className="flex items-center gap-1">
-      {/* Square outline + shape */}
-      <svg
-        className="w-4 h-4"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Square outline */}
-      <rect
-  x="1"
-  y="1"
-  width="18"
-  height="18"
-  stroke={product.hasEgg ? '#FF0000' : '#22C55E'} 
-  strokeWidth="2"
-  fill="none"
-/>
+          {/* Product Quantity and Unit */}
+          {variant.quantity && variant.measuringUnit && (
+            <div className="mb-1">
+              <span className="text-xs text-gray-600 font-medium bg-gray-50 px-2 py-0.5 rounded-full">
+                {variant.quantity}{variant.measuringUnit}
+              </span>
+            </div>
+          )}
 
+          {/* Rating and Welcome Offer */}
+          <div className="flex items-center justify-between mb-2 gap-1 flex-wrap">
+            {/* Star Rating */}
+            <div className="flex items-center gap-1 min-w-0">
+              <div className="flex items-center gap-1">
+                <svg
+                  className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 fill-current"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <span className="text-xs text-gray-600 font-medium">
+                  {productRating.rating}
+                </span>
+              </div>
+              <span className="text-xs text-green-600 font-medium">
+                ({productRating.percentage}%)
+              </span>
+            </div>
 
-        {product.hasEgg ? (
-        // Triangle for WITH EGG
-<polygon points="10,4 16,16 4,16" fill="#FF0000" />
+            {/* Welcome Offer or Special Text */}
+            <div className="text-xs flex-shrink-0">
+              {user && user.hasPlacedOrder ? (
+                <span className="text-violet-600 font-bold">Premium Choice</span>
+              ) : (
+                <span className="text-violet-600 font-bold">Welcome Gift</span>
+              )}
+            </div>
+          </div>
 
-        ) : (
-          // Circle for EGGLESS
-          <circle cx="10" cy="10" r="5" fill="#22C55E" />
-        )}
-      </svg>
-
-      <span className="uppercase tracking-tight font-medium">
-        {product.hasEgg ? 'WITH EGG' : 'EGGLESS'}
-      </span>
-    </div>
-  </span>
-</div>
-
-
-          <p
-            className={`text-xs text-gray-700 leading-relaxed mb-2 ${
-              compact ? 'line-clamp-1 sm:line-clamp-2' : 'line-clamp-2'
-            }`}
-          >
-            {product.description ||
-              'Delicious handcrafted treat made with premium ingredients.'}
+          {/* One-line product description */}
+          <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+            {product.description || 'Delicious handcrafted treat made with premium ingredients.'}
           </p>
 
           <div className="flex items-center justify-between mb-2">
@@ -287,97 +360,91 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               )}
               <span
                 className={`font-bold text-black ${
-                  featured || compact ? 'text-sm' : 'text-base'
+                  featured || compact ? 'text-sm' : 'text-sm sm:text-base'
                 }`}
               >
                 ₹{Math.round(discountedPrice)}
               </span>
             </div>
             {discountPercentage > 0 && (
-              <span className=" text-green-500 text-xs font-xs px-2 py-1   transition-transform duration-200">
+              <span className="text-green-500 text-xs font-medium px-1.5 py-0.5 bg-green-50 rounded-full">
                 {discountPercentage}% OFF
               </span>
             )}
           </div>
 
           {totalStock > 0 && totalStock < 15 && (
-            <span className="text-red-500 font-medium text-sm mb-2">
+            <span className="text-red-600 font-medium text-sm">
               Only {totalStock} left
             </span>
           )}
 
           {totalStock === 0 && (
-            <span className="text-gray-500 font-medium text-sm mb-2">
+            <span className="text-gray-500 font-medium text-sm">
               Out of Stock
             </span>
           )}
         </div>
 
-        <div className={`${compact ? 'space-y-1 sm:space-y-2' : 'space-y-2'}`}>
-          {currentQuantity > 0 ? (
-            <div className="flex items-center justify-center bg-white p-2 border border-gray-200">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuantityChange(currentQuantity - 1);
-                }}
-                className="w-6 h-6 flex items-center justify-center bg-white text-black transition-colors border border-black hover:bg-gray-50"
-              >
-                −
-              </button>
-              <span className="mx-3 font-medium text-black min-w-[2rem] text-center text-sm">
-                {currentQuantity}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuantityChange(currentQuantity + 1);
-                }}
-                disabled={currentQuantity >= totalStock}
-                className="w-6 h-6 flex items-center justify-center bg-white text-black transition-colors border border-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                +
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleAddToCart}
-              disabled={!isActive || totalStock === 0 || isAddingToCart}
-              className={`w-full py-2 px-3 text-xs font-medium transition-all duration-200 border ${
-                !isActive || totalStock === 0
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300'
-                  : isAddingToCart
-                  ? 'bg-gray-200 text-black cursor-wait border-gray-400'
-                  : 'bg-white text-black border-black hover:bg-gray-50'
-              }`}
-            >
-              {isAddingToCart ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400 mr-2"></div>
-                  Adding...
-                </div>
-              ) : (
-                'Add to Box'
-              )}
-            </button>
+        {/* Reserve Button - Creative Animated Design with Mobile Support */}
+        <button
+          onClick={handleBuyNow}
+          disabled={!isActive || totalStock === 0}
+          className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-semibold transition-all duration-300 rounded-lg overflow-hidden ${
+            !isActive || totalStock === 0
+              ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
+              : 'bg-white text-black border-2 border-black hover:text-white transform hover:scale-[1.02] active:scale-[0.98] active:text-white touch-manipulation'
+          }`}
+        >
+          {/* Animated background fill - works on both hover and active (touch) */}
+          {isActive && totalStock > 0 && (
+            <div className="absolute inset-0 bg-black transform -translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-300 ease-out"></div>
+          )}
+          
+          {/* Button content with animations for both hover and touch */}
+          <span className="relative z-10 flex items-center justify-center gap-1.5">
+            {!isActive ? (
+              'Unavailable'
+            ) : totalStock === 0 ? (
+              'Out of Stock'
+            ) : (
+              <>
+                <svg 
+                  className="w-3 h-3 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-12 group-active:scale-110" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+                <span className="transform transition-all duration-300 group-hover:tracking-wider group-active:tracking-wider">
+                  Reserve
+                </span>
+                <svg 
+                  className="w-3 h-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:translate-x-1 group-active:scale-110" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </>
+            )}
+          </span>
+
+          {/* Sparkle effects - show on both hover and active for mobile */}
+          {isActive && totalStock > 0 && (
+            <>
+              <div className="absolute top-1 right-2 w-1 h-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
+              <div className="absolute bottom-1 left-3 w-1 h-1 bg-yellow-300 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
+              <div className="absolute top-2 left-1/2 w-0.5 h-0.5 bg-yellow-500 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-pulse group-active:animate-pulse transition-opacity duration-300 delay-150"></div>
+            </>
           )}
 
-          <button
-            onClick={handleBuyNow}
-            disabled={!isActive || totalStock === 0}
-            className={`w-full py-2 px-3 text-xs font-medium transition-all duration-200 ${
-              !isActive || totalStock === 0
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-black text-white hover:bg-gray-800'
-            }`}
-          >
-            {!isActive
-              ? 'Unavailable'
-              : totalStock === 0
-              ? 'Out of Stock'
-              : 'Reserve Yours'}
-          </button>
-        </div>
+          {/* Mobile-specific pulse animation on tap */}
+          <div className="absolute inset-0 bg-black opacity-0 group-active:opacity-10 transition-opacity duration-150 rounded-lg md:hidden"></div>
+        </button>
       </div>
     </div>
   );
@@ -391,6 +458,8 @@ ProductCard.propTypes = {
     variants: PropTypes.arrayOf(
       PropTypes.shape({
         price: PropTypes.number.isRequired,
+        quantity: PropTypes.number,
+        measuringUnit: PropTypes.string,
         discount: PropTypes.shape({
           value: PropTypes.number,
         }),

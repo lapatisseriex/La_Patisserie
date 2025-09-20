@@ -98,8 +98,8 @@ const CategorySwiperHome = ({
 
   if (loading) {
     return (
-      <section className="w-full py-6">
-        <div className="max-w-screen-xl mx-auto">
+      <section className="w-full py-0 md:py-6">
+        <div className="max-w-screen-xl mx-auto pt-6 pb-6 md:pt-0 md:pb-0">
           <PremiumSectionSkeleton 
             variant="category-swiper" 
             showHeader={false}
@@ -187,8 +187,8 @@ const CategorySwiperHome = ({
   const { firstRow, secondRow } = interleaveItems();
 
   return (
-    <div className="w-full py-6 font-sans">
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 md:px-16">
+    <div className="w-full py-0 md:py-6 font-sans">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 md:px-16 pt-6 pb-6 md:pt-0 md:pb-0">
         <div className="flex flex-col md:flex-row md:items-start md:gap-8">
           
           {/* Text Section */}

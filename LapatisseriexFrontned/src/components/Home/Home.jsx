@@ -22,12 +22,13 @@ const Home = () => {
   const handpickedRef = useRef(null);
   const favoritesRef = useRef(null);
 
-  const { categories, fetchCategories, loading: categoriesLoading } = useCategory();
+  const { categories, fetchCategories, getSpecialImages, specialImagesVersion, loading: categoriesLoading } = useCategory();
   const { fetchProducts } = useProduct();
   const { isAuthenticated } = useAuth();
 
   const [bestSellersProducts, setBestSellersProducts] = useState([]);
   const [newlyLaunchedProducts, setNewlyLaunchedProducts] = useState([]);
+  const [specialImages, setSpecialImages] = useState({ bestSeller: null, newlyLaunched: null });
   const [productsLoading, setProductsLoading] = useState(true);
 
   useEffect(() => {
@@ -57,6 +58,41 @@ const Home = () => {
     };
     loadSectionProducts();
   }, [fetchProducts]);
+
+  useEffect(() => {
+    const loadSpecialImages = async () => {
+      try {
+        const images = await getSpecialImages();
+        setSpecialImages(images);
+      } catch (err) {
+        console.error("Error loading special images:", err);
+      }
+    };
+    
+    // Load special images initially
+    loadSpecialImages();
+    
+    // Set up an interval to refresh special images every 30 seconds
+    const refreshInterval = setInterval(() => {
+      console.log('Auto-refreshing special images');
+      loadSpecialImages();
+    }, 30000); // Refresh every 30 seconds
+    
+    // Also refresh when page becomes visible (user switches back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page became visible, refreshing special images');
+        loadSpecialImages();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [getSpecialImages, specialImagesVersion]); // Add specialImagesVersion to dependencies
 
   useEffect(() => {
     const fadeInElements = (element, delay) => {
@@ -92,7 +128,7 @@ const Home = () => {
       </section>
 
       {/* Browse Categories Section */}
-      <section className="w-full py-6 ">
+      <section className="w-full py-0 md:py-6">
         <CategorySwiper 
           categories={categories}
           loading={categoriesLoading}
@@ -101,20 +137,20 @@ const Home = () => {
           newlyLaunchedRef={newlyLaunchedRef}
           handpickedRef={handpickedRef}
           favoritesRef={favoritesRef}
-          bestSellersImage={bestSellersProducts[0]?.images[0]}
-          newlyLaunchedImage={newlyLaunchedProducts[0]?.images[0]}
+          bestSellersImage={specialImages.bestSeller || bestSellersProducts[0]?.images[0]}
+          newlyLaunchedImage={specialImages.newlyLaunched || newlyLaunchedProducts[0]?.images[0]}
         />
       </section>
 
-      <section ref={bestSellersRef} className="w-full py-6">
+      <section ref={bestSellersRef} className="w-full py-0 md:py-6">
         <BestSellers products={bestSellersProducts} loading={productsLoading} />
       </section>
 
-      <section ref={handpickedRef} className="w-full py-6">
+      <section ref={handpickedRef} className="w-full py-0 md:py-6">
         <HandpickedForYou />
       </section>
 
-      <section ref={favoritesRef} className="w-full py-6">
+      <section ref={favoritesRef} className="w-full py-0 md:py-6">
         <FavoritesSection />
       </section>
 

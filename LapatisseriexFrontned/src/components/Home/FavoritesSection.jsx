@@ -13,8 +13,8 @@ const FavoritesSection = () => {
   // Show loading state for authenticated users
   if (user && loading) {
     return (
-      <section className="w-full py-6">
-        <div className="max-w-screen-xl mx-auto">
+      <section className="w-full py-0 md:py-6">
+        <div className="max-w-screen-xl mx-auto pt-6 pb-6 md:pt-0 md:pb-0">
           <PremiumSectionSkeleton 
             variant="products" 
             count={3}
@@ -35,8 +35,8 @@ const FavoritesSection = () => {
   const displayFavorites = favorites.slice(0, 3);
 
   return (
-    <section className="w-full py-6">
-      <div className="max-w-screen-xl mx-auto px-4">
+    <section className="w-full py-0 md:py-6">
+      <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
         <div className="mb-8 space-y-3">
           <h2 className="text-2xl font-bold tracking-wide text-left" style={{ 
             background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',

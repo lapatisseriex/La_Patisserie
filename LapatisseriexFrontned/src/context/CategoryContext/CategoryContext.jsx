@@ -10,6 +10,7 @@ export const CategoryProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [specialImagesVersion, setSpecialImagesVersion] = useState(0); // Force refresh trigger
   const { user } = useAuth();
   
   // Cache to prevent redundant API calls
@@ -293,18 +294,134 @@ export const CategoryProvider = ({ children }) => {
     }
   }, [API_URL]);
 
+  // Get special category images (Best Seller and Newly Launched)
+  const getSpecialImages = useCallback(async () => {
+    try {
+      const cacheKey = 'special-images';
+      
+      // Check if we have a valid cached response
+      const cachedResult = requestCache.current.get(cacheKey);
+      const now = Date.now();
+      
+      if (cachedResult && (now - cachedResult.timestamp < CACHE_TIMEOUT)) {
+        console.log('Using cached special images data');
+        return cachedResult.data;
+      }
+      
+      setError(null);
+      
+      const response = await axios.get(`${API_URL}/categories/special-images`);
+      
+      // Store the result in cache with current timestamp
+      requestCache.current.set(cacheKey, {
+        data: response.data,
+        timestamp: now
+      });
+      
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching special images:", err);
+      setError("Failed to load special images");
+      return { bestSeller: null, newlyLaunched: null };
+    }
+  }, [API_URL]);
+
+  // Admin function: Update special category image
+  const updateSpecialImage = useCallback(async (type, imageUrl) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get auth token
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      const response = await axios.put(`${API_URL}/categories/special-image/${type}`, 
+        { imageUrl },
+        {
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Clear cache for special images to force refresh
+      requestCache.current.delete('special-images');
+      
+      // Force components to refresh special images
+      setSpecialImagesVersion(prev => prev + 1);
+      
+      return response.data;
+    } catch (err) {
+      console.error(`Error updating ${type} special image:`, err);
+      setError(err.response?.data?.message || `Failed to update ${type} image`);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL]);
+
+  // Admin function: Delete special category image
+  const deleteSpecialImage = useCallback(async (type) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get auth token
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      const response = await axios.delete(`${API_URL}/categories/special-image/${type}`, 
+        {
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Clear cache for special images to force refresh
+      requestCache.current.delete('special-images');
+      
+      // Force components to refresh special images
+      setSpecialImagesVersion(prev => prev + 1);
+      
+      return response.data;
+    } catch (err) {
+      console.error(`Error deleting ${type} special image:`, err);
+      setError(err.response?.data?.message || `Failed to delete ${type} image`);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL]);
+
+  // Force refresh special images
+  const refreshSpecialImages = useCallback(() => {
+    requestCache.current.delete('special-images');
+    setSpecialImagesVersion(prev => prev + 1);
+  }, []);
+
   // Context value
   const value = {
     categories,
     loading,
     error,
+    specialImagesVersion,
     fetchCategories,
     getCategory,
     getCategoryProducts,
     createCategory,
     updateCategory,
     deleteCategory,
-    reprocessCategoryImages
+    reprocessCategoryImages,
+    getSpecialImages,
+    updateSpecialImage,
+    deleteSpecialImage,
+    refreshSpecialImages
   };
 
   return (

@@ -50,8 +50,8 @@ const RecentlyViewedSection = () => {
   }
 
   return (
-    <section className="w-full py-6 bg-gradient-to-br from-gray-50 to-blue-50">
-      <div className="max-w-screen-xl mx-auto px-4">
+    <section className="w-full py-0 md:py-6 bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
         {/* Loading State */}
         {loading && (
           <PremiumSectionSkeleton 
@@ -83,7 +83,7 @@ const RecentlyViewedSection = () => {
                   return null;
                 }
                 return (
-                  <div key={item.productId._id} className="transform hover:scale-105 transition-transform duration-300">
+                  <div key={item.productId._id}>
                     <ProductCard product={item.productId} />
                   </div>
                 );

@@ -302,3 +302,188 @@ export const getCategoryProducts = asyncHandler(async (req, res) => {
   
   res.status(200).json(products);
 });
+
+// @desc    Update special category image (Best Seller or Newly Launched)
+// @route   PUT /api/categories/special-image/:type
+// @access  Admin only
+export const updateSpecialImage = asyncHandler(async (req, res) => {
+  const { type } = req.params; // 'bestSeller' or 'newlyLaunched'
+  const { imageUrl } = req.body;
+
+  console.log(`Admin updating special image - Type: ${type}, URL: ${imageUrl}`);
+
+  if (!['bestSeller', 'newlyLaunched'].includes(type)) {
+    res.status(400);
+    throw new Error('Invalid special image type. Must be "bestSeller" or "newlyLaunched"');
+  }
+
+  if (!imageUrl) {
+    res.status(400);
+    throw new Error('Image URL is required');
+  }
+
+  try {
+    // Process image with background removal
+    console.log(`Processing special image for ${type}: ${imageUrl}`);
+    const processedImageUrl = await removeBackground(imageUrl);
+    console.log(`Processed image URL: ${processedImageUrl}`);
+    
+    // Create or find a special categories document to store these images
+    // We'll use a special category with a reserved name for this purpose
+    let specialCategory = await Category.findOne({ name: '__SPECIAL_IMAGES__' });
+    
+    if (!specialCategory) {
+      console.log('Creating new special category document');
+      specialCategory = await Category.create({
+        name: '__SPECIAL_IMAGES__',
+        description: 'Special category for storing Best Seller and Newly Launched images',
+        isActive: false, // Hidden from regular category listings
+        specialImages: {}
+      });
+    }
+
+    // Get the current special image to delete it later
+    const currentImage = specialCategory.specialImages?.[type];
+    
+    // Update the special image
+    if (!specialCategory.specialImages) {
+      specialCategory.specialImages = {};
+    }
+    specialCategory.specialImages[type] = processedImageUrl;
+    
+    await specialCategory.save();
+    console.log(`Special category updated with ${type} image: ${processedImageUrl}`);
+
+    // Delete the old image from Cloudinary if it exists
+    if (currentImage) {
+      const publicId = getPublicIdFromUrl(currentImage);
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+          console.log(`Deleted old image: ${publicId}`);
+        } catch (error) {
+          console.error(`Failed to delete old special image ${publicId}:`, error);
+        }
+      }
+    }
+
+    res.status(200).json({
+      message: `${type} image updated successfully`,
+      imageUrl: processedImageUrl,
+      type
+    });
+  } catch (error) {
+    console.error(`Error updating special image for ${type}:`, error);
+    res.status(500);
+    throw new Error(`Failed to update ${type} image`);
+  }
+});
+
+// @desc    Get special category images (Best Seller and Newly Launched)
+// @route   GET /api/categories/special-images
+// @access  Public
+export const getSpecialImages = asyncHandler(async (req, res) => {
+  console.log('Fetching special category images...');
+  
+  try {
+    const specialCategory = await Category.findOne({ name: '__SPECIAL_IMAGES__' });
+    
+    // Get manually uploaded images first
+    let bestSellerImage = specialCategory?.specialImages?.bestSeller || null;
+    let newlyLaunchedImage = specialCategory?.specialImages?.newlyLaunched || null;
+    
+    console.log(`Manual images - Best Seller: ${bestSellerImage}, Newly Launched: ${newlyLaunchedImage}`);
+    
+    // If no manual images are set, get from first products
+    if (!bestSellerImage || !newlyLaunchedImage) {
+      console.log('Fetching fallback images from products...');
+      
+      // Get best seller products (sorted by rating)
+      const bestSellerProducts = await Product.find({ isActive: true })
+        .sort({ rating: -1, createdAt: -1 })
+        .limit(1)
+        .select('images');
+      
+      // Get newly launched products (sorted by creation date)
+      const newlyLaunchedProducts = await Product.find({ isActive: true })
+        .sort({ createdAt: -1 })
+        .limit(1)
+        .select('images');
+      
+      console.log(`Found ${bestSellerProducts.length} best seller products, ${newlyLaunchedProducts.length} newly launched products`);
+      
+      // Use first product image if no manual image is set
+      if (!bestSellerImage && bestSellerProducts.length > 0 && bestSellerProducts[0].images.length > 0) {
+        bestSellerImage = bestSellerProducts[0].images[0];
+        console.log(`Using fallback best seller image: ${bestSellerImage}`);
+      }
+      
+      if (!newlyLaunchedImage && newlyLaunchedProducts.length > 0 && newlyLaunchedProducts[0].images.length > 0) {
+        newlyLaunchedImage = newlyLaunchedProducts[0].images[0];
+        console.log(`Using fallback newly launched image: ${newlyLaunchedImage}`);
+      }
+    }
+
+    const result = {
+      bestSeller: bestSellerImage,
+      newlyLaunched: newlyLaunchedImage,
+      isManual: {
+        bestSeller: !!(specialCategory?.specialImages?.bestSeller),
+        newlyLaunched: !!(specialCategory?.specialImages?.newlyLaunched)
+      }
+    };
+    
+    console.log('Returning special images:', result);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching special images:', error);
+    res.status(500);
+    throw new Error('Failed to fetch special images');
+  }
+});
+
+// @desc    Delete special category image
+// @route   DELETE /api/categories/special-image/:type
+// @access  Admin only
+export const deleteSpecialImage = asyncHandler(async (req, res) => {
+  const { type } = req.params; // 'bestSeller' or 'newlyLaunched'
+
+  if (!['bestSeller', 'newlyLaunched'].includes(type)) {
+    res.status(400);
+    throw new Error('Invalid special image type. Must be "bestSeller" or "newlyLaunched"');
+  }
+
+  try {
+    const specialCategory = await Category.findOne({ name: '__SPECIAL_IMAGES__' });
+    
+    if (!specialCategory || !specialCategory.specialImages?.[type]) {
+      res.status(404);
+      throw new Error(`No ${type} image found to delete`);
+    }
+
+    const imageUrl = specialCategory.specialImages[type];
+    
+    // Delete from Cloudinary
+    const publicId = getPublicIdFromUrl(imageUrl);
+    if (publicId) {
+      try {
+        await deleteFromCloudinary(publicId);
+      } catch (error) {
+        console.error(`Failed to delete special image ${publicId}:`, error);
+      }
+    }
+
+    // Remove from database
+    specialCategory.specialImages[type] = null;
+    await specialCategory.save();
+
+    res.status(200).json({
+      message: `${type} image deleted successfully`,
+      type
+    });
+  } catch (error) {
+    console.error(`Error deleting special image for ${type}:`, error);
+    res.status(500);
+    throw new Error(`Failed to delete ${type} image`);
+  }
+});

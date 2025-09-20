@@ -323,7 +323,7 @@ const ProductDisplayPage = () => {
   const totalStock = product.stock || selectedVariant.stock || 0;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-100">
       {/* Sticky Breadcrumb - completely removed */}
 
       {/* Enhanced Sticky Mini Navbar - Shows on scroll down past Reserve button (all devices) */}
@@ -453,163 +453,162 @@ const ProductDisplayPage = () => {
       {/* Breadcrumb Navigation - completely removed */}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Image Gallery */}
           <div className="lg:col-span-7">
             {/* Mobile Image Display Layout (based on reference image) */}
             <div className="md:hidden">
-              <div className="relative w-full">
-                {/* Mobile Image Container */}
-                <div className="relative w-full overflow-hidden">
-                  <div 
-                    className="relative w-full aspect-square cursor-pointer"
-                    onClick={handleImageZoom}
-                  >
-                    <MediaDisplay
-                      src={product.images?.[selectedImageIndex] || product.images?.[0]}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                    
-                    {/* Navigation Controls - Back Arrow and Search */}
-                    <div className="absolute top-3 left-3 z-10">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(-1);
-                        }}
-                        className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
-                      >
-                        <ArrowLeft className="w-5 h-5 text-gray-700" />
-                      </button>
-                    </div>
-                    
-                    {/* Search and Share Icons */}
-                    <div className="absolute top-3 right-3 flex gap-2 z-10">
-                      <button 
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
-                      >
-                        <div className="w-5 h-5 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                          </svg>
-                        </div>
-                      </button>
-                      <button 
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
-                      >
-                        <div className="w-5 h-5 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                            <polyline points="16 6 12 2 8 6"></polyline>
-                            <line x1="12" y1="2" x2="12" y2="15"></line>
-                          </svg>
-                        </div>
-                      </button>
-                    </div>
-                    
-                    {/* Bottom Action Buttons */}
-                    <div className="absolute bottom-3 left-3 right-3 flex justify-between z-10">
-                      <button 
-                        className="w-10 h-10 bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
-                      >
-                        <div className="w-5 h-5 flex items-center justify-center text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20v-6M6 20V10M18 20V4"></path>
-                          </svg>
-                        </div>
-                      </button>
-                      <button 
-                        className="w-10 h-10 bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
-                      >
-                        <div className="w-5 h-5 flex items-center justify-center text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            <circle cx="12" cy="12" r="4"></circle>
-                          </svg>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Image dots indicator for multiple images */}
-                {product.images && product.images.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
-                    {product.images.map((_, index) => (
-                      <div
-                        key={index}
-                        className={`w-2 h-2 transition-all duration-300 ${
-                          index === selectedImageIndex
-                            ? 'bg-white scale-110'
-                            : 'bg-white/50 hover:bg-white/80'
-                        }`}
+              <div className="bg-white rounded-xl shadow-sm p-4">
+                <div className="relative w-full">
+                  {/* Mobile Image Container */}
+                  <div className="relative w-full overflow-hidden rounded-lg">
+                    <div 
+                      className="relative w-full aspect-square cursor-pointer"
+                      onClick={handleImageZoom}
+                    >
+                      <MediaDisplay
+                        src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                        alt={product.name}
+                        className="w-full h-full object-cover rounded-lg"
                       />
-                    ))}
+                      
+                      {/* Navigation Controls - Back Arrow and Search */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(-1);
+                          }}
+                          className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <ArrowLeft className="w-5 h-5 text-gray-700" />
+                        </button>
+                      </div>
+                      
+                      {/* Zoom Icon - Top Right */}
+                      <div className="absolute top-3 right-3 z-10">
+                        <button 
+                          onClick={handleImageZoom}
+                          className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <ZoomIn className="w-5 h-5 text-gray-700" />
+                        </button>
+                      </div>
+                      
+                      {/* Share Icon - Moved below zoom */}
+                      <div className="absolute top-16 right-3 z-10">
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <Share2 className="w-5 h-5 text-gray-700" />
+                        </button>
+                      </div>
+                      
+                      {/* Bottom Action Buttons */}
+                      <div className="absolute bottom-3 left-3 right-3 flex justify-between z-10">
+                        <button 
+                          className="w-10 h-10 bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <div className="w-5 h-5 flex items-center justify-center text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 20v-6M6 20V10M18 20V4"></path>
+                            </svg>
+                          </div>
+                        </button>
+                        <button 
+                          className="w-10 h-10 bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <div className="w-5 h-5 flex items-center justify-center text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                              <circle cx="12" cy="12" r="4"></circle>
+                            </svg>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                )}
+                  
+                  {/* Image dots indicator for multiple images */}
+                  {product.images && product.images.length > 1 && (
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+                      {product.images.map((_, index) => (
+                        <div
+                          key={index}
+                          className={`w-2 h-2 transition-all duration-300 ${
+                            index === selectedImageIndex
+                              ? 'bg-white scale-110'
+                              : 'bg-white/50 hover:bg-white/80'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             
             {/* Desktop Image Display Layout - Original Layout */}
-            <div className="hidden md:flex sticky top-4 gap-4">
-              {/* Thumbnail Images - Left Side */}
-              {product.images && product.images.length > 1 && (
-                <div className="flex flex-col gap-2 w-20 md:w-24 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
-                  {product.images.map((image, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleImageSelect(index)}
-                      className={`aspect-square border-2 transition-all overflow-hidden hover:scale-105 flex-shrink-0 ${
-                        index === selectedImageIndex
-                          ? 'border-black shadow-lg'
-                          : 'border-gray-300 hover:border-gray-500'
-                      }`}
+            <div className="hidden md:flex bg-white rounded-xl shadow-sm p-4">
+              <div className="flex sticky top-4 gap-4 w-full">
+                {/* Thumbnail Images - Left Side */}
+                {product.images && product.images.length > 1 && (
+                  <div className="flex flex-col gap-2 w-20 md:w-24 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
+                    {product.images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleImageSelect(index)}
+                        className={`aspect-square border-2 transition-all overflow-hidden hover:scale-105 flex-shrink-0 rounded-lg ${
+                          index === selectedImageIndex
+                            ? 'border-black shadow-lg'
+                            : 'border-gray-300 hover:border-gray-500'
+                        }`}
+                      >
+                        <MediaDisplay
+                          src={image}
+                          alt={`${product.name} ${index + 1}`}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Main Image - Right Side */}
+                <div className="flex-1">
+                  <div className="relative bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                    <div 
+                      className="aspect-square cursor-pointer group relative overflow-hidden"
+                      onClick={handleImageZoom}
+                      onMouseEnter={() => setIsHoveringImage(true)}
+                      onMouseLeave={() => setIsHoveringImage(false)}
                     >
                       <MediaDisplay
-                        src={image}
-                        alt={`${product.name} ${index + 1}`}
+                        src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                        alt={product.name}
                         className="w-full h-full object-cover"
+                        style={{
+                          opacity: 1
+                        }}
                       />
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Main Image - Right Side */}
-              <div className="flex-1">
-                <div className="relative bg-white border border-gray-200">
-                  <div 
-                    className="aspect-square cursor-pointer group relative overflow-hidden"
-                    onClick={handleImageZoom}
-                    onMouseEnter={() => setIsHoveringImage(true)}
-                    onMouseLeave={() => setIsHoveringImage(false)}
-                  >
-                    <MediaDisplay
-                      src={product.images?.[selectedImageIndex] || product.images?.[0]}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                      style={{
-                        opacity: 1
-                      }}
-                    />
-                    
-                    {/* Zoom icon always visible */}
-                    <div className="absolute inset-0 bg-black bg-opacity-5 transition-all flex items-center justify-center">
-                      <ZoomIn className="w-8 h-8 text-white opacity-70" />
-                    </div>
-                    
-                    {/* Stock Status */}
-                    {totalStock === 0 && (
-                      <div className="absolute top-4 right-4 bg-black text-white px-3 py-1 text-sm">
-                        Out of Stock
+                      
+                      {/* Zoom icon - top right inside image */}
+                      <div className="absolute top-4 right-4 transition-all">
+                        <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md">
+                          <ZoomIn className="w-5 h-5 text-gray-700" />
+                        </div>
                       </div>
-                    )}
+                      
+                      {/* Stock Status */}
+                      {totalStock === 0 && (
+                        <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 text-sm rounded">
+                          Out of Stock
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -617,65 +616,102 @@ const ProductDisplayPage = () => {
           </div>
 
           {/* Product Information - Right Side */}
-          <div className="lg:col-span-5">
-            <div className="space-y-6">
-              
-              {/* Product Title & Info */}
-              <div className="space-y-4">
-                <h1 className="text-2xl md:text-3xl font-medium leading-tight" style={{ 
-                  background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
-                }}>
+          <div className="lg:col-span-5 space-y-6">
+            
+            {/* Product Info Card */}
+            <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+              {/* Product Title & Quantity */}
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold leading-tight text-black">
                   {product.name}
                 </h1>
-                
-                {/* Pricing */}
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-black">
-                    ₹ {Math.round(discountedPrice)}
-                  </span>
-                  {discountPercentage > 0 && (
-                    <>
-                      <span className="text-lg text-gray-500 line-through">
-                        ₹{selectedVariant.price}
-                      </span>
-                      <span className="text-sm font-medium text-green-600">
-                        {discountPercentage}% Off
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Star Rating and Reviews */}
-             
-
-                {/* Dietary Indicators */}
-                <div className="flex items-center gap-2">
-                  <span className={`inline-flex items-center text-xs font-medium px-3 py-1.5 border ${
-                    product.hasEgg 
-                      ? 'border-red-500 bg-red-50 text-red-700' 
-                      : 'border-green-500 bg-green-50 text-green-700'
-                  }`}>
-                    <span className={`w-3 h-3 mr-2 border flex items-center justify-center ${
-                      product.hasEgg 
-                        ? 'border-red-500 bg-red-100' 
-                        : 'border-green-500 bg-green-100'
-                    }`}>
-                      {product.hasEgg ? (
-                        <div className="w-0 h-0 border-l-[3px] border-r-[3px] border-b-[4px] border-l-transparent border-r-transparent border-b-red-600"></div>
-                      ) : (
-                        <div className="w-1.5 h-1.5 bg-green-600"></div>
-                      )}
-                    </span>
-                    {product.hasEgg ? 'WITH EGG' : 'EGGLESS'}
-                  </span>
-                </div>
+                {selectedVariant.quantity && (
+                  <p className="text-lg font-semibold text-gray-600 mt-1">
+                    {selectedVariant.quantity}{selectedVariant.measuringUnit}
+                  </p>
+                )}
               </div>
 
-              {/* Variant Selection and Action Buttons */}
-              <div className="bg-white border border-black p-6 space-y-6">
+              {/* Inline Green Rating Badge */}
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                  ⭐ 4.5 • 120 reviews
+                </span>
+              </div>
+
+              {/* Price Row */}
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold text-black">
+                  ₹ {Math.round(discountedPrice)}
+                </span>
+                {discountPercentage > 0 && (
+                  <>
+                    <span className="text-lg text-gray-500 line-through">
+                      ₹{selectedVariant.price}
+                    </span>
+                    <span className="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+                      {discountPercentage}% Off
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Delivery Row */}
+              <div className="flex items-center gap-2 text-green-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="font-medium">Free delivery on orders above ₹500</span>
+              </div>
+
+              {/* Dietary Indicators */}
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center text-xs font-medium px-3 py-1.5 border rounded ${
+                  product.hasEgg 
+                    ? 'border-red-500 bg-red-50 text-red-700' 
+                    : 'border-green-500 bg-green-50 text-green-700'
+                }`}>
+                  <span className={`w-3 h-3 mr-2 border flex items-center justify-center ${
+                    product.hasEgg 
+                      ? 'border-red-500 bg-red-100' 
+                      : 'border-green-500 bg-green-100'
+                  }`}>
+                    {product.hasEgg ? (
+                      <div className="w-0 h-0 border-l-[3px] border-r-[3px] border-b-[4px] border-l-transparent border-r-transparent border-b-red-600"></div>
+                    ) : (
+                      <div className="w-1.5 h-1.5 bg-green-600"></div>
+                    )}
+                  </span>
+                  {product.hasEgg ? 'WITH EGG' : 'EGGLESS'}
+                </span>
+              </div>
+            </div>
+
+            {/* Feature Row - Gray inside White */}
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Mini-box 1 */}
+                <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3">
+                  <Package className="w-5 h-5 text-black" />
+                  <div>
+                    <div className="text-sm font-medium text-black">Fresh</div>
+                    <div className="text-xs text-gray-500">Baked daily</div>
+                  </div>
+                </div>
+                
+                {/* Mini-box 2 */}
+                <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3">
+                  <Shield className="w-5 h-5 text-black" />
+                  <div>
+                    <div className="text-sm font-medium text-black">Quality</div>
+                    <div className="text-xs text-gray-500">Premium ingredients</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Variant Selection and Action Buttons */}
+            <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
                 {/* Variant Selection */}
                 {product.variants && product.variants.length > 1 && (
                   <div>
@@ -794,9 +830,11 @@ const ProductDisplayPage = () => {
                 </div>
               </div>
 
-              {/* Product Details Accordion */}
-              <div className="mt-8">
-                <div className="bg-white border border-gray-200">
+            {/* Information Section - White Expandable Card */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-black mb-4">Product Information</h3>
+                <div className="bg-white border border-gray-200 rounded-lg">
                   
                   {/* Product Description */}
                   <div className="border-b border-gray-200">
@@ -925,19 +963,84 @@ const ProductDisplayPage = () => {
           </div>
         </div>
 
+        {/* Sticky Footer */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t shadow-lg">
+          {/* Gray strip with green delivery text */}
+          <div className="bg-gray-100 px-4 py-2 text-center">
+            <span className="text-green-600 text-sm font-medium">
+              Shop for ₹99 to unlock free delivery
+            </span>
+          </div>
+          
+          {/* Pink buttons row */}
+          <div className="p-4">
+            <div className="flex gap-3 max-w-md mx-auto">
+              {/* Add to Box Button */}
+              {currentCartQuantity > 0 ? (
+                <div className="flex-1 bg-pink-600 text-white py-3 px-4 flex items-center justify-center gap-2 rounded-lg">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuantityChange(currentCartQuantity - 1);
+                    }}
+                    className="w-8 h-8 flex items-center justify-center bg-white/20 text-white transition-colors rounded"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="font-semibold text-white min-w-[2rem] text-center">
+                    {currentCartQuantity}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuantityChange(currentCartQuantity + 1);
+                    }}
+                    disabled={currentCartQuantity >= totalStock}
+                    className="w-8 h-8 flex items-center justify-center bg-white/20 text-white transition-colors rounded disabled:opacity-50"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  disabled={!product?.isActive || totalStock === 0 || isAddingToCart}
+                  className={`flex-1 py-3 px-4 font-semibold transition-all duration-200 rounded-lg ${
+                    !product?.isActive || totalStock === 0
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : isAddingToCart
+                      ? 'bg-pink-400 text-white cursor-wait'
+                      : 'bg-pink-600 text-white hover:bg-pink-700'
+                  }`}
+                >
+                  {isAddingToCart ? 'Adding...' : totalStock === 0 ? 'Out of Stock' : 'Add to Box'}
+                </button>
+              )}
+
+              {/* Reserve Yours Button */}
+              <button
+                onClick={handleBuyNow}
+                disabled={!product?.isActive || totalStock === 0}
+                className={`flex-1 py-3 px-4 font-semibold transition-all duration-200 rounded-lg ${
+                  !product?.isActive || totalStock === 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-pink-600 text-white hover:bg-pink-700'
+                }`}
+              >
+                {totalStock === 0 ? 'Out of Stock' : 'Reserve Yours'}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Recently Viewed / Similar Products */}
         {(recentlyViewed.length > 0 || sameCategoryProducts.length > 0) && (
-          <section className="mt-16">
-            <div className="text-center mb-8 border-b border-gray-200 pb-6">
-              <h2 className="text-2xl font-semibold mb-2" style={{ 
-                background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
-              }}>
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-32">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold mb-2 text-black">
                 {user && recentlyViewed.length > 0 ? "Recently Viewed" : "You Might Also Like"}
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-500">
                 {user && recentlyViewed.length > 0 
                   ? "Products you've looked at recently" 
                   : `More delicious ${product?.category?.name || 'products'} for you`}
@@ -960,7 +1063,7 @@ const ProductDisplayPage = () => {
                 );
               })}
             </div>
-          </section>
+          </div>
         )}
       </div>
 

@@ -19,6 +19,16 @@ const categorySchema = new mongoose.Schema(
       type: [String], // Array of Cloudinary URLs for videos
       default: []
     },
+    specialImages: {
+      bestSeller: {
+        type: String, // Cloudinary URL for manually uploaded best seller image
+        default: null
+      },
+      newlyLaunched: {
+        type: String, // Cloudinary URL for manually uploaded newly launched image
+        default: null
+      }
+    },
     isActive: {
       type: Boolean,
       default: true

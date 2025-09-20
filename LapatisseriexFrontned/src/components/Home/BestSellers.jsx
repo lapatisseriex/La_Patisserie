@@ -5,18 +5,20 @@ import DessertLoader from "../common/DessertLoader";
 const BestSellers = ({ products, loading = false }) => {
   if (loading || !products || products.length === 0) {
     return (
-      <section className="w-full py-6">
-        <DessertLoader 
-          variant="cupcake" 
-          message="Loading our best sellers..."
-        />
+      <section className="w-full py-0 md:py-6">
+        <div className="max-w-screen-xl mx-auto pt-6 pb-6 md:pt-0 md:pb-0">
+          <DessertLoader 
+            variant="cupcake" 
+            message="Loading our best sellers..."
+          />
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="w-full py-6">
-      <div className="max-w-screen-xl mx-auto px-4">
+    <section className="w-full py-0 md:py-6">
+      <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
         <div className="mb-8 space-y-3">
           <h2 className="text-2xl font-bold tracking-wide text-left" style={{ 
             background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
