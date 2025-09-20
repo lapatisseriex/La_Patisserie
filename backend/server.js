@@ -16,6 +16,8 @@ import productRoutes from './routes/productRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import hostelRoutes from './routes/hostelRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
+import dynamicCategoryRoutes from './routes/dynamicCategoryRoutes.js';
+import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -66,6 +68,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/hostels', hostelRoutes);
+app.use('/api/dynamic-categories', dynamicCategoryRoutes);
+app.use('/api/image-reprocess', imageReprocessRoutes);
 
 
 // Root route

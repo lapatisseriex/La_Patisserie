@@ -2,18 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import CategoryForm from './CategoryForm';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { normalizeImageUrl } from '../../../utils/imageUtils';
 
 /**
  * AdminCategories component for managing categories in admin dashboard
  */
 const AdminCategories = () => {
-  const { categories, loading, error, fetchCategories, deleteCategory } = useCategory();
+  const { categories, loading, error, fetchCategories, deleteCategory, reprocessCategoryImages } = useCategory();
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [localLoading, setLocalLoading] = useState(false);
+  const [processingCategoryId, setProcessingCategoryId] = useState(null);
 
   // Load categories including inactive ones
   useEffect(() => {
@@ -85,6 +88,29 @@ const AdminCategories = () => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingCategory(null);
+  };
+  
+  // Handle reprocessing of category images (background removal)
+  const handleReprocessImages = async (categoryId, categoryName) => {
+    if (!categoryId) return;
+    
+    try {
+      setProcessingCategoryId(categoryId);
+      toast.info(`Reprocessing images for ${categoryName}...`);
+      
+      const result = await reprocessCategoryImages(categoryId);
+      
+      if (result && result.category) {
+        toast.success(`Successfully reprocessed ${result.category.images?.length || 0} images for ${categoryName}`);
+      } else {
+        toast.warning(`No images found for ${categoryName} or no changes needed`);
+      }
+    } catch (err) {
+      console.error('Error reprocessing images:', err);
+      toast.error(`Failed to reprocess images: ${err.message || 'Unknown error'}`);
+    } finally {
+      setProcessingCategoryId(null);
+    }
   };
 
   return (
@@ -167,9 +193,9 @@ const AdminCategories = () => {
                     <td className="py-3 px-4">
                       {category.featuredImage ? (
                         <img
-                          src={category.featuredImage}
+                          src={normalizeImageUrl(category.featuredImage)}
                           alt={category.name}
-                          className="h-12 w-12 object-cover rounded-md"
+                          className="h-12 w-12 object-contain rounded-md bg-gray-50"
                         />
                       ) : (
                         <div className="h-12 w-12 bg-white rounded-md flex items-center justify-center text-white">
@@ -220,6 +246,18 @@ const AdminCategories = () => {
                         >
                           Products
                         </Link>
+                        {category.images?.length > 0 && (
+                          <button
+                            onClick={() => handleReprocessImages(category._id, category.name)}
+                            disabled={processingCategoryId === category._id}
+                            className={`text-purple-500 hover:text-purple-700 font-medium ${
+                              processingCategoryId === category._id ? 'opacity-50 cursor-wait' : ''
+                            }`}
+                            title="Remove backgrounds from all images in this category"
+                          >
+                            {processingCategoryId === category._id ? "Processing..." : "Remove BG"}
+                          </button>
+                        )}
                         {deleteId === category._id ? (
                           <div className="flex items-center space-x-2">
                             <span className="text-sm text-red-500 font-light">Confirm?</span>

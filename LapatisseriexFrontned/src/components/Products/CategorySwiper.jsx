@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { normalizeImageUrl } from '../../utils/imageUtils';
 
 const CategorySwiper = ({
   categories = [],
@@ -185,11 +186,11 @@ const CategorySwiper = ({
                 onClick={() => onSelectCategory(category._id || category.id)}
               >
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full overflow-hidden mb-1 border border-gray-200 shadow-sm">
+                  <div className="w-10 h-10 rounded-full overflow-hidden mb-1 bg-transparent">
                     <img
-                      src={category.featuredImage || (category.images?.[0] || '')}
+                      src={normalizeImageUrl(category.featuredImage || (category.images?.[0] || ''))}
                       alt={category.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       loading="lazy"
                       onError={(e) => {
                         e.target.src = '/images/cake-logo.png';

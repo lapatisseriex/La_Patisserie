@@ -7,6 +7,7 @@ import {
   deleteCategory,
   getCategoryProducts
 } from '../controllers/categoryController.js';
+import { reprocessCategoryImages } from '../controllers/imageReprocessController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -20,5 +21,6 @@ router.get('/:id/products', getCategoryProducts);
 router.post('/', protect, admin, createCategory);
 router.put('/:id', protect, admin, updateCategory);
 router.delete('/:id', protect, admin, deleteCategory);
+router.post('/:id/reprocess-images', protect, admin, reprocessCategoryImages);
 
 export default router;

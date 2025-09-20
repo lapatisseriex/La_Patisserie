@@ -10,6 +10,7 @@
     "trim:recent": "node ./scripts/trimRecentlyViewed.js"
   },
   "dependencies": {
+    "axios": "^1.12.2",
     "cloudinary": "^2.7.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",

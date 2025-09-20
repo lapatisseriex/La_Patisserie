@@ -9,3 +9,37 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* Ensure smooth transitions on hover states */
+.user-menu-item {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-menu-item:hover {
+  background-color: #f7f8f9;
+  transform: translateX(2px);
+}
+
+/* Add a subtle highlight to active menu items */
+.user-menu-active {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Add subtle hover effect */
+.user-menu-item:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 0;
+  background-color: #000;
+  transition: width 0.3s ease;
+}
+
+.user-menu-item:hover:after {
+  width: 100%;
+  opacity: 0.1;
+}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { normalizeImageUrl } from '../../utils/imageUtils';
 
 const BrowseCategories = ({ categories }) => {
   // Early return if no categories
@@ -24,7 +25,7 @@ const BrowseCategories = ({ categories }) => {
             <Link to={`/products?category=${displayCategories[0]._id}`} className="block h-full">
               <div className="relative h-full flex flex-col">
                 <img 
-                  src={displayCategories[0].featuredImage || '/images/placeholder-image.jpg'} 
+                  src={normalizeImageUrl(displayCategories[0].featuredImage) || '/images/placeholder-image.jpg'} 
                   alt={displayCategories[0].name}
                   className="w-full h-full object-cover flex-grow"
                 />
@@ -44,7 +45,7 @@ const BrowseCategories = ({ categories }) => {
                 <Link to={`/products?category=${category._id}`} className="block h-full">
                   <div className="relative h-full flex flex-col">
                     <img 
-                      src={category.featuredImage || '/images/placeholder-image.jpg'} 
+                      src={normalizeImageUrl(category.featuredImage) || '/images/placeholder-image.jpg'} 
                       alt={category.name}
                       className="w-full h-32 lg:h-40 object-cover flex-grow"
                     />
@@ -64,7 +65,7 @@ const BrowseCategories = ({ categories }) => {
             <Link to={`/products?category=${category._id}`} className="block h-full">
               <div className="relative h-full flex flex-col">
                 <img 
-                  src={category.featuredImage || '/images/placeholder-image.jpg'} 
+                  src={normalizeImageUrl(category.featuredImage) || '/images/placeholder-image.jpg'} 
                   alt={category.name}
                   className="w-full h-32 object-cover flex-grow"
                 />
@@ -84,7 +85,7 @@ const BrowseCategories = ({ categories }) => {
           <Link to={`/products?category=${displayCategories[0]._id}`} className="block">
             <div className="relative flex flex-col">
               <img 
-                src={displayCategories[0].featuredImage || '/images/placeholder-image.jpg'} 
+                src={normalizeImageUrl(displayCategories[0].featuredImage) || '/images/placeholder-image.jpg'} 
                 alt={displayCategories[0].name}
                 className="w-full h-48 object-cover"
               />
@@ -102,7 +103,7 @@ const BrowseCategories = ({ categories }) => {
               <Link to={`/products?category=${category._id}`} className="block">
                 <div className="relative flex flex-col">
                   <img 
-                    src={category.featuredImage || '/images/placeholder-image.jpg'} 
+                    src={normalizeImageUrl(category.featuredImage) || '/images/placeholder-image.jpg'} 
                     alt={category.name}
                     className="w-full h-28 object-cover"
                   />
@@ -122,7 +123,7 @@ const BrowseCategories = ({ categories }) => {
               <Link to={`/products?category=${category._id}`} className="block">
                 <div className="relative flex flex-col">
                   <img 
-                    src={category.featuredImage || '/images/placeholder-image.jpg'} 
+                    src={normalizeImageUrl(category.featuredImage) || '/images/placeholder-image.jpg'} 
                     alt={category.name}
                     className="w-full h-28 object-cover"
                   />

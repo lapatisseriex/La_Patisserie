@@ -4,6 +4,7 @@ import PremiumSectionSkeleton from "../common/PremiumSectionSkeleton";
 // Icons
 import { FaStar, FaFire, FaNewspaper } from "react-icons/fa";
 import { useProduct } from "../../context/ProductContext/ProductContext"; // Import it here
+import { normalizeImageUrl } from "../../utils/imageUtils";
 
 const CategorySwiperHome = ({
   categories = [],
@@ -244,11 +245,11 @@ const CategorySwiperHome = ({
                   }
                   className="flex-shrink-0 w-28 text-center cursor-pointer transition-transform hover:scale-105"
                 >
-                  <div className="w-20 h-20 mx-auto rounded-full shadow-md hover:shadow-lg flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center bg-transparent overflow-hidden">
                     <img
-                      src={item.image || item.images?.[0] || '/images/default-category.png'}
+                      src={normalizeImageUrl(item.image || item.images?.[0] || '/images/default-category.png')}
                       alt={item.name}
-                      className="w-20 h-20 object-cover rounded-full"
+                      className="w-20 h-20 object-contain"
                     />
                   </div>
                   <p className={`text-xs font-medium mt-2 px-1 ${item.color || "text-gray-700"}`}>
@@ -275,11 +276,11 @@ const CategorySwiperHome = ({
                   }
                   className="flex-shrink-0 w-28 text-center cursor-pointer transition-transform hover:scale-105"
                 >
-                  <div className="w-20 h-20 mx-auto rounded-full shadow-md hover:shadow-lg flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center bg-transparent overflow-hidden">
                     <img
-                      src={item.image || item.images?.[0] || '/images/default-category.png'}
+                      src={normalizeImageUrl(item.image || item.images?.[0] || '/images/default-category.png')}
                       alt={item.name}
-                      className="w-20 h-20 object-cover rounded-full"
+                      className="w-20 h-20 object-contain"
                     />
                   </div>
                   <p className={`text-xs font-medium mt-2 px-1 ${item.color || "text-gray-700"}`}>

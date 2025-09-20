@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { normalizeImageUrl } from '../../utils/imageUtils';
 
 /**
  * MediaDisplay component for rendering images or videos from Cloudinary or local sources
@@ -22,7 +23,8 @@ const MediaDisplay = ({
   fallbackSrc = '/images/cake1.png',
   aspectRatio = 'auto',
   objectFit = 'cover',
-  lazy = true
+  lazy = true,
+  transparent = false // New prop to handle transparent images better
 }) => {
   const [error, setError] = useState(false);
   
@@ -34,12 +36,12 @@ const MediaDisplay = ({
   
   // Common media styles
   const mediaStyles = {
-    objectFit,
+    objectFit: transparent ? 'contain' : objectFit, // Use contain for transparent images
     aspectRatio
   };
   
   // Use fallback if error occurred or no src is provided
-  const mediaSource = (error || !src) ? fallbackSrc : src;
+  const mediaSource = (error || !src) ? fallbackSrc : normalizeImageUrl(src);
   
   return (
     <div className={`media-display ${className}`} style={{ aspectRatio }}>
@@ -76,7 +78,8 @@ MediaDisplay.propTypes = {
   fallbackSrc: PropTypes.string,
   aspectRatio: PropTypes.string,
   objectFit: PropTypes.string,
-  lazy: PropTypes.bool
+  lazy: PropTypes.bool,
+  transparent: PropTypes.bool // New prop for handling transparent images
 };
 
 export default MediaDisplay;

@@ -22,11 +22,29 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
   // Set default folder if not provided
   const folder = options.folder || 'la_patisserie';
   
+  // Log the options for debugging
+  console.log('Cloudinary upload options:', {
+    folder,
+    resource_type: options.resource_type || 'auto',
+    format: options.format || 'auto',
+    type: options.type || 'upload'
+  });
+  
   try {
-    const result = await cloudinary.uploader.upload(filePath, {
+    const uploadOptions = {
       folder,
       resource_type: options.resource_type || 'auto',
+      format: options.format || 'auto',
+      type: options.type || 'upload',
       ...options
+    };
+    
+    const result = await cloudinary.uploader.upload(filePath, uploadOptions);
+    
+    console.log('Cloudinary upload successful:', {
+      url: result.secure_url,
+      format: result.format,
+      resource_type: result.resource_type
     });
     
     return {

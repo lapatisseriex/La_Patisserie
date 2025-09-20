@@ -249,6 +249,50 @@ export const CategoryProvider = ({ children }) => {
     loadInitialCategories();
   }, [fetchCategories, user?.role]);
 
+  // Admin function: Reprocess category images
+  const reprocessCategoryImages = useCallback(async (categoryId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get auth token
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+      
+      const response = await axios.post(
+        `${API_URL}/categories/${categoryId}/reprocess-images`,
+        {},
+        {
+          headers: { 
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Clear cache to ensure fresh data on next fetch
+      for (const key of requestCache.current.keys()) {
+        if (key.startsWith('categories-')) {
+          requestCache.current.delete(key);
+        }
+      }
+      
+      // Update categories in state immediately without making another API call
+      setCategories(prev => prev.map(cat => 
+        cat._id === categoryId ? response.data.category : cat
+      ));
+      
+      return response.data;
+    } catch (err) {
+      console.error(`Error reprocessing images for category ${categoryId}:`, err);
+      setError(err.response?.data?.message || "Failed to reprocess category images");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL]);
+
   // Context value
   const value = {
     categories,
@@ -259,7 +303,8 @@ export const CategoryProvider = ({ children }) => {
     getCategoryProducts,
     createCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    reprocessCategoryImages
   };
 
   return (

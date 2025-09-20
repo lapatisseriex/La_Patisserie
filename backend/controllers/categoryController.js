@@ -3,6 +3,7 @@ import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
 import { deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
 import { cache } from '../utils/cache.js';
+import { removeBackground } from '../utils/backgroundRemoval.js';
 
 // @desc    Get all categories
 // @route   GET /api/categories
@@ -59,11 +60,51 @@ export const createCategory = asyncHandler(async (req, res) => {
     throw new Error('Category name is required');
   }
   
+  // Process images with background removal if provided
+  let processedImages = [];
+  if (images && images.length > 0) {
+    // Filter out any images that already have been processed
+    const imagesToProcess = images.filter(img => !img.includes('/processed/'));
+    console.log(`Processing ${imagesToProcess.length} images for new category: ${name}`);
+    
+    try {
+      if (imagesToProcess.length > 0) {
+        // Create a mapping of original URLs to their processed versions
+        const processedMap = {};
+        
+        // Process each unprocessed image
+        const results = await Promise.all(
+          imagesToProcess.map(async (imageUrl) => {
+            console.log(`Processing image: ${imageUrl}`);
+            const processedUrl = await removeBackground(imageUrl);
+            processedMap[imageUrl] = processedUrl;
+            return processedUrl;
+          })
+        );
+        
+        // Replace original URLs with processed ones, keep already processed URLs as is
+        processedImages = images.map(url => 
+          processedMap[url] || url
+        );
+        
+        console.log('Background removal complete for all images');
+      } else {
+        // All images are already processed
+        processedImages = images;
+        console.log('All images already processed, skipping background removal');
+      }
+    } catch (error) {
+      console.error('Error processing images for new category:', error);
+      // If background removal fails, use original images
+      processedImages = images;
+    }
+  }
+  
   // Create the category
   const category = await Category.create({
     name,
     description,
-    images: images || [],
+    images: processedImages.length > 0 ? processedImages : images || [],
     videos: videos || []
   });
   
@@ -93,7 +134,44 @@ export const updateCategory = asyncHandler(async (req, res) => {
   
   // Update images if provided
   if (images !== undefined) {
-    category.images = images;
+    // Find new images that need background removal
+    // Both new images and ones that haven't been processed yet
+    const newImages = images.filter(img => 
+      !currentImages.includes(img) && !img.includes('/processed/')
+    );
+    let processedImages = [...images]; // Start with all images
+    
+    // Process new images with background removal
+    if (newImages.length > 0) {
+      console.log(`Found ${newImages.length} new images to process for category ${category.name}`);
+      
+      try {
+        // Process each new image and collect results
+        const processedResults = await Promise.all(
+          newImages.map(async (imageUrl) => {
+            console.log(`Starting background removal for image: ${imageUrl}`);
+            const processedUrl = await removeBackground(imageUrl);
+            return { originalUrl: imageUrl, processedUrl };
+          })
+        );
+        
+        // Replace original URLs with processed ones
+        processedResults.forEach(({ originalUrl, processedUrl }) => {
+          const imgIndex = processedImages.indexOf(originalUrl);
+          if (imgIndex !== -1) {
+            console.log(`Replacing ${originalUrl} with ${processedUrl}`);
+            processedImages[imgIndex] = processedUrl;
+          }
+        });
+        
+        console.log(`Background removal complete for ${processedResults.length} images`);
+      } catch (error) {
+        console.error('Error during batch image processing:', error);
+      }
+    }
+    
+    // Update the category with the processed images
+    category.images = processedImages;
     
     // Find removed images to delete from Cloudinary
     const removedImages = currentImages.filter(img => !images.includes(img));
