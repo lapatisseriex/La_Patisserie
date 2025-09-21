@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { useShopStatus } from '../../context/ShopStatusContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const FloatingCartBar = () => {
+  const { isOpen, checkShopStatusNow } = useShopStatus();
   const { cartCount, cartTotal, cartItems } = useCart();
   const navigate = useNavigate();
   const [isScrolling, setIsScrolling] = useState(false);
@@ -45,10 +47,18 @@ const FloatingCartBar = () => {
     };
   }, []); // Remove scrollTimeout dependency to prevent recreation
 
-  // Only show if there are items in cart
-  if (cartCount === 0) return null;
+  // Only show if there are items in cart and shop is open
+  if (cartCount === 0 || !isOpen) return null;
 
-  const handleViewCart = () => {
+  const handleViewCart = async () => {
+    // Check shop status in real-time before navigating to cart
+    const currentStatus = await checkShopStatusNow();
+    
+    if (!currentStatus.isOpen) {
+      // Shop is now closed, UI will update automatically
+      return;
+    }
+    
     navigate('/cart');
   };
 

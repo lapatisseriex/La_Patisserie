@@ -11,7 +11,8 @@ import {
   FaBars,
   FaChevronLeft,
   FaChevronRight,
-  FaImage
+  FaImage,
+  FaClock
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 
@@ -164,6 +165,16 @@ const AdminDashboardLayout = () => {
                 >
                   <FaMapMarkerAlt className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Locations</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/time-settings"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/time-settings' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                >
+                  <FaClock className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Time Settings</span>
                 </Link>
               </li>
             </ul>

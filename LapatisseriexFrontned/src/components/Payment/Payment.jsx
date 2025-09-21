@@ -5,8 +5,11 @@ import { BsCashCoin } from 'react-icons/bs';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation } from '../../context/LocationContext/LocationContext';
+import { useShopStatus } from '../../context/ShopStatusContext';
+import ShopClosureOverlay from '../common/ShopClosureOverlay';
 
 const Payment = () => {
+  const { isOpen, checkShopStatusNow } = useShopStatus();
   const { cartItems, cartTotal, couponDiscount, clearCart } = useCart();
   const { user } = useAuth();
   const { hasValidDeliveryLocation, getCurrentLocationName, locations } = useLocation();
@@ -89,8 +92,16 @@ const Payment = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check shop status in real-time before processing payment
+    const currentStatus = await checkShopStatusNow();
+    
+    if (!currentStatus.isOpen) {
+      // Shop is now closed, UI will update automatically
+      return;
+    }
     
     if (!validateCardDetails()) {
       alert('Please fill all the required fields correctly');
@@ -190,7 +201,8 @@ const Payment = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen">
+    <ShopClosureOverlay overlayType="page" showWhenClosed={!isOpen}>
+      <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center mb-6">
           <Link to="/cart" className="flex items-center text-black hover:text-black transition-colors">
@@ -638,8 +650,9 @@ const Payment = () => {
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </ShopClosureOverlay>
   );
 };
 

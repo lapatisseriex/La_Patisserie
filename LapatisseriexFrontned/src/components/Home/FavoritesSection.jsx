@@ -2,11 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useShopStatus } from '../../context/ShopStatusContext';
 import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 import { ArrowRight } from 'lucide-react';
 
 const FavoritesSection = () => {
+  const { shouldShowSection } = useShopStatus();
   const { favorites, loading } = useFavorites();
   const { user } = useAuth();
 
@@ -26,8 +28,8 @@ const FavoritesSection = () => {
     );
   }
 
-  // Don't show the section if user is not logged in or has no favorites
-  if (!user || !favorites || favorites.length === 0) {
+  // Don't show the section if user is not logged in, has no favorites, or shop is closed
+  if (!user || !favorites || favorites.length === 0 || !shouldShowSection()) {
     return null;
   }
 

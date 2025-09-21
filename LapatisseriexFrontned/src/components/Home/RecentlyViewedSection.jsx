@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useShopStatus } from '../../context/ShopStatusContext';
 import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 import { Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const RecentlyViewedSection = () => {
+  const { shouldShowSection } = useShopStatus();
   const { fetchRecentlyViewed } = useRecentlyViewed();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -44,8 +46,8 @@ const RecentlyViewedSection = () => {
     loadRecentlyViewed();
   }, [user, fetchRecentlyViewed]);
 
-  // Don't render if user is not logged in or no recently viewed products
-  if (!user || (!loading && recentlyViewed.length === 0)) {
+  // Don't render if user is not logged in, no recently viewed products, or shop is closed
+  if (!user || (!loading && recentlyViewed.length === 0) || !shouldShowSection()) {
     return null;
   }
 

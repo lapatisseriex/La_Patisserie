@@ -4,8 +4,11 @@ import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaTag, FaShoppingCart, FaExclamat
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation } from '../../context/LocationContext/LocationContext';
+import { useShopStatus } from '../../context/ShopStatusContext';
+import ShopClosureOverlay from '../common/ShopClosureOverlay';
 
 const Cart = () => {
+  const { isOpen, checkShopStatusNow } = useShopStatus();
   const { 
     cartItems, 
     cartTotal, 
@@ -71,7 +74,15 @@ const Cart = () => {
   };
   
   // Handle checkout
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    // First check if shop is still open in real-time
+    const currentStatus = await checkShopStatusNow();
+    
+    if (!currentStatus.isOpen) {
+      // Shop is now closed, the UI should update automatically
+      return;
+    }
+    
     if (hasValidDeliveryLocation()) {
       navigate('/payment');
     } else {
@@ -103,7 +114,8 @@ const Cart = () => {
   }
   
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen">
+    <ShopClosureOverlay overlayType="page" showWhenClosed={!isOpen}>
+      <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center mb-6">
           <Link to="/products" className="flex items-center text-black transition-colors">
@@ -401,7 +413,8 @@ const Cart = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ShopClosureOverlay>
   );
 };
 

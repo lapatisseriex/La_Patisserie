@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext/AuthContext';
 const ProductContext = createContext();
 
 export const useProduct = () => useContext(ProductContext);
+export const useProducts = () => useContext(ProductContext); // Alias for backward compatibility
 
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState([]);

@@ -25,6 +25,7 @@ import AdminLocations from './components/Admin/AdminLocations';
 import AdminProducts from './components/Admin/Products/AdminProducts';
 import AdminCategories from './components/Admin/Categories/AdminCategories';
 import AdminBannerManagement from './components/Admin/AdminBannerManagement';
+import AdminTimeSettings from './components/Admin/AdminTimeSettings';
 
 // Cart and Payment Components
 import Cart from './components/Cart/Cart';
@@ -44,6 +45,7 @@ import { CategoryProvider } from './context/CategoryContext/CategoryContext';
 import { ProductProvider } from './context/ProductContext/ProductContext';
 import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
 import { RecentlyViewedProvider } from './context/RecentlyViewedContext/RecentlyViewedContext';
+import { ShopStatusProvider } from './context/ShopStatusContext';
 
 // Main Homepage that combines all sections
 const HomePage = () => {
@@ -88,14 +90,15 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <LocationProvider>
-        <HostelProvider>
-          <CategoryProvider>
-            <ProductProvider>
-              <FavoritesProvider>
-                <RecentlyViewedProvider>
-                  <CartProvider>
+    <ShopStatusProvider>
+      <AuthProvider>
+        <LocationProvider>
+          <HostelProvider>
+            <CategoryProvider>
+              <ProductProvider>
+                <FavoritesProvider>
+                  <RecentlyViewedProvider>
+                    <CartProvider>
                 <Router>
                 <ScrollToTop />
                   {/* Auth Modal - available on all pages */}
@@ -148,6 +151,7 @@ function App() {
                   <Route path="categories" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCategories /></React.Suspense>} />
                   <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
                   <Route path="banners" element={<React.Suspense fallback={<div>Loading...</div>}><AdminBannerManagement /></React.Suspense>} />
+                  <Route path="time-settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTimeSettings /></React.Suspense>} />
                 </Route>
               </Route>
               
@@ -158,11 +162,12 @@ function App() {
                 </CartProvider>
                 </RecentlyViewedProvider>
               </FavoritesProvider>
-            </ProductProvider>
-          </CategoryProvider>
-        </HostelProvider>
-      </LocationProvider>
-    </AuthProvider>
+              </ProductProvider>
+            </CategoryProvider>
+          </HostelProvider>
+        </LocationProvider>
+      </AuthProvider>
+    </ShopStatusProvider>
   );
 }
 

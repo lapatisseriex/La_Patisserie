@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import Product from '../models/productModel.js';
 import Category from '../models/categoryModel.js';
+import TimeSettings from '../models/timeSettingsModel.js';
 import { deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
 import { cache } from '../utils/cache.js';
 
@@ -123,12 +124,31 @@ export const getProducts = asyncHandler(async (req, res) => {
       cache.set(cacheKey, { products, totalProducts }, 120);
     }
   }
+
+  // Check shop availability
+  const timeSettings = await TimeSettings.getCurrentSettings();
+  const isShopOpen = timeSettings ? timeSettings.isShopOpen() : true;
+  const nextOpenTime = isShopOpen ? null : timeSettings?.getNextOpeningTime();
+
+  // Add availability status to each product
+  const productsWithAvailability = products.map(product => ({
+    ...product.toObject(),
+    isAvailable: isShopOpen,
+    shopStatus: {
+      isOpen: isShopOpen,
+      nextOpenTime: nextOpenTime
+    }
+  }));
   
   res.status(200).json({
-    products,
+    products: productsWithAvailability,
     page: Number(page),
     pages: Math.ceil(totalProducts / Number(limit)),
-    totalProducts
+    totalProducts,
+    shopStatus: {
+      isOpen: isShopOpen,
+      nextOpenTime: nextOpenTime
+    }
   });
 });
 
@@ -154,7 +174,22 @@ export const getProduct = asyncHandler(async (req, res) => {
       throw new Error('Product not found');
     }
 
-    res.status(200).json(product);
+    // Check shop availability
+    const timeSettings = await TimeSettings.getCurrentSettings();
+    const isShopOpen = timeSettings ? timeSettings.isShopOpen() : true;
+    const nextOpenTime = isShopOpen ? null : timeSettings?.getNextOpeningTime();
+
+    // Add availability status to the product
+    const productWithAvailability = {
+      ...product.toObject(),
+      isAvailable: isShopOpen,
+      shopStatus: {
+        isOpen: isShopOpen,
+        nextOpenTime: nextOpenTime
+      }
+    };
+
+    res.status(200).json(productWithAvailability);
   } catch (error) {
     // Handle invalid ObjectId format
     if (error.name === 'CastError') {

@@ -7,12 +7,14 @@ import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
+import { useShopStatus } from '../../context/ShopStatusContext';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
   const { addToCart, getProductQuantity, updateProductQuantity } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
@@ -76,6 +78,8 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const variant = product.variants?.[0] || { price: 0, discount: { value: 0 }, stock: 0 };
   const isActive = product.isActive !== false; // Default to true if undefined
   const totalStock = product.stock || variant.stock || 0;
+  // Use global shop status instead of individual product availability
+  const isProductAvailable = isActive && totalStock > 0 && isShopOpen;
 
   const discountedPrice = variant.price && variant.discount?.value
     ? variant.price - variant.discount.value
@@ -98,9 +102,19 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
-    if (!isActive || totalStock === 0) return;
+    if (!isProductAvailable) return;
+    
     setIsAddingToCart(true);
     try {
+      // Check shop status in real-time before adding to cart
+      const currentStatus = await checkShopStatusNow();
+      
+      if (!currentStatus.isOpen) {
+        // Shop is now closed, UI will update automatically
+        setIsAddingToCart(false);
+        return;
+      }
+      
       await addToCart(product, 1);
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -111,8 +125,16 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const handleBuyNow = async (e) => {
     e.stopPropagation();
-    if (!isActive || totalStock === 0) return;
+    if (!isProductAvailable) return;
     try {
+      // Check shop status in real-time before buy now
+      const currentStatus = await checkShopStatusNow();
+      
+      if (!currentStatus.isOpen) {
+        // Shop is now closed, UI will update automatically
+        return;
+      }
+      
       if (currentQuantity === 0) {
         await addToCart(product, 1);
       }
@@ -154,13 +176,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   return (
     <div
       onClick={handleCardClick}
-      className={`overflow-hidden bg-white cursor-pointer transition-all duration-200 ${
+      className={`relative overflow-hidden bg-white cursor-pointer transition-all duration-200 ${
         featured
           ? 'h-full flex flex-col rounded-lg'
           : compact
           ? 'flex flex-col rounded-lg max-w-sm mx-auto'
           : 'flex flex-row rounded-lg'
-      } ${className}`}
+      } ${!isShopOpen ? 'grayscale opacity-80' : ''} ${className}`}
     >
       {/* Product Image */}
         <div
@@ -188,6 +210,20 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           aspectRatio="auto"
           objectFit="cover"
             />
+
+            {/* Shop Closed Overlay */}
+            {!isShopOpen && (
+              <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10">
+                <div className="text-white text-center">
+                  <div className="text-sm font-bold mb-1">CURRENTLY CLOSED</div>
+                  {getClosureMessage() && (
+                    <div className="text-xs opacity-90">
+                      {getClosureMessage()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <button
           onClick={handleFavoriteToggle}
@@ -253,9 +289,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           {currentQuantity === 0 ? (
             <button
               onClick={handleAddToCart}
-              disabled={!isActive || totalStock === 0 || isAddingToCart}
+              disabled={!isActive || totalStock === 0 || isAddingToCart || !isProductAvailable}
               className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-semibold transition-all duration-300 ease-out rounded-lg border ${
-                !isActive || totalStock === 0
+                !isActive || totalStock === 0 || !isProductAvailable
                   ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
                   : isAddingToCart
                   ? 'bg-white text-red-500 border-red-500 cursor-wait scale-95'
@@ -267,22 +303,37 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-gray-400 mr-1"></div>
                   Adding...
                 </div>
+              ) : !isProductAvailable ? (
+                'Closed'
               ) : (
                 'Add'
               )}
             </button>
           ) : (
-            <div className="absolute bottom-2 right-2 flex items-center bg-white border border-red-500 rounded-lg shadow-sm">
+            <div className={`absolute bottom-2 right-2 flex items-center rounded-lg shadow-sm ${
+              !isProductAvailable 
+                ? 'bg-gray-100 border border-gray-300' 
+                : 'bg-white border border-red-500'
+            }`}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleQuantityChange(currentQuantity - 1);
                 }}
-                className="w-7 h-7 flex items-center justify-center bg-transparent text-red-500 transition-all duration-200 hover:bg-red-50 hover:scale-110 active:scale-95 rounded-l-lg font-medium"
+                disabled={!isProductAvailable}
+                className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-200 rounded-l-lg font-medium ${
+                  !isProductAvailable
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-red-500 hover:bg-red-50 hover:scale-110 active:scale-95'
+                }`}
               >
                 −
               </button>
-              <span className="px-3 py-1 font-semibold text-red-500 text-xs min-w-[1.5rem] text-center border-l border-r border-red-500">
+              <span className={`px-3 py-1 font-semibold text-xs min-w-[1.5rem] text-center border-l border-r ${
+                !isProductAvailable
+                  ? 'text-gray-400 border-gray-300'
+                  : 'text-red-500 border-red-500'
+              }`}>
                 {currentQuantity}
               </span>
               <button
@@ -290,8 +341,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   e.stopPropagation();
                   handleQuantityChange(currentQuantity + 1);
                 }}
-                disabled={currentQuantity >= totalStock}
-                className="w-7 h-7 flex items-center justify-center bg-transparent text-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-50 hover:scale-110 active:scale-95 rounded-r-lg font-medium"
+                disabled={currentQuantity >= totalStock || !isProductAvailable}
+                className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-medium ${
+                  !isProductAvailable
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-red-500 hover:bg-red-50 hover:scale-110 active:scale-95'
+                }`}
               >
                 +
               </button>
@@ -394,15 +449,15 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         {/* Reserve Button - Creative Animated Design with Mobile Support */}
         <button
           onClick={handleBuyNow}
-          disabled={!isActive || totalStock === 0}
+          disabled={!isActive || totalStock === 0 || !isProductAvailable}
           className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-semibold transition-all duration-300 rounded-lg overflow-hidden ${
-            !isActive || totalStock === 0
+            !isActive || totalStock === 0 || !isProductAvailable
               ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
               : 'bg-white text-black border-2 border-black hover:text-white transform hover:scale-[1.02] active:scale-[0.98] active:text-white touch-manipulation'
           }`}
         >
           {/* Animated background fill - works on both hover and active (touch) */}
-          {isActive && totalStock > 0 && (
+          {isActive && totalStock > 0 && isProductAvailable && (
             <div className="absolute inset-0 bg-black transform -translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-300 ease-out"></div>
           )}
           
@@ -412,6 +467,8 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               'Unavailable'
             ) : totalStock === 0 ? (
               'Out of Stock'
+            ) : !isProductAvailable ? (
+              'Closed'
             ) : (
               <>
                 <svg 
@@ -439,7 +496,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           </span>
 
           {/* Sparkle effects - show on both hover and active for mobile */}
-          {isActive && totalStock > 0 && (
+          {isActive && totalStock > 0 && isProductAvailable && (
             <>
               <div className="absolute top-1 right-2 w-1 h-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
               <div className="absolute bottom-1 left-3 w-1 h-1 bg-yellow-300 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
@@ -448,7 +505,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           )}
 
           {/* Mobile-specific pulse animation on tap */}
-          <div className="absolute inset-0 bg-black opacity-0 group-active:opacity-10 transition-opacity duration-150 rounded-lg md:hidden"></div>
+          {isProductAvailable && (
+            <div className="absolute inset-0 bg-black opacity-0 group-active:opacity-10 transition-opacity duration-150 rounded-lg md:hidden"></div>
+          )}
         </button>
       </div>
     </div>

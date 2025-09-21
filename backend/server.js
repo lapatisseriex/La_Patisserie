@@ -18,6 +18,7 @@ import hostelRoutes from './routes/hostelRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
 import bannerRoutes from './routes/bannerRoutes.js';
+import timeSettingsRoutes from './routes/timeSettingsRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -70,6 +71,9 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/hostels', hostelRoutes);
 app.use('/api/image-reprocess', imageReprocessRoutes);
 app.use('/api/banners', bannerRoutes);
+app.use('/api/time-settings', timeSettingsRoutes);
+
+// Health check endpoint
 
 
 // Root route
