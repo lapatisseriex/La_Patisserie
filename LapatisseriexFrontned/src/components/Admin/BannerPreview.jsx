@@ -95,6 +95,7 @@ const BannerPreview = ({ banner, onClose }) => {
                         muted
                         loop
                         autoPlay
+                        playsInline
                       />
                     ) : (
                       <img
@@ -162,6 +163,7 @@ const BannerPreview = ({ banner, onClose }) => {
                         controls={false}
                         muted
                         loop
+                        autoPlay
                         playsInline
                       />
                     ) : (

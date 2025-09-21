@@ -275,6 +275,7 @@ const BannerForm = ({ banner, onSave, onCancel }) => {
                           muted
                           loop
                           autoPlay
+                          playsInline
                         />
                       ) : (
                         <img
@@ -334,6 +335,8 @@ const BannerForm = ({ banner, onSave, onCancel }) => {
                           controls={false}
                           muted
                           loop
+                          autoPlay
+                          playsInline
                         />
                       ) : (
                         <img

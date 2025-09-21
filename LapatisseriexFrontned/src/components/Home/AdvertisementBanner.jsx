@@ -74,7 +74,8 @@ const AdvertisementBanner = () => {
     intervalRef.current = setInterval(() => {
       if (!isPaused && !isTransitioning && bannerSlides.length > 0) {
         const currentBanner = bannerSlides[currentSlide];
-        if (currentBanner.type === 'image' || isMobile) goToNextSlide();
+        // Only auto-advance for image banners, let videos play naturally
+        if (currentBanner.type === 'image') goToNextSlide();
       }
     }, 3000);
 
@@ -162,9 +163,10 @@ const AdvertisementBanner = () => {
         <video
           ref={videoRef}
           className="w-full h-full object-cover"
-          autoPlay={!isMobile}
+          autoPlay
           muted
           playsInline
+          loop={isMobile}
           controls={false}
           controlsList="nodownload nofullscreen noremoteplayback"
           disablePictureInPicture
