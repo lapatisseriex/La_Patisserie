@@ -194,7 +194,7 @@ const CategorySwiper = ({
                       className="w-full h-full object-contain"
                       loading="lazy"
                       onError={(e) => {
-                        e.target.src = '/images/cake-logo.png';
+                        e.target.src = '/images/logo.png';
                         e.target.onerror = null;
                       }}
                     />

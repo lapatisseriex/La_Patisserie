@@ -18,7 +18,7 @@ const GlobalLoadingOverlay = ({ message = "Loading..." }) => {
           <div className="relative mb-4">
             <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-black"></div>
             <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-              <img src="/images/cake-logo.png" alt="Cake Logo" className="h-10 w-10 rounded-full bg-white" />
+              <img src="/images/logo.png" alt="Cake Logo" className="h-10 w-10 rounded-full bg-white" />
             </div>
           </div>
           <p className="text-xl font-semibold text-gray-800">{message}</p>

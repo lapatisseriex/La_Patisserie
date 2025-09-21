@@ -36,6 +36,9 @@ import Newsletter from './components/Newsletter/Newsletter';
 // Auth Components
 import AuthModal from './components/Auth/AuthModal/AuthModal';
 
+// WhatsApp Component
+import WhatsAppFloat from './components/common/WhatsAppFloat';
+
 // Context Providers
 import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext/AuthContext';
@@ -103,6 +106,9 @@ function App() {
                 <ScrollToTop />
                   {/* Auth Modal - available on all pages */}
                   <AuthModal />
+                  
+                  {/* WhatsApp Floating Button - available on all pages */}
+                  <WhatsAppFloat />
                 
             <Routes>
              

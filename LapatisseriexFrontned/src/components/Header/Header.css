@@ -20,7 +20,7 @@
 }
 
 /* Cake-themed text animation for logo */
-.cake-logo-text {
+.logo-text {
   display: inline-block;
   background: linear-gradient(135deg, #ffd700 0%, #ffed4e 25%, #ffd700 50%, #b8860b 75%, #ffd700 100%);
   background-size: 300% auto;

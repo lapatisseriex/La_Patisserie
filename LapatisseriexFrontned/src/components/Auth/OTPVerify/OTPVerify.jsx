@@ -122,7 +122,7 @@ const OTPVerify = () => {
           </div>
         </div>
         <div className="w-14 h-14 flex items-center justify-center">
-          <img src="/images/cake-logo.png" alt="Cake Logo" className="w-full h-full object-contain" />
+          <img src="/images/logo.png" alt="Cake Logo" className="w-full h-full object-contain" />
         </div>
       </div>
       <p className="text-sm text-black mb-6">Enter verification code sent to {maskedPhone}</p>
