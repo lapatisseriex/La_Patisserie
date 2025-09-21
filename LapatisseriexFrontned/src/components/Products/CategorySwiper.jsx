@@ -130,8 +130,9 @@ const CategorySwiper = ({
   }, [selectedCategory]);
 
   return (
-    <div className="max-w-[95%] mx-auto py-12 md:py-2">
-      <h2 className="text-lg font-bold text-black mb-2 text-center sm:text-left">All Categories</h2>
+    <div className="max-w-[95%] mx-auto py-2">
+      {/* Keep semantic heading but visually hide to avoid extra height in sticky bar */}
+      <h2 className="sr-only">All Categories</h2>
 
       {/* Scrollable categories container */}
       <div 

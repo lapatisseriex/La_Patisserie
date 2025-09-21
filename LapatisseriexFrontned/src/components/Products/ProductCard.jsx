@@ -363,13 +363,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   } flex flex-col justify-between`}>
         <div className="space-y-1 sm:space-y-2">
           <h3
-            className={`font-semibold text-black line-clamp-1 leading-tight ${
+            className={`font-semibold text-yellow-600 line-clamp-1 leading-tight ${
               featured 
                 ? 'text-sm sm:text-base' 
                 : compact 
                 ? 'text-sm' 
                 : 'text-xs sm:text-sm md:text-base'
-            } cursor-pointer mb-1 hover:text-gray-700 transition-colors`}
+            } cursor-pointer mb-1 hover:text-yellow-700 transition-colors`}
             onClick={handleCardClick}
           >
             {product.name}

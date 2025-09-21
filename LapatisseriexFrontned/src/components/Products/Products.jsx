@@ -43,8 +43,17 @@ const Products = () => {
   const [showTextCategoryBar, setShowTextCategoryBar] = useState(false);
   const lastScrollY = useRef(0);
 
+  // Dynamic header height tracking
+  const [headerHeight, setHeaderHeight] = useState(window.innerWidth < 768 ? 75 : 130);
+  const [isHeaderTransitioning, setIsHeaderTransitioning] = useState(false);
+
   // Add state for scrollY debug display
   const [scrollY, setScrollY] = useState(0);
+
+  // Track actual category bar height (text or swiper)
+  const [categoryBarHeight, setCategoryBarHeight] = useState(48);
+  const textBarRef = useRef(null);
+  const swiperBarRef = useRef(null);
 
   // Initial navigation state - for 10-second non-sticky period when coming from home page
   const [isInitialLoad, setIsInitialLoad] = useState(false);
@@ -75,6 +84,75 @@ const Products = () => {
       console.error(`Error loading products for category ${categoryId}:`, err);
     }
   }, [fetchProducts, productsByCategory]);
+
+  // Measure actual header height dynamically
+  useEffect(() => {
+    const measureHeaderHeight = () => {
+      const header = document.querySelector('header') || document.querySelector('[role="banner"]');
+      if (header) {
+        const newHeight = header.offsetHeight;
+        
+        // If height is changing, show transition overlay
+        if (newHeight !== headerHeight) {
+          setIsHeaderTransitioning(true);
+          
+          // Hide overlay after transition completes
+          setTimeout(() => {
+            setIsHeaderTransitioning(false);
+          }, 300); // Match typical CSS transition duration
+        }
+        
+        setHeaderHeight(newHeight);
+      } else {
+        // Fallback to default values
+        setHeaderHeight(window.innerWidth < 768 ? 75 : 130);
+      }
+    };
+
+    // Measure on mount
+    measureHeaderHeight();
+
+    // Re-measure on window resize
+    const handleResize = () => {
+      measureHeaderHeight();
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // Also listen for any potential header changes (location bar toggle)
+    const observer = new MutationObserver(() => {
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(measureHeaderHeight, 10);
+    });
+    
+    const header = document.querySelector('header') || document.querySelector('[role="banner"]');
+    if (header) {
+      observer.observe(header, { childList: true, subtree: true, attributes: true });
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+    };
+  }, [headerHeight]);
+
+  // Measure category bar height dynamically to avoid extra space
+  useEffect(() => {
+    const measure = () => {
+      const textBar = textBarRef.current;
+  const swiperBar = swiperBarRef.current;
+      let h1 = 0;
+      let h2 = 0;
+      if (textBar) h1 = textBar.getBoundingClientRect().height;
+      if (swiperBar) h2 = swiperBar.getBoundingClientRect().height;
+      const newH = Math.max(h1, h2) || 48;
+      if (newH !== categoryBarHeight) setCategoryBarHeight(newH);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    const id = setInterval(measure, 500); // guard for late font/layout
+    return () => { window.removeEventListener('resize', measure); clearInterval(id); };
+  }, [showTextCategoryBar, categoryBarHeight]);
 
   // Initialize Intersection Observer with lazy loading
   useEffect(() => {
@@ -255,7 +333,6 @@ const Products = () => {
               isScrollingRef.current = true;
               
               // Account for fixed header height
-              const headerHeight = window.innerWidth < 768 ? 140 : 130; // Mobile vs Desktop header height
               const elementPosition = selectedCategoryRef.getBoundingClientRect().top + window.pageYOffset;
               const offsetPosition = elementPosition - headerHeight - 20; // Extra 20px buffer
               
@@ -396,7 +473,6 @@ const Products = () => {
           : categoryRefs.current['all'];
           
         if (targetRef) {
-          const headerHeight = window.innerWidth < 768 ? 140 : 130;
           const elementPosition = targetRef.getBoundingClientRect().top + window.pageYOffset;
           const offsetPosition = elementPosition - headerHeight - 20;
           
@@ -523,16 +599,42 @@ const Products = () => {
       {/* NOTE: Mobile (below md) uses px-4 and is not affected */}
       {/* ======================================================================================== */}
 
+      {/* White background overlay during header transitions - covers all content area */}
+      {isHeaderTransitioning && (
+        <>
+          {/* Main overlay to cover content */}
+          <div
+            className="fixed left-0 right-0 bg-white z-20"
+            style={{
+              top: `${headerHeight}px`, // Start right at header bottom
+              height: '100vh', // Cover entire viewport
+              pointerEvents: 'none'
+            }}
+          />
+          {/* Additional overlay for category bar area to ensure smooth transition */}
+          <div
+            className="fixed left-0 right-0 bg-white z-35"
+            style={{
+              top: `${headerHeight}px`,
+              height: `${categoryBarHeight}px`, // match category bar height
+              pointerEvents: 'none',
+              opacity: 0.8 // Semi-transparent so category bar shows through slightly
+            }}
+          />
+        </>
+      )}
+
       {/* Always render both bars with smooth opacity transitions */}
       <div
         className="text-category-bar-container fixed top-0 left-0 right-0 bg-white shadow-lg z-40 border-b border-gray-200 w-full"
         style={{
-          top: window.innerWidth < 768 ? '110px' : '130px',
+          top: `${headerHeight}px`,
           zIndex: showTextCategoryBar ? 40 : 30,
           opacity: showTextCategoryBar ? 1 : 0,
-          transform: showTextCategoryBar ? 'translateY(0)' : 'translateY(-4px)',
-          transition: 'all 0.4s ease-out, opacity 0.3s ease-out'
+          transform: 'translateY(0)',
+          transition: 'opacity 0.3s ease-out'
         }}
+        ref={textBarRef}
       >
         <TextCategoryBar
           categories={categories || []}
@@ -545,14 +647,14 @@ const Products = () => {
 
       {/* Fixed category swiper container - must match text bar spacing */}
       <div
-        ref={categorySectionRef}
+        ref={(el) => { categorySectionRef.current = el; swiperBarRef.current = el; }}
         className="fixed top-0 left-0 right-0 bg-white shadow-lg z-30 border-b border-gray-200"
         style={{
-          top: window.innerWidth < 768 ? '110px' : '130px',
+          top: `${headerHeight}px`,
           zIndex: !showTextCategoryBar ? 30 : 25,
           opacity: !showTextCategoryBar ? 1 : 0,
-          transform: !showTextCategoryBar ? 'translateY(0)' : 'translateY(4px)',
-          transition: 'all 0.4s ease-out, opacity 0.3s ease-out',
+          transform: 'translateY(0)',
+          transition: 'opacity 0.3s ease-out',
           pointerEvents: !showTextCategoryBar ? 'auto' : 'none'
         }}
       >
@@ -568,8 +670,8 @@ const Products = () => {
       </div>
 
       {/* Add padding to content to prevent overlap with fixed bars */}
-      <div className="container mx-auto px-4 pt-4 pb-4" style={{
-        paddingTop: window.innerWidth < 768 ? '145px' : '120px'
+      <div className="container mx-auto px-4 pt-0 pb-4" style={{
+        paddingTop: `${Math.max(0, headerHeight + categoryBarHeight - 1)}px` // subtract 1px to counter border rounding
       }}>
 
         {/* Main Content */}
@@ -593,10 +695,10 @@ const Products = () => {
               transition={{ duration: 0.4 }}
             >
               {/* All Products Section with categories */}
-              <div className="mt-8">
+              <div className="mt-0">
                 {/* Display products by category */}
-                <div className="mt-16">
-                  <h2 className="text-2xl lg:text-3xl font-bold mb-8" style={{ 
+                <div className="mt-0">
+                  <h2 className="text-2xl lg:text-3xl font-bold mb-3 md:mb-4" style={{ 
                     background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -612,7 +714,7 @@ const Products = () => {
                         key={category._id} 
                         ref={(el) => setCategoryRef(el, category._id)}
                         id={`category-section-${category._id}`}
-                        className={`mb-16 ${isSelectedCategory ? 'bg-gray-50 p-4 rounded-xl' : ''}`}
+                        className={`mb-12 md:mb-16 ${isSelectedCategory ? 'bg-gray-50 p-4 rounded-xl' : ''}`}
                       >
                         {renderProductRow(productsByCategory[category._id], category.name, category._id)}
                       </div>

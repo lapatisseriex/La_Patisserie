@@ -33,7 +33,8 @@ import {
   Utensils,
   Crown,
   Sparkles,
-  Power
+  Power,
+  Phone
 } from 'lucide-react';
 
 const Header = ({ isAdminView = false }) => {
@@ -61,19 +62,24 @@ const Header = ({ isAdminView = false }) => {
     error: categoriesError 
   } = useCategory();
   
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [hoveredCategory, setHoveredCategory] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [scrollDirection, setScrollDirection] = useState('up');
   const [isScrollingDown, setIsScrollingDown] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [hideLocationBar, setHideLocationBar] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
   const locationDropdownRef = useRef(null);
+  const megaMenuRef = useRef(null);
   const categorySliderRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
+  const megaMenuTimeoutRef = useRef(null);
   
   // Check if we're on a cart or payment page
   const isCartOrPaymentPage = location.pathname === '/cart' || location.pathname === '/payment';
@@ -140,17 +146,26 @@ const Header = ({ isAdminView = false }) => {
       // Always track scrolled state for shadow
       setIsScrolled(currentScrollY > 10);
       
-      // If location dropdown is open and the user scrolls, close it
-      if (isLocationDropdownOpen && Math.abs(currentScrollY - lastScrollY) > 1) {
+      // If location dropdown is open and the user scrolls significantly, close it
+      // Increase threshold on mobile to prevent accidental closing during touch interactions
+      // Don't close if currently navigating
+      const scrollThreshold = isMobile ? 20 : 10;
+      if (isLocationDropdownOpen && !isNavigating && Math.abs(currentScrollY - lastScrollY) > scrollThreshold) {
         setIsLocationDropdownOpen(false);
       }
       
-      // New behavior for location bar
-      if (currentScrollY > lastScrollY && currentScrollY > 50) {
-        // Scrolling down - hide location bar on all pages
-        setHideLocationBar(true);
-      } else if (currentScrollY < lastScrollY) {
-        // Scrolling up - show location bar on all pages
+      // New behavior for location bar - but keep it visible on mobile for settings access
+      if (!isMobile) {
+        // Only hide location bar on desktop
+        if (currentScrollY > lastScrollY && currentScrollY > 50) {
+          // Scrolling down - hide location bar on desktop only
+          setHideLocationBar(true);
+        } else if (currentScrollY < lastScrollY) {
+          // Scrolling up - show location bar
+          setHideLocationBar(false);
+        }
+      } else {
+        // On mobile, always keep location bar visible for settings access
         setHideLocationBar(false);
       }
       
@@ -198,7 +213,7 @@ const Header = ({ isAdminView = false }) => {
       }
       document.body.classList.remove('scrolled', 'scrolling-down', 'scrolling-up', 'header-hidden');
     };
-  }, [lastScrollY, scrollDirection, isScrollingDown, isProductsPage, isLocationDropdownOpen]);
+  }, [lastScrollY, scrollDirection, isScrollingDown, isProductsPage, isLocationDropdownOpen, isNavigating]);
 
   // Separate useEffect for DOM class manipulation to avoid excessive updates
   useEffect(() => {
@@ -240,11 +255,6 @@ const Header = ({ isAdminView = false }) => {
       if (header) {
         document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
       }
-      
-      // Close mobile menu when switching to desktop
-      if (window.innerWidth >= 768 && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
-      }
     };
     
     window.addEventListener('resize', handleResize);
@@ -258,51 +268,18 @@ const Header = ({ isAdminView = false }) => {
       document.body.removeAttribute('data-scroll-y');
       window.removeEventListener('resize', handleResize);
     };
-  }, [isMobileMenuOpen]);
+  }, []);
   
-  // Handle mobile menu body scroll lock/unlock - only on mobile devices
-  useEffect(() => {
-    const isMobile = window.innerWidth < 768; // Only apply on mobile screens
-    
-    if (isMobileMenuOpen && isMobile) {
-      // Store original scroll position
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
-      
-      // Store scroll position for restoration
-      document.body.setAttribute('data-scroll-y', scrollY.toString());
-    } else {
-      // Restore scroll position
-      const scrollY = document.body.getAttribute('data-scroll-y');
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-      
-      if (scrollY && isMobile) {
-        window.scrollTo(0, parseInt(scrollY));
-        document.body.removeAttribute('data-scroll-y');
-      }
-    }
-    
-    return () => {
-      // Cleanup on unmount
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-      document.body.removeAttribute('data-scroll-y');
-    };
-  }, [isMobileMenuOpen]);
-  
-  // Close location dropdown when clicking outside
+  // Close location dropdown and mega menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+      // Don't close if currently navigating
+      if (!isNavigating && locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
         setIsLocationDropdownOpen(false);
+      }
+      if (megaMenuRef.current && !megaMenuRef.current.contains(event.target)) {
+        setIsMegaMenuOpen(false);
+        setHoveredCategory(null);
       }
     };
     
@@ -310,45 +287,83 @@ const Header = ({ isAdminView = false }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [isNavigating]);
   
-  // Handle location selection with useCallback for better performance
+  // Handle location selection - navigate to profile (same as desktop behavior)
   const handleLocationSelect = useCallback((locationId) => {
     setIsLocationDropdownOpen(false);
-    
     if (user) {
-      // Navigate to profile page instead of directly updating location
       navigate('/profile');
     } else {
       toggleAuthPanel();
     }
   }, [user, navigate, toggleAuthPanel]);
   
-  // Toggle mobile menu with body scroll lock
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  // Helper function to close mobile menu and ensure scroll restoration
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-  
   // Toggle location dropdown with useCallback for performance
   const toggleLocationDropdown = useCallback(() => {
     setIsLocationDropdownOpen(prev => !prev);
+  }, []);
+  
+  // Handle location dropdown hover with delay
+  const handleLocationHoverEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    // Close mega menu when opening location dropdown
+    setIsMegaMenuOpen(false);
+    setHoveredCategory(null);
+    setIsLocationDropdownOpen(true);
+  }, []);
+  
+  const handleLocationHoverLeave = useCallback(() => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsLocationDropdownOpen(false);
+    }, 150); // Small delay to prevent accidental closing
+  }, []);
+
+  // Handle mega menu hover with delay
+  const handleMegaMenuEnter = useCallback(() => {
+    if (megaMenuTimeoutRef.current) {
+      clearTimeout(megaMenuTimeoutRef.current);
+    }
+    // Close location dropdown when opening mega menu
+    setIsLocationDropdownOpen(false);
+    setIsMegaMenuOpen(true);
+    // Set first category as default hover if categories exist
+    if (categories.length > 0 && !hoveredCategory) {
+      setHoveredCategory(categories[0]);
+    }
+  }, [categories, hoveredCategory]);
+  
+  const handleMegaMenuLeave = useCallback(() => {
+    megaMenuTimeoutRef.current = setTimeout(() => {
+      setIsMegaMenuOpen(false);
+      setHoveredCategory(null);
+    }, 150);
+  }, []);
+
+  const handleCategoryHover = useCallback((category) => {
+    setHoveredCategory(category);
+  }, []);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      if (megaMenuTimeoutRef.current) {
+        clearTimeout(megaMenuTimeoutRef.current);
+      }
+    };
   }, []);
   
   // Handle category selection with useCallback
   const handleCategorySelect = useCallback((categoryId) => {
     setSelectedCategory(categoryId);
     
-    if (isMobileMenuOpen) {
-      setIsMobileMenuOpen(false);
-    }
-    
     window.location.href = `/products?category=${categoryId}`;
-  }, [isMobileMenuOpen]);
+  }, []);
   
   // Render breadcrumb for cart/payment pages
   const renderBreadcrumb = () => {
@@ -376,72 +391,18 @@ const Header = ({ isAdminView = false }) => {
 
   return (
     <>
-    <header className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${isScrolled ? 'shadow-lg' : 'shadow-sm'}`} style={{fontFamily: 'sans-serif'}}>
-      {/* Mobile Location Overlay */}
-      {!isAdminView && isLocationDropdownOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black bg-opacity-25 z-[55] transition-opacity duration-200"
-          onClick={() => setIsLocationDropdownOpen(false)}
-        />
-      )}
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300" style={{fontFamily: 'sans-serif'}}>
       
-      {/* Mobile Location Bar - Part of sticky header with conditional visibility */}
+      {/* Mobile Location Bar - Display only, no dropdown */}
       {!isAdminView && (
-        <div className={`mobile-location-bar md:hidden bg-white border-b border-gray-100 z-[56] ${isLocationDropdownOpen ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
+        <div className={`mobile-location-bar md:hidden bg-white border-b border-gray-200 z-[56] transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
           <div className="px-3">
             <div className="flex justify-start">
-              <div className="relative" ref={locationDropdownRef}>
-                <button 
-                  className="flex items-center text-xs text-black hover:text-gray-700 transition-colors duration-200 py-1 px-2 rounded-md hover:bg-gray-50"
-                  onClick={toggleLocationDropdown}
-                  style={{fontFamily: 'sans-serif'}}
-                >
-                  <MapPin className="h-3 w-3 mr-2" />
-                  <span className="truncate max-w-[120px] font-medium">{memoizedUserLocationDisplay}</span>
-                  <ChevronDown className="h-3 w-3 ml-1 text-gray-500" />
-                  {user && !hasValidDeliveryLocation() && (
-                    <AlertTriangle className="h-3 w-3 ml-1 text-amber-500" />
-                  )}
-                </button>
-              
-                {/* Mobile Location Dropdown */}
-                {isLocationDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-64 bg-white shadow-xl rounded-lg overflow-hidden z-[70] border border-gray-100" style={{fontFamily: 'sans-serif'}}>
-                    <div className="px-3 py-2 bg-black text-white border-b border-gray-800">
-                      <h3 className="text-xs font-medium tracking-wider">DELIVERY LOCATIONS</h3>
-                    </div>
-                    {locationsLoading ? (
-                      <div className="p-4 text-center">
-                        <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
-                        <p className="mt-2 text-xs">Loading...</p>
-                      </div>
-                    ) : locations.length > 0 ? (
-                      <ul className="py-2 max-h-48 overflow-y-auto custom-scrollbar">
-                        {locations.map((location) => (
-                          <li key={location._id} className="hover:bg-gray-50 transition-colors duration-150">
-                            <button
-                              className={`w-full text-left px-3 py-2 text-xs ${
-                                user?.location?._id === location._id
-                                  ? 'bg-gray-50 text-black font-medium border-l-2 border-black'
-                                  : 'text-black'
-                              }`}
-                              onClick={() => handleLocationSelect(location._id)}
-                              style={{fontFamily: 'sans-serif'}}
-                            >
-                              {location.area}, {location.city}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="p-3 text-center text-xs text-black">No locations available</div>
-                    )}
-                    <div className="p-2 bg-gray-50 border-t border-gray-200">
-                      <p className="text-xs text-gray-600 italic text-center" style={{fontFamily: 'sans-serif'}}>
-                        Orders only in these locations
-                      </p>
-                    </div>
-                  </div>
+              <div className="flex items-center text-xs text-black py-1 px-2 rounded-md" style={{fontFamily: 'sans-serif'}}>
+                <MapPin className="h-3 w-3 mr-2 text-yellow-400" />
+                <span className="truncate max-w-[120px] font-medium">{memoizedUserLocationDisplay}</span>
+                {user && !hasValidDeliveryLocation() && (
+                  <AlertTriangle className="h-3 w-3 ml-1 text-amber-400" />
                 )}
               </div>
             </div>
@@ -449,29 +410,103 @@ const Header = ({ isAdminView = false }) => {
         </div>
       )}
       
-      {/* Banner with Stars Effect */}
+      {/* Premium Luxury Banner */}
       {!isAdminView && (
-        <div className="banner-container bg-gradient-to-r from-gray-500 via-gray-300 to-transparent py-4 px-3 sm:px-5 relative overflow-hidden">
-          <div className="stars-container absolute inset-0">
-            <div className="star star-1"></div>
-            <div className="star star-2"></div>
+        <div className="luxury-banner-container relative overflow-hidden bg-gradient-to-r from-black via-gray-900 to-black py-1 px-3 sm:px-5">
+          {/* Golden Accent Lines */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-80"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-80"></div>
+          
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="floating-cake floating-cake-1"></div>
+            <div className="floating-cake floating-cake-2"></div>
+            <div className="floating-cake floating-cake-3"></div>
+            <div className="floating-sparkle floating-sparkle-1">✨</div>
+            <div className="floating-sparkle floating-sparkle-2">🍰</div>
+            <div className="floating-sparkle floating-sparkle-3">✨</div>
+            <div className="floating-sparkle floating-sparkle-4">🧁</div>
           </div>
-          <div className="container mx-auto flex justify-center items-center relative z-10">
-            <p className="text-gray-800 text-sm sm:text-base font-light tracking-wider" style={{fontFamily: 'sans-serif'}}>
-              ✨ Fresh Cakes & Pastries Daily ✨
-            </p>
+          
+          {/* Elegant Border Frame */}
+          <div className="absolute inset-2 border border-yellow-400/30 rounded-lg"></div>
+          <div className="absolute inset-3 border border-white/10 rounded-md"></div>
+          
+          {/* Main Content */}
+          <div className="container mx-auto relative z-20 py-1">
+            {/* Single Row Layout */}
+            <div className="flex items-center justify-between">
+              {/* Phone Number - Left */}
+              <button 
+                className="flex items-center gap-1 text-yellow-400/80 flex-shrink-0 hover:text-yellow-400 transition-colors duration-200 md:cursor-default md:hover:text-yellow-400/80"
+                onClick={() => {
+                  // Only navigate on mobile devices
+                  if (window.innerWidth < 768) {
+                    navigate('/contact');
+                  }
+                }}
+                style={{fontFamily: 'sans-serif'}}
+              >
+                <Phone className="h-3 w-3" />
+                <span className="text-xs font-light hidden md:inline">
+                  +1 (555) 123-CAKE
+                </span>
+              </button>
+              
+              {/* Center Content */}
+              <div className="flex flex-col items-center justify-center flex-1 px-4">
+                {/* Premium Badge */}
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-yellow-400"></div>
+                  <span className="text-yellow-400 text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'serif'}}>
+                    La Patisserie
+                  </span>
+                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-yellow-400"></div>
+                </div>
+                
+                {/* Main Message */}
+                <h2 className="text-white text-sm sm:text-base md:text-lg font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
+                  <span className="inline-block animate-fade-in-up">✨</span>
+                  <span className="mx-1 relative">
+                    Fresh Artisan Cakes & Pastries
+                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
+                  </span>
+                  <span className="inline-block animate-fade-in-up animation-delay-500">✨</span>
+                </h2>
+              </div>
+              
+              {/* Address - Right */}
+              <button 
+                className="flex items-center gap-1 text-yellow-400/80 flex-shrink-0 hover:text-yellow-400 transition-colors duration-200 md:cursor-default md:hover:text-yellow-400/80"
+                onClick={() => {
+                  // Only navigate on mobile devices
+                  if (window.innerWidth < 768) {
+                    navigate('/contact');
+                  }
+                }}
+                style={{fontFamily: 'sans-serif'}}
+              >
+                <span className="text-xs font-light hidden md:inline text-right">
+                  123 Bakery Street, Sweet City
+                </span>
+                <MapPin className="h-3 w-3" />
+              </button>
+            </div>
           </div>
+          
+          {/* Subtle Overlay Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none"></div>
         </div>
       )}
       
-      {/* Middle Bar - Logo and Profile/Login */}
-      <div className="py-2 sm:py-3 px-2 sm:px-4 bg-white">
+      {/* Middle Bar - Logo and Profile/Login - Hidden on mobile */}
+      <div className="hidden md:block py-2 sm:py-3 px-2 sm:px-4 bg-white">
         <div className="container mx-auto flex justify-between items-center">
           {/* Logo Text on Left with Navigation Links beside it - Hidden on mobile */}
           <div className="hidden md:flex items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center header-logo-text">
-                <span className="cake-logo-text text-lg sm:text-xl md:text-2xl font-bold truncate max-w-[120px] sm:max-w-none">
+                <span className="text-yellow-400  font-light text-bold sm:text-xl md:text-2xl  truncate max-w-[120px] sm:max-w-none">
                   La Patisserie
                   <div className="sugar-sprinkles">
                     {[...Array(15)].map((_, i) => (
@@ -492,54 +527,161 @@ const Header = ({ isAdminView = false }) => {
             
             {/* Navigation Links moved next to logo text on the same line - Premium Design */}
             <div className="flex items-center ml-4 md:ml-6 lg:ml-8 space-x-2 md:space-x-3 lg:space-x-4">
-              <Link to="/special" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
-                <Sparkles className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" />
+              <Link to="/special" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
+                <Sparkles className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
                 <span className="relative z-10 font-medium">Special Deals</span>
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
-              </Link>
-              <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
-                <Utensils className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" />
-                <span className="relative z-10 font-medium">Menu</span>
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
               </Link>
               
+              {/* Menu Nav Item with Mega Dropdown - Premium Design */}
+              <div 
+                className="relative" 
+                ref={megaMenuRef}
+                onMouseEnter={handleMegaMenuEnter}
+                onMouseLeave={handleMegaMenuLeave}
+              >
+                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
+                  <Utensils className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
+                  <span className="relative z-10 font-medium">Menu</span>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                </Link>
+                
+                {/* Invisible bridge to prevent hover gap */}
+                {isMegaMenuOpen && (
+                  <div className="absolute top-full left-0 w-full h-3 bg-transparent" />
+                )}
+                
+                {/* Mega Menu Dropdown */}
+                {isMegaMenuOpen && categories.length > 0 && (
+                  <div
+                    className="absolute top-full left-0 mt-3 w-[600px] h-[400px] bg-white backdrop-blur-sm shadow-xl rounded-lg overflow-hidden z-50 border border-gray-200 transform opacity-0 scale-95 animate-dropdown"
+                    style={{fontFamily: 'sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
+                  >
+                    <div className="flex h-full">
+                      {/* Categories Sidebar */}
+                      <div className="w-1/2 bg-white border-r border-gray-200">
+                        <div className="px-4 py-3 bg-gray-50 text-gray-700 border-b border-gray-200">
+                          <h3 className="text-sm font-medium tracking-wide">Categories</h3>
+                        </div>
+                        <div className="p-4 overflow-y-auto h-[calc(100%-56px)] custom-scrollbar">
+                          <div className="space-y-1">
+                            {categories.map((category) => (
+                              <button
+                                key={category._id}
+                                className={`w-full text-left px-3 py-2 rounded-md transition-all duration-200 group relative ${
+                                  hoveredCategory?._id === category._id
+                                    ? 'bg-gray-100 text-gray-900'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                                }`}
+                                onMouseEnter={() => handleCategoryHover(category)}
+                                onClick={() => {
+                                  setIsMegaMenuOpen(false);
+                                  navigate(`/products?category=${category._id}`);
+                                }}
+                              >
+                                <span className="relative z-10 font-medium text-sm">{category.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Dynamic Image Display */}
+                      <div className="w-1/2 bg-white flex flex-col">
+                        <div className="px-4 py-3 bg-gray-50 text-gray-700 border-b border-gray-200">
+                          <h3 className="text-sm font-medium tracking-wide">
+                            {hoveredCategory ? hoveredCategory.name : 'Select Category'}
+                          </h3>
+                        </div>
+                        <div className="flex-1 flex items-center justify-center p-6">
+                          {hoveredCategory && hoveredCategory.featuredImage ? (
+                            <div className="relative w-full h-full max-w-[200px] max-h-[200px] rounded-lg overflow-hidden">
+                              <img 
+                                src={hoveredCategory.featuredImage} 
+                                alt={hoveredCategory.name}
+                                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                              <div className="hidden w-full h-full bg-gray-100 items-center justify-center">
+                                <Utensils className="h-16 w-16 text-gray-400" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full h-full max-w-[200px] max-h-[200px] bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
+                              <div className="text-center">
+                                <Utensils className="h-16 w-16 text-gray-400 mx-auto mb-3" />
+                                <p className="text-gray-500 text-sm">
+                                  {hoveredCategory ? 'No Image Available' : 'Hover over a category'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="px-4 py-3 bg-white border-t border-gray-200">
+                          <button 
+                            className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-black py-2 px-4 rounded-lg font-medium text-sm hover:from-yellow-300 hover:to-yellow-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                            onClick={() => {
+                              setIsMegaMenuOpen(false);
+                              navigate('/products');
+                            }}
+                          >
+                            View All Products
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
               {/* Location Nav Item with Hover Dropdown - Premium Design */}
-              <div className="relative" ref={locationDropdownRef}>
+              <div 
+                className="relative" 
+                ref={locationDropdownRef}
+                onMouseEnter={handleLocationHoverEnter}
+                onMouseLeave={handleLocationHoverLeave}
+              >
                 <button 
-                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200"
+                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group"
                   onClick={toggleLocationDropdown}
-                  onMouseEnter={() => setIsLocationDropdownOpen(true)}
                   style={{fontFamily: 'sans-serif'}}
                 >
-                  <MapPin className="h-4 w-4 text-gray-600 group-hover:text-black transition-all duration-300 group-hover:scale-110" />
+                  <MapPin className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-all duration-300 group-hover:scale-110" />
                   <span className="truncate max-w-[120px] sm:max-w-[140px] font-medium relative z-10">{memoizedUserLocationDisplay}</span>
-                  <ChevronDown className="h-4 w-4 text-gray-500 transition-all duration-300 group-hover:rotate-180 group-hover:text-gray-700" />
+                  <ChevronDown className="h-4 w-4 text-gray-600 transition-all duration-300 group-hover:rotate-180 group-hover:text-yellow-600" />
                   {user && !hasValidDeliveryLocation() && (
                     <div className="absolute -top-1 -right-1">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </button>
+                
+                {/* Invisible bridge to prevent hover gap */}
+                {isLocationDropdownOpen && (
+                  <div className="absolute top-full left-0 w-full h-3 bg-transparent" />
+                )}
                 
                 {/* Location Dropdown */}
                 {isLocationDropdownOpen && (
                   <div
-                    className="absolute top-full left-0 mt-3 w-56 bg-white shadow-2xl rounded-lg overflow-hidden z-50 border border-gray-200 transform opacity-0 scale-95 animate-dropdown"
+                    className="absolute top-full left-0 mt-3 w-56 bg-white shadow-xl rounded-lg overflow-hidden z-50 border border-gray-200 transform opacity-0 scale-95 animate-dropdown"
                     style={{fontFamily: 'sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
-                    onMouseLeave={() => setIsLocationDropdownOpen(false)}
                   >
-                    <div className="px-4 py-3 bg-gradient-to-r from-gray-900 to-black text-white border-b border-gray-700">
-                      <h3 className="text-xs font-medium tracking-wider">SETTINGS</h3>
+                    <div className="px-4 py-3  text-gray-400 ">
+                      <h3 className="text-xs font-medium tracking-wide">Settings</h3>
                     </div>
                     <div className="p-2">
                       <Link
                         to="/profile"
-                        className="flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-200"
+                        className="flex items-center gap-3 px-3 py-2  text-yellow-500 rounded-lg transition-all duration-200 font-medium"
                         style={{fontFamily: 'sans-serif'}}
                         onClick={() => setIsLocationDropdownOpen(false)}
                       >
-                        <Settings className="h-4 w-4 text-gray-600" />
+                        <Settings className="h-4 w-4 text-black" />
                         <span>Edit in settings</span>
                       </Link>
                     </div>
@@ -556,9 +698,9 @@ const Header = ({ isAdminView = false }) => {
               <>
                 {/* Admin Dashboard Button - Show only for admins - Positioned first */}
                 {user.role === 'admin' && (
-                  <div className="bg-black rounded-lg">
-                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-white hover:bg-gray-800 rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
-                      <Settings className="h-5 w-5 text-white group-hover:text-gray-200 transition-colors duration-300" />
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700">
+                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-black hover:text-yellow-600 rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
+                      <Settings className="h-5 w-5 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
                       <span className="ml-2 text-sm font-medium">Dashboard</span>
                     </Link>
                   </div>
@@ -571,9 +713,9 @@ const Header = ({ isAdminView = false }) => {
                 {user && (
                   <div className="tooltip">
                     <div className="tooltip-content">
-                      <div className="animate-bounce text-orange-400 -rotate-10 text-xl font-black select-none">Favorites</div>
+                      <div className="animate-bounce text-orange-400 -rotate-10 text-xl font-black italic select-none">Favorites</div>
                     </div>
-                    <Link to="/favorites" className="flex items-center px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
+                    <Link to="/favorites" className="flex items-center px-3 py-2 text-gray-700 hover:text-black rounded-lg transition-all duration-300 relative group border border-transparent" style={{fontFamily: 'sans-serif'}}>
                       <Heart className="h-4 w-4 text-gray-600 group-hover:text-red-500 transition-colors duration-300" />
                       {favorites?.length > 0 && (
                         <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
@@ -587,12 +729,12 @@ const Header = ({ isAdminView = false }) => {
                 {/* Cart component - Premium Design with Tooltip */}
                 <div className="tooltip">
                   <div className="tooltip-content">
-                    <div className="animate-bounce text-orange-400 -rotate-10 text-xl font-black select-none">Cart</div>
+                    <div className="animate-bounce text-yellow-400 -rotate-10 text-sm font-black italic select-none">Cart</div>
                   </div>
-                  <Link to="/cart" className="flex items-center px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 relative group border border-transparent hover:border-gray-200" style={{fontFamily: 'sans-serif'}}>
-                    <ShoppingBag className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" />
+                  <Link to="/cart" className="flex items-center px-3 py-2 text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
+                    <ShoppingBag className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
                     {memoizedCartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium shadow-lg">
                         {memoizedCartCount}
                       </span>
                     )}
@@ -604,10 +746,10 @@ const Header = ({ isAdminView = false }) => {
             {!user && (
               <button 
                 onClick={toggleAuthPanel}
-                className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 border border-transparent hover:border-gray-200"
+                className="flex items-center gap-2 px-3 py-2 text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300"
                 style={{fontFamily: 'sans-serif'}}
               >
-                <User className="h-4 w-4 text-gray-600 hover:text-black transition-colors duration-300" />
+                <User className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
                 <span className="text-sm font-medium">Login</span>
               </button>
             )}
@@ -617,321 +759,11 @@ const Header = ({ isAdminView = false }) => {
               <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-12 sm:h-14" />
             </Link>
           </div>
-          
-          {/* Mobile Icons */}
-          <div className="flex justify-between items-center w-full md:hidden">
-            {/* User icon for mobile on left */}
-            {!user ? (
-              <button 
-                onClick={toggleAuthPanel}
-                className="text-black p-1"
-                aria-label="Login"
-              >
-                <User className="h-6 w-6" />
-              </button>
-            ) : (
-              <Link to="/profile" className="text-black p-1" aria-label="Profile">
-               <User className="h-6 w-6" />
-              </Link>
-            )}
-            
-            {/* Center Logo Image (only image, no text) */}
-            <Link to="/" className="flex items-center justify-center">
-              <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-12" />
-            </Link>
-            
-            {/* Mobile Menu Button */}
-            <button 
-              className="text-black p-1"
-              onClick={toggleMobileMenu}
-              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-            >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-          </div>
         </div>
       </div>
     </header>
 
-    {/* Mobile Menu Overlay - Outside header for proper stacking */}
-    <div 
-      className={`fixed inset-0 bg-black bg-opacity-60 z-[100] transition-opacity duration-300 md:hidden ${
-        isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
-      onClick={toggleMobileMenu}
-    ></div>
-    
-    {/* Mobile Menu - Outside header for proper stacking */}
-    <div
-      className={`md:hidden fixed inset-y-0 right-0 w-[85%] max-w-sm z-[9999] transform transition-transform duration-300 ease-in-out ${
-        isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'
-      } flex flex-col bg-white`}
-      style={{fontFamily: 'sans-serif'}}
-    >
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white">
-          <Link to="/" className="flex items-center" onClick={() => closeMobileMenu()}>
-            <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-10" />
-            <span className="cake-logo-text ml-2 text-base font-medium">La Patisserie</span>
-          </Link>
-          <button
-            className="text-gray-600 hover:text-black p-2 rounded-md hover:bg-gray-50 transition-colors duration-200"
-            onClick={toggleMobileMenu}
-            aria-label="Close menu"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        <div className="px-6 py-6 bg-gray-50 flex-1 overflow-y-auto">
-          {/* Mobile Search - Compact Design */}
-          <div className="relative mb-8">
-            <input 
-              type="text" 
-              placeholder="Search for cakes, cookies, etc..." 
-              className="w-full py-3 px-4 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 placeholder-gray-400 focus:border-black focus:ring-2 focus:ring-black/10 focus:outline-none transition-all duration-200 shadow-sm"
-              style={{fontFamily: 'sans-serif'}}
-              onFocus={(e) => {
-                e.preventDefault();
-                closeMobileMenu();
-                navigate('/products');
-              }}
-            />
-          </div>
-          
-          {/* Mobile Nav Links - Premium Design */}
-          <nav className="space-y-6">
-            {/* Account Section */}
-            <div>
-              <div className="px-2 py-3 mb-5">
-                <h3 className="text-xs font-semibold tracking-widest text-gray-500 uppercase flex items-center gap-2" style={{fontFamily: 'sans-serif'}}>
-                  <Crown className="h-3 w-3" />
-                  ACCOUNT
-                </h3>
-                <div className="h-px bg-gradient-to-r from-gray-300 to-transparent mt-2" />
-              </div>
-              
-              {user ? (
-                <div className="space-y-3">
-                  {user.role === 'admin' ? (
-                    <>
-                      <MobileNavLink 
-                        to="/admin/dashboard" 
-                        label="DASHBOARD"
-                        icon={Settings}
-                        onClick={() => closeMobileMenu()}
-                      />
-                      <MobileNavLink 
-                        to="/admin/orders" 
-                        label="ORDER MANAGEMENT"
-                        icon={Package}
-                        onClick={() => closeMobileMenu()}
-                      />
-                    </>
-                  ) : (
-                    <MobileNavLink 
-                      to="/profile" 
-                      label="MY PROFILE"
-                      icon={UserCircle}
-                      onClick={() => closeMobileMenu()}
-                    />
-                  )}
-                  <MobileNavButton 
-                    onClick={() => {
-                      logout();
-                      closeMobileMenu();
-                    }}
-                    label="SIGN OUT"
-                    icon={Power}
-                    variant="logout"
-                  />
-                </div>
-              ) : (
-                <MobileNavButton 
-                  onClick={() => {
-                    toggleAuthPanel();
-                    closeMobileMenu();
-                  }}
-                  label="LOGIN / REGISTER"
-                  icon={UserCircle}
-                  variant="primary"
-                />
-              )}
-            </div>
-            
-            {/* Navigation Section */}
-            <div>
-              <div className="px-2 py-3 mb-5">
-                <h3 className="text-xs font-semibold tracking-widest text-gray-500 uppercase flex items-center gap-2" style={{fontFamily: 'sans-serif'}}>
-                  <Home className="h-3 w-3" />
-                  NAVIGATION
-                </h3>
-                <div className="h-px bg-gradient-to-r from-gray-300 to-transparent mt-2" />
-              </div>
-              
-              <div className="space-y-3">
-                {/* Cart with Badge */}
-                <div className="relative">
-                  <MobileNavLink 
-                    to="/cart" 
-                    label="SHOPPING BOX"
-                    icon={ShoppingCart}
-                    onClick={() => closeMobileMenu()}
-                  />
-                  {memoizedCartCount > 0 && (
-                    <div className="absolute top-3 left-7">
-                      <span className="bg-black text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium" style={{fontFamily: 'sans-serif'}}>
-                        {memoizedCartCount}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                
-                <MobileNavLink 
-                  to="/products" 
-                  label="FULL MENU"
-                  icon={Utensils}
-                  onClick={() => closeMobileMenu()}
-                />
-
-                <MobileNavLink 
-                  to="/special" 
-                  label="SPECIAL OFFERS"
-                  icon={Sparkles}
-                  onClick={() => closeMobileMenu()}
-                />
-
-                <MobileNavLink 
-                  to="/favorites" 
-                  label="FAVORITES"
-                  icon={Heart}
-                  onClick={() => closeMobileMenu()}
-                />
-              </div>
-            </div>
-          </nav>
-        </div>
-        
-        {/* Mobile menu footer - Premium Location Display */}
-        <div className="mt-auto border-t border-gray-200 bg-white">
-          <div className="px-6 py-4">
-            <div className="text-xs font-semibold tracking-widest text-gray-500 uppercase mb-3 flex items-center gap-2" style={{fontFamily: 'sans-serif'}}>
-              <MapPin className="h-3 w-3" />
-              DELIVERY LOCATION
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex-1 flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-black truncate max-w-[140px]" style={{fontFamily: 'sans-serif'}}>
-                  {userLocationDisplay}
-                </span>
-              </div>
-              <button 
-                className="
-                  px-4 py-2 text-xs font-medium
-                  bg-black text-white rounded-lg
-                  hover:bg-gray-800 hover:shadow-lg hover:shadow-black/20
-                  transition-all duration-300
-                  flex items-center gap-2
-                "
-                style={{fontFamily: 'sans-serif'}}
-                onClick={() => {
-                  closeMobileMenu();
-                  navigate('/profile');
-                }}
-              >
-                <Settings className="h-3 w-3" />
-                CHANGE
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </>
-  );
-};
-
-// Mobile Navigation Link Component - Premium Design with Icons
-const MobileNavLink = ({ to, label, onClick, icon: IconComponent }) => (
-  <Link
-    to={to}
-    onClick={onClick}
-    className="
-      flex items-center gap-4 px-4 py-3
-      text-gray-700 text-sm font-medium
-      hover:text-black hover:bg-gray-50
-      rounded-lg transition-all duration-300
-      group relative overflow-hidden
-      border border-transparent hover:border-gray-100
-    "
-    style={{fontFamily: 'sans-serif'}}
-  >
-    {IconComponent && (
-      <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-        <IconComponent 
-          className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" 
-        />
-      </div>
-    )}
-    <span className="relative z-10">{label}</span>
-    <div className="absolute left-0 top-0 h-full w-0.5 bg-black transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
-  </Link>
-);
-
-// Mobile Navigation Button Component - Premium Design with Icons
-const MobileNavButton = ({ onClick, label, variant = 'default', icon: IconComponent }) => {
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'primary':
-        return `
-          bg-black text-white
-          hover:bg-gray-800 hover:shadow-lg hover:shadow-black/20
-          border-black
-        `;
-      case 'logout':
-        return `
-          bg-red-50 text-red-700 border-red-200
-          hover:bg-red-100 hover:text-red-800 hover:border-red-300
-        `;
-      default:
-        return `
-          bg-white text-gray-700 border border-gray-200
-          hover:bg-gray-50 hover:text-black hover:border-gray-300
-        `;
-    }
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        flex items-center gap-4 w-full px-4 py-3
-        text-sm font-medium text-left
-        rounded-lg transition-all duration-300
-        group relative overflow-hidden
-        ${getVariantStyles()}
-      `}
-      style={{fontFamily: 'sans-serif'}}
-    >
-      {IconComponent && (
-        <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-          <IconComponent 
-            className={`h-4 w-4 transition-colors duration-300 ${
-              variant === 'primary' ? 'text-white' : 
-              variant === 'logout' ? 'text-red-600 group-hover:text-red-700' : 
-              'text-gray-600 group-hover:text-black'
-            }`} 
-          />
-        </div>
-      )}
-      <span className="relative z-10">{label}</span>
-      {variant === 'primary' && (
-        <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      )}
-    </button>
   );
 };
 

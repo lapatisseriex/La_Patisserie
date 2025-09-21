@@ -49,20 +49,25 @@ const UserMenu = memo(() => {
         // Add a delay before closing the menu
         timeoutRef.current = setTimeout(() => {
           setIsMenuOpen(false);
-        }, 3000); // 3 seconds delay before closing (increased from 800ms)
+        }, 150); // Reduced from 3000ms to 150ms for better UX
       }}
     >
       <div 
-        className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-black hover:bg-gray-50 rounded-lg transition-all duration-300 border border-transparent hover:border-gray-200 cursor-pointer relative"
+        className="flex items-center gap-2 px-3 py-2 text-black hover:text-yellow-600 rounded-lg transition-all duration-300 border border-transparent cursor-pointer relative group"
         style={{fontFamily: 'sans-serif'}}
         aria-label="My Account"
       >
-        <User className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors duration-300" />
+        <User className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
         
         {isProfileIncomplete && (
           <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 animate-pulse rounded-none" />
         )}
       </div>
+      
+      {/* Invisible bridge to prevent hover gap */}
+      {isMenuOpen && (
+        <div className="absolute top-full right-0 w-full h-1 bg-transparent" />
+      )}
       
       {/* Dropdown Menu */}
       {isMenuOpen && (
@@ -81,17 +86,17 @@ const UserMenu = memo(() => {
             // Set timeout when mouse leaves the menu
             timeoutRef.current = setTimeout(() => {
               setIsMenuOpen(false);
-            }, 3000); // Match the 3 second delay on the parent
+            }, 150); // Match the 150ms delay on the parent
           }}
         >
-          <div className="p-3 border-b border-gray-100">
-            <p className="text-xs font-medium text-gray-500">MY ACCOUNT</p>
+          <div className="p-3 border-b border-gray-200">
+            <p className="text-xs font-medium text-gray-600 tracking-wide uppercase">MY ACCOUNT</p>
           </div>
           
           <div className="py-1">
             <Link 
               to="/profile" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 user-menu-item"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-black hover:text-yellow-600 hover:bg-gray-50 user-menu-item transition-all duration-200"
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling
@@ -102,13 +107,13 @@ const UserMenu = memo(() => {
                 }, 100);
               }}
             >
-              <User className="h-4 w-4 text-gray-500" />
-              My Profile
+              <User className="h-4 w-4 text-gray-600" />
+              <span className="font-medium">My Profile</span>
             </Link>
             
             <Link 
               to="/profile?tab=orders" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 user-menu-item"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-black hover:text-yellow-600 hover:bg-gray-50 user-menu-item transition-all duration-200"
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling
@@ -119,18 +124,18 @@ const UserMenu = memo(() => {
                 }, 100);
               }}
             >
-              <Package className="h-4 w-4 text-gray-500" />
-              My Orders
+              <Package className="h-4 w-4 text-gray-600" />
+              <span className="font-medium">My Orders</span>
             </Link>
           </div>
           
-          <div className="p-2 border-t border-gray-100">
+          <div className="p-2 border-t border-gray-200">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-md user-menu-item"
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md user-menu-item transition-all duration-200"
             >
               <LogOut className="h-4 w-4" />
-              Sign Out
+              <span className="font-medium">Sign Out</span>
             </button>
           </div>
         </div>

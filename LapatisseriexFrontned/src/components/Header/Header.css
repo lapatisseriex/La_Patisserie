@@ -22,26 +22,334 @@
 /* Cake-themed text animation for logo */
 .cake-logo-text {
   display: inline-block;
-  background: linear-gradient(135deg, #8a5a44 0%, #d4a373 50%, #e9b494 100%);
-  background-size: 200% auto;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 25%, #ffd700 50%, #b8860b 75%, #ffd700 100%);
+  background-size: 300% auto;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shimmerCake 3s ease-in-out infinite;
-  text-shadow: 0px 0px 10px rgba(212, 163, 115, 0.3);
+  animation: shimmerGold 3s ease-in-out infinite;
+  text-shadow: 0px 0px 15px rgba(255, 215, 0, 0.4);
   position: relative;
+  font-weight: bold;
 }
 
 /* Delicious pastry shimmer effect */
-@keyframes shimmerCake {
+@keyframes shimmerGold {
   0%, 100% {
     background-position: 0% 50%;
-    text-shadow: 0px 0px 4px rgba(212, 163, 115, 0.3);
+    text-shadow: 0px 0px 8px rgba(255, 215, 0, 0.4);
   }
   50% {
     background-position: 100% 50%;
-    text-shadow: 0px 0px 10px rgba(212, 163, 115, 0.5);
+    text-shadow: 0px 0px 20px rgba(255, 215, 0, 0.7), 0px 0px 30px rgba(255, 237, 78, 0.3);
   }
+}
+
+/* Sugar sprinkles animation for logo */
+.sugar-sprinkles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.sprinkle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: linear-gradient(45deg, #ffd700, #ffed4e, #b8860b);
+  border-radius: 50%;
+  animation: sprinkleFall 2s infinite ease-in-out;
+  opacity: 0.8;
+}
+
+@keyframes sprinkleFall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(30px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Premium Luxury Banner Styles */
+.luxury-banner-container {
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 25%, #000000 50%, #2a2a2a 75%, #000000 100%);
+  background-size: 400% 400%;
+  animation: luxuryGradientShift 8s ease-in-out infinite;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@keyframes luxuryGradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Floating cake elements */
+.floating-cake {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, rgba(255, 212, 0, 0.3) 0%, rgba(255, 212, 0, 0.1) 70%, transparent 100%);
+  border-radius: 50%;
+  animation: floatUp 6s infinite ease-in-out;
+}
+
+.floating-cake-1 {
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 8s;
+}
+
+.floating-cake-2 {
+  left: 70%;
+  animation-delay: 2s;
+  animation-duration: 10s;
+}
+
+.floating-cake-3 {
+  left: 40%;
+  animation-delay: 4s;
+  animation-duration: 7s;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(100px) rotate(0deg) scale(0.8);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-50px) rotate(180deg) scale(1);
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-200px) rotate(360deg) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Floating sparkles */
+.floating-sparkle {
+  position: absolute;
+  font-size: 16px;
+  animation: sparkleFloat 4s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.floating-sparkle-1 {
+  left: 15%;
+  animation-delay: 0s;
+  animation-duration: 5s;
+}
+
+.floating-sparkle-2 {
+  left: 60%;
+  animation-delay: 1.5s;
+  animation-duration: 6s;
+}
+
+.floating-sparkle-3 {
+  left: 80%;
+  animation-delay: 3s;
+  animation-duration: 4.5s;
+}
+
+.floating-sparkle-4 {
+  left: 25%;
+  animation-delay: 2s;
+  animation-duration: 5.5s;
+}
+
+@keyframes sparkleFloat {
+  0% {
+    transform: translateY(60px) rotate(0deg) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-30px) rotate(180deg) scale(1.2);
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-120px) rotate(360deg) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Text animation effects */
+.animate-fade-in-up {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+.animation-delay-500 {
+  animation-delay: 0.5s;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.8s ease-out forwards;
+  transform-origin: center;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Professional dropdown fade-in animation */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Star animation for banner */
+.star {
+  position: absolute;
+  background: #ffd700;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: starTwinkle 3s ease-in-out infinite;
+}
+
+.star-1 {
+  width: 8px;
+  height: 8px;
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.star-2 {
+  width: 6px;
+  height: 6px;
+  top: 60%;
+  right: 25%;
+  animation-delay: 1.5s;
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Custom scrollbar for mobile menu */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #ffd700, #b8860b);
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #ffed4e, #ffd700);
+}
+
+/* Mega Menu Animations */
+.mega-menu-category {
+  transition: all 0.2s ease-in-out;
+}
+
+.mega-menu-category:hover {
+  transform: translateX(4px);
+}
+
+.mega-menu-image {
+  transition: all 0.3s ease-in-out;
+}
+
+.mega-menu-image:hover {
+  transform: scale(1.02);
+}
+
+/* Enhanced dropdown animation for mega menu */
+@keyframes megaMenuSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mega-menu-dropdown {
+  animation: megaMenuSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Light golden glassmorphism effect */
+.light-golden-glass {
+  background: linear-gradient(135deg, rgba(255, 248, 220, 0.9), rgba(255, 239, 178, 0.8));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(255, 215, 0, 0.15),
+    0 4px 16px rgba(255, 193, 7, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* Premium Navigation Item Animations */
@@ -49,6 +357,8 @@
   position: relative;
   padding: 8px 12px;
   transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 /* Desktop Nav Item Hover Effects */
@@ -67,7 +377,7 @@
   left: 50%;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  background: linear-gradient(90deg, transparent, #ffd700, transparent);
   transform: translateX(-50%);
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -80,6 +390,8 @@
 .location-dropdown {
   animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: top center;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 @keyframes slideDown {
@@ -97,6 +409,48 @@
 .mobile-menu-premium {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+}
+
+/* Glassmorphism effects for cards and dropdowns */
+.glass-effect {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+/* Gold glow effect for interactive elements */
+.gold-glow:hover {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), 0 0 40px rgba(255, 215, 0, 0.1);
+}
+
+/* Professional tooltip styling */
+.tooltip {
+  position: relative;
+}
+
+.tooltip .tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  background: transparent; /* removed black background */
+  backdrop-filter: none; /* remove blur for a clean look */
+  border-radius: 6px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  white-space: nowrap;
+}
+
+.tooltip:hover .tooltip-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-4px);
 }
 
 /* Premium Menu Item Hover Effects */
@@ -297,13 +651,17 @@
   
   /* Layout padding adjustments for all pages */
   main {
-    padding-top: 140px;
+    padding-top: 130px;
     transition: padding-top 0.3s ease-out;
   }
   
   @media (max-width: 767px) {
     body.hide-location-bar main {
-      padding-top: 98px; /* Reduced padding when location bar is hidden on mobile */
+      padding-top: 75px; /* Adequate padding when location bar is hidden on mobile */
+    }
+    
+    main {
+      padding-top: 75px !important; /* Consistent mobile padding to prevent overlap */
     }
   }
   
@@ -318,24 +676,26 @@
   }
   
   /* Dynamic padding based on header visibility */
-  body.scrolling-down main {
-    padding-top: 100px !important;
-    transition: padding-top 0.2s ease;
-  }
-  
-  body.scrolling-up main {
-    padding-top: 130px !important;
-    transition: padding-top 0.2s ease;
-  }
-  
-  body:not(.scrolled) main {
-    padding-top: 130px !important;
-    transition: padding-top 0.2s ease;
+  @media (max-width: 767px) {
+    body.scrolling-down main {
+      padding-top: 75px !important;
+      transition: padding-top 0.2s ease;
+    }
+    
+    body.scrolling-up main {
+      padding-top: 75px !important;
+      transition: padding-top 0.2s ease;
+    }
+    
+    body:not(.scrolled) main {
+      padding-top: 75px !important;
+      transition: padding-top 0.2s ease;
+    }
   }
   
   /* Ensure proper header height calculation */
   body.has-fixed-header {
-    --header-height-mobile: 130px;
+    --header-height-mobile: 75px; /* Adequate height to prevent overlap */
   }
   
   /* When header slides up, reduce spacing */

@@ -52,10 +52,10 @@ const HomePage = () => {
   const { user } = useAuth(); // Access user from context
 
   return (
-    <div className="homepage-container">
+    <>
       <Home />
       {!user && <Newsletter />}
-    </div>
+    </>
   );
 };
 // Protected route for admin pages

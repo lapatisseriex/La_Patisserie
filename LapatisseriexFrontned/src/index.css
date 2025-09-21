@@ -84,6 +84,23 @@ body {
   overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
+/* Mobile-specific fixes for header spacing */
+@media (max-width: 767px) {
+  main {
+    padding-top: 75px !important; /* Adequate mobile padding to prevent overlap */
+  }
+  
+  .homepage-container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  
+  /* Ensure sections start immediately without gaps */
+  section {
+    margin-top: 0 !important;
+  }
+}
+
 /* Class for body when header is fixed */
 body.has-fixed-header {
   padding-top: 0; /* Managed by main tag */

@@ -156,7 +156,7 @@ const Home = () => {
       </section>
 
       {/* Browse Categories Section */}
-      <section className="w-full py-0 md:py-6">
+      <section className="w-full">
         <CategorySwiper 
           categories={categories}
           loading={categoriesLoading}
@@ -170,15 +170,15 @@ const Home = () => {
         />
       </section>
 
-      <section ref={bestSellersRef} className="w-full py-0 md:py-6">
+      <section ref={bestSellersRef} className="w-full">
         <BestSellers products={bestSellersProducts} loading={productsLoading} />
       </section>
 
-      <section ref={handpickedRef} className="w-full py-0 md:py-6">
+      <section ref={handpickedRef} className="w-full">
         <HandpickedForYou />
       </section>
 
-      <section ref={favoritesRef} className="w-full py-0 md:py-6">
+      <section ref={favoritesRef} className="w-full">
         <FavoritesSection />
       </section>
 

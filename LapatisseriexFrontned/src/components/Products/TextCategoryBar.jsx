@@ -100,11 +100,11 @@ const TextCategoryBar = ({
   };
 
   return (
-    <div className="w-full bg-white relative shadow-sm">
+  <div className="w-full bg-white relative shadow-sm">
       {/* Scrollable categories container - responsive layout */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto space-x-6 md:space-x-8 lg:space-x-10 xl:space-x-12 px-6 py-5 scrollbar-hide scroll-smooth relative z-10 justify-start md:justify-center border-b border-gray-100"
+  className="flex overflow-x-auto space-x-6 md:space-x-8 lg:space-x-10 xl:space-x-12 px-4 py-3 scrollbar-hide scroll-smooth relative z-10 justify-start md:justify-center border-b border-gray-100"
         style={{
           scrollbarWidth: 'none', /* Firefox */
           msOverflowStyle: 'none', /* IE and Edge */
@@ -121,7 +121,7 @@ const TextCategoryBar = ({
             }`}
             onClick={handleAllCategories}
           >
-            <span className="text-sm md:text-base whitespace-nowrap py-3 px-2 relative tracking-wide">
+            <span className="text-sm md:text-base whitespace-nowrap py-2 px-2 relative tracking-wide">
               All Categories
               {/* Hover effect underline */}
               <div className={`absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200 transition-all duration-300 ${
@@ -157,7 +157,7 @@ const TextCategoryBar = ({
                 }`}
                 onClick={() => onSelectCategory(category._id || category.id)}
               >
-                <span className="text-sm md:text-base whitespace-nowrap py-3 px-2 relative tracking-wide">
+                <span className="text-sm md:text-base whitespace-nowrap py-2 px-2 relative tracking-wide">
                   {category.name}
                   {/* Hover effect underline */}
                   <div className={`absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200 transition-all duration-300 ${

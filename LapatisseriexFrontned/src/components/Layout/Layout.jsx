@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
 import FloatingCartBar from '../Cart/FloatingCartBar';
+import BottomNavigation from '../common/BottomNavigation';
 
 const Layout = () => {
   // Apply header spacing class
@@ -19,11 +20,12 @@ const Layout = () => {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white pt-[130px] md:pt-[130px] pb-20 transition-all duration-300">
+      <main className="min-h-screen bg-white pt-[75px] md:pt-[130px] pb-20 md:pb-4 transition-all duration-300">
         <Outlet />
       </main>
       <Footer />
       <FloatingCartBar />
+      <BottomNavigation />
     </>
   );
 };

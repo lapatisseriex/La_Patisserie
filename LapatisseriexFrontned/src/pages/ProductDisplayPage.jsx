@@ -10,7 +10,7 @@ import MediaDisplay from '../components/common/MediaDisplay';
 import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
-import './ProductDisplayPage-mobile.css';
+import '../styles/ProductDisplayPage-mobile.css';
 import '../styles/premiumButtons.css';
 
 const ProductDisplayPage = () => {
@@ -663,7 +663,7 @@ const ProductDisplayPage = () => {
             {/* Product Title and Quantity */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h1 className="text-xl font-bold text-gray-900 leading-tight bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold text-yellow-600 leading-tight">
                   {product.name}
                 </h1>
                 <p className="text-sm text-gray-600 mt-2 font-medium">Net Qty: Serves 1</p>
@@ -731,7 +731,7 @@ const ProductDisplayPage = () => {
                 role="img"
                 aria-label="With egg indicator"
               >
-                <span className="w-5 h-5 grid place-items-center rounded-md border border-orange-600 bg-orange-50">
+                <span className="w-5 h-5 grid place-items-center rounded-md border border-red-600 bg-red-50">
                   <span className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[8px] border-l-transparent border-r-transparent border-b-orange-600"></span>
                 </span>
                 <span className="text-xs  text-gray-900">WITH EGG</span>
@@ -1036,7 +1036,7 @@ const ProductDisplayPage = () => {
 
       {/* Mobile Sticky Product Bar - always mounted for slide animation */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-200 shadow-lg transform transition-transform duration-300 ease-out ${
+        className={`fixed bottom-16 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-200 shadow-lg transform transition-transform duration-300 ease-out ${
           showMobileStickyReserve ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
         }`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' }}
@@ -1053,13 +1053,13 @@ const ProductDisplayPage = () => {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-semibold text-black truncate leading-tight">{product.name}</h3>
+                  <h3 className="text-xs font-semibold text-yellow-600 truncate leading-tight">{product.name}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-sm font-bold text-black">₹{Math.round(discountedPrice)}</span>
                     {discountPercentage > 0 && (
                       <>
                         <span className="text-[11px] text-gray-500 line-through">₹{selectedVariant.price}</span>
-                        <span className="bg-green-500 text-white px-1 py-0.5 text-[10px] font-bold leading-none rounded">{discountPercentage}% OFF</span>
+                        <span className=" text-green-500 px-1 py-0.5 text-[10px] font-bold leading-none rounded">{discountPercentage}% OFF</span>
                       </>
                     )}
                   </div>
@@ -1069,7 +1069,7 @@ const ProductDisplayPage = () => {
               {/* Right: Actions */}
               <div className="flex items-stretch gap-2 flex-shrink-0">
                 {currentCartQuantity > 0 ? (
-                  <div className="flex items-center bg-gray-50 border border-gray-300 h-9 rounded-lg">
+                  <div className="flex items-center bg-gray-50 border border-gray-300 h-7 rounded-lg">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity - 1); }}
                       className="w-8 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors rounded-l-lg"
@@ -1366,7 +1366,7 @@ const ProductDisplayPage = () => {
                 {/* Product Title and Quantity */}
                 <div className="flex items-start justify-between mb-4" data-aos="fade-down" data-aos-delay="600">
                   <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-medium leading-tight text-gray-900">
+                    <h1 className="text-2xl md:text-3xl font-medium leading-tight text-yellow-600">
                       {product.name}
                     </h1>
                     <p className="text-sm text-gray-500 mt-2">Net Qty: Serves 1</p>

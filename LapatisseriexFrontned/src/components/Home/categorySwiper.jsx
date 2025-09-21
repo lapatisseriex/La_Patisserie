@@ -46,7 +46,7 @@ const CategorySwiperHome = ({
 
   const handleScrollTo = (sectionRef) => {
     if (sectionRef?.current) {
-      const navbarHeight = 100;
+      const navbarHeight = window.innerWidth < 768 ? 90 : 130;
       const elementPosition =
         sectionRef.current.getBoundingClientRect().top + window.pageYOffset;
       const offsetPosition = elementPosition - navbarHeight;
