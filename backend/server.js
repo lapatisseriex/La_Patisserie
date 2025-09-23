@@ -15,7 +15,6 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import hostelRoutes from './routes/hostelRoutes.js';
-import emailRoutes from './routes/emailRoutes.js';
 import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
 import bannerRoutes from './routes/bannerRoutes.js';
 import timeSettingsRoutes from './routes/timeSettingsRoutes.js';
@@ -62,7 +61,6 @@ setInterval(() => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/email', emailRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);

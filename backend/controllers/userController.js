@@ -51,8 +51,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       profilePhoto: user.profilePhoto || { url: '', public_id: '' },
       favorites: user.favorites || [],
       createdAt: user.createdAt,
-      email: user.email || '',
-      isEmailVerified: user.isEmailVerified || false
+      email: user.email || ''
     }
   });
 });
@@ -89,8 +88,7 @@ export const updateUser = asyncHandler(async (req, res) => {
     location, 
     hostel, 
     role,
-    email,
-    isEmailVerified
+    email
   } = req.body;
   
   if (name) user.name = name;
@@ -127,10 +125,7 @@ export const updateUser = asyncHandler(async (req, res) => {
     user.email = email;
   }
   
-  // Handle email verification status
-  if (isEmailVerified !== undefined) {
-    user.isEmailVerified = isEmailVerified;
-  }
+  // Email verification status removed
   
   // Save updated user
   await user.save();
@@ -163,8 +158,7 @@ export const updateUser = asyncHandler(async (req, res) => {
       location: updatedUser.location,
       hostel: updatedUser.hostel,
       profilePhoto: updatedUser.profilePhoto || { url: '', public_id: '' },
-      email: updatedUser.email || '',
-      isEmailVerified: updatedUser.isEmailVerified || false
+      email: updatedUser.email || ''
     }
   });
 });

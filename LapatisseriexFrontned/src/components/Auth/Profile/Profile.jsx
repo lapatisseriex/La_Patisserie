@@ -2,10 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext/AuthContext';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
-import { emailService } from '../../../services/apiService';
 import ProfileImageUpload from './ProfileImageUpload';
 import GlobalLoadingOverlay from '../../common/GlobalLoadingOverlay';
-import EmailVerification from '../EmailVerification';
 import axios from 'axios';
 import { 
   User, 
@@ -16,8 +14,7 @@ import {
   Flag,
   Check,
   ChevronDown,
-  Building,
-  Mail
+  Building
 } from 'lucide-react';
 
 const Profile = () => {
@@ -81,7 +78,7 @@ const Profile = () => {
       const date = new Date(dateValue);
       return !isNaN(date.getTime()) ? date.toISOString().split('T')[0] : '';
     } catch (error) {
-      console.error("Error formatting date:", error);
+      console.error('Error formatting date:', error);
       return '';
     }
   };
@@ -97,50 +94,6 @@ const Profile = () => {
   
   // Initialize form data with user and saved data
   const [formData, setFormData] = useState(createInitialFormData(user, savedUserData));
-  
-  // Email verification state - prioritize saved data for persistence
-  const [isEmailVerified, setIsEmailVerified] = useState(savedUserData?.isEmailVerified || user?.isEmailVerified || false);
-  
-  // Add debugging log for verification status
-  console.log('Initial email verification status:', isEmailVerified);
-  console.log('Email value in form:', formData.email);
-  
-  // Effect to check email verification status from server on mount
-  useEffect(() => {
-    const checkEmailStatus = async () => {
-      try {
-        const status = await emailService.checkVerificationStatus();
-        console.log('Email verification status from server:', status);
-        
-        if (status.email) {
-          // Update form data with server email
-          setFormData(prev => ({
-            ...prev,
-            email: status.email
-          }));
-          
-          // Update verification status
-          setIsEmailVerified(status.isEmailVerified);
-          
-          // Update saved data for persistence
-          const savedData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
-          savedData.email = status.email;
-          savedData.isEmailVerified = status.isEmailVerified;
-          localStorage.setItem('savedUserData', JSON.stringify(savedData));
-          
-          console.log('Updated email and verification status from server');
-        }
-      } catch (error) {
-        console.error('Error checking email verification status:', error);
-      }
-    };
-    
-    // Only check if we have a user
-    if (user && user.uid) {
-      checkEmailStatus();
-    }
-  }, [user]);
-  const [showEmailVerification, setShowEmailVerification] = useState(false);
   
   // Fetch locations only once on mount
   const hasRunLocationsFetch = useRef(false);
@@ -238,7 +191,7 @@ const Profile = () => {
         const savedFormData = localStorage.getItem('profileFormData');
         if (savedFormData) {
           const parsedFormData = JSON.parse(savedFormData);
-          console.log("Recovering form data after refresh:", parsedFormData);
+          console.log('Recovering form data after refresh:', parsedFormData);
           
           // First get cached user data for fallback
           let cachedUserData = {};
@@ -248,21 +201,20 @@ const Profile = () => {
               cachedUserData = JSON.parse(cachedUser);
             }
           } catch (err) {
-            console.error("Error parsing cached user:", err);
+            console.error('Error parsing cached user:', err);
           }
           
-          // Make sure email is always available for verification status check
+          // Make sure email is always available
           if (!parsedFormData.email) {
             if (cachedUserData.email) {
               parsedFormData.email = cachedUserData.email;
             } else if (user?.email) {
               parsedFormData.email = user.email;
             }
-            console.log("Email missing in saved form data, using fallback email:", parsedFormData.email);
+            console.log('Email missing in saved form data, using fallback email:', parsedFormData.email);
           }
           
           // Make sure all date fields are correctly formatted
-          // This ensures anniversary and other date fields persist properly
           if (parsedFormData.dob && !(parsedFormData.dob instanceof String) && typeof parsedFormData.dob !== 'string') {
             parsedFormData.dob = formatDate(parsedFormData.dob);
           }
@@ -271,44 +223,26 @@ const Profile = () => {
             parsedFormData.anniversary = formatDate(parsedFormData.anniversary);
           }
           
-          // Use our helper function for consistent form data recovery with proper precedence
-          // This ensures all fields including anniversary are restored properly
+          // Use our helper function for consistent form data recovery
           const mergedUserData = {
             ...user,
             ...cachedUserData,
-            // Format specific fields as needed
             location: typeof user?.location === 'object' ? user?.location?._id || '' : user?.location || '',
             hostel: typeof user?.hostel === 'object' ? user?.hostel?._id || '' : user?.hostel || '',
           };
           
           const restoredForm = createInitialFormData(mergedUserData, parsedFormData);
-          console.log("Restored form data with anniversary:", restoredForm);
+          console.log('Restored form data with anniversary:', restoredForm);
           setFormData(restoredForm);
-          
-          // Also restore email verification status if available
-          if (parsedFormData.hasOwnProperty('isEmailVerified')) {
-            setIsEmailVerified(parsedFormData.isEmailVerified);
-            console.log("Restored email verification status:", parsedFormData.isEmailVerified);
-          } else if (cachedUserData.hasOwnProperty('isEmailVerified')) {
-            setIsEmailVerified(cachedUserData.isEmailVerified);
-            console.log("Using cached user's email verification status:", cachedUserData.isEmailVerified);
-          } else if (user?.email && parsedFormData.email === user.email) {
-            // If we have the same email as user, use user's verification status
-            setIsEmailVerified(user.isEmailVerified || false);
-            console.log("Using user's email verification status:", user.isEmailVerified);
-          }
           
           // Re-save the complete form data to localStorage to ensure consistency
           const dataToCache = {
-            ...restoredForm,
-            isEmailVerified: parsedFormData.isEmailVerified !== undefined 
-              ? parsedFormData.isEmailVerified 
-              : (user?.isEmailVerified || false)
+            ...restoredForm
           };
           localStorage.setItem('profileFormData', JSON.stringify(dataToCache));
         }
       } catch (error) {
-        console.error("Error recovering form data:", error);
+        console.error('Error recovering form data:', error);
       }
     }
   }, []);
@@ -323,53 +257,36 @@ const Profile = () => {
     }
   }, [authError]);
   
-  // Update email verification status if user object changes
+  // Debug helper to verify form data
   useEffect(() => {
-    if (user && user.email && !isEditMode) {
-      console.log("User email/verification status updated:", user.email, user.isEmailVerified);
-      if (formData.email === user.email) {
-        // Only update verification status if we're displaying the same email
-        setIsEmailVerified(user.isEmailVerified || false);
-      }
-    }
-  }, [user?.email, user?.isEmailVerified]);
-  
-  // Debug helper to verify form data - especially date fields - are correctly persisting
-  useEffect(() => {
-    // This will run whenever formData changes
-    console.log("CURRENT FORM DATA STATE:", {
+    console.log('CURRENT FORM DATA STATE:', {
       ...formData,
-      isEmailVerified,
       isEditMode
     });
     
-    console.log("Anniversary date field:", formData.anniversary);
-    console.log("Email field:", formData.email);
+  console.log('Anniversary date field:', formData.anniversary);
+  // Email field logging removed
     
-    // Check localStorage for comparison
     try {
       const savedFormData = localStorage.getItem('profileFormData');
       if (savedFormData) {
         const parsed = JSON.parse(savedFormData);
-        console.log("LOCALSTORAGE profileFormData:", {
+        console.log('LOCALSTORAGE profileFormData:', {
           ...parsed,
-          anniversary: parsed.anniversary || "NOT SET",
-          email: parsed.email || "NOT SET"
+          anniversary: parsed.anniversary || 'NOT SET'
         });
       }
     } catch (err) {
-      console.error("Error checking localStorage:", err);
+      console.error('Error checking localStorage:', err);
     }
-  }, [formData, isEmailVerified, isEditMode]);
+  }, [formData, isEditMode]);
   
-  // useEffect to sync form data with user data - runs both on component mount and when user data changes
+  // useEffect to sync form data with user data
   const userDataInitialized = useRef(false);
   
   useEffect(() => {
-    // Fetch fresh user data from the server first to ensure we have the latest
     const fetchFreshUserData = async () => {
       try {
-        // Only make this call if we're already authenticated and have a token
         const token = localStorage.getItem('authToken');
         if (token) {
           const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/me`, {
@@ -377,11 +294,8 @@ const Profile = () => {
           });
           
           if (response.data.success) {
-            // Update cached user data with fresh data
             localStorage.setItem('cachedUser', JSON.stringify(response.data.user));
             console.log('Fetched fresh user data from server:', response.data.user);
-            
-            // Clear any potentially corrupted form data
             localStorage.removeItem('profileFormData');
           }
         }
@@ -390,7 +304,6 @@ const Profile = () => {
       }
     };
     
-    // Call the function to fetch fresh data
     if (!userDataInitialized.current) {
       fetchFreshUserData();
     }
@@ -408,7 +321,7 @@ const Profile = () => {
           cachedUserData = JSON.parse(cachedUser) || {};
         }
       } catch (error) {
-        console.error("Error parsing cached user data:", error);
+        console.error('Error parsing cached user data:', error);
         cachedUserData = {};
       }
       
@@ -418,10 +331,10 @@ const Profile = () => {
         const profileFormData = localStorage.getItem('profileFormData');
         if (profileFormData) {
           savedFormData = JSON.parse(profileFormData) || {};
-          console.log("Recovered saved form data:", savedFormData);
+          console.log('Recovered saved form data:', savedFormData);
         }
       } catch (error) {
-        console.error("Error recovering form data from localStorage:", error);
+        console.error('Error recovering form data from localStorage:', error);
         savedFormData = {};
       }
       
@@ -439,28 +352,18 @@ const Profile = () => {
       
       // Then create the form data with proper precedence
       const initialFormData = createInitialFormData(mergedUserData, savedFormData);
-      console.log("Setting initial form data:", initialFormData);
+      console.log('Setting initial form data:', initialFormData);
       
       // Update form data state
       setFormData(initialFormData);
       
-      // Set email verification status with proper precedence
-      const verificationStatus = 
-        savedFormData.isEmailVerified !== undefined ? savedFormData.isEmailVerified :
-        cachedUserData.isEmailVerified !== undefined ? cachedUserData.isEmailVerified :
-        (user.isEmailVerified || false);
-      
-      setIsEmailVerified(verificationStatus);
-      console.log('Email verification status set to:', verificationStatus, 'for email:', initialFormData.email);
-      
       // Save the complete form data to localStorage for refresh protection
       const dataToCache = {
-        ...initialFormData,
-        isEmailVerified: verificationStatus
+        ...initialFormData
       };
       localStorage.setItem('profileFormData', JSON.stringify(dataToCache));
       
-      console.log("Form data initialized completely with all fields preserved");
+      console.log('Form data initialized completely with all fields preserved');
       
       userDataInitialized.current = true;
     }
@@ -468,12 +371,6 @@ const Profile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // If email is changing, reset verification status
-    if (name === 'email' && value !== formData.email) {
-      setIsEmailVerified(false);
-      setShowEmailVerification(!!value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
-    }
     
     // Special handling for date fields to ensure proper formatting
     let processedValue = value;
@@ -507,11 +404,10 @@ const Profile = () => {
     
     // If we're in edit mode, immediately update localStorage for persistence
     // This ensures even partial changes are saved during editing
-    if (isEditMode && (name === 'anniversary' || name === 'dob' || name === 'email')) {
+    if (isEditMode && (name === 'anniversary' || name === 'dob')) {
       const currentData = {
         ...formData,
-        [name]: processedValue,
-        isEmailVerified: name === 'email' ? false : isEmailVerified
+        [name]: processedValue
       };
       localStorage.setItem('profileFormData', JSON.stringify(currentData));
       console.log(`Updated ${name} in localStorage:`, processedValue);
@@ -526,20 +422,12 @@ const Profile = () => {
       return;
     }
     
-    // Validate that email is verified if provided
-    if (formData.email && !isEmailVerified) {
-      setLocalError('Please verify your email address before saving');
-      // Show email verification component
-      setShowEmailVerification(true);
-      return;
-    }
-    
     setLocalError('');
     setSuccessMessage('');
     
     // Set both loading states to ensure animations show
     setIsSaving(true);
-    console.log("🔄 Setting isSaving to TRUE"); // Debug log
+    console.log('🔄 Setting isSaving to TRUE'); // Debug log
     
     // Scroll to the top to make loading indicator visible
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -555,25 +443,26 @@ const Profile = () => {
     // Save complete form data to localStorage for refresh protection
     // This ensures we have a backup of all fields in case we need to restore after refresh
     const formDataToSave = {
-      ...profileData,
-      isEmailVerified: isEmailVerified
+      ...profileData
     };
     
     // Log the data being saved, with special attention to anniversary field
-    console.log("Saving complete form data with anniversary:", formDataToSave.anniversary);
+    console.log('Saving complete form data with anniversary:', formDataToSave.anniversary);
     
     localStorage.setItem('profileFormData', JSON.stringify(formDataToSave));
     
-    console.log("Submitting profile data:", profileData);
-    console.log("Gender being submitted:", profileData.gender);
-    console.log("Hostel data being submitted:", profileData.hostel, "type:", typeof profileData.hostel);
+  console.log('Submitting profile data (email omitted from update):', { ...profileData, email: undefined });
+    console.log('Gender being submitted:', profileData.gender);
+    console.log('Hostel data being submitted:', profileData.hostel, 'type:', typeof profileData.hostel);
     
     try {
       // IMPORTANT: Check if this is the admin's profile
       const isAdmin = user?.role === 'admin';
       console.log('Is admin user:', isAdmin);
       
-      const success = await updateProfile(profileData);
+  // Omit email from update payload
+  const { email, ...profileDataWithoutEmail } = profileData;
+  const success = await updateProfile(profileDataWithoutEmail);
 
       if (success) {
         setSuccessMessage('Profile updated successfully!');
@@ -583,22 +472,20 @@ const Profile = () => {
         // Even on successful update, ensure we keep location and hostel permanently in savedUserData
         // This provides persistent data across sessions, similar to how the header works
         const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
-        savedUserData.location = formData.location;
-        savedUserData.hostel = formData.hostel;
-        savedUserData.email = formData.email;
-        savedUserData.anniversary = formData.anniversary;
-        savedUserData.isEmailVerified = isEmailVerified;
+  savedUserData.location = formData.location;
+  savedUserData.hostel = formData.hostel;
+  // do not overwrite saved email from Profile
+  savedUserData.anniversary = formData.anniversary;
         localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
         console.log('Permanently saved location and hostel to savedUserData:', savedUserData.location, savedUserData.hostel);
 
         // Also update cached user for immediate availability
         const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
-        cachedUser.email = formData.email || cachedUser.email || '';
+  // do not overwrite cached email from Profile UI
         cachedUser.anniversary = formData.anniversary || cachedUser.anniversary || '';
-        cachedUser.isEmailVerified = isEmailVerified;
         localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
         
-        console.log("Successfully updated profile, preserved email and anniversary in cache");
+        console.log('Successfully updated profile, preserved email and anniversary in cache');
         
         // For admin users, we want to make sure we get a fresh copy of our own data
         if (isAdmin) {
@@ -621,12 +508,12 @@ const Profile = () => {
         }
       }
     } catch (error) {
-      console.error("Error in profile update:", error);
-      setLocalError("Failed to update profile. Please try again.");
+      console.error('Error in profile update:', error);
+      setLocalError('Failed to update profile. Please try again.');
     } finally {
       // Use a slight delay to ensure loading state is visible even on fast connections
       setTimeout(() => {
-        console.log("🛑 Setting isSaving to FALSE"); // Debug log
+        console.log('🛑 Setting isSaving to FALSE'); // Debug log
         setIsSaving(false);
       }, 1500); // Increased delay for better visibility
     }
@@ -638,15 +525,15 @@ const Profile = () => {
       // certain fields like email and anniversary from the current form data
       
       // Get the current form data values we want to preserve
-      const currentEmail = formData.email || user.email || '';
+  const currentEmail = user.email || '';
       const currentAnniversary = formData.anniversary || formatDate(user.anniversary) || '';
-      const currentEmailVerified = isEmailVerified;
+  // Email verification flow removed; preserve existing form values only
       
       // Log current values to verify we're preserving them
-      console.log("Preserving current values on cancel:", {
-        email: currentEmail,
+      console.log('Preserving current values on cancel:', {
+  // email removed from UI; do not bind to form state
         anniversary: currentAnniversary,
-        isEmailVerified: currentEmailVerified
+  // email verification removed
       });
       
       // Create form data while keeping the existing values
@@ -662,24 +549,22 @@ const Profile = () => {
         hostel: typeof user.hostel === 'object' ? user.hostel?._id || '' : user.hostel || ''
       });
       
-      // Keep the existing verification status
-      setIsEmailVerified(currentEmailVerified);
+  // email verification removed
     }
     
     setIsEditMode(false);
     localStorage.removeItem('profileEditMode');
     
-    setShowEmailVerification(false);
+  // email verification removed
     
     // Update the cached user data to include preserved values
     if (user) {
       const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
       
-      // Keep the email verification status
-      cachedUser.isEmailVerified = isEmailVerified;
+  // email verification removed
       
       // Keep email and anniversary from the form data
-      cachedUser.email = formData.email || user.email || '';
+  // do not modify cached email here
       cachedUser.anniversary = formData.anniversary || user.anniversary || '';
       
       // Keep other fields
@@ -688,7 +573,7 @@ const Profile = () => {
       }
       
       localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
-      console.log("Updated cached user data with preserved email and anniversary:", cachedUser);
+      console.log('Updated cached user data with preserved email and anniversary:', cachedUser);
     }
     
     // Clear error and success messages
@@ -702,28 +587,21 @@ const Profile = () => {
     setLocalError('');
     setSuccessMessage('');
     
-    // Get the current verification status, either from the form or from the user object
-    const currentEmailVerificationStatus = formData.email && user?.email && formData.email === user.email
-      ? (user?.isEmailVerified || false)
-      : isEmailVerified;
-    
-    // Update verification status state
-    setIsEmailVerified(currentEmailVerificationStatus);
+    // email verification removed
     
     // Ensure all date fields are properly formatted strings before saving
     const formDataToSave = {
       ...formData,
       // Explicitly format date fields to ensure consistency
       dob: typeof formData.dob === 'string' ? formData.dob : formatDate(formData.dob),
-      anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary),
-      isEmailVerified: currentEmailVerificationStatus
+  anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary)
     };
     
     // Always save the complete current form data to localStorage for consistency
     // This ensures we have a backup of all fields even after multiple refreshes
     localStorage.setItem('profileFormData', JSON.stringify(formDataToSave));
     
-    console.log("Entering edit mode with complete form data:", formDataToSave);
+    console.log('Entering edit mode with complete form data:', formDataToSave);
   };
 
 
@@ -748,7 +626,7 @@ const Profile = () => {
       {/* Global loading overlay - shown when saving */}
       {isSaving && (
         <>
-          {console.log("🎬 Rendering GlobalLoadingOverlay")}
+          {console.log('🎬 Rendering GlobalLoadingOverlay')}
           <GlobalLoadingOverlay 
             message="Saving your profile..." 
             key={`loading-${Date.now()}`} // Force a fresh instance
@@ -890,30 +768,7 @@ const Profile = () => {
             </div>
           </div>
           
-          {/* Email Field */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="email@example.com"
-                readOnly={!isEditMode}
-                disabled={loading}
-                className={inputClasses}
-              />
-              {isEmailVerified && (
-                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
-                  <Check className="h-3 w-3 mr-1" /> Verified
-                </span>
-              )}
-            </div>
-          </div>
+          {/* Email field removed from UI as requested */}
 
 
 
@@ -1144,42 +999,6 @@ const Profile = () => {
           </div>
         )}
       </form>
-      
-      {/* Email Verification Section - Always shown when email exists */}
-      {formData.email && (
-        <div className="mt-8">
-          <div className="border-t border-gray-200 pt-6 mb-4">
-            <h4 className="text-lg font-medium">Email Management</h4>
-          </div>
-          <EmailVerification 
-            email={formData.email}
-            setEmail={(email) => setFormData({...formData, email})}
-            isVerified={isEmailVerified}
-            setIsVerified={setIsEmailVerified}
-            onVerificationSuccess={(email) => {
-              setFormData(prev => ({...prev, email}));
-              setIsEmailVerified(true);
-              
-              // Update user data in context
-              updateUser({
-                email,
-                isEmailVerified: true
-              });
-              
-              // Also ensure the email is saved locally for persistence
-              const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
-              savedUserData.email = email;
-              savedUserData.isEmailVerified = true;
-              localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
-              
-              setSuccessMessage("Email verified successfully!");
-            }}
-            showChangeEmail={isEditMode} // Only show change option in edit mode
-          />
-        </div>
-      )}
-      
-
     </div>
   );
 };

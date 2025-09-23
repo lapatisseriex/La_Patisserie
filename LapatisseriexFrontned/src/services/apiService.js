@@ -202,86 +202,8 @@ export const apiGet = async (url, options = {}) => {
   return reqPromise;
 };
 
-// Email verification services
-export const emailService = {
-  // Send verification OTP to email
-  sendVerificationEmail: async (email) => {
-    try {
-      const response = await api.post('/email/send-verification', { email });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // Verify email with OTP
-  verifyEmail: async (otp) => {
-    try {
-      const response = await api.post('/email/verify', { otp });
-      // Update localStorage to ensure verification persists after refresh
-      const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
-      cachedUser.isEmailVerified = true;
-      cachedUser.email = response.data.email;
-      localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // Resend verification OTP
-  resendVerificationEmail: async () => {
-    try {
-      const response = await api.post('/email/resend-verification');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-  
-  // Check email verification status
-  checkVerificationStatus: async () => {
-    try {
-      const response = await api.get('/email/verification-status');
-      // Update localStorage with current verification status
-      const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
-      if (response.data.email) {
-        cachedUser.email = response.data.email;
-      }
-      cachedUser.isEmailVerified = response.data.isEmailVerified;
-      localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
-      return response.data;
-    } catch (error) {
-      console.error('Error checking verification status:', error);
-      return { isEmailVerified: false };
-    }
-  },
-  
-  // Update verified email address
-  updateEmail: async (email) => {
-    try {
-      const response = await api.post('/email/update', { email });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // Verify updated email with OTP
-  verifyUpdatedEmail: async (otp) => {
-    try {
-      const response = await api.post('/email/verify-update', { otp });
-      // Update localStorage to ensure verification persists after refresh
-      const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
-      cachedUser.isEmailVerified = true;
-      cachedUser.email = response.data.email;
-      localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  }
-};
+// Email verification services removed as we are restarting verification flow
+export const emailService = {};
 
 // Export default api instance for other services
 export default api;

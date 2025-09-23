@@ -1,29 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext/AuthContext';
-import EmailVerification from '../Auth/EmailVerification';
 import { Mail, Phone, User, MapPin, ChevronRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 const Checkout = () => {
   const { user } = useAuth();
   const [email, setEmail] = useState(user?.email || '');
-  const [isEmailVerified, setIsEmailVerified] = useState(user?.isEmailVerified || false);
-  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  // email verification removed
   const [error, setError] = useState('');
   const [step, setStep] = useState(1); // 1: User Info, 2: Payment, 3: Confirmation
 
   // Effect to check if email verification is needed
   useEffect(() => {
-    // If user has no verified email, show verification form
-    if (user && (!user.email || !user.isEmailVerified)) {
-      setShowEmailVerification(true);
-    }
+    // Email verification flow removed; no-op
   }, [user]);
 
   // Handle proceed to payment - require verified email
   const handleProceedToPayment = () => {
-    if (!email || !isEmailVerified) {
-      setError('Please verify your email address before proceeding');
-      setShowEmailVerification(true);
+    // Proceed without email verification requirement
+    if (!email) {
+      setError('Please enter your email address before proceeding');
       return;
     }
     
@@ -35,15 +30,8 @@ const Checkout = () => {
     const value = e.target.value;
     setEmail(value);
     
-    // Reset verification status when email changes
-    setIsEmailVerified(false);
-    
-    // Show verification component if email is valid format
-    if (value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setShowEmailVerification(true);
-    } else {
-      setShowEmailVerification(false);
-    }
+    // No verification flow; hide component
+  // email verification removed
   };
 
   return (
@@ -136,30 +124,11 @@ const Checkout = () => {
                   placeholder="Enter your email address"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
                 />
-                {isEmailVerified && (
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
-                    <CheckCircle className="h-3 w-3 mr-1" /> Verified
-                  </span>
-                )}
+                {/* email verification badge removed */}
               </div>
             </div>
             
-            {/* Email verification component */}
-            {showEmailVerification && (
-              <div className="mt-2">
-                <EmailVerification
-                  email={email}
-                  setEmail={setEmail}
-                  isVerified={isEmailVerified}
-                  setIsVerified={setIsEmailVerified}
-                  onVerificationSuccess={(verifiedEmail) => {
-                    setEmail(verifiedEmail);
-                    setIsEmailVerified(true);
-                    setError('');
-                  }}
-                />
-              </div>
-            )}
+            {/* Email verification removed */}
             
             {/* Location */}
             <div className="space-y-2">
@@ -181,9 +150,7 @@ const Checkout = () => {
             <div className="pt-4">
               <button
                 onClick={handleProceedToPayment}
-                disabled={!isEmailVerified}
-                className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md 
-                  ${!isEmailVerified ? 'bg-gray-300 cursor-not-allowed' : 'bg-black hover:bg-gray-800'} text-white font-medium`}
+                className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-black hover:bg-gray-800 text-white font-medium`}
               >
                 Proceed to Payment
                 <ChevronRight size={18} />

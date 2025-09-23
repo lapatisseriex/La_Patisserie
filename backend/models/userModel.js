@@ -18,22 +18,7 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       sparse: true,  // This allows null/undefined values to not trigger unique constraint
     },
-    newEmail: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      sparse: true,  // For temporary storage of a new email address during update
-    },
-    isEmailVerified: {
-      type: Boolean,
-      default: false,
-    },
-    emailVerificationOTP: {
-      type: String,
-    },
-    emailVerificationOTPExpires: {
-      type: Date,
-    },
+    // Email verification fields removed as part of reset
     name: {
       type: String,
       trim: true,

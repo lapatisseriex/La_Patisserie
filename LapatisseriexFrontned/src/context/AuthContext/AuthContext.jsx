@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }) => {
             // Restore saved fields if they don't exist in the response
             email: response.data.user.email || savedUserData.email || null,
             anniversary: response.data.user.anniversary || savedUserData.anniversary || null,
-            isEmailVerified: response.data.user.isEmailVerified || savedUserData.isEmailVerified || false
+            // email verification removed
           };
           
           console.log('Restored user data with saved fields:', userData);
@@ -163,7 +163,7 @@ export const AuthProvider = ({ children }) => {
                 // Restore saved fields if they don't exist in the response
                 email: meResponse.data.user.email || savedUserData.email || null,
                 anniversary: meResponse.data.user.anniversary || savedUserData.anniversary || null,
-                isEmailVerified: meResponse.data.user.isEmailVerified || savedUserData.isEmailVerified || false
+                // email verification removed
               };
               
               setUser(freshUserData);
@@ -449,7 +449,7 @@ export const AuthProvider = ({ children }) => {
           email: user.email || '',
           name: user.name || '',
           anniversary: user.anniversary || '',
-          isEmailVerified: user.isEmailVerified || false,
+          // email verification removed
           gender: user.gender || '',
           dob: user.dob || '',
           country: user.country || 'India',
@@ -524,32 +524,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('cachedUser', JSON.stringify(updatedCache));
   };
   
-  // Email verification functions
-  const updateEmailVerificationState = (email, isVerified = true) => {
-    if (!user) return;
-    
-    const userData = {
-      email,
-      isEmailVerified: isVerified
-    };
-    
-    // Update user in state
-    updateUser(userData);
-    
-    // Update the cached user data
-    const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
-    cachedUser.email = email;
-    cachedUser.isEmailVerified = isVerified;
-    localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
-    
-    // ALSO update the savedUserData for persistence across sessions
-    const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
-    savedUserData.email = email;
-    savedUserData.isEmailVerified = isVerified;
-    localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
-    
-    console.log('Email verification state updated:', { email, isVerified });
-  };
+  // Email verification helpers removed
 
   // Change auth type (login, signup, otp, profile)
   const changeAuthType = (type) => {
@@ -570,7 +545,6 @@ export const AuthProvider = ({ children }) => {
     verifyOTP,
     updateProfile,
     updateUser,
-    updateEmailVerificationState,
     logout,
     toggleAuthPanel,
     changeAuthType,
