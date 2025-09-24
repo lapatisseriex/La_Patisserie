@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import cloudinaryService from '../../../services/cloudinaryService';
+import { UPLOAD_CONFIG, formatFileSize } from '../../../config/uploadConfig';
 
 /**
  * MediaUploader component for handling image/video uploads to Cloudinary
@@ -70,19 +71,25 @@ const MediaUploader = ({ onUploadComplete, onError, folder = 'la_patisserie', mu
       for (let i = 0; i < filesToProcess.length; i++) {
         const file = filesToProcess[i];
         try {
-          // Validate file type
+          // Determine resource type and upload config
+          const resourceType = file.type.startsWith('image/') ? 'image' : 'video';
+          const uploadType = resourceType === 'video' ? 'BANNER_VIDEO' : 'BANNER_IMAGE';
+          const maxSize = UPLOAD_CONFIG.FILE_SIZE_LIMITS[uploadType];
+          
+          // File type validation
           if (!file.type.match(/^(image|video)/)) {
             throw new Error(`Invalid file type: ${file.type}. Please upload only images or videos.`);
           }
           
-          // Determine resource type based on file type
-          const resourceType = file.type.startsWith('image/') ? 'image' : 'video';
+          // File size validation with consistent limits
+          if (file.size > maxSize) {
+            throw new Error(UPLOAD_CONFIG.ERROR_MESSAGES.FILE_TOO_LARGE(file.size, maxSize));
+          }
           
-          // Different size limits based on resource type
-          const MAX_FILE_SIZE = resourceType === 'image' ? 10 * 1024 * 1024 : 100 * 1024 * 1024; // 10MB for images, 100MB for videos
-          if (file.size > MAX_FILE_SIZE) {
-            const maxSizeMB = resourceType === 'image' ? 10 : 100;
-            throw new Error(`File "${file.name}" exceeds the maximum size limit of ${maxSizeMB}MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
+          // File format validation
+          const supportedFormats = UPLOAD_CONFIG.SUPPORTED_FORMATS[uploadType];
+          if (!supportedFormats.includes(file.type.toLowerCase())) {
+            throw new Error(UPLOAD_CONFIG.ERROR_MESSAGES.INVALID_FORMAT(supportedFormats));
           }
         
           // Upload to Cloudinary with progress tracking

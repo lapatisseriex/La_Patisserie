@@ -450,7 +450,7 @@ const ProfilePage = () => {
                         onError={(e) => {
                           console.log('Image failed to load:', e);
                           e.target.onerror = null;
-                          e.target.src = 'https://res.cloudinary.com/demo/image/upload/v1580294137/samples/people/smiling-man.jpg';
+                          e.target.src = '/images/default-avatar.svg';
                         }}
                       />
                     ) : (

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import cloudinaryService from '../../services/cloudinaryService';
+import { UPLOAD_CONFIG } from '../../config/uploadConfig';
 
 const BannerForm = ({ banner, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
