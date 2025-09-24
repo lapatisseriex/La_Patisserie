@@ -14,6 +14,9 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
   
   const API_URL = import.meta.env.VITE_API_URL;
   
+  // Log component mount
+  console.log('🖼️ ProfileImageUpload component loaded');
+  
   // Profile photo or default avatar
   console.log('User object in ProfileImageUpload:', user);
   console.log('Profile photo data:', user?.profilePhoto);
@@ -37,15 +40,28 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
   // Handle file selection
   const handleFileChange = async (e) => {
     try {
+      console.log('🎯 === PROFILE IMAGE UPLOAD STARTED ===');
       setError('');
       setSuccess('');
       const file = e.target.files?.[0];
       
-      if (!file) return;
+      if (!file) {
+        console.log('❌ No file selected');
+        return;
+      }
       
-      // Validate file type
-      if (!file.type.includes('image/')) {
-        setError('Please select an image file (JPEG, PNG, etc.)');
+      console.log('📁 Selected file details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        lastModified: file.lastModified
+      });
+      console.log('🔧 API_URL:', API_URL);
+      
+      // Validate file type - be more specific
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        setError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
         return;
       }
       
@@ -56,62 +72,152 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
       }
       
       setIsUploading(true);
+      setUploadProgress(0);
       
-      // Upload to Cloudinary via our backend
+      // Get Firebase auth token
       const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
-      const idToken = await auth.currentUser.getIdToken(true);
       
-      // First, upload the file using our backend endpoint
-      const fileData = new FormData();
-      fileData.append('file', file);
+      if (!auth.currentUser) {
+        setError('Please log in to upload a profile photo');
+        setIsUploading(false);
+        return;
+      }
+      
+      const idToken = await auth.currentUser.getIdToken(true);
       
       // Convert file to base64 for our backend API
       const reader = new FileReader();
-      reader.readAsDataURL(file);
+      
       reader.onload = async () => {
         try {
-          // Upload to our backend endpoint
+          console.log('🚀 File read successfully, starting upload...');
+          console.log('📁 File size in bytes:', file.size);
+          console.log('📄 File type:', file.type);
+          console.log('👤 User ID:', user?.uid);
+          setUploadProgress(25);
+          
+          // Validate base64 data
+          const base64Data = reader.result;
+          if (!base64Data || !base64Data.startsWith('data:image/')) {
+            throw new Error('Invalid file format after reading');
+          }
+          
+          console.log('✅ Base64 data validated');
+          console.log('📊 Base64 data prefix:', base64Data.substring(0, 50));
+          console.log('📏 Base64 data length:', base64Data.length);
+          setUploadProgress(50);
+          
+          console.log('🌐 Making request to:', `${API_URL}/upload/profile`);
+          console.log('🔑 Auth token length:', idToken.length);
+          
+          // Show message for large files
+          if (file.size > 1024 * 1024) { // > 1MB
+            console.log('📋 Large file detected, upload may take longer...');
+          }
+          
+          // Upload to our backend endpoint with longer timeout for large files
           const uploadResponse = await axios.post(
             `${API_URL}/upload/profile`,
-            { file: reader.result },
+            { file: base64Data },
             { 
-              headers: { Authorization: `Bearer ${idToken}` },
+              headers: { 
+                Authorization: `Bearer ${idToken}`,
+                'Content-Type': 'application/json'
+              },
+              timeout: 120000, // 2 minute timeout for large image uploads
+              onUploadProgress: (progressEvent) => {
+                if (progressEvent.total) {
+                  const uploadPercent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                  console.log(`📤 Upload progress: ${uploadPercent}%`);
+                  // Show progress between 50-90% during actual upload
+                  setUploadProgress(50 + (uploadPercent * 0.4));
+                }
+              }
             }
           );
           
+          console.log('✅ Upload response received:', uploadResponse);
+          console.log('📦 Upload response data:', uploadResponse.data);
+          console.log('📊 Response status:', uploadResponse.status);
+          setUploadProgress(75);
+          
           const { url, public_id } = uploadResponse.data;
+          
+          if (!url || !public_id) {
+            throw new Error('Invalid response from upload service');
+          }
           
           // Update user profile with the photo
           const updateResponse = await axios.put(
             `${API_URL}/users/me/photo`,
             { url, public_id },
-            { headers: { Authorization: `Bearer ${idToken}` } }
+            { 
+              headers: { Authorization: `Bearer ${idToken}` },
+              timeout: 10000 // 10 second timeout
+            }
           );
           
           console.log('Profile photo update response:', updateResponse.data);
+          setUploadProgress(100);
           
           // Update local user state with the profilePhoto object
           updateUser({ profilePhoto: { url, public_id } });
           
           setSuccess('Profile photo updated successfully');
-          setUploadProgress(0);
+          
+          // Reset progress after a short delay
+          setTimeout(() => setUploadProgress(0), 2000);
+          
         } catch (error) {
-          console.error('Error in profile photo upload:', error);
-          setError(error.response?.data?.message || 'Failed to upload profile photo');
+          console.error('❌ Error in profile photo upload:', error);
+          console.error('🔍 Error details:');
+          console.error('  - Message:', error.message);
+          console.error('  - Code:', error.code);
+          console.error('  - Status:', error.response?.status);
+          console.error('  - Status Text:', error.response?.statusText);
+          console.error('  - Response Data:', error.response?.data);
+          console.error('  - Request URL:', error.config?.url);
+          console.error('  - Request Method:', error.config?.method);
+          console.error('  - Request Headers:', error.config?.headers);
+          
+          if (error.response?.data) {
+            console.error('🔍 Server response details:', JSON.stringify(error.response.data, null, 2));
+          }
+          
+          // Provide specific error messages
+          if (error.code === 'ECONNABORTED') {
+            console.log('⏰ Upload timeout detected - this might be due to large file size');
+            setError('Upload is taking longer than expected. Please try with a smaller image (under 2MB) or check your internet connection.');
+          } else if (error.response?.status === 413) {
+            setError('File too large. Please choose a smaller image.');
+          } else if (error.response?.status === 400) {
+            setError(error.response.data?.message || 'Invalid file format. Please try a different image.');
+          } else if (error.response?.status === 500) {
+            console.error('🚨 500 Server Error - Backend Issue');
+            setError('Server error during upload. Please try again in a moment.');
+          } else {
+            setError(error.response?.data?.message || error.message || 'Failed to upload profile photo');
+          }
         } finally {
           setIsUploading(false);
         }
       };
       
-      reader.onerror = () => {
-        setError('Failed to read file');
+      reader.onerror = (error) => {
+        console.error('❌ FileReader error:', error);
+        setError('Failed to read the selected file. Please try again.');
         setIsUploading(false);
       };
       
+      // Start reading the file
+      console.log('📖 Starting to read file as DataURL...');
+      reader.readAsDataURL(file);
+      
     } catch (err) {
-      console.error('Error handling file upload:', err);
-      setError('Error uploading file. Please try again.');
+      console.error('❌ Error handling file upload:', err);
+      console.error('🔍 Full error object:', JSON.stringify(err, null, 2));
+      setError('Error preparing file for upload. Please try again.');
       setIsUploading(false);
     }
   };

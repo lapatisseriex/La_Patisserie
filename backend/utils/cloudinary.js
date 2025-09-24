@@ -22,39 +22,73 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
   // Set default folder if not provided
   const folder = options.folder || 'la_patisserie';
   
-  // Log the options for debugging
-  console.log('Cloudinary upload options:', {
+  // Validate input
+  if (!filePath) {
+    throw new Error('File path/data is required');
+  }
+
+  // Clean up the options to avoid conflicts
+  const cleanOptions = {
     folder,
-    resource_type: options.resource_type || 'auto',
-    format: options.format || 'auto',
-    type: options.type || 'upload'
-  });
+    resource_type: 'image',
+    overwrite: true,
+    unique_filename: true,
+    use_filename: false
+  };
+
+  // Add additional options if provided (but be very careful about format)
+  if (options.allowed_formats && Array.isArray(options.allowed_formats)) {
+    cleanOptions.allowed_formats = options.allowed_formats;
+  }
+  
+  // Log the options for debugging
+  console.log('Cloudinary upload options:', cleanOptions);
+  console.log('File data type:', typeof filePath);
+  console.log('File data starts with data:image/', filePath.startsWith('data:image/'));
   
   try {
-    const uploadOptions = {
-      folder,
-      resource_type: options.resource_type || 'auto',
-      format: options.format || 'auto',
-      type: options.type || 'upload',
-      ...options
-    };
+    console.log('=== CLOUDINARY UPLOAD ATTEMPT ===');
+    console.log('Upload options:', JSON.stringify(cleanOptions, null, 2));
     
-    const result = await cloudinary.uploader.upload(filePath, uploadOptions);
+    const result = await cloudinary.uploader.upload(filePath, cleanOptions);
     
-    console.log('Cloudinary upload successful:', {
+    console.log('=== CLOUDINARY UPLOAD SUCCESS ===');
+    console.log('Result details:', {
       url: result.secure_url,
+      public_id: result.public_id,
       format: result.format,
-      resource_type: result.resource_type
+      resource_type: result.resource_type,
+      width: result.width,
+      height: result.height
     });
     
     return {
       url: result.secure_url,
       public_id: result.public_id,
       resource_type: result.resource_type,
-      format: result.format
+      format: result.format,
+      width: result.width,
+      height: result.height
     };
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
+    console.error('=== CLOUDINARY UPLOAD ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error name:', error.name);
+    console.error('HTTP code:', error.http_code);
+    console.error('Error details:', error.error);
+    console.error('Full error object:', JSON.stringify(error, null, 2));
+    
+    // Check for specific error types
+    if (error.message && error.message.includes('Must supply api_key')) {
+      throw new Error('Cloudinary API key is missing or invalid');
+    } else if (error.message && error.message.includes('Must supply cloud_name')) {
+      throw new Error('Cloudinary cloud name is missing');
+    } else if (error.http_code === 401) {
+      throw new Error('Cloudinary authentication failed - check API credentials');
+    } else if (error.http_code === 400) {
+      throw new Error(`Cloudinary request error: ${error.message}`);
+    }
+    
     throw new Error(`Failed to upload file: ${error.message}`);
   }
 };
