@@ -464,11 +464,7 @@ export const AuthProvider = ({ children }) => {
       
       await signOut(auth);
       setUser(null);
-      
-      // Clear cached data on logout, but keep savedUserData
-      localStorage.removeItem('cachedUser');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('profileFormData');
+      localStorage.clear();
       
       return true;
     } catch (error) {

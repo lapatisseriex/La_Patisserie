@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Building
 } from 'lucide-react';
+import EmailVerification from './EmailVerification';
 
 const Profile = () => {
   const { user, updateProfile, authError, loading, isNewUser, updateUser } = useAuth();
@@ -768,7 +769,10 @@ const Profile = () => {
             </div>
           </div>
           
-          {/* Email field removed from UI as requested */}
+          {/* Email verification section */}
+          <div className="md:col-span-2">
+            <EmailVerification />
+          </div>
 
 
 
@@ -999,6 +1003,9 @@ const Profile = () => {
           </div>
         )}
       </form>
+
+      {/* Email verification block */}
+      <EmailVerification />
     </div>
   );
 };
