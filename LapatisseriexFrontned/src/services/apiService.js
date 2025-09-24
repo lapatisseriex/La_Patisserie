@@ -202,8 +202,17 @@ export const apiGet = async (url, options = {}) => {
   return reqPromise;
 };
 
-// Email verification services removed as we are restarting verification flow
-export const emailService = {};
+// Email verification services
+export const emailService = {
+  sendOtp: async (email) => {
+    if (!email) throw new Error('Email is required');
+    return api.post('/email/send-otp', { email }).then(r => r.data);
+  },
+  verifyOtp: async (email, otp) => {
+    if (!email || !otp) throw new Error('Email and OTP are required');
+    return api.post('/email/verify-otp', { email, otp }).then(r => r.data);
+  }
+};
 
 // Export default api instance for other services
 export default api;

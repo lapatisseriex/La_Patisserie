@@ -51,7 +51,9 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       profilePhoto: user.profilePhoto || { url: '', public_id: '' },
       favorites: user.favorites || [],
       createdAt: user.createdAt,
-      email: user.email || ''
+      email: user.email || '',
+      emailVerified: user.emailVerified || false,
+      emailVerifiedAt: user.emailVerifiedAt || null
     }
   });
 });
@@ -158,7 +160,9 @@ export const updateUser = asyncHandler(async (req, res) => {
       location: updatedUser.location,
       hostel: updatedUser.hostel,
       profilePhoto: updatedUser.profilePhoto || { url: '', public_id: '' },
-      email: updatedUser.email || ''
+      email: updatedUser.email || '',
+      emailVerified: updatedUser.emailVerified || false,
+      emailVerifiedAt: updatedUser.emailVerifiedAt || null
     }
   });
 });
