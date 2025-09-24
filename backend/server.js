@@ -25,12 +25,62 @@ const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Middleware
+const allowedOrigins = [
+  'https://la-patisseriex.netlify.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://la-patisserie-cqyo.vercel.app',
+  process.env.FRONTEND_URL
+].filter(Boolean); // Remove any undefined values
+
+// Regex patterns for dynamic domains
+const allowedOriginPatterns = [
+  /^https:\/\/.*\.netlify\.app$/,           // Any Netlify app
+  /^https:\/\/.*\.vercel\.app$/,            // Any Vercel app
+  /^https:\/\/la-patisserie.*\.vercel\.app$/, // Specific Vercel deployments
+  /^https:\/\/la-patisseriex.*\.netlify\.app$/ // Specific Netlify deployments
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check exact matches first
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    
+    // Check regex patterns
+    const isAllowedByPattern = allowedOriginPatterns.some(pattern => pattern.test(origin));
+    if (isAllowedByPattern) {
+      return callback(null, true);
+    }
+    
+    // Allow in development mode
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    console.log('CORS blocked origin:', origin);
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Debug middleware for CORS
+if (NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path} - Origin: ${req.get('origin') || 'No origin'}`);
+    next();
+  });
+}
 
 // Use compression to reduce response size
 app.use(compression());

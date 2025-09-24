@@ -3,6 +3,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 // Create Shop Status Context
 const ShopStatusContext = createContext();
 
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL;
+
 // Custom hook to use shop status
 export const useShopStatus = () => {
   const context = useContext(ShopStatusContext);
@@ -37,7 +40,7 @@ export const ShopStatusProvider = ({ children }) => {
 
       console.log('ShopStatus: Fetching shop status from API...');
       
-      const response = await fetch('http://localhost:3000/api/time-settings/status');
+      const response = await fetch(`${API_URL}/time-settings/status`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -94,7 +97,7 @@ export const ShopStatusProvider = ({ children }) => {
     try {
       console.log('ShopStatus: Force checking shop status...');
       
-      const response = await fetch('http://localhost:3000/api/time-settings/status');
+      const response = await fetch(`${API_URL}/time-settings/status`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
