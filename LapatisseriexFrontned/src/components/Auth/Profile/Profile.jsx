@@ -426,7 +426,7 @@ const Profile = () => {
     setLocalError('');
     setSuccessMessage('');
     
-    // Set both loading states to ensure animations show
+    // Set loading state to show animations
     setIsSaving(true);
     console.log('🔄 Setting isSaving to TRUE'); // Debug log
     
@@ -442,53 +442,55 @@ const Profile = () => {
     };
     
     // Save complete form data to localStorage for refresh protection
-    // This ensures we have a backup of all fields in case we need to restore after refresh
     const formDataToSave = {
       ...profileData
     };
     
-    // Log the data being saved, with special attention to anniversary field
+    // Log the data being saved
     console.log('Saving complete form data with anniversary:', formDataToSave.anniversary);
-    
     localStorage.setItem('profileFormData', JSON.stringify(formDataToSave));
     
-  console.log('Submitting profile data (email omitted from update):', { ...profileData, email: undefined });
+    console.log('Submitting profile data (email omitted from update):', { ...profileData, email: undefined });
     console.log('Gender being submitted:', profileData.gender);
     console.log('Hostel data being submitted:', profileData.hostel, 'type:', typeof profileData.hostel);
     
     try {
-      // IMPORTANT: Check if this is the admin's profile
+      // Check if this is the admin's profile
       const isAdmin = user?.role === 'admin';
       console.log('Is admin user:', isAdmin);
       
-  // Omit email from update payload
-  const { email, ...profileDataWithoutEmail } = profileData;
-  const success = await updateProfile(profileDataWithoutEmail);
+      // Omit email from update payload
+      const { email, ...profileDataWithoutEmail } = profileData;
+      const success = await updateProfile(profileDataWithoutEmail);
 
       if (success) {
+        // Show success message
         setSuccessMessage('Profile updated successfully!');
-        setIsEditMode(false);
-        localStorage.removeItem('profileEditMode');
+        
+        // Wait a moment to show success, then exit edit mode
+        setTimeout(() => {
+          setIsEditMode(false);
+          localStorage.removeItem('profileEditMode');
+          // Scroll to top to show success message
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 1000);
 
-        // Even on successful update, ensure we keep location and hostel permanently in savedUserData
-        // This provides persistent data across sessions, similar to how the header works
+        // Save user data to localStorage
         const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
-  savedUserData.location = formData.location;
-  savedUserData.hostel = formData.hostel;
-  // do not overwrite saved email from Profile
-  savedUserData.anniversary = formData.anniversary;
+        savedUserData.location = formData.location;
+        savedUserData.hostel = formData.hostel;
+        savedUserData.anniversary = formData.anniversary;
         localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
         console.log('Permanently saved location and hostel to savedUserData:', savedUserData.location, savedUserData.hostel);
 
-        // Also update cached user for immediate availability
+        // Update cached user data
         const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
-  // do not overwrite cached email from Profile UI
         cachedUser.anniversary = formData.anniversary || cachedUser.anniversary || '';
         localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
         
         console.log('Successfully updated profile, preserved email and anniversary in cache');
         
-        // For admin users, we want to make sure we get a fresh copy of our own data
+        // For admin users, refresh user data from server
         if (isAdmin) {
           try {
             const token = localStorage.getItem('authToken');
@@ -498,7 +500,6 @@ const Profile = () => {
               });
               
               if (response.data.success) {
-                // Update cached user data with fresh data
                 localStorage.setItem('cachedUser', JSON.stringify(response.data.user));
                 console.log('Admin refreshed own user data from server:', response.data.user);
               }
@@ -507,16 +508,18 @@ const Profile = () => {
             console.error('Error refreshing admin user data:', error);
           }
         }
+      } else {
+        setLocalError('Failed to update profile. Please try again.');
       }
     } catch (error) {
       console.error('Error in profile update:', error);
       setLocalError('Failed to update profile. Please try again.');
     } finally {
-      // Use a slight delay to ensure loading state is visible even on fast connections
+      // Ensure loading state is visible for a minimum time
       setTimeout(() => {
         console.log('🛑 Setting isSaving to FALSE'); // Debug log
         setIsSaving(false);
-      }, 1500); // Increased delay for better visibility
+      }, 2000); // Minimum 2 seconds to show loading animation
     }
   };
 
@@ -656,9 +659,9 @@ const Profile = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="profile-form-mobile space-y-6 pb-20 md:pb-6">
         {/* Loading Indicator - More prominent and fixed positioned */}
-        {loading && (
+        {isSaving && (
           <div className="fixed top-0 left-0 right-0 z-50 bg-black bg-opacity-80 py-3 shadow-lg animate-fadeIn">
             <div className="container mx-auto">
               <div className="flex items-center justify-center">
@@ -674,7 +677,7 @@ const Profile = () => {
         )}
         
         {/* Secondary Loading Indicator (in-form) */}
-        {loading && (
+        {isSaving && (
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4 animate-fadeIn relative overflow-hidden mb-4 shadow-md">
             <div className="absolute bottom-0 left-0 h-1 bg-blue-500 animate-growWidth"></div>
             <div className="flex items-center">
@@ -736,7 +739,7 @@ const Profile = () => {
                 placeholder="Arun"
                 required
                 readOnly={!isEditMode}
-                disabled={loading}
+                disabled={isSaving}
                 className={inputClasses}
               />
             </div>
@@ -787,7 +790,7 @@ const Profile = () => {
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
-                disabled={!isEditMode || loading}
+                disabled={!isEditMode || isSaving}
                 className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
                   !isEditMode ? 'bg-gray-50 text-gray-700' : ''
                 }`}
@@ -815,7 +818,7 @@ const Profile = () => {
                 onChange={handleChange}
                 max={today}
                 readOnly={!isEditMode}
-                disabled={loading}
+                disabled={isSaving}
                 className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
                   !isEditMode ? 'bg-gray-50 text-gray-700' : ''
                 }`}
@@ -838,7 +841,7 @@ const Profile = () => {
                 onChange={handleChange}
                 max={today}
                 readOnly={!isEditMode}
-                disabled={loading}
+                disabled={isSaving}
                 className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
                   !isEditMode ? 'bg-gray-50 text-gray-700' : ''
                 }`}
@@ -861,7 +864,7 @@ const Profile = () => {
                   name="location"
                   value={formData.location || ''}
                   onChange={handleChange}
-                  disabled={loading || locationsLoading || !isEditMode}
+                  disabled={isSaving || locationsLoading || !isEditMode}
                   required
                   className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
                     !isEditMode ? 'bg-gray-50 text-gray-700' : ''
@@ -944,7 +947,7 @@ const Profile = () => {
                     name="hostel"
                     value={formData.hostel || ''}
                     onChange={handleChange}
-                    disabled={loading || hostelsLoading}
+                    disabled={isSaving || hostelsLoading}
                     className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none`}
                   >
                     <option value="">Select hostel/residence (Optional)</option>
@@ -971,31 +974,31 @@ const Profile = () => {
 
         {/* Action Buttons - only show in edit mode */}
         {isEditMode && (
-          <div className="flex items-center justify-start space-x-4 pt-6">
+          <div className="profile-save-buttons flex items-center justify-center space-x-4 pt-6 pb-4 sticky bottom-16 md:bottom-0 bg-white border-t border-gray-200 mt-6 -mx-6 px-6 py-4 shadow-lg z-[60]">
             <button
               type="button"
               onClick={handleCancel}
-              disabled={loading}
-              className="px-8 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isSaving}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed"
             >
               CANCEL
             </button>
             <button
               type="submit"
-              disabled={loading || !formData.name.trim()}
-              className="px-8 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden"
+              disabled={isSaving || !formData.name.trim()}
+              className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden min-w-[140px]"
             >
-              <span className={`flex items-center justify-center gap-2 ${loading ? 'opacity-0' : 'opacity-100'}`}>
-                SAVE
+              <span className={`flex items-center justify-center gap-2 transition-opacity duration-300 ${isSaving ? 'opacity-0' : 'opacity-100'}`}>
+                SAVE PROFILE
               </span>
-              {loading && (
+              {isSaving && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex items-center gap-2">
                     <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span className="text-sm font-medium">SAVING</span>
+                    <span className="text-sm font-medium">SAVING...</span>
                   </div>
                 </div>
               )}

@@ -244,4 +244,80 @@ body.has-fixed-header {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Profile loading animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes growWidth {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-growWidth {
+  animation: growWidth 2s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Sticky button improvements */
+.sticky-save-button {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile bottom navigation spacing for profile */
+@media (max-width: 768px) {
+  .profile-save-buttons {
+    bottom: 4rem !important; /* 64px for bottom navigation height */
+    z-index: 60 !important;
+  }
+  
+  .profile-form-mobile {
+    padding-bottom: 8rem !important; /* Extra space for sticky buttons */
+  }
+}
+
+/* Loading state transitions */
+.loading-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Profile form animations */
+.profile-form-field {
+  transition: all 0.2s ease-in-out;
+}
+
+.profile-form-field:focus-within {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 

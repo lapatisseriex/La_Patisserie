@@ -388,7 +388,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setAuthError(null);
-      setLoading(true);
+      // Don't set loading state here - let the Profile component handle it
       
       // Get fresh ID token
       const idToken = await auth.currentUser.getIdToken(true);
@@ -443,9 +443,8 @@ export const AuthProvider = ({ children }) => {
       console.error("Error updating profile:", error);
       setAuthError(error.message || "Failed to update profile");
       return false;
-    } finally {
-      setLoading(false);
     }
+    // Don't set loading to false here - let the Profile component handle it
   };
 
   // Logout function
