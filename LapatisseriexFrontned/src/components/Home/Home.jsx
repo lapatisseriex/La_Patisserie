@@ -63,9 +63,11 @@ const Home = () => {
     loadSectionProducts();
   }, [fetchProducts]);
 
+  // Load special images only once on mount
   useEffect(() => {
     const loadSpecialImages = async () => {
       try {
+        console.log('🏠 Home component loading special images...');
         const images = await getSpecialImages();
         setSpecialImages(images);
       } catch (err) {
@@ -75,18 +77,31 @@ const Home = () => {
     
     // Load special images initially
     loadSpecialImages();
-    
-    // Set up an interval to refresh special images every 30 seconds
-    const refreshInterval = setInterval(() => {
-      console.log('Auto-refreshing special images');
-      loadSpecialImages();
-    }, 30000); // Refresh every 30 seconds
+  }, []); // Empty dependency array - only run once on mount
+
+  // Set up auto-refresh interval in a separate useEffect
+  useEffect(() => {
+    // Set up an interval to refresh special images every 5 minutes (much longer to reduce server load)
+    const refreshInterval = setInterval(async () => {
+      console.log('🔄 Auto-refreshing special images...');
+      try {
+        const images = await getSpecialImages();
+        setSpecialImages(images);
+      } catch (err) {
+        console.error("Error auto-refreshing special images:", err);
+      }
+    }, 300000); // Refresh every 5 minutes instead of 30 seconds
     
     // Also refresh when page becomes visible (user switches back to tab)
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (!document.hidden) {
-        console.log('Page became visible, refreshing special images');
-        loadSpecialImages();
+        console.log('📱 Page became visible, refreshing special images');
+        try {
+          const images = await getSpecialImages();
+          setSpecialImages(images);
+        } catch (err) {
+          console.error("Error refreshing special images on visibility change:", err);
+        }
       }
     };
     
@@ -96,7 +111,7 @@ const Home = () => {
       clearInterval(refreshInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [getSpecialImages, specialImagesVersion]); // Add specialImagesVersion to dependencies
+  }, [getSpecialImages]); // Keep getSpecialImages dependency for the interval functionality
 
   // Manage overall page loading state
   useEffect(() => {

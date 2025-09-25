@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 
-const AdvertisementBanner = () => {
+const AdvertisementBanner = memo(() => {
   // === STATE & REFS (ALL TOP-LEVEL) ===
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -28,22 +28,22 @@ const AdvertisementBanner = () => {
         const response = await fetch(`${API_URL}/banners`);
         if (response.ok) {
           const data = await response.json();
-          console.log('🎯 Banner API Response:', data);
-          console.log('🎯 Banners received:', data.banners);
+          console.log('🎯 Banner API loaded successfully, count:', data.banners?.length || 0);
           setBannerSlides(data.banners || []);
         } else {
           console.error('🚨 Failed to fetch banners, status:', response.status);
           // fallback
           setBannerSlides([fallbackBanner()]);
         }
-      } catch {
+      } catch (error) {
+        console.error('🚨 Banner fetch error:', error);
         setBannerSlides([fallbackBanner()]);
       } finally {
         setLoading(false);
       }
     };
     fetchBanners();
-  }, []);
+  }, [API_URL]); // Add API_URL as dependency
 
   // === PRELOAD IMAGES ===
   useEffect(() => {
@@ -54,7 +54,7 @@ const AdvertisementBanner = () => {
         img.src = slide.src;
       }
     });
-  }, [bannerSlides, preloadedImages]);
+  }, [bannerSlides]); // Remove preloadedImages from dependencies to prevent infinite loop
 
   // === DETECT MOBILE ===
   useEffect(() => {
@@ -80,7 +80,7 @@ const AdvertisementBanner = () => {
     }, 3000);
 
     return () => clearInterval(intervalRef.current);
-  }, [currentSlide, isPaused, isTransitioning, isMobile, bannerSlides]);
+  }, [currentSlide, isPaused, isTransitioning, bannerSlides.length]); // Use bannerSlides.length instead of the entire array
 
   // === HANDLERS ===
   const goToNextSlide = () => {
@@ -140,15 +140,18 @@ const AdvertisementBanner = () => {
     leftContent: { features: ['Authentic French Techniques','Premium Ingredients','Artisan Crafted Daily'] },
   });
 
+  const currentBanner = bannerSlides[currentSlide];
+  
+  // Only log banner changes for debugging, not every render
+  useEffect(() => {
+    if (currentBanner && !loading && bannerSlides.length > 0) {
+      console.log('🎬 Banner changed to:', currentBanner.title, '(type:', currentBanner.type + ')');
+    }
+  }, [currentSlide, currentBanner?.title, loading, bannerSlides.length]);
+
   // === RENDER LOADING / EMPTY ===
   if (loading) return <BannerLoading />;
   if (!bannerSlides.length) return <BannerEmpty />;
-
-  const currentBanner = bannerSlides[currentSlide];
-  
-  console.log('🎬 Current banner being rendered:', currentBanner);
-  console.log('🎬 Banner type:', currentBanner?.type);
-  console.log('🎬 Banner src:', currentBanner?.src);
 
   return (
     <div 
@@ -204,7 +207,7 @@ const AdvertisementBanner = () => {
       </div>
     </div>
   );
-};
+});
 
 // === LOADING COMPONENT ===
 const BannerLoading = () => (

@@ -22,21 +22,22 @@ export const ProductProvider = ({ children }) => {
 
   // Fetch all products with filtering options
   const fetchProducts = useCallback(async (filters = {}) => {
-    try {
-      // Build query parameters for filtering
-      const queryParams = new URLSearchParams();
-      
-      // Add filters to query params
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          queryParams.append(key, value);
-        }
-      });
-      
-      const queryString = queryParams.toString();
+    // Build query parameters for filtering
+    const queryParams = new URLSearchParams();
+    
+    // Add filters to query params
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, value);
+      }
+    });
+    
+    const queryString = queryParams.toString();
 
-      // Generate a unique cache key based only on the actual query parameters
-      const cacheKey = `products-${queryString}`;
+    // Generate a unique cache key based only on the actual query parameters
+    const cacheKey = `products-${queryString}`;
+    
+    try {
       
       // Only bypass cache for admin views, keep cache for category pages
       const isAdminView = filters.isActive === 'all';
@@ -80,12 +81,11 @@ export const ProductProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      console.log(`Fetching products from API: ${API_URL}/products?${queryString}`);
+      console.log(`📦 Fetching products: ${queryString ? queryString : 'all products'}`);
       const response = await axios.get(`${API_URL}/products?${queryString}`);
       
-      // Debug the response
-      console.log(`Products API response status: ${response.status}`);
-      console.log(`Products fetched: ${response.data.products?.length || 0}`);
+      // Success log
+      console.log(`✅ Products loaded: ${response.data.products?.length || 0} items`);
       
       let productsData = [];
       let responseData = response.data;
@@ -132,8 +132,25 @@ export const ProductProvider = ({ children }) => {
       return responseData;
     } catch (err) {
       console.error("Error fetching products:", err);
-      setError("Failed to load products");
+      
+      // Handle different types of errors
+      let errorMessage = "Failed to load products";
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = "Request timeout. Please check your internet connection.";
+      } else if (err.response?.status === 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (err.response?.status === 404) {
+        errorMessage = "Products not found.";
+      } else if (!navigator.onLine) {
+        errorMessage = "No internet connection. Please check your network.";
+      }
+      
+      setError(errorMessage);
       setLoading(false);
+      
+      // Request is no longer in progress
+      requestInProgress.current.delete(cacheKey);
+      
       return { products: [] };
     }
   }, [API_URL]);

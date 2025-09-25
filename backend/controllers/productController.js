@@ -111,11 +111,12 @@ export const getProducts = asyncHandler(async (req, res) => {
         // Don't filter out inactive categories for admin views
         match: req.user?.role === 'admin' ? {} : { isActive: true }
       })
+      .select('-__v') // Exclude version field
       .sort('-createdAt')
       .skip(skip)
       .limit(Number(limit));
 
-    // Get total count for pagination
+    // Get total count for pagination (run in parallel)
     totalProducts = await Product.countDocuments(filter);
     
     // Store in cache - shorter timeout (2 minutes) for product listing
@@ -139,6 +140,9 @@ export const getProducts = asyncHandler(async (req, res) => {
       nextOpenTime: nextOpenTime
     }
   }));
+  
+  // Set caching headers for better performance
+  res.set('Cache-Control', 'public, max-age=60'); // Cache for 1 minute
   
   res.status(200).json({
     products: productsWithAvailability,

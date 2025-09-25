@@ -19,8 +19,8 @@ export const CategoryProvider = ({ children }) => {
   
   const API_URL = import.meta.env.VITE_API_URL;
   
-  // Set a timeout for cache validity (30 seconds)
-  const CACHE_TIMEOUT = 30000;
+  // Set a timeout for cache validity (5 minutes for special images)
+  const CACHE_TIMEOUT = 300000;
 
   // Fetch all categories with caching
   const fetchCategories = useCallback(async (includeInactive = false) => {
@@ -49,7 +49,7 @@ export const CategoryProvider = ({ children }) => {
       const response = await axios.get(`${API_URL}/categories${queryParams}`);
       
       // Debug the data received
-      console.log(`Categories fetched (includeInactive=${includeInactive}):`, response.data.length);
+      console.log(`📂 Categories loaded: ${response.data.length} (${includeInactive ? 'all' : 'active only'})`);
       
       // Update state with the fetched categories
       setCategories(response.data);
@@ -236,7 +236,7 @@ export const CategoryProvider = ({ children }) => {
   // Load categories when the context is first mounted to make sure they're available
   useEffect(() => {
     const loadInitialCategories = async () => {
-      console.log("Loading initial categories");
+      console.log("📂 Loading categories...");
       // Always fetch active categories on app load
       await fetchCategories(false);
       
@@ -304,9 +304,28 @@ export const CategoryProvider = ({ children }) => {
       const now = Date.now();
       
       if (cachedResult && (now - cachedResult.timestamp < CACHE_TIMEOUT)) {
-        console.log('Using cached special images data');
+        console.log('📸 Using cached special images data');
         return cachedResult.data;
       }
+      
+      // Check if request is already in progress
+      if (requestInProgress.current.get(cacheKey)) {
+        console.log('📸 Special images request already in progress, waiting...');
+        // Wait for the request to complete
+        let attempts = 0;
+        while (requestInProgress.current.get(cacheKey) && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        // Try to get from cache again
+        const updatedCache = requestCache.current.get(cacheKey);
+        if (updatedCache) {
+          return updatedCache.data;
+        }
+      }
+      
+      // Mark this request as in progress
+      requestInProgress.current.set(cacheKey, true);
       
       setError(null);
       
@@ -318,13 +337,18 @@ export const CategoryProvider = ({ children }) => {
         timestamp: now
       });
       
+      // Request is no longer in progress
+      requestInProgress.current.delete(cacheKey);
+      
       return response.data;
     } catch (err) {
       console.error("Error fetching special images:", err);
       setError("Failed to load special images");
+      // Request is no longer in progress
+      requestInProgress.current.delete('special-images');
       return { bestSeller: null, newlyLaunched: null };
     }
-  }, [API_URL]);
+  }, [API_URL]); // Keep API_URL dependency but minimize calls through caching
 
   // Admin function: Update special category image
   const updateSpecialImage = useCallback(async (type, imageUrl) => {

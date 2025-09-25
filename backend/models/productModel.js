@@ -103,6 +103,10 @@ productSchema.index({ category: 1 }); // For category-based queries
 productSchema.index({ isActive: 1 }); // For active status filtering
 productSchema.index({ createdAt: -1 }); // For sorting by newest
 productSchema.index({ name: 'text', description: 'text' }); // For text search
+productSchema.index({ category: 1, isActive: 1 }); // Compound index for common queries
+productSchema.index({ isActive: 1, createdAt: -1 }); // For active products sorted by date
+productSchema.index({ 'variants.price': 1 }); // For price range queries
+productSchema.index({ tags: 1 }); // For tag-based queries
 
 // Include virtuals in JSON
 productSchema.set('toJSON', { virtuals: true });

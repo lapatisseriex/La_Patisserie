@@ -48,26 +48,35 @@ const Header = ({ isAdminView = false }) => {
   
   const { sparks } = useSparkAnimationContext();
   
-  // Debug log for sparks
-  console.log('🎇 Header sparks:', sparks);
+  // Debug log for sparks (only when sparks change)
+  useEffect(() => {
+    if (sparks.length > 0) {
+      console.log('🎇 Header sparks:', sparks.length, 'active sparks');
+    }
+  }, [sparks.length]);
   
+  const locationContext = useLocationContext();
   const {
-    locations,
-    loading: locationsLoading,
+    locations = [],
+    loading: locationsLoading = false,
     updateUserLocation,
     getCurrentLocationName,
     hasValidDeliveryLocation
-  } = useLocationContext();
+  } = locationContext || {};
   
-  const { cartCount } = useCart();
-  const { favorites } = useFavorites();
+  const cartContext = useCart();
+  const { cartCount = 0 } = cartContext || {};
+  
+  const favoritesContext = useFavorites();
+  const { favorites = [] } = favoritesContext || {};
 
-  // Get categories from CategoryContext
+  // Get categories from CategoryContext with error handling
+  const categoryContext = useCategory();
   const { 
-    categories: dbCategories, 
-    loading: categoriesLoading,
-    error: categoriesError 
-  } = useCategory();
+    categories: dbCategories = [], 
+    loading: categoriesLoading = false,
+    error: categoriesError = null 
+  } = categoryContext || {};
   
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
@@ -99,7 +108,7 @@ const Header = ({ isAdminView = false }) => {
   
   // Use categories from database or fall back to empty array
   const categories = useMemo(() => {
-    if (!dbCategories || dbCategories.length === 0) {
+    if (!dbCategories || !Array.isArray(dbCategories) || dbCategories.length === 0) {
       return [];
     }
     

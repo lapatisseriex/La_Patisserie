@@ -354,6 +354,10 @@ export const updateSpecialImage = asyncHandler(async (req, res) => {
     await specialCategory.save();
     console.log(`Special category updated with ${type} image: ${processedImageUrl}`);
 
+    // Clear the special images cache
+    cache.del('special-images');
+    console.log('📸 Cleared special images cache after update');
+
     // Delete the old image from Cloudinary if it exists
     if (currentImage) {
       const publicId = getPublicIdFromUrl(currentImage);
@@ -383,7 +387,16 @@ export const updateSpecialImage = asyncHandler(async (req, res) => {
 // @route   GET /api/categories/special-images
 // @access  Public
 export const getSpecialImages = asyncHandler(async (req, res) => {
-  console.log('Fetching special category images...');
+  // Check cache first
+  const cacheKey = 'special-images';
+  const cachedResult = cache.get(cacheKey);
+  
+  if (cachedResult) {
+    console.log('📸 Returning cached special images');
+    return res.status(200).json(cachedResult);
+  }
+  
+  console.log('📸 Fetching special category images from database...');
   
   try {
     const specialCategory = await Category.findOne({ name: '__SPECIAL_IMAGES__' });
@@ -433,7 +446,10 @@ export const getSpecialImages = asyncHandler(async (req, res) => {
       }
     };
     
-    console.log('Returning special images:', result);
+    // Cache the result for 5 minutes
+    cache.set(cacheKey, result, 300);
+    
+    console.log('📸 Returning special images:', result);
     res.status(200).json(result);
   } catch (error) {
     console.error('Error fetching special images:', error);
@@ -476,6 +492,10 @@ export const deleteSpecialImage = asyncHandler(async (req, res) => {
     // Remove from database
     specialCategory.specialImages[type] = null;
     await specialCategory.save();
+
+    // Clear the special images cache
+    cache.del('special-images');
+    console.log('📸 Cleared special images cache after deletion');
 
     res.status(200).json({
       message: `${type} image deleted successfully`,
