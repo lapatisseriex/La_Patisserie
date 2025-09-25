@@ -162,14 +162,14 @@ const Cart = () => {
                   <div key={`${item._id || item.id}-${JSON.stringify(item.options)}`} className="flex flex-col md:flex-row border-b border-white pb-6">
                     <div className="md:w-1/4 mb-4 md:mb-0">
                       <img 
-                        src={item.image || item.images?.[0] || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMzAgNzBIMTcwVjEzMEgxMzBWNzBaIiBmaWxsPSIjRDFENUQ5Ii8+CjxwYXRoIGQ9Ik0xNDAgODBIMTYwVjEyMEgxNDBWODBaIiBmaWxsPSIjOTlBMkE5Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNjc3MDc5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4='} 
-                        alt={item.name} 
+                        src={item.productSnapshot?.image || item.product?.images?.[0] || '/placeholder-image.jpg'} 
+                        alt={item.productSnapshot?.name || item.product?.name || 'Product'} 
                         className="w-full h-32 object-cover rounded-md"
                       />
                     </div>
                     <div className="md:w-3/4 md:pl-6">
                       <div className="flex justify-between mb-2">
-                        <h3 className="font-medium text-black">{item.name}</h3>
+                        <h3 className="font-medium text-black">{item.productSnapshot?.name || item.product?.name || 'Product'}</h3>
                         <button 
                           onClick={() => removeFromCart(item._id || item.id, item.options)}
                           className="text-black hover:text-red-500 transition-colors"
@@ -213,8 +213,8 @@ const Cart = () => {
                         </div>
                         
                         <div className="text-right">
-                          <div className="font-medium text-black">₹{Math.round(item.price * item.quantity)}</div>
-                          <div className="text-sm text-black">₹{Math.round(item.price)} each</div>
+                          <div className="font-medium text-black">₹{Math.round((item.productSnapshot?.price || item.product?.variants?.[0]?.price || 0) * item.quantity)}</div>
+                          <div className="text-sm text-black">₹{Math.round(item.productSnapshot?.price || item.product?.variants?.[0]?.price || 0)} each</div>
                         </div>
                       </div>
                     </div>
@@ -226,7 +226,7 @@ const Cart = () => {
           
           {/* Order Summary */}
           <div className="lg:col-span-4">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-[90px] md:top-[140px]">
+            <div className="bg-white rounded-lg shadow-md p-6 sticky top-[130px] md:top-[140px]">
               <h2 className="font-semibold text-lg text-black pb-4 border-b border-white mb-4">
                 Order Summary
               </h2>

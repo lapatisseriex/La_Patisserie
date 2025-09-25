@@ -30,6 +30,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [authType, setAuthType] = useState('login'); // login, signup, otp, profile
@@ -42,6 +43,14 @@ export const AuthProvider = ({ children }) => {
 
   // Backend API URL from environment variable
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Initialize token from localStorage on app load
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
 
   // Handle authentication expiration events
   useEffect(() => {
@@ -92,6 +101,7 @@ export const AuthProvider = ({ children }) => {
           
           // Store token in localStorage for API requests
           localStorage.setItem('authToken', idToken);
+          setToken(idToken);
           
           // Verify with backend
           const response = await axios.post(`${API_URL}/auth/verify`, { idToken });
@@ -185,6 +195,7 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         setUser(null);
+        setToken(null);
         // Clear cached user data when logged out but keep savedUserData
         localStorage.removeItem('cachedUser');
         localStorage.removeItem('profileFormData');
@@ -297,6 +308,7 @@ export const AuthProvider = ({ children }) => {
       
       // Store token in localStorage for API requests
       localStorage.setItem('authToken', idToken);
+      setToken(idToken);
       
       // Get location ID if stored (for signup)
       const locationId = localStorage.getItem('temp_location_id');
@@ -383,6 +395,7 @@ export const AuthProvider = ({ children }) => {
       
       // Store token in localStorage for API requests
       localStorage.setItem('authToken', idToken);
+      setToken(idToken);
       
       console.log("Sending profile update to backend:", profileData);
       
@@ -464,6 +477,7 @@ export const AuthProvider = ({ children }) => {
       
       await signOut(auth);
       setUser(null);
+      setToken(null);
       localStorage.clear();
       
       return true;
@@ -530,6 +544,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    token,
     isAuthenticated,
     setUser, 
     loading,

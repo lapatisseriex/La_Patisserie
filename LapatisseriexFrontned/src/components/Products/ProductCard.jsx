@@ -125,7 +125,11 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const handleBuyNow = async (e) => {
     e.stopPropagation();
-    if (!isProductAvailable) return;
+    
+    if (!isProductAvailable) {
+      return;
+    }
+    
     try {
       // Check shop status in real-time before buy now
       const currentStatus = await checkShopStatusNow();
@@ -138,9 +142,15 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       if (currentQuantity === 0) {
         await addToCart(product, 1);
       }
+      
       navigate('/cart');
     } catch (error) {
       console.error('Error in buy now:', error);
+      // Don't navigate if there was an error (like authentication)
+      if (error.message === 'Please login to add items to cart') {
+        // The addToCart function should have opened the auth panel
+        return;
+      }
     }
   };
 
@@ -363,13 +373,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   } flex flex-col justify-between`}>
         <div className="space-y-1 sm:space-y-2">
           <h3
-            className={`font-semibold text-yellow-600 line-clamp-1 leading-tight ${
+            className={`font-semibold text-black line-clamp-1 leading-tight ${
               featured 
                 ? 'text-sm sm:text-base' 
                 : compact 
                 ? 'text-sm' 
                 : 'text-xs sm:text-sm md:text-base'
-            } cursor-pointer mb-1 hover:text-yellow-700 transition-colors`}
+            } cursor-pointer mb-1 hover:text-gray-700 transition-colors`}
             onClick={handleCardClick}
           >
             {product.name}

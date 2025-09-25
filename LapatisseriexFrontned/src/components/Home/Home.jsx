@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext/AuthContext';
 import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';
 import HandpickedForYou from './HandpickedForYou';
+import CartSection from './CartSection';
 import FavoritesSection from './FavoritesSection';
 import RecentlyViewedSection from './RecentlyViewedSection';
 import CategorySwiper from './categorySwiper';
@@ -172,6 +173,10 @@ const Home = () => {
 
       <section ref={bestSellersRef} className="w-full">
         <BestSellers products={bestSellersProducts} loading={productsLoading} />
+      </section>
+
+      <section className="w-full">
+        <CartSection />
       </section>
 
       <section ref={handpickedRef} className="w-full">

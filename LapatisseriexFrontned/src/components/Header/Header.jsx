@@ -434,22 +434,40 @@ const Header = ({ isAdminView = false }) => {
           
           {/* Main Content */}
           <div className="container mx-auto relative z-20 py-1">
-            {/* Single Row Layout */}
-            <div className="flex items-center justify-between">
+            {/* Mobile Layout - Center Only */}
+            <div className="md:hidden flex items-center justify-center">
+              <div className="flex flex-col items-center justify-center px-4">
+                {/* Premium Badge */}
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-yellow-400"></div>
+                  <span className="text-yellow-400 text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'serif'}}>
+                    La Patisserie
+                  </span>
+                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-yellow-400"></div>
+                </div>
+                
+                {/* Main Message */}
+                <h2 className="text-white text-sm font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
+                  <span className="inline-block animate-fade-in-up">✨</span>
+                  <span className="mx-1 relative">
+                    Fresh Artisan Cakes & Pastries
+                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
+                  </span>
+                  <span className="inline-block animate-fade-in-up animation-delay-500">✨</span>
+                </h2>
+              </div>
+            </div>
+
+            {/* Desktop Layout - Three Column */}
+            <div className="hidden md:flex items-center justify-between">
               {/* Phone Number - Left */}
               <div className="flex items-center justify-start flex-shrink-0 w-48">
                 <button 
-                  className="flex items-center gap-1 text-yellow-400/80 flex-shrink-0 hover:text-yellow-400 transition-colors duration-200 md:cursor-default md:hover:text-yellow-400/80"
-                  onClick={() => {
-                    // Only navigate on mobile devices
-                    if (window.innerWidth < 768) {
-                      navigate('/contact');
-                    }
-                  }}
+                  className="flex items-center gap-1 text-yellow-400/80 flex-shrink-0 hover:text-yellow-400 transition-colors duration-200"
                   style={{fontFamily: 'sans-serif'}}
                 >
                   <Phone className="h-3 w-3" />
-                  <span className="text-xs font-light hidden md:inline">
+                  <span className="text-xs font-light">
                     7845712388 / 9362166816
                   </span>
                 </button>
@@ -467,7 +485,7 @@ const Header = ({ isAdminView = false }) => {
                 </div>
                 
                 {/* Main Message */}
-                <h2 className="text-white text-sm sm:text-base md:text-lg font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
+                <h2 className="text-white text-lg font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
                   <span className="inline-block animate-fade-in-up">✨</span>
                   <span className="mx-1 relative">
                     Fresh Artisan Cakes & Pastries
@@ -480,16 +498,10 @@ const Header = ({ isAdminView = false }) => {
               {/* Address - Right */}
               <div className="flex items-center justify-end flex-shrink-0 w-48">
                 <button 
-                  className="flex items-center gap-1 text-yellow-400/80 flex-shrink-0 hover:text-yellow-400 transition-colors duration-200 md:cursor-default md:hover:text-yellow-400/80"
-                  onClick={() => {
-                    // Only navigate on mobile devices
-                    if (window.innerWidth < 768) {
-                      navigate('/contact');
-                    }
-                  }}
+                  className="flex items-center gap-1 text-yellow-400/80 flex-shrink-0 hover:text-yellow-400 transition-colors duration-200"
                   style={{fontFamily: 'sans-serif'}}
                 >
-                  <span className="text-xs font-light hidden md:inline text-right">
+                  <span className="text-xs font-light text-right">
                     LIG 208 GANDHI MAANAGAR PEELAMEDU COIMBATORE
                   </span>
                   <MapPin className="h-3 w-3" />

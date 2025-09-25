@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
-import FloatingCartBar from '../Cart/FloatingCartBar';
 import BottomNavigation from '../common/BottomNavigation';
 
 const Layout = () => {
@@ -24,7 +23,6 @@ const Layout = () => {
         <Outlet />
       </main>
       <Footer />
-      <FloatingCartBar />
       <BottomNavigation />
     </>
   );
