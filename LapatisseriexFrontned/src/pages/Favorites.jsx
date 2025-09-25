@@ -118,7 +118,7 @@ const FavoritesPage = () => {
               </p>
               <Link 
                 to="/products" 
-                className="inline-block bg-black text-white font-medium py-2 px-6 rounded-md hover:bg-gray-800 transition-colors text-sm"
+                className="inline-block bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium py-2 px-6 rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md text-sm"
               >
                 Browse Products
               </Link>

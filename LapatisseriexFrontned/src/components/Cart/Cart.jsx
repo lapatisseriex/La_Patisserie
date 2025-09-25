@@ -103,7 +103,7 @@ const Cart = () => {
             <p className="text-black mb-8">Looks like you haven't added any items to your cart yet</p>
             <Link 
               to="/products" 
-              className="bg-black text-white font-medium py-3 px-8 rounded-md transition-colors"
+              className="bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium py-3 px-8 rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
             >
               Browse Products
             </Link>
@@ -265,7 +265,7 @@ const Cart = () => {
                       />
                       <button
                         onClick={handleApplyCoupon}
-                        className="bg-black text-white px-4 py-2 rounded-r-md transition-colors"
+                        className="bg-gradient-to-r from-rose-400 to-pink-500 text-white px-4 py-2 rounded-r-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300"
                       >
                         Apply
                       </button>
@@ -327,8 +327,8 @@ const Cart = () => {
               <div className="mt-6">
                 <button 
                   onClick={handleCheckout}
-                  className={`w-full bg-black text-white font-medium py-3 rounded-md transition-colors mb-3 ${
-                    hasValidDeliveryLocation() ? 'hover:bg-gray-800' : 'opacity-80 cursor-not-allowed'
+                  className={`w-full bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium py-3 rounded-md mb-3 ${
+                    hasValidDeliveryLocation() ? 'hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg' : 'opacity-80 cursor-not-allowed'
                   }`}
                 >
                   Proceed to Checkout

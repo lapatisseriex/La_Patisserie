@@ -79,14 +79,14 @@ const AdminDashboardLayout = () => {
         {/* Sidebar */}
         <div
           className={`
-            fixed md:relative z-30 bg-black text-white transition-all duration-300 flex flex-col
+            fixed md:relative z-30 bg-gradient-to-b from-rose-800 to-pink-900 text-white transition-all duration-300 flex flex-col
             ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-0 md:w-20 -translate-x-full md:translate-x-0'}
             h-full
           `}
         >
           <div className="p-4 border-b border-gray-800 flex justify-between items-center">
             <h1 className={`font-bold text-xl ${!isSidebarOpen && 'hidden'}`}>Admin Panel</h1>
-            <button onClick={toggleSidebar} className="p-1 rounded-full hover:bg-gray-800 transition-colors">
+            <button onClick={toggleSidebar} className="p-1 rounded-full hover:bg-rose-700 transition-colors">
               {isSidebarOpen ? (
                 <FaChevronLeft className="h-5 w-5" />
               ) : (
@@ -101,7 +101,7 @@ const AdminDashboardLayout = () => {
                 <Link
                   to="/admin/dashboard"
                   onClick={closeSidebarIfOpen}
-                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/dashboard' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/dashboard' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
                 >
                   <FaTachometerAlt className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Dashboard</span>
@@ -111,7 +111,7 @@ const AdminDashboardLayout = () => {
                 <Link
                   to="/admin/users"
                   onClick={closeSidebarIfOpen}
-                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/users' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/users' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
                 >
                   <FaUsers className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Users</span>
@@ -121,7 +121,7 @@ const AdminDashboardLayout = () => {
                 <Link
                   to="/admin/orders"
                   onClick={closeSidebarIfOpen}
-                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/orders' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/orders' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
                 >
                   <FaShoppingCart className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Orders</span>
@@ -131,7 +131,7 @@ const AdminDashboardLayout = () => {
                 <Link
                   to="/admin/products"
                   onClick={closeSidebarIfOpen}
-                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/products' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/products' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
                 >
                   <FaList className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Products</span>
@@ -141,7 +141,7 @@ const AdminDashboardLayout = () => {
                 <Link
                   to="/admin/categories"
                   onClick={closeSidebarIfOpen}
-                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/categories' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/categories' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
                 >
                   <FaList className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Categories</span>
@@ -151,7 +151,7 @@ const AdminDashboardLayout = () => {
                 <Link
                   to="/admin/banners"
                   onClick={closeSidebarIfOpen}
-                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/banners' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/banners' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
                 >
                   <FaImage className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Banners</span>
@@ -161,7 +161,7 @@ const AdminDashboardLayout = () => {
                 <Link
                   to="/admin/locations"
                   onClick={closeSidebarIfOpen}
-                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/locations' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/locations' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
                 >
                   <FaMapMarkerAlt className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Locations</span>
@@ -171,7 +171,7 @@ const AdminDashboardLayout = () => {
                 <Link
                   to="/admin/time-settings"
                   onClick={closeSidebarIfOpen}
-                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/time-settings' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/time-settings' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
                 >
                   <FaClock className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Time Settings</span>

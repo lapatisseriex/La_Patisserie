@@ -104,7 +104,7 @@ const RecentlyViewedSection = () => {
             <p className="text-gray-600 mb-8 max-w-md mx-auto">Start exploring our delicious cakes and desserts to see them here!</p>
             <button
               onClick={() => navigate('/products')}
-              className="bg-black hover:bg-gray-800 text-white font-medium px-8 py-4 rounded-xl transition-all duration-300 shadow-lg"
+              className="bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 text-white font-medium px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               Browse Products
             </button>

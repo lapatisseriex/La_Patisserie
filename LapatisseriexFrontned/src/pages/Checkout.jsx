@@ -22,7 +22,7 @@ const CheckoutPage = () => {
         <p className="mb-6">You need to be logged in to access the checkout page.</p>
         <button 
           onClick={() => window.location.href = '/'}
-          className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+          className="px-6 py-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md"
         >
           Return to Home
         </button>

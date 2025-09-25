@@ -162,7 +162,7 @@ const ProfilePage = () => {
               <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">My Orders</h3>
               <Link 
                 to="/products" 
-                className="px-5 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
+                className="px-5 py-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md font-medium"
               >
                 Browse Products
               </Link>
@@ -175,7 +175,7 @@ const ProfilePage = () => {
               <p className="text-gray-600 mb-6">Discover our delicious cakes and pastries to place your first order</p>
               <Link 
                 to="/products" 
-                className="inline-flex items-center px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg font-medium"
               >
                 Start Shopping
               </Link>
@@ -204,7 +204,7 @@ const ProfilePage = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-xl font-semibold text-gray-900">Saved Addresses</h3>
-              <button className="px-4 py-2 bg-black text-white rounded-none hover:bg-gray-800 transition-colors flex items-center gap-2">
+              <button className="px-4 py-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-none hover:from-rose-500 hover:to-pink-600 transition-all duration-300 flex items-center gap-2 shadow-md">
                 <MapPin className="h-4 w-4" />
                 Add New Address
               </button>

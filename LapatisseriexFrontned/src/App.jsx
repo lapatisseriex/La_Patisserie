@@ -45,6 +45,7 @@ import { ProductProvider } from './context/ProductContext/ProductContext';
 import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
 import { RecentlyViewedProvider } from './context/RecentlyViewedContext/RecentlyViewedContext';
 import { ShopStatusProvider } from './context/ShopStatusContext';
+import { SparkAnimationProvider } from './context/SparkAnimationContext/SparkAnimationContext';
 
 // Main Homepage that combines all sections
 const HomePage = () => {
@@ -98,7 +99,8 @@ function App() {
                 <FavoritesProvider>
                   <RecentlyViewedProvider>
                     <CartProvider>
-                <Router>
+                      <SparkAnimationProvider>
+                        <Router>
                 <ScrollToTop />
                   {/* Auth Modal - available on all pages */}
                   <AuthModal />
@@ -157,7 +159,8 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
-                </CartProvider>
+                      </SparkAnimationProvider>
+                    </CartProvider>
                 </RecentlyViewedProvider>
               </FavoritesProvider>
               </ProductProvider>

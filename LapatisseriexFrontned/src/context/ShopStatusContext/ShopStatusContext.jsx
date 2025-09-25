@@ -37,7 +37,7 @@ export const ShopStatusProvider = ({ children }) => {
 
       console.log('ShopStatus: Fetching shop status from API...');
       
-      const response = await fetch('http://localhost:3000/api/time-settings/status');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://la-patisserie.onrender.com/api'}/time-settings/status`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -94,7 +94,7 @@ export const ShopStatusProvider = ({ children }) => {
     try {
       console.log('ShopStatus: Force checking shop status...');
       
-      const response = await fetch('http://localhost:3000/api/time-settings/status');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://la-patisserie.onrender.com/api'}/time-settings/status`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

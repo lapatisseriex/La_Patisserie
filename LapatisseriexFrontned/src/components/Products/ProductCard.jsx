@@ -8,6 +8,7 @@ import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
+import { useSparkToCart } from '../../hooks/useSparkToCart';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -19,6 +20,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
   const { trackProductView } = useRecentlyViewed();
+  const { buttonRef: addToCartButtonRef, addToCartWithSpark } = useSparkToCart();
   const navigate = useNavigate();
 
   const currentQuantity = getProductQuantity(product._id);
@@ -115,9 +117,43 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         return;
       }
       
-      await addToCart(product, 1);
+      await addToCartWithSpark(product, 1);
     } catch (error) {
       console.error('Error adding to cart:', error);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleReserve = async (e) => {
+    e.stopPropagation();
+    
+    if (!isProductAvailable || isAddingToCart) {
+      return;
+    }
+    
+    setIsAddingToCart(true);
+    
+    try {
+      // Check shop status in real-time before reserve
+      const currentStatus = await checkShopStatusNow();
+      
+      if (!currentStatus.isOpen) {
+        // Shop is now closed, UI will update automatically
+        setIsAddingToCart(false);
+        return;
+      }
+      
+      // Use spark animation - stay on same page
+      await addToCartWithSpark(product, 1);
+    } catch (error) {
+      console.error('Error reserving product:', error);
+      // Don't navigate if there was an error (like authentication)
+      if (error.message === 'Please login to add items to cart') {
+        // The addToCart function should have opened the auth panel
+        setIsAddingToCart(false);
+        return;
+      }
     } finally {
       setIsAddingToCart(false);
     }
@@ -298,6 +334,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           {/* Add to Cart Button or Quantity Controls - positioned in bottom right corner of image */}
           {currentQuantity === 0 ? (
             <button
+              ref={addToCartButtonRef}
               onClick={handleAddToCart}
               disabled={!isActive || totalStock === 0 || isAddingToCart || !isProductAvailable}
               className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-semibold transition-all duration-300 ease-out rounded-lg border ${
@@ -458,10 +495,11 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
         {/* Reserve Button - Creative Animated Design with Mobile Support */}
         <button
-          onClick={handleBuyNow}
-          disabled={!isActive || totalStock === 0 || !isProductAvailable}
+          ref={addToCartButtonRef}
+          onClick={handleReserve}
+          disabled={!isActive || totalStock === 0 || !isProductAvailable || isAddingToCart}
           className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-semibold transition-all duration-300 rounded-lg overflow-hidden ${
-            !isActive || totalStock === 0 || !isProductAvailable
+            !isActive || totalStock === 0 || !isProductAvailable || isAddingToCart
               ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
               : 'bg-white text-black border-2 border-black hover:text-white transform hover:scale-[1.02] active:scale-[0.98] active:text-white touch-manipulation'
           }`}
@@ -479,6 +517,11 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               'Out of Stock'
             ) : !isProductAvailable ? (
               'Closed'
+            ) : isAddingToCart ? (
+              <>
+                <div className="w-3 h-3 border-2 border-current border-t-transparent animate-spin"></div>
+                <span>Adding...</span>
+              </>
             ) : (
               <>
                 <svg 
@@ -508,9 +551,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           {/* Sparkle effects - show on both hover and active for mobile */}
           {isActive && totalStock > 0 && isProductAvailable && (
             <>
-              <div className="absolute top-1 right-2 w-1 h-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
-              <div className="absolute bottom-1 left-3 w-1 h-1 bg-yellow-300 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
-              <div className="absolute top-2 left-1/2 w-0.5 h-0.5 bg-yellow-500 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-pulse group-active:animate-pulse transition-opacity duration-300 delay-150"></div>
+              <div className="absolute top-1 right-2 w-1 h-1 bg-rose-400 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
+              <div className="absolute bottom-1 left-3 w-1 h-1 bg-pink-300 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
+              <div className="absolute top-2 left-1/2 w-0.5 h-0.5 bg-rose-500 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-pulse group-active:animate-pulse transition-opacity duration-300 delay-150"></div>
             </>
           )}
 

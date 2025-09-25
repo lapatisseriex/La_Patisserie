@@ -46,7 +46,7 @@ const DessertLoader = ({ variant = 'cupcake', message = 'Baking fresh treats...'
       <div className="cupcake-rise">
         <div className="relative">
           {/* Cupcake wrapper */}
-          <div className="w-16 h-12 bg-gradient-to-b from-yellow-300 to-yellow-600 rounded-b-lg border-2 border-yellow-700 shadow-lg"></div>
+          <div className="w-16 h-12 bg-gradient-to-b from-rose-200 to-rose-400 rounded-b-lg border-2 border-rose-500 shadow-lg"></div>
           
           {/* Frosting */}
           <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-20 h-12 bg-gradient-to-b from-pink-200 to-pink-400 rounded-full border-2 border-pink-500 shadow-md"></div>
@@ -58,7 +58,7 @@ const DessertLoader = ({ variant = 'cupcake', message = 'Baking fresh treats...'
           {/* Decorative sprinkles */}
           <div className="absolute -top-4 left-3 w-1 h-3 bg-blue-400 rounded-full transform rotate-45"></div>
           <div className="absolute -top-3 right-3 w-1 h-3 bg-green-400 rounded-full transform rotate-12"></div>
-          <div className="absolute -top-5 left-6 w-1 h-3 bg-yellow-400 rounded-full transform -rotate-30"></div>
+          <div className="absolute -top-5 left-6 w-1 h-3 bg-pink-400 rounded-full transform -rotate-30"></div>
         </div>
       </div>
       
@@ -83,7 +83,7 @@ const DessertLoader = ({ variant = 'cupcake', message = 'Baking fresh treats...'
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="absolute sparkle text-yellow-400"
+            className="absolute sparkle text-rose-400"
             style={{
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
@@ -100,21 +100,21 @@ const DessertLoader = ({ variant = 'cupcake', message = 'Baking fresh treats...'
   const ChocolateLoader = () => (
     <div className="relative flex items-center justify-center">
       {/* Chocolate bar */}
-      <div className="relative w-16 h-20 bg-gradient-to-b from-yellow-800 to-yellow-900 rounded-lg shadow-lg border-2 border-yellow-900">
+      <div className="relative w-16 h-20 bg-gradient-to-b from-amber-700 to-amber-800 rounded-lg shadow-lg border-2 border-amber-900">
         {/* Melting chocolate effect */}
-        <div className="absolute inset-0 chocolate-melt bg-gradient-to-b from-transparent to-yellow-700 rounded-lg"></div>
+        <div className="absolute inset-0 chocolate-melt bg-gradient-to-b from-transparent to-amber-600 rounded-lg"></div>
         
         {/* Chocolate squares */}
         <div className="absolute inset-1 grid grid-cols-3 gap-0.5">
           {[...Array(9)].map((_, i) => (
-            <div key={i} className="bg-yellow-600 rounded-sm shadow-inner"></div>
+            <div key={i} className="bg-amber-500 rounded-sm shadow-inner"></div>
           ))}
         </div>
         
         {/* Dripping effect */}
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2 w-2 h-4 bg-yellow-700 rounded-b-full"></div>
-        <div className="absolute bottom-0 left-1/4 transform translate-y-1 w-1 h-3 bg-yellow-700 rounded-b-full"></div>
-        <div className="absolute bottom-0 right-1/4 transform translate-y-1 w-1 h-2 bg-yellow-700 rounded-b-full"></div>
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2 w-2 h-4 bg-amber-600 rounded-b-full"></div>
+        <div className="absolute bottom-0 left-1/4 transform translate-y-1 w-1 h-3 bg-amber-600 rounded-b-full"></div>
+        <div className="absolute bottom-0 right-1/4 transform translate-y-1 w-1 h-2 bg-amber-600 rounded-b-full"></div>
       </div>
     </div>
   );
@@ -126,7 +126,7 @@ const DessertLoader = ({ variant = 'cupcake', message = 'Baking fresh treats...'
         <div className="w-20 h-16 bg-gradient-to-b from-gray-200 to-gray-400 rounded-full border-4 border-gray-500 shadow-lg"></div>
         
         {/* Batter inside */}
-        <div className="absolute top-2 left-2 right-2 h-8 bg-gradient-to-b from-yellow-200 to-yellow-400 rounded-full"></div>
+        <div className="absolute top-2 left-2 right-2 h-8 bg-gradient-to-b from-pink-200 to-pink-400 rounded-full"></div>
         
         {/* Mixing spoon */}
         <div className="absolute top-0 right-2 w-1 h-12 bg-brown-600 rounded-full transform rotate-12"></div>

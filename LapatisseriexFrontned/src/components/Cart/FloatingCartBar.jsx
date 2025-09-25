@@ -108,7 +108,7 @@ const FloatingCartBar = () => {
               
               <button
                 onClick={handleViewCart}
-                className="bg-black text-white px-6 py-2 rounded-lg font-medium transition-colors active:scale-95 transform"
+                className="bg-gradient-to-r from-rose-400 to-pink-500 text-white px-6 py-2 rounded-lg font-medium hover:from-rose-500 hover:to-pink-600 transition-all duration-300 active:scale-95 transform shadow-md"
               >
                 View Cart
               </button>

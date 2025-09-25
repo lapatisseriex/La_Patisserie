@@ -246,8 +246,8 @@ const AdminTimeSettings = () => {
   if (!user) {
     return (
       <div className="max-w-2xl mx-auto p-6 text-center">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+        <div className="bg-rose-50 border border-rose-200 rounded-lg p-6">
+          <AlertCircle className="h-12 w-12 text-rose-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Required</h2>
           <p className="text-gray-600 mb-4">
             You need to be logged in as an admin to access time settings.

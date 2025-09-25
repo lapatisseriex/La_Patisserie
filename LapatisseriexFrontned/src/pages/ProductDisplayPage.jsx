@@ -10,6 +10,7 @@ import MediaDisplay from '../components/common/MediaDisplay';
 import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
+import { useSparkToCart } from '../hooks/useSparkToCart';
 import '../styles/ProductDisplayPage-mobile.css';
 import '../styles/premiumButtons.css';
 
@@ -21,6 +22,7 @@ const ProductDisplayPage = () => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { fetchRecentlyViewed, trackProductView } = useRecentlyViewed();
   const { user } = useAuth();
+  const { buttonRef: reserveButtonRef, addToCartWithSpark } = useSparkToCart();
   
   // Add custom CSS for ProductDisplayPage to hide header on mobile
   useEffect(() => {
@@ -317,14 +319,36 @@ const ProductDisplayPage = () => {
     }
   };
 
+  const handleReserve = async () => {
+    console.log('🎯 Reserve button clicked!', { product: product?._id, totalStock });
+    
+    if (!product || totalStock === 0) return;
+    setIsAddingToCart(true);
+    
+    try {
+      // Use spark animation when adding to cart - stay on same page
+      console.log('🔥 Calling addToCartWithSpark...');
+      await addToCartWithSpark(product, 1);
+      console.log('✅ Reserve completed successfully');
+    } catch (error) {
+      console.error('❌ Error reserving product:', error);
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
   const handleBuyNow = async () => {
     if (!product || totalStock === 0) return;
     try {
       const currentQuantity = getProductQuantity(product._id);
       if (currentQuantity === 0) {
-        await addToCart(product, 1);
+        // Use spark animation when adding to cart
+        await addToCartWithSpark(product, 1);
       }
-      navigate('/cart');
+      // Small delay to let the spark animation start before navigating
+      setTimeout(() => {
+        navigate('/cart');
+      }, 200);
     } catch (error) {
       console.error('Error in buy now:', error);
     }
@@ -387,8 +411,9 @@ const ProductDisplayPage = () => {
   };
 
   // Reserve button matching ProductCard style
-  const ReserveCTA = ({ onClick, disabled, label = 'Reserve Yours', small = false, className = '', dataRole }) => (
+  const ReserveCTA = ({ onClick, disabled, label = 'Reserve Yours', small = false, className = '', dataRole, buttonRef }) => (
     <button
+      ref={buttonRef}
       onClick={onClick}
       disabled={disabled}
       data-role={dataRole}
@@ -578,12 +603,13 @@ const ProductDisplayPage = () => {
 
                 {/* Prominent Reserve Yours Button */}
                 <ReserveCTA
-                  onClick={handleBuyNow}
-                  disabled={!product?.isActive || totalStock === 0}
+                  onClick={handleReserve}
+                  disabled={!product?.isActive || totalStock === 0 || isAddingToCart}
                   label="Reserve Yours"
                   small
                   className="h-9 sm:h-10 px-3 sm:px-5"
                   dataRole="sticky-reserve"
+                  buttonRef={reserveButtonRef}
                 />
               </div>
             </div>
@@ -991,8 +1017,8 @@ const ProductDisplayPage = () => {
               {/* Right: Reserve/Buy Now */}
               <div className="flex-1" ref={reserveButtonMobileRef}>
                 <ReserveCTA
-                  onClick={handleBuyNow}
-                  disabled={totalStock === 0}
+                  onClick={handleReserve}
+                  disabled={totalStock === 0 || isAddingToCart}
                   label="Reserve Yours"
                   small
                   className="w-full btn-sm-compact"
@@ -1566,8 +1592,8 @@ const ProductDisplayPage = () => {
                   </div>
                   <div className="flex-1" ref={reserveButtonDesktopRef}>
                     <ReserveCTA
-                      onClick={handleBuyNow}
-                      disabled={totalStock === 0}
+                      onClick={handleReserve}
+                      disabled={totalStock === 0 || isAddingToCart}
                       label="Reserve Yours"
                       className="w-full"
                     />

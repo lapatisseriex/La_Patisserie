@@ -144,7 +144,7 @@ const Payment = () => {
             <div className="flex flex-col md:flex-row justify-center gap-4">
               <Link 
                 to="/" 
-                className="px-8 py-3 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors"
+                className="px-8 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
               >
                 Return to Homepage
               </Link>
@@ -186,7 +186,7 @@ const Payment = () => {
             <div className="space-y-4">
               <Link 
                 to="/cart" 
-                className="block w-full px-6 py-3 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors"
+                className="block w-full px-6 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
               >
                 Go Back to Cart
               </Link>
@@ -535,8 +535,8 @@ const Payment = () => {
                 
                 {selectedPaymentMethod === 'cod' && (
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
-                      <p className="text-yellow-700 text-sm">
+                    <div className="bg-rose-50 border border-rose-200 rounded-md p-4 mb-4">
+                      <p className="text-rose-700 text-sm">
                         You will pay ₹{grandTotal.toFixed(2)} when your order is delivered.
                         Please keep the exact amount ready to ensure a smooth delivery experience.
                       </p>

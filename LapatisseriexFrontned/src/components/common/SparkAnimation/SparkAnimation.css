@@ -1,0 +1,241 @@
+/* Spark Animation Styles */
+.spark-animation-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.spark-particle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  transform: translate(var(--start-x), var(--start-y));
+  opacity: 0;
+}
+
+.spark-particle.animating {
+  animation: sparkFly 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes sparkFly {
+  0% {
+    transform: translate(var(--start-x), var(--start-y)) scale(0.3);
+    opacity: 0;
+  }
+  
+  10% {
+    opacity: 1;
+    transform: translate(var(--start-x), var(--start-y)) scale(1.2);
+  }
+  
+  50% {
+    opacity: 1;
+    transform: translate(
+      calc(var(--start-x) + var(--delta-x) * 0.6),
+      calc(var(--start-y) + var(--delta-y) * 0.4)
+    ) scale(1.5);
+  }
+  
+  90% {
+    opacity: 1;
+    transform: translate(
+      calc(var(--start-x) + var(--delta-x) * 0.95),
+      calc(var(--start-y) + var(--delta-y) * 0.95)
+    ) scale(1);
+  }
+  
+  100% {
+    transform: translate(var(--end-x), var(--end-y)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Main spark core */
+.spark-core {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f472b6 0%, #ec4899 50%, #be185d 100%);
+  box-shadow: 
+    0 0 12px rgba(244, 114, 182, 0.9),
+    0 0 24px rgba(236, 72, 153, 0.7),
+    0 0 36px rgba(190, 24, 93, 0.5),
+    0 0 48px rgba(190, 24, 93, 0.3);
+}
+
+.spark-glow {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.6) 0%, transparent 70%);
+  animation: sparkGlow 0.8s ease-out;
+}
+
+@keyframes sparkGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+}
+
+.spark-trail {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 32px;
+  background: linear-gradient(to bottom, #f472b6, transparent);
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+/* Trailing particles */
+.spark-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.particle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f472b6 0%, #ec4899 100%);
+  box-shadow: 0 0 6px rgba(244, 114, 182, 0.8);
+}
+
+.particle-1 {
+  top: -8px;
+  left: -8px;
+  animation: particle1 0.8s ease-out;
+}
+
+.particle-2 {
+  top: -6px;
+  left: 8px;
+  animation: particle2 0.8s ease-out;
+}
+
+.particle-3 {
+  top: 8px;
+  left: -6px;
+  animation: particle3 0.8s ease-out;
+}
+
+@keyframes particle1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-12px, -12px) scale(0.5);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-20px, -20px) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes particle2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    transform: translate(8px, -16px) scale(0.5);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(16px, -24px) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes particle3 {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    transform: translate(-8px, 12px) scale(0.5);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-16px, 20px) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Cart impact effect */
+@keyframes cartImpact {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.cart-impact {
+  animation: cartImpact 0.3s ease-out;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .spark-particle {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .spark-trail {
+    height: 15px;
+  }
+  
+  .particle {
+    width: 2px;
+    height: 2px;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .spark-particle.animating {
+    animation-duration: 0.3s;
+  }
+  
+  .spark-glow,
+  .particle-1,
+  .particle-2,
+  .particle-3 {
+    animation: none;
+  }
+}

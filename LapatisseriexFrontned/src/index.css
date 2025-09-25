@@ -116,26 +116,60 @@ body.has-fixed-header {
   align-items: center;
 }
 
-/* Custom component classes */
-.btn-pink {
+/* Cake-themed component classes */
+.btn-cake-primary {
+  background: linear-gradient(135deg, #fb7185, #ec4899);
   color: white;
-  padding: 0.5rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  transition: background-color 0.3s;
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px 0 rgba(251, 113, 133, 0.3);
 }
-.btn-pink:hover {
+.btn-cake-primary:hover {
+  background: linear-gradient(135deg, #f43f5e, #db2777);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(251, 113, 133, 0.4);
 }
 
-.btn-outline-pink {
-  border: 2px solid;
-  padding: 0.5rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  transition: all 0.3s;
-}
-.btn-outline-pink:hover {
+.btn-cake-secondary {
+  background: linear-gradient(135deg, #e0a47d, #c17e5b);
   color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px 0 rgba(224, 164, 125, 0.3);
+}
+.btn-cake-secondary:hover {
+  background: linear-gradient(135deg, #c17e5b, #a16847);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(224, 164, 125, 0.4);
+}
+
+.btn-outline-cake {
+  border: 2px solid #fb7185;
+  color: #fb7185;
+  background: transparent;
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.btn-outline-cake:hover {
+  background: linear-gradient(135deg, #fb7185, #ec4899);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(251, 113, 133, 0.3);
+}
+
+/* Cake-themed gradient text utilities */
+.text-cake-gradient {
+  background: linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0px 0px 1px rgba(224, 164, 125, 0.2);
 }
 
 .section-title {

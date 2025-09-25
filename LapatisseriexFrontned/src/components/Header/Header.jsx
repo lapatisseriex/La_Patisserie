@@ -5,6 +5,8 @@ import { useLocation as useLocationContext } from '../../context/LocationContext
 import { useCart } from '../../context/CartContext';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
+import SparkAnimation from '../common/SparkAnimation/SparkAnimation';
+import { useSparkAnimationContext } from '../../context/SparkAnimationContext/SparkAnimationContext';
 import './Header.css';
 import './remove-focus.css';
 import './hide-search.css';
@@ -43,6 +45,11 @@ const Header = ({ isAdminView = false }) => {
     toggleAuthPanel,
     logout
   } = useAuth();
+  
+  const { sparks } = useSparkAnimationContext();
+  
+  // Debug log for sparks
+  console.log('🎇 Header sparks:', sparks);
   
   const {
     locations,
@@ -399,7 +406,7 @@ const Header = ({ isAdminView = false }) => {
           <div className="px-3">
             <div className="flex justify-start">
               <div className="flex items-center text-xs text-black py-1 px-2 rounded-md" style={{fontFamily: 'sans-serif'}}>
-                <MapPin className="h-3 w-3 mr-2 text-yellow-400" />
+                <MapPin className="h-3 w-3 mr-2 text-rose-500" />
                 <span className="truncate max-w-[120px] font-medium">{memoizedUserLocationDisplay}</span>
                 {user && !hasValidDeliveryLocation() && (
                   <AlertTriangle className="h-3 w-3 ml-1 text-amber-400" />
@@ -412,25 +419,25 @@ const Header = ({ isAdminView = false }) => {
       
       {/* Premium Luxury Banner */}
       {!isAdminView && (
-        <div className="luxury-banner-container relative overflow-hidden bg-gradient-to-r from-black via-gray-900 to-black py-1 px-3 sm:px-5">
-          {/* Golden Accent Lines */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-80"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-80"></div>
+        <div className="luxury-banner-container relative overflow-hidden bg-gradient-to-r from-rose-100 via-pink-50 to-orange-50 py-1 px-3 sm:px-5">
+          {/* Cake-themed Accent Lines */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-300 to-transparent opacity-80"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-300 to-transparent opacity-80"></div>
           
           {/* Animated Background Elements */}
-          <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 opacity-20">
             <div className="floating-cake floating-cake-1"></div>
             <div className="floating-cake floating-cake-2"></div>
             <div className="floating-cake floating-cake-3"></div>
-            <div className="floating-sparkle floating-sparkle-1">✨</div>
+            <div className="floating-sparkle floating-sparkle-1">🧁</div>
             <div className="floating-sparkle floating-sparkle-2">🍰</div>
-            <div className="floating-sparkle floating-sparkle-3">✨</div>
-            <div className="floating-sparkle floating-sparkle-4">🧁</div>
+            <div className="floating-sparkle floating-sparkle-3">🎂</div>
+            <div className="floating-sparkle floating-sparkle-4">🍪</div>
           </div>
           
           {/* Elegant Border Frame */}
-          <div className="absolute inset-2 border border-yellow-400/30 rounded-lg"></div>
-          <div className="absolute inset-3 border border-white/10 rounded-md"></div>
+          <div className="absolute inset-2 border border-rose-300/40 rounded-lg"></div>
+          <div className="absolute inset-3 border border-pink-200/30 rounded-md"></div>
           
           {/* Main Content */}
           <div className="container mx-auto relative z-20 py-1">
@@ -439,21 +446,21 @@ const Header = ({ isAdminView = false }) => {
               <div className="flex flex-col items-center justify-center px-4">
                 {/* Premium Badge */}
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-yellow-400"></div>
-                  <span className="text-yellow-400 text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'serif'}}>
+                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-rose-400"></div>
+                  <span className="text-rose-600 text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'serif'}}>
                     La Patisserie
                   </span>
-                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-yellow-400"></div>
+                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-rose-400"></div>
                 </div>
                 
                 {/* Main Message */}
-                <h2 className="text-white text-sm font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
-                  <span className="inline-block animate-fade-in-up">✨</span>
+                <h2 className="text-gray-800 text-sm font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
+                  <span className="inline-block animate-fade-in-up">🧁</span>
                   <span className="mx-1 relative">
                     Fresh Artisan Cakes & Pastries
-                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
+                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-400 to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
                   </span>
-                  <span className="inline-block animate-fade-in-up animation-delay-500">✨</span>
+                  <span className="inline-block animate-fade-in-up animation-delay-500">🍰</span>
                 </h2>
               </div>
             </div>
@@ -463,7 +470,7 @@ const Header = ({ isAdminView = false }) => {
               {/* Phone Number - Left */}
               <div className="flex items-center justify-start flex-shrink-0 w-48">
                 <button 
-                  className="flex items-center gap-1 text-yellow-400/80 flex-shrink-0 hover:text-yellow-400 transition-colors duration-200"
+                  className="flex items-center gap-1 text-rose-600/80 flex-shrink-0 hover:text-rose-700 transition-colors duration-200"
                   style={{fontFamily: 'sans-serif'}}
                 >
                   <Phone className="h-3 w-3" />
@@ -477,28 +484,28 @@ const Header = ({ isAdminView = false }) => {
               <div className="flex flex-col items-center justify-center flex-1 px-4">
                 {/* Premium Badge */}
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-yellow-400"></div>
-                  <span className="text-yellow-400 text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'serif'}}>
+                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-rose-400"></div>
+                  <span className="text-rose-600 text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'serif'}}>
                     La Patisserie
                   </span>
-                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-yellow-400"></div>
+                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-rose-400"></div>
                 </div>
                 
                 {/* Main Message */}
-                <h2 className="text-white text-lg font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
-                  <span className="inline-block animate-fade-in-up">✨</span>
+                <h2 className="text-gray-800 text-lg font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
+                  <span className="inline-block animate-fade-in-up">🧁</span>
                   <span className="mx-1 relative">
                     Fresh Artisan Cakes & Pastries
-                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
+                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-400 to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
                   </span>
-                  <span className="inline-block animate-fade-in-up animation-delay-500">✨</span>
+                  <span className="inline-block animate-fade-in-up animation-delay-500">🍰</span>
                 </h2>
               </div>
               
               {/* Address - Right */}
               <div className="flex items-center justify-end flex-shrink-0 w-48">
                 <button 
-                  className="flex items-center gap-1 text-yellow-400/80 flex-shrink-0 hover:text-yellow-400 transition-colors duration-200"
+                  className="flex items-center gap-1 text-rose-600/80 flex-shrink-0 hover:text-rose-700 transition-colors duration-200"
                   style={{fontFamily: 'sans-serif'}}
                 >
                   <span className="text-xs font-light text-right">
@@ -511,7 +518,7 @@ const Header = ({ isAdminView = false }) => {
           </div>
           
           {/* Subtle Overlay Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-rose-200/10 via-transparent to-pink-200/10 pointer-events-none"></div>
         </div>
       )}
       
@@ -522,7 +529,7 @@ const Header = ({ isAdminView = false }) => {
           <div className="hidden md:flex items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center header-logo-text">
-                <span className="text-yellow-400  font-light text-bold sm:text-xl md:text-2xl  truncate max-w-[120px] sm:max-w-none">
+                <span className="text-rose-600 font-light text-bold sm:text-xl md:text-2xl  truncate max-w-[120px] sm:max-w-none">
                   La Patisserie
                   <div className="sugar-sprinkles">
                     {[...Array(15)].map((_, i) => (
@@ -638,7 +645,7 @@ const Header = ({ isAdminView = false }) => {
                         </div>
                         <div className="px-4 py-3 bg-white border-t border-gray-200">
                           <button 
-                            className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-black py-2 px-4 rounded-lg font-medium text-sm hover:from-yellow-300 hover:to-yellow-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                            className="w-full bg-gradient-to-r from-rose-400 to-coral-500 text-white py-2 px-4 rounded-lg font-medium text-sm hover:from-rose-300 hover:to-coral-400 transition-all duration-200 shadow-sm hover:shadow-md"
                             onClick={() => {
                               setIsMegaMenuOpen(false);
                               navigate('/products');
@@ -661,13 +668,13 @@ const Header = ({ isAdminView = false }) => {
                 onMouseLeave={handleLocationHoverLeave}
               >
                 <button 
-                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group"
+                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-rose-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group"
                   onClick={toggleLocationDropdown}
                   style={{fontFamily: 'sans-serif'}}
                 >
-                  <MapPin className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-all duration-300 group-hover:scale-110" />
+                  <MapPin className="h-4 w-4 text-gray-600 group-hover:text-rose-600 transition-all duration-300 group-hover:scale-110" />
                   <span className="truncate max-w-[120px] sm:max-w-[140px] font-medium relative z-10">{memoizedUserLocationDisplay}</span>
-                  <ChevronDown className="h-4 w-4 text-gray-600 transition-all duration-300 group-hover:rotate-180 group-hover:text-yellow-600" />
+                  <ChevronDown className="h-4 w-4 text-gray-600 transition-all duration-300 group-hover:rotate-180 group-hover:text-rose-600" />
                   {user && !hasValidDeliveryLocation() && (
                     <div className="absolute -top-1 -right-1">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -693,7 +700,7 @@ const Header = ({ isAdminView = false }) => {
                     <div className="p-2">
                       <Link
                         to="/profile"
-                        className="flex items-center gap-3 px-3 py-2  text-yellow-500 rounded-lg transition-all duration-200 font-medium"
+                        className="flex items-center gap-3 px-3 py-2 text-rose-500 rounded-lg transition-all duration-200 font-medium"
                         style={{fontFamily: 'sans-serif'}}
                         onClick={() => setIsLocationDropdownOpen(false)}
                       >
@@ -715,8 +722,8 @@ const Header = ({ isAdminView = false }) => {
                 {/* Admin Dashboard Button - Show only for admins - Positioned first */}
                 {user.role === 'admin' && (
                   <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700">
-                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-black hover:text-yellow-600 rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
-                      <Settings className="h-5 w-5 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
+                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-black hover:text-rose-600 rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
+                      <Settings className="h-5 w-5 text-gray-600 group-hover:text-rose-600 transition-colors duration-300" />
                       <span className="ml-2 text-sm font-medium">Dashboard</span>
                     </Link>
                   </div>
@@ -745,12 +752,17 @@ const Header = ({ isAdminView = false }) => {
                 {/* Cart component - Premium Design with Tooltip */}
                 <div className="tooltip">
                   <div className="tooltip-content">
-                    <div className="animate-bounce text-yellow-400 -rotate-10 text-sm font-black italic select-none">Cart</div>
+                    <div className="animate-bounce text-rose-500 -rotate-10 text-sm font-black italic select-none">Cart</div>
                   </div>
-                  <Link to="/cart" className="flex items-center px-3 py-2 text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
-                    <ShoppingBag className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
+                  <Link 
+                    to="/cart" 
+                    className="flex items-center px-3 py-2 text-black hover:text-rose-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" 
+                    style={{fontFamily: 'sans-serif'}}
+                    data-cart-icon="true"
+                  >
+                    <ShoppingBag className="h-4 w-4 text-gray-600 group-hover:text-rose-600 transition-colors duration-300" />
                     {memoizedCartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium shadow-lg">
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-400 to-rose-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium shadow-lg">
                         {memoizedCartCount}
                       </span>
                     )}
@@ -777,10 +789,10 @@ const Header = ({ isAdminView = false }) => {
             {!user && (
               <button 
                 onClick={toggleAuthPanel}
-                className="flex items-center gap-2 px-3 py-2 text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300"
+                className="flex items-center gap-2 px-3 py-2 text-black hover:text-rose-600 backdrop-blur-sm rounded-lg transition-all duration-300"
                 style={{fontFamily: 'sans-serif'}}
               >
-                <User className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
+                <User className="h-4 w-4 text-gray-600 group-hover:text-rose-600 transition-colors duration-300" />
                 <span className="text-sm font-medium">Login</span>
               </button>
             )}
@@ -793,6 +805,18 @@ const Header = ({ isAdminView = false }) => {
         </div>
       </div>
     </header>
+    
+    {/* Spark Animations */}
+    {sparks.map(spark => (
+      <SparkAnimation
+        key={spark.id}
+        startPosition={{ x: spark.startX, y: spark.startY }}
+        endPosition={{ x: spark.endX, y: spark.endY }}
+        onAnimationComplete={() => {}}
+        isVisible={true}
+        sparkId={spark.id}
+      />
+    ))}
 
     </>
   );

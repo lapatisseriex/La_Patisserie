@@ -64,7 +64,7 @@ const FavoritesSection = () => {
           <div className="text-left mt-8">
             <Link 
               to="/favorites" 
-              className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all duration-300"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-xl hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
             >
               View All {favorites.length} Favorites <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
