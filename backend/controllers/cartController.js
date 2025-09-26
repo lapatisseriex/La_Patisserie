@@ -1,4 +1,4 @@
-import CartItem from '../models/cartModel.js';
+import Cart from '../models/cartModel.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 // @desc    Get user's cart
@@ -6,7 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 // @access  Private
 export const getCart = asyncHandler(async (req, res) => {
   try {
-    const cartSummary = await CartItem.getCartSummary(req.user.uid);
+    const cartSummary = await Cart.getCartSummary(req.user.uid);
     
     res.status(200).json({
       success: true,
@@ -43,16 +43,15 @@ export const addToCart = asyncHandler(async (req, res) => {
       });
     }
 
-    const cartItem = await CartItem.addOrUpdateItem(req.user.uid, productId, quantity);
+    const cart = await Cart.addOrUpdateItem(req.user.uid, productId, quantity);
     
     // Get updated cart summary
-    const cartSummary = await CartItem.getCartSummary(req.user.uid);
+    const cartSummary = await Cart.getCartSummary(req.user.uid);
     
     res.status(200).json({
       success: true,
       message: 'Item added to cart successfully',
       data: {
-        item: cartItem,
         cart: cartSummary
       }
     });
@@ -106,16 +105,15 @@ export const updateCartItem = asyncHandler(async (req, res) => {
       });
     }
 
-    const updatedItem = await CartItem.updateItemQuantity(req.user.uid, itemId, quantity);
+    await Cart.updateItemQuantity(req.user.uid, itemId, quantity);
     
     // Get updated cart summary
-    const cartSummary = await CartItem.getCartSummary(req.user.uid);
+    const cartSummary = await Cart.getCartSummary(req.user.uid);
     
     res.status(200).json({
       success: true,
       message: 'Cart item updated successfully',
       data: {
-        item: updatedItem,
         cart: cartSummary
       }
     });
@@ -153,10 +151,10 @@ export const removeFromCart = asyncHandler(async (req, res) => {
       });
     }
 
-    await CartItem.removeItem(req.user.uid, itemId);
+    await Cart.removeItem(req.user.uid, itemId);
     
     // Get updated cart summary
-    const cartSummary = await CartItem.getCartSummary(req.user.uid);
+    const cartSummary = await Cart.getCartSummary(req.user.uid);
     
     res.status(200).json({
       success: true,
@@ -186,7 +184,7 @@ export const removeFromCart = asyncHandler(async (req, res) => {
 // @access  Private
 export const clearCart = asyncHandler(async (req, res) => {
   try {
-    await CartItem.clearUserCart(req.user.uid);
+    await Cart.clearUserCart(req.user.uid);
     
     res.status(200).json({
       success: true,
@@ -213,13 +211,14 @@ export const clearCart = asyncHandler(async (req, res) => {
 // @access  Private
 export const getCartCount = asyncHandler(async (req, res) => {
   try {
-    const cartItems = await CartItem.find({ user: req.user.uid });
-    const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    const cart = await Cart.findOne({ user: req.user.uid });
+    const totalQuantity = cart ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+    const itemCount = cart ? cart.items.length : 0;
     
     res.status(200).json({
       success: true,
       data: {
-        count: cartItems.length,
+        count: itemCount,
         totalQuantity
       }
     });

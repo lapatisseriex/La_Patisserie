@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 
 const cartItemSchema = new mongoose.Schema({
-  user: {
-    type: String, // Firebase UID
-    required: true
-  },
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
@@ -27,41 +23,65 @@ const cartItemSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index to prevent duplicate items per user
-cartItemSchema.index({ user: 1, product: 1 }, { unique: true });
+const cartSchema = new mongoose.Schema({
+  user: {
+    type: String, // Firebase UID
+    required: true,
+    unique: true
+  },
+  items: [cartItemSchema]
+}, {
+  timestamps: true
+});
 
-// Virtual to calculate item total
+// Virtual to calculate item total for individual cart items
 cartItemSchema.virtual('itemTotal').get(function() {
   return this.quantity * (this.productSnapshot?.price || 0);
 });
 
+// Virtual to calculate cart total
+cartSchema.virtual('total').get(function() {
+  return this.items.reduce((sum, item) => sum + (item.quantity * (item.productSnapshot?.price || 0)), 0);
+});
+
+// Virtual to calculate total quantity
+cartSchema.virtual('totalQuantity').get(function() {
+  return this.items.reduce((sum, item) => sum + item.quantity, 0);
+});
+
 // Static method to get user's cart with populated product data
-cartItemSchema.statics.getUserCart = async function(userId) {
-  // Clean up any existing cart items with old ObjectId format for this user
+cartSchema.statics.getUserCart = async function(userId) {
+  // Clean up any old CartItem documents from previous schema
   try {
-    await this.deleteMany({ user: { $type: "objectId" } });
-  } catch (err) {
+    const CartItem = mongoose.models.CartItem;
+    if (CartItem) {
+      await CartItem.deleteMany({ user: userId });
+    }
+  } catch (error) {
     // Ignore cleanup errors
+    console.log('Cleaned up old cart items for user:', userId);
   }
 
-  return this.find({ user: userId })
-    .populate('product', 'name variants images category isActive')
-    .sort({ createdAt: -1 });
+  let cart = await this.findOne({ user: userId })
+    .populate('items.product', 'name variants images category isActive');
+  
+  if (!cart) {
+    // Create empty cart if doesn't exist
+    cart = await this.create({ user: userId, items: [] });
+  }
+  
+  return cart;
 };
 
 // Static method to add or update cart item
-cartItemSchema.statics.addOrUpdateItem = async function(userId, productId, quantity = 1) {
-  // Clean up any existing cart items with old ObjectId format for this user
-  try {
-    await this.deleteMany({ user: { $type: "objectId" } });
-  } catch (err) {
-    // Ignore cleanup errors
-    console.log('Cleaned up old cart format');
-  }
-
+cartSchema.statics.addOrUpdateItem = async function(userId, productId, quantity = 1) {
+  console.log('🛒 addOrUpdateItem called:', { userId, productId, quantity });
+  
   // First get product details
   const Product = mongoose.model('Product');
   const product = await Product.findById(productId);
+  
+  console.log('📦 Product found:', product ? product.name : 'Not found');
   
   if (!product) {
     throw new Error('Product not found');
@@ -71,7 +91,14 @@ cartItemSchema.statics.addOrUpdateItem = async function(userId, productId, quant
     throw new Error('Product is not available');
   }
   
-  if (product.stock < quantity) {
+  // Calculate total stock from variants (matching frontend logic)
+  const totalStock = product.variants && product.variants.length > 0 
+    ? product.variants[0].stock 
+    : 0;
+    
+  console.log('📊 Stock check:', { productName: product.name, totalStock, requestedQuantity: quantity });
+  
+  if (totalStock < quantity) {
     throw new Error('Insufficient stock');
   }
 
@@ -87,31 +114,54 @@ cartItemSchema.statics.addOrUpdateItem = async function(userId, productId, quant
     category: product.category
   };
 
-  // Try to update existing item or create new one
-  const existingItem = await this.findOne({ user: userId, product: productId });
+  // Get or create cart
+  let cart = await this.findOne({ user: userId });
+  console.log('🛒 Existing cart:', cart ? `Found with ${cart.items.length} items` : 'Not found, creating new');
   
-  if (existingItem) {
-    const newQuantity = existingItem.quantity + quantity;
-    if (newQuantity > product.stock) {
+  if (!cart) {
+    cart = await this.create({ user: userId, items: [] });
+    console.log('✅ Created new cart for user:', userId);
+  }
+
+  // Check if item already exists in cart
+  const existingItemIndex = cart.items.findIndex(item => 
+    item.product.toString() === productId.toString()
+  );
+  
+  console.log('🔍 Existing item index:', existingItemIndex);
+  
+  if (existingItemIndex >= 0) {
+    const newQuantity = cart.items[existingItemIndex].quantity + quantity;
+    if (newQuantity > totalStock) {
       throw new Error('Insufficient stock');
     }
     
-    existingItem.quantity = newQuantity;
-    existingItem.productSnapshot = productSnapshot; // Update snapshot
-    return await existingItem.save();
+    cart.items[existingItemIndex].quantity = newQuantity;
+    cart.items[existingItemIndex].productSnapshot = productSnapshot; // Update snapshot
+    console.log('🔄 Updated existing item quantity');
   } else {
-    return await this.create({
-      user: userId,
+    cart.items.push({
       product: productId,
       quantity,
       productSnapshot
     });
+    console.log('➕ Added new item to cart');
   }
+
+  const savedCart = await cart.save();
+  console.log('💾 Cart saved successfully, total items:', savedCart.items.length);
+  return savedCart;
 };
 
 // Static method to update item quantity
-cartItemSchema.statics.updateItemQuantity = async function(userId, itemId, quantity) {
-  const item = await this.findOne({ _id: itemId, user: userId }).populate('product');
+cartSchema.statics.updateItemQuantity = async function(userId, itemId, quantity) {
+  const cart = await this.findOne({ user: userId }).populate('items.product');
+  
+  if (!cart) {
+    throw new Error('Cart not found');
+  }
+  
+  const item = cart.items.find(item => item._id.toString() === itemId.toString());
   
   if (!item) {
     throw new Error('Cart item not found');
@@ -121,39 +171,58 @@ cartItemSchema.statics.updateItemQuantity = async function(userId, itemId, quant
     throw new Error('Quantity must be greater than 0');
   }
   
-  if (item.product && quantity > item.product.stock) {
+  // Calculate total stock from variants (matching frontend logic)
+  const totalStock = item.product && item.product.variants && item.product.variants.length > 0 
+    ? item.product.variants[0].stock 
+    : 0;
+    
+  if (quantity > totalStock) {
     throw new Error('Insufficient stock');
   }
   
   item.quantity = quantity;
-  return await item.save();
+  return await cart.save();
 };
 
 // Static method to remove item
-cartItemSchema.statics.removeItem = async function(userId, itemId) {
-  const result = await this.deleteOne({ _id: itemId, user: userId });
+cartSchema.statics.removeItem = async function(userId, itemId) {
+  const cart = await this.findOne({ user: userId });
   
-  if (result.deletedCount === 0) {
+  if (!cart) {
+    throw new Error('Cart not found');
+  }
+  
+  const itemIndex = cart.items.findIndex(item => item._id.toString() === itemId.toString());
+  
+  if (itemIndex === -1) {
     throw new Error('Cart item not found');
   }
   
-  return result;
+  cart.items.splice(itemIndex, 1);
+  return await cart.save();
 };
 
 // Static method to clear user's cart
-cartItemSchema.statics.clearUserCart = async function(userId) {
-  return await this.deleteMany({ user: userId });
+cartSchema.statics.clearUserCart = async function(userId) {
+  const cart = await this.findOne({ user: userId });
+  
+  if (!cart) {
+    return null;
+  }
+  
+  cart.items = [];
+  return await cart.save();
 };
 
 // Static method to get cart summary
-cartItemSchema.statics.getCartSummary = async function(userId) {
-  const cartItems = await this.getUserCart(userId);
+cartSchema.statics.getCartSummary = async function(userId) {
+  const cart = await this.getUserCart(userId);
   
   const summary = {
-    items: cartItems,
-    itemCount: cartItems.length,
-    totalQuantity: cartItems.reduce((sum, item) => sum + item.quantity, 0),
-    subtotal: cartItems.reduce((sum, item) => {
+    items: cart.items,
+    itemCount: cart.items.length,
+    totalQuantity: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+    subtotal: cart.items.reduce((sum, item) => {
       // Priority: productSnapshot.price > first variant price > 0
       const price = item.productSnapshot?.price || 
         (item.product?.variants?.[0]?.price) || 0;
@@ -164,6 +233,6 @@ cartItemSchema.statics.getCartSummary = async function(userId) {
   return summary;
 };
 
-const CartItem = mongoose.model('CartItem', cartItemSchema);
+const Cart = mongoose.model('Cart', cartSchema);
 
-export default CartItem;
+export default Cart;

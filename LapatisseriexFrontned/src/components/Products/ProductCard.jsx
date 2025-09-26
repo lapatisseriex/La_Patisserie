@@ -16,14 +16,22 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
-  const { addToCart, getProductQuantity, updateProductQuantity } = useCart();
+  const { addToCart, getProductQuantity, updateProductQuantityByProductId, cartItems, loading: cartLoading, cartInitialized } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
   const { trackProductView } = useRecentlyViewed();
   const { buttonRef: addToCartButtonRef, addToCartWithSpark } = useSparkToCart();
   const navigate = useNavigate();
 
+  // Get current quantity from cart (will re-run when cartItems changes)
   const currentQuantity = getProductQuantity(product._id);
+  
+  // Debug current quantity state and button transitions
+  useEffect(() => {
+    const shouldShowAdd = currentQuantity === 0;
+    const shouldShowQuantity = currentQuantity > 0;
+    console.log(`🔄 ${product.name}: currentQuantity = ${currentQuantity}, showAdd = ${shouldShowAdd}, showQuantity = ${shouldShowQuantity}, cartItems = ${cartItems?.length || 0}`);
+  }, [currentQuantity, product.name, cartItems?.length]);
 
   // Generate consistent random rating for each product based on product ID
   const getProductRating = (productId) => {
@@ -125,38 +133,16 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     }
   };
 
-  const handleReserve = async (e) => {
+  const handleReserve = (e) => {
     e.stopPropagation();
     
-    if (!isProductAvailable || isAddingToCart) {
+    if (!isProductAvailable) {
       return;
     }
     
-    setIsAddingToCart(true);
-    
-    try {
-      // Check shop status in real-time before reserve
-      const currentStatus = await checkShopStatusNow();
-      
-      if (!currentStatus.isOpen) {
-        // Shop is now closed, UI will update automatically
-        setIsAddingToCart(false);
-        return;
-      }
-      
-      // Use spark animation - stay on same page
-      await addToCartWithSpark(product, 1);
-    } catch (error) {
-      console.error('Error reserving product:', error);
-      // Don't navigate if there was an error (like authentication)
-      if (error.message === 'Please login to add items to cart') {
-        // The addToCart function should have opened the auth panel
-        setIsAddingToCart(false);
-        return;
-      }
-    } finally {
-      setIsAddingToCart(false);
-    }
+    console.log('🎯 Reserve button clicked on Home page - redirecting to cart');
+    // Simply redirect to cart page
+    navigate('/cart');
   };
 
   const handleBuyNow = async (e) => {
@@ -192,7 +178,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity < 0) return;
-    updateProductQuantity(product._id, newQuantity);
+    console.log(`🔧 ProductCard handleQuantityChange: ${product.name} -> quantity: ${newQuantity} (current: ${currentQuantity})`);
+    
+    if (newQuantity === 0) {
+      console.log(`🔄 Quantity becoming 0 - should trigger removal and revert to Add button`);
+    }
+    
+    updateProductQuantityByProductId(product._id, newQuantity);
   };
 
   const handleFavoriteToggle = async (e) => {
@@ -332,7 +324,14 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           </div>
 
           {/* Add to Cart Button or Quantity Controls - positioned in bottom right corner of image */}
-          {currentQuantity === 0 ? (
+          {user && !cartInitialized ? (
+            // Show loading indicator while cart is initializing for authenticated users
+            <div className="absolute bottom-2 right-2 px-4 py-2 text-xs bg-white border border-gray-300 rounded-lg">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-gray-400"></div>
+              </div>
+            </div>
+          ) : currentQuantity === 0 ? (
             <button
               ref={addToCartButtonRef}
               onClick={handleAddToCart}
@@ -495,11 +494,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
         {/* Reserve Button - Creative Animated Design with Mobile Support */}
         <button
-          ref={addToCartButtonRef}
           onClick={handleReserve}
-          disabled={!isActive || totalStock === 0 || !isProductAvailable || isAddingToCart}
+          disabled={!isActive || totalStock === 0 || !isProductAvailable}
           className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-semibold transition-all duration-300 rounded-lg overflow-hidden ${
-            !isActive || totalStock === 0 || !isProductAvailable || isAddingToCart
+            !isActive || totalStock === 0 || !isProductAvailable
               ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
               : 'bg-white text-black border-2 border-black hover:text-white transform hover:scale-[1.02] active:scale-[0.98] active:text-white touch-manipulation'
           }`}
@@ -517,11 +515,6 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               'Out of Stock'
             ) : !isProductAvailable ? (
               'Closed'
-            ) : isAddingToCart ? (
-              <>
-                <div className="w-3 h-3 border-2 border-current border-t-transparent animate-spin"></div>
-                <span>Adding...</span>
-              </>
             ) : (
               <>
                 <svg 

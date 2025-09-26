@@ -14,26 +14,30 @@ db.once('open', async () => {
   console.log('Connected to MongoDB');
   
   try {
-    // Get the collections directly
-    const cartItems = await db.collection('cartitems').find({
-      'productSnapshot.price': { $exists: false }
+    // Get carts with items missing price in productSnapshot
+    const carts = await db.collection('carts').find({
+      'items.productSnapshot.price': { $exists: false }
     }).toArray();
     
-    console.log('Found', cartItems.length, 'cart items missing price');
+    console.log('Found', carts.length, 'carts with items missing price');
     
-    for (const item of cartItems) {
-      if (item.product) {
-        // Get the product data
-        const product = await db.collection('products').findOne({ _id: item.product });
+    for (const cart of carts) {
+      for (let i = 0; i < cart.items.length; i++) {
+        const item = cart.items[i];
         
-        if (product && product.variants && product.variants.length > 0) {
-          const price = product.variants[0].price;
-          console.log('Updating', item.productSnapshot.name, 'with price ₹', price);
+        if (!item.productSnapshot?.price && item.product) {
+          // Get the product data
+          const product = await db.collection('products').findOne({ _id: item.product });
           
-          await db.collection('cartitems').updateOne(
-            { _id: item._id },
-            { $set: { 'productSnapshot.price': price } }
-          );
+          if (product && product.variants && product.variants.length > 0) {
+            const price = product.variants[0].price;
+            console.log('Updating', item.productSnapshot?.name || 'Unknown', 'with price ₹', price);
+            
+            await db.collection('carts').updateOne(
+              { _id: cart._id },
+              { $set: { [`items.${i}.productSnapshot.price`]: price } }
+            );
+          }
         }
       }
     }

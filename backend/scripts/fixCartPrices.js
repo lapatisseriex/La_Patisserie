@@ -15,31 +15,48 @@ db.once('open', async () => {
   console.log('Connected to MongoDB');
   
   try {
-    // Find cart items without price in productSnapshot
-    const cartItems = await db.collection('cartitems').find({
-      $or: [
-        { 'productSnapshot.price': { $exists: false } },
-        { 'productSnapshot.price': 0 },
-        { 'productSnapshot.price': null }
-      ]
+    // Find carts with items missing price in productSnapshot
+    const carts = await db.collection('carts').find({
+      'items': {
+        $elemMatch: {
+          $or: [
+            { 'productSnapshot.price': { $exists: false } },
+            { 'productSnapshot.price': 0 },
+            { 'productSnapshot.price': null }
+          ]
+        }
+      }
     }).toArray();
     
-    console.log(`Found ${cartItems.length} cart items to fix`);
+    console.log(`Found ${carts.length} carts to fix`);
     
-    for (const item of cartItems) {
-      // Get the product
-      const product = await db.collection('products').findOne({ 
-        _id: new mongoose.Types.ObjectId(item.product) 
-      });
+    for (const cart of carts) {
+      let updated = false;
       
-      if (product && product.variants && product.variants.length > 0) {
-        const price = product.variants[0].price;
-        console.log(`Fixing ${item.productSnapshot.name}: ₹${price}`);
+      for (let i = 0; i < cart.items.length; i++) {
+        const item = cart.items[i];
         
-        await db.collection('cartitems').updateOne(
-          { _id: item._id },
-          { $set: { 'productSnapshot.price': price } }
-        );
+        if (!item.productSnapshot?.price || item.productSnapshot.price === 0) {
+          // Get the product
+          const product = await db.collection('products').findOne({ 
+            _id: new mongoose.Types.ObjectId(item.product) 
+          });
+          
+          if (product && product.variants && product.variants.length > 0) {
+            const price = product.variants[0].price;
+            console.log(`Fixing ${item.productSnapshot?.name || 'Unknown'}: ₹${price}`);
+            
+            await db.collection('carts').updateOne(
+              { _id: cart._id },
+              { $set: { [`items.${i}.productSnapshot.price`]: price } }
+            );
+            updated = true;
+          }
+        }
+      }
+      
+      if (updated) {
+        console.log(`Updated cart for user: ${cart.user}`);
       }
     }
     

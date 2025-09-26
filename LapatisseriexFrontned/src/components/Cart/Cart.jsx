@@ -19,6 +19,9 @@ const Cart = () => {
     appliedCoupon,
     couponDiscount
   } = useCart();
+
+  // Debug cart items
+  console.log('🛒 Cart component - cartItems:', cartItems?.length, 'items');
   
   // Use our hooks
   const { user } = useAuth();
@@ -117,25 +120,29 @@ const Cart = () => {
     <ShopClosureOverlay overlayType="page" showWhenClosed={!isOpen}>
       <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center mb-6">
-          <Link to="/products" className="flex items-center text-black transition-colors">
+        {/* Back button - hidden on mobile, visible on desktop with top padding */}
+        <div className="hidden md:flex items-center mb-6 pt-4">
+          <Link to="/products" className="flex items-center text-black hover:text-gray-600 transition-colors">
             <FaArrowLeft className="mr-2" />
-            <span>Continue Shopping</span>
+            <span>Back</span>
           </Link>
-          <h1 className="text-2xl font-bold text-center flex-grow">Shopping Box</h1>
         </div>
         
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-8 mb-8 lg:mb-0">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center pb-4 border-b border-white mb-6">
-                <h2 className="font-semibold text-lg text-black">Cart Items ({cartItems.length})</h2>
-                <div className="flex items-center text-sm">
-                  <FaMapMarkerAlt className={`${hasValidDeliveryLocation() ? 'text-black' : 'text-amber-500'} mr-1`} />
-                  <span className="mr-2">{user?.location ? `${user.location.area}, ${user.location.city}` : 'Select Location'}</span>
+              <div className="pb-4 border-b border-gray-200 mb-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="font-semibold text-lg text-black mb-1">Cart Items ({cartItems.length})</h2>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <FaMapMarkerAlt className={`${hasValidDeliveryLocation() ? 'text-gray-500' : 'text-amber-500'} mr-1`} />
+                      <span className="mr-2">{user?.location ? `${user.location.area}, ${user.location.city}` : 'Select Location'}</span>
+                    </div>
+                  </div>
                   <button 
-                    className="text-black"
+                    className="text-black hover:text-blue-600 transition-colors text-sm font-medium"
                     onClick={() => setShowLocationModal(true)}
                   >
                     {user?.location ? 'Change' : 'Select'}
@@ -159,62 +166,76 @@ const Cart = () => {
               {/* Cart item list */}
               <div className="space-y-6">
                 {cartItems.map((item) => (
-                  <div key={`${item._id || item.id}-${JSON.stringify(item.options)}`} className="flex flex-col md:flex-row border-b border-white pb-6">
-                    <div className="md:w-1/4 mb-4 md:mb-0">
+                  <div key={`${item._id || item.id}-${JSON.stringify(item.options)}`} className="flex border-b border-white pb-6">
+                    {/* Mobile-optimized image container */}
+                    <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 mr-4">
                       <img 
                         src={item.productSnapshot?.image || item.product?.images?.[0] || '/placeholder-image.jpg'} 
                         alt={item.productSnapshot?.name || item.product?.name || 'Product'} 
-                        className="w-full h-32 object-cover rounded-md"
+                        className="w-full h-full object-cover rounded-md"
                       />
                     </div>
-                    <div className="md:w-3/4 md:pl-6">
-                      <div className="flex justify-between mb-2">
-                        <h3 className="font-medium text-black">{item.productSnapshot?.name || item.product?.name || 'Product'}</h3>
+                    
+                    {/* Content section - takes remaining space */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium text-black text-sm md:text-base pr-2">{item.productSnapshot?.name || item.product?.name || 'Product'}</h3>
                         <button 
-                          onClick={() => removeFromCart(item._id || item.id, item.options)}
-                          className="text-black hover:text-red-500 transition-colors"
+                          onClick={() => {
+                            console.log('🗑️ Deleting cart item:', item._id || item.id);
+                            removeFromCart(item._id || item.id);
+                          }}
+                          className="text-black hover:text-red-500 transition-colors flex-shrink-0"
                         >
                           <FaTrash />
                         </button>
                       </div>
                       
-                      <div className="mb-4">
+                      {/* Product options */}
+                      <div className="mb-3">
                         {item.options?.weight && (
-                          <p className="text-sm text-black">Weight: {item.options.weight}</p>
+                          <p className="text-xs md:text-sm text-black">Weight: {item.options.weight}</p>
                         )}
                         {item.options?.flavor && (
-                          <p className="text-sm text-black">Flavor: {item.options.flavor}</p>
+                          <p className="text-xs md:text-sm text-black">Flavor: {item.options.flavor}</p>
                         )}
                         {item.options?.message && (
-                          <p className="text-sm text-black">Message: "{item.options.message}"</p>
+                          <p className="text-xs md:text-sm text-black">Message: "{item.options.message}"</p>
                         )}
                       </div>
                       
+                      {/* Quantity controls and price - mobile optimized */}
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
                           <button 
-                            onClick={() => updateQuantity(item._id || item.id, item.quantity - 1, item.options)}
-                            className="w-8 h-8 rounded-l-md bg-white flex items-center justify-center border border-white"
+                            onClick={() => {
+                              console.log('➖ Decreasing quantity for:', item._id || item.id, 'from', item.quantity, 'to', item.quantity - 1);
+                              updateQuantity(item._id || item.id, item.quantity - 1);
+                            }}
+                            className="w-7 h-7 md:w-8 md:h-8 rounded-l-md bg-white flex items-center justify-center border border-white text-sm"
                           >
                             -
                           </button>
                           <input
                             type="text"
-                            className="w-10 h-8 text-center text-sm border-t border-b border-white"
+                            className="w-8 h-7 md:w-10 md:h-8 text-center text-xs md:text-sm border-t border-b border-white"
                             value={item.quantity}
                             readOnly
                           />
                           <button
-                            onClick={() => updateQuantity(item._id || item.id, item.quantity + 1, item.options)}
-                            className="w-8 h-8 rounded-r-md bg-white flex items-center justify-center border border-white"
+                            onClick={() => {
+                              console.log('➕ Increasing quantity for:', item._id || item.id, 'from', item.quantity, 'to', item.quantity + 1);
+                              updateQuantity(item._id || item.id, item.quantity + 1);
+                            }}
+                            className="w-7 h-7 md:w-8 md:h-8 rounded-r-md bg-white flex items-center justify-center border border-white text-sm"
                           >
                             +
                           </button>
                         </div>
                         
                         <div className="text-right">
-                          <div className="font-medium text-black">₹{Math.round((item.productSnapshot?.price || item.product?.variants?.[0]?.price || 0) * item.quantity)}</div>
-                          <div className="text-sm text-black">₹{Math.round(item.productSnapshot?.price || item.product?.variants?.[0]?.price || 0)} each</div>
+                          <div className="font-medium text-black text-sm md:text-base">₹{Math.round((item.productSnapshot?.price || item.product?.variants?.[0]?.price || 0) * item.quantity)}</div>
+                          <div className="text-xs md:text-sm text-black">₹{Math.round(item.productSnapshot?.price || item.product?.variants?.[0]?.price || 0)} each</div>
                         </div>
                       </div>
                     </div>

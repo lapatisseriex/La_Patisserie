@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext/AuthContext';
 import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';
 import HandpickedForYou from './HandpickedForYou';
-import CartSection from './CartSection';
+import CartPickedForYou from './CartPickedForYou';
 import FavoritesSection from './FavoritesSection';
 import RecentlyViewedSection from './RecentlyViewedSection';
 import CategorySwiper from './categorySwiper';
@@ -171,6 +171,11 @@ const Home = () => {
         <RecentlyViewedSection />
       </section>
 
+      {/* Cart Picked for You Section - Shows cart items + recommendations */}
+      <section className="w-full">
+        <CartPickedForYou />
+      </section>
+
       {/* Browse Categories Section */}
       <section className="w-full">
         <CategorySwiper 
@@ -188,10 +193,6 @@ const Home = () => {
 
       <section ref={bestSellersRef} className="w-full">
         <BestSellers products={bestSellersProducts} loading={productsLoading} />
-      </section>
-
-      <section className="w-full">
-        <CartSection />
       </section>
 
       <section ref={handpickedRef} className="w-full">
