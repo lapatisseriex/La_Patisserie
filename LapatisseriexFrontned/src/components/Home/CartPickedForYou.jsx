@@ -6,7 +6,7 @@ import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 
 const CartPickedForYou = () => {
-  const { cartItems, cartInitialized } = useCart();
+  const { cartItems } = useCart();
   const { fetchProducts } = useProduct();
   const { user } = useAuth();
   const [recommendedProducts, setRecommendedProducts] = useState([]);
@@ -24,100 +24,22 @@ const CartPickedForYou = () => {
           return;
         }
 
-        // Debug: Log cart items structure
-        console.log('🔍 Cart items structure:', cartItems.map(item => ({
-          name: item.productSnapshot?.name,
-          category: item.productSnapshot?.category,
-          product: item.product
-        })));
-
-        // Get unique categories from cart items - handle both category names and IDs
-        const cartCategories = [...new Set(
-          cartItems
-            .map(item => {
-              // Get category from productSnapshot
-              const category = item.productSnapshot?.category;
-              console.log('🔍 Cart item category:', category, 'for product:', item.productSnapshot?.name);
-              return category;
-            })
-            .filter(category => category) // Remove undefined/null categories
-        )];
-
-        console.log('🛒 Cart categories extracted:', cartCategories);
-
-        if (cartCategories.length === 0) {
-          console.log('❌ No categories found in cart items');
-          setRecommendedProducts([]);
-          setLoading(false);
-          return;
-        }
-
         // Get product IDs that are already in cart to exclude them from recommendations
-        const cartProductIds = cartItems.map(item => item.product);
+        const cartProductIds = cartItems.map(item => item.productId);
         console.log('🛒 Cart product IDs to exclude:', cartProductIds);
 
-        // Fetch products and filter by categories
+        // Fetch products and show popular ones (excluding items already in cart)
         const result = await fetchProducts({
-          limit: 50, // Fetch more products for better filtering
+          limit: 20,
           sort: 'rating:-1' // Sort by highest rated first
         });
 
-        console.log('🔍 Total products fetched:', result.products.length);
-
-        // Debug: Log all product categories vs cart categories
-        const allProductCategories = result.products.map(p => ({
-          name: p.name,
-          categoryName: p.category?.name,
-          categoryId: p.category?._id
-        }));
-        console.log('🔍 First 10 product categories:', allProductCategories.slice(0, 10));
-        console.log('🔍 Cart categories to match:', cartCategories);
+        // Filter out products already in cart and take first 6
+        const recommendedProducts = result.products
+          .filter(product => !cartProductIds.includes(product._id))
+          .slice(0, 6);
         
-        // Check if any cart categories match any product categories
-        const potentialMatches = result.products.filter(p => 
-          cartCategories.includes(p.category?.name) || 
-          cartCategories.includes(p.category?._id)
-        );
-        console.log('🔍 Potential category matches found:', potentialMatches.length);
-
-        // Filter products that belong to same categories as cart items
-        let categoryMatchedProducts = result.products.filter(product => {
-          const productCategoryName = product.category?.name;
-          const productCategoryId = product.category?._id;
-          
-          // Check if product category matches any cart category (by name or ID)
-          const matchesCategory = cartCategories.some(cartCategory => {
-            return cartCategory === productCategoryName || 
-                   cartCategory === productCategoryId ||
-                   cartCategory === product.category;
-          });
-          
-          // Also exclude products already in cart
-          const notInCart = !cartProductIds.includes(product._id);
-          
-          if (matchesCategory && notInCart) {
-            console.log('✅ Category match found:', product.name, 'category:', productCategoryName);
-          }
-          
-          return matchesCategory && notInCart;
-        });
-
-        console.log('🎯 Category-matched products found:', categoryMatchedProducts.length);
-        
-        // If we have category matches, prioritize them
-        if (categoryMatchedProducts.length > 0) {
-          // Shuffle category-matched products and take up to 6
-          const shuffledCategoryProducts = [...categoryMatchedProducts].sort(() => Math.random() - 0.5);
-          setRecommendedProducts(shuffledCategoryProducts.slice(0, 6));
-          console.log('✅ Showing category-based recommendations:', shuffledCategoryProducts.slice(0, 6).length, 'products');
-        } else {
-          // Fallback: show popular products if no category matches found
-          console.log('⚠️ No category matches found, showing popular products as fallback');
-          const fallbackProducts = result.products
-            .filter(product => !cartProductIds.includes(product._id))
-            .slice(0, 6);
-          setRecommendedProducts(fallbackProducts);
-        }
+        setRecommendedProducts(recommendedProducts);
         
       } catch (err) {
         console.error("Error loading cart-based recommendations:", err);
@@ -127,46 +49,11 @@ const CartPickedForYou = () => {
       }
     };
 
-    // Only load recommendations when cart is initialized - REMOVE cartItems dependency to prevent auto-refresh
-    if (cartInitialized) {
-      loadCartRecommendations();
-    }
-  }, [cartInitialized, fetchProducts, user]); // Removed cartItems from dependency array
+    loadCartRecommendations();
+  }, [cartItems, fetchProducts, user]);
 
-  // Separate effect to reload recommendations only when cart structure changes significantly
-  // (not on every quantity update)
-  useEffect(() => {
-    // Only reload if cart went from empty to having items, or categories changed significantly
-    if (cartItems && cartItems.length > 0 && cartInitialized) {
-      const currentCategories = [...new Set(
-        cartItems.map(item => item.productSnapshot?.category).filter(Boolean)
-      )];
-      
-      // Check if we have different categories than what we're showing recommendations for
-      const currentRecommendationCategories = [...new Set(
-        recommendedProducts.map(product => product.category?.name).filter(Boolean)
-      )];
-      
-      const categoriesChanged = JSON.stringify(currentCategories.sort()) !== 
-                               JSON.stringify(currentRecommendationCategories.sort());
-      
-      if (categoriesChanged && recommendedProducts.length === 0) {
-        console.log('🔄 Cart categories changed or no recommendations, reloading...');
-        // Trigger a reload by updating a state that will cause the main effect to re-run
-        setLoading(true);
-        // Re-trigger the main effect indirectly
-        setTimeout(() => {
-          if (cartInitialized) {
-            // Force re-evaluation by clearing and reloading
-            setRecommendedProducts([]);
-          }
-        }, 100);
-      }
-    }
-  }, [cartItems?.length, cartInitialized]); // Only trigger on cart length changes
-
-  // Don't render section if no user, no cart items, or no recommendations
-  if (!user || !cartItems || cartItems.length === 0 || 
+  // Don't render section if no cart items, or no recommendations
+  if (!cartItems || cartItems.length === 0 || 
       (recommendedProducts.length === 0 && !loading)) {
     return null;
   }

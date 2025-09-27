@@ -9,7 +9,39 @@ import ShopClosureOverlay from '../common/ShopClosureOverlay';
 
 const Cart = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
-  const { cartItems, cartTotal, cartCount, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { 
+    cartItems, 
+    cartTotal, 
+    updateQuantity, 
+    removeFromCart, 
+    applyCoupon,
+    removeCoupon,
+    appliedCoupon,
+    couponDiscount,
+    deduplicateCart
+  } = useCart();
+
+  // Debug cart items
+  console.log('🛒 Cart component - cartItems:', cartItems?.length, 'items');
+  
+  // Check for duplicates in cart display
+  if (cartItems && cartItems.length > 0) {
+    const productCounts = {};
+    cartItems.forEach((item, index) => {
+      const productId = item.product;
+      if (productCounts[productId]) {
+        productCounts[productId].count++;
+        productCounts[productId].items.push({ index, item });
+      } else {
+        productCounts[productId] = { count: 1, items: [{ index, item }] };
+      }
+    });
+    
+    const duplicates = Object.entries(productCounts).filter(([_, data]) => data.count > 1);
+    if (duplicates.length > 0) {
+      console.error('🚨 DUPLICATE PRODUCTS IN CART DISPLAY:', duplicates);
+    }
+  }
   
   // Use our hooks
   const { user } = useAuth();
@@ -26,8 +58,6 @@ const Cart = () => {
   const [couponError, setCouponError] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [couponDiscount, setCouponDiscount] = useState(0);
   
   const navigate = useNavigate();
 
@@ -39,37 +69,8 @@ const Cart = () => {
   
   // Grand total
   const grandTotal = cartTotal + deliveryCharge + taxAmount - couponDiscount;
-
-  const handleQuantityChange = (productId, newQuantity) => {
-    updateQuantity(productId, newQuantity);
-  };
-
-  // Simple coupon system (you can enhance this later)
-  const availableCoupons = {
-    'WELCOME10': { discount: 50, minOrder: 200 },
-    'SAVE20': { discount: 100, minOrder: 500 },
-    'FIRST50': { discount: 150, minOrder: 800 }
-  };
-
-  // Handle coupon application
-  const applyCoupon = (code) => {
-    const coupon = availableCoupons[code.toUpperCase()];
-    if (!coupon) {
-      return { success: false, message: 'Invalid coupon code' };
-    }
-    if (cartTotal < coupon.minOrder) {
-      return { success: false, message: `Minimum order of ₹${coupon.minOrder} required` };
-    }
-    setAppliedCoupon(code.toUpperCase());
-    setCouponDiscount(coupon.discount);
-    return { success: true, message: `Coupon applied! You saved ₹${coupon.discount}` };
-  };
-
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponDiscount(0);
-  };
   
+  // Handle coupon application
   const handleApplyCoupon = () => {
     if (!couponCode.trim()) {
       setCouponMessage('Please enter a coupon code');
@@ -97,32 +98,32 @@ const Cart = () => {
   
   // Handle checkout
   const handleCheckout = async () => {
-    try {
-      // Check shop status before proceeding
-      const currentStatus = await checkShopStatusNow();
-      
-      if (!currentStatus.isOpen) {
-        // Shop is closed, the UI will show the overlay
-        return;
-      }
-      
-      navigate('/reservedmethod');
-    } catch (error) {
-      console.error('Error during checkout:', error);
+    // First check if shop is still open in real-time
+    const currentStatus = await checkShopStatusNow();
+    
+    if (!currentStatus.isOpen) {
+      // Shop is now closed, the UI should update automatically
+      return;
+    }
+    
+    if (hasValidDeliveryLocation()) {
+      navigate('/payment');
+    } else {
+      setShowLocationModal(true);
     }
   };
-
+  
   // If cart is empty
   if (cartItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8 min-h-screen">
         <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
           <div className="text-center py-10">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FaShoppingCart className="text-gray-400 text-4xl" />
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+              <FaShoppingCart className="text-white text-4xl" />
             </div>
             <h2 className="text-2xl font-semibold text-black mb-2">Your cart is empty</h2>
-            <p className="text-gray-600 mb-8">Looks like you haven't added any items to your cart yet</p>
+            <p className="text-black mb-8">Looks like you haven't added any items to your cart yet</p>
             <Link 
               to="/products" 
               className="bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium py-3 px-8 rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
@@ -156,6 +157,14 @@ const Cart = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <h2 className="font-semibold text-lg text-black">Cart Items ({cartItems.length})</h2>
+                      {/* Temporary debug button for deduplication */}
+                      <button 
+                        onClick={deduplicateCart}
+                        className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                        title="Fix duplicates (debug)"
+                      >
+                        Fix Duplicates
+                      </button>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <FaMapMarkerAlt className={`${hasValidDeliveryLocation() ? 'text-gray-500' : 'text-amber-500'} mr-1`} />
@@ -187,12 +196,12 @@ const Cart = () => {
               {/* Cart item list */}
               <div className="space-y-6">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="flex border-b border-gray-100 pb-6">
+                  <div key={`${item._id || item.id}-${JSON.stringify(item.options)}`} className="flex border-b border-white pb-6">
                     {/* Mobile-optimized image container */}
                     <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 mr-4">
                       <img 
-                        src={item.image || '/placeholder-image.jpg'} 
-                        alt={item.name || 'Product'} 
+                        src={item.productSnapshot?.image || item.product?.images?.[0] || '/placeholder-image.jpg'} 
+                        alt={item.productSnapshot?.name || item.product?.name || 'Product'} 
                         className="w-full h-full object-cover rounded-md"
                       />
                     </div>
@@ -200,16 +209,29 @@ const Cart = () => {
                     {/* Content section - takes remaining space */}
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-black text-sm md:text-base pr-2">{item.name || 'Product'}</h3>
+                        <h3 className="font-medium text-black text-sm md:text-base pr-2">{item.productSnapshot?.name || item.product?.name || 'Product'}</h3>
                         <button 
                           onClick={() => {
-                            console.log('🗑️ Deleting cart item:', item.productId);
-                            removeFromCart(item.productId);
+                            console.log('🗑️ Deleting cart item:', item._id || item.id);
+                            removeFromCart(item._id || item.id);
                           }}
-                          className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                          className="text-black hover:text-red-500 transition-colors flex-shrink-0"
                         >
                           <FaTrash />
                         </button>
+                      </div>
+                      
+                      {/* Product options */}
+                      <div className="mb-3">
+                        {item.options?.weight && (
+                          <p className="text-xs md:text-sm text-black">Weight: {item.options.weight}</p>
+                        )}
+                        {item.options?.flavor && (
+                          <p className="text-xs md:text-sm text-black">Flavor: {item.options.flavor}</p>
+                        )}
+                        {item.options?.message && (
+                          <p className="text-xs md:text-sm text-black">Message: "{item.options.message}"</p>
+                        )}
                       </div>
                       
                       {/* Quantity controls and price - mobile optimized */}
@@ -217,33 +239,33 @@ const Cart = () => {
                         <div className="flex items-center">
                           <button 
                             onClick={() => {
-                              console.log('➖ Decreasing quantity for:', item.productId, 'from', item.quantity, 'to', item.quantity - 1);
-                              handleQuantityChange(item.productId, item.quantity - 1);
+                              console.log('➖ Decreasing quantity for:', item._id || item.id, 'from', item.quantity, 'to', item.quantity - 1);
+                              updateQuantity(item._id || item.id, item.quantity - 1);
                             }}
-                            className="w-7 h-7 md:w-8 md:h-8 rounded-l-md bg-gray-100 flex items-center justify-center border border-gray-200 text-sm"
+                            className="w-7 h-7 md:w-8 md:h-8 rounded-l-md bg-white flex items-center justify-center border border-white text-sm"
                           >
                             -
                           </button>
                           <input
                             type="text"
-                            className="w-8 h-7 md:w-10 md:h-8 text-center text-xs md:text-sm border-t border-b border-gray-200"
+                            className="w-8 h-7 md:w-10 md:h-8 text-center text-xs md:text-sm border-t border-b border-white"
                             value={item.quantity}
                             readOnly
                           />
                           <button
                             onClick={() => {
-                              console.log('➕ Increasing quantity for:', item.productId, 'from', item.quantity, 'to', item.quantity + 1);
-                              handleQuantityChange(item.productId, item.quantity + 1);
+                              console.log('➕ Increasing quantity for:', item._id || item.id, 'from', item.quantity, 'to', item.quantity + 1);
+                              updateQuantity(item._id || item.id, item.quantity + 1);
                             }}
-                            className="w-7 h-7 md:w-8 md:h-8 rounded-r-md bg-gray-100 flex items-center justify-center border border-gray-200 text-sm"
+                            className="w-7 h-7 md:w-8 md:h-8 rounded-r-md bg-white flex items-center justify-center border border-white text-sm"
                           >
                             +
                           </button>
                         </div>
                         
                         <div className="text-right">
-                          <div className="font-medium text-black text-sm md:text-base">₹{Math.round(item.price * item.quantity)}</div>
-                          <div className="text-xs md:text-sm text-gray-500">₹{Math.round(item.price)} each</div>
+                          <div className="font-medium text-black text-sm md:text-base">₹{Math.round((item.productSnapshot?.price || item.product?.variants?.[0]?.price || 0) * item.quantity)}</div>
+                          <div className="text-xs md:text-sm text-black">₹{Math.round(item.productSnapshot?.price || item.product?.variants?.[0]?.price || 0)} each</div>
                         </div>
                       </div>
                     </div>
@@ -256,14 +278,14 @@ const Cart = () => {
           {/* Order Summary */}
           <div className="lg:col-span-4">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-[130px] md:top-[140px]">
-              <h2 className="font-semibold text-lg text-black pb-4 border-b border-gray-200 mb-4">
+              <h2 className="font-semibold text-lg text-black pb-4 border-b border-white mb-4">
                 Order Summary
               </h2>
               
               {/* Coupon Code */}
               <div className="mb-6">
                 <div className="flex items-center mb-2">
-                  <FaTag className="text-gray-600 mr-2" />
+                  <FaTag className="text-black mr-2" />
                   <h3 className="font-medium">Have a coupon?</h3>
                 </div>
                 
@@ -288,7 +310,7 @@ const Cart = () => {
                       <input
                         type="text"
                         placeholder="Enter coupon code"
-                        className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-pink-400 focus:border-pink-400"
+                        className="flex-grow px-3 py-2 border border-white rounded-l-md focus:outline-none focus:ring-1 focus:ring-white focus:border-white"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
                       />
@@ -304,15 +326,15 @@ const Cart = () => {
                         {couponMessage}
                       </p>
                     )}
-                    <div className="text-xs text-gray-500 mt-2">
-                      Try: WELCOME10, SAVE20, FIRST50
+                    <div className="text-xs text-black mt-2">
+                      Try: SWEET10, WELCOME20, FLAT100
                     </div>
                   </div>
                 )}
               </div>
               
               {/* Price Breakdown */}
-              <div className="space-y-3 text-gray-700">
+              <div className="space-y-3 text-black">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span className="font-medium">₹{cartTotal}</span>
@@ -341,12 +363,12 @@ const Cart = () => {
                   </div>
                 )}
                 
-                <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="border-t border-white pt-3 mt-3">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span>₹{grandTotal.toFixed(2)}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-black mt-1">
                     (Including all taxes)
                   </p>
                 </div>
@@ -381,19 +403,19 @@ const Cart = () => {
             <h3 className="text-lg font-semibold text-black mb-4">Select Delivery Location</h3>
             
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-black mb-3">
                 We currently deliver to the following locations:
               </p>
               
               {locationsLoading ? (
-                <div className="py-4 text-center text-gray-600">Loading locations...</div>
+                <div className="py-4 text-center text-black">Loading locations...</div>
               ) : locations.length > 0 ? (
-                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                <div className="max-h-60 overflow-y-auto border border-white rounded-md">
                   {locations.map(location => (
                     <div 
                       key={location._id}
-                      className={`p-3 border-b border-gray-100 last:border-0 cursor-pointer ${
-                        selectedLocationId === location._id ? 'bg-pink-50' : 'hover:bg-gray-50'
+                      className={`p-3 border-b border-white last:border-0 cursor-pointer ${
+                        selectedLocationId === location._id ? 'bg-pink-50' : 'hover:bg-gray-100'
                       }`}
                       onClick={() => setSelectedLocationId(location._id)}
                     >
@@ -401,13 +423,13 @@ const Cart = () => {
                         <input 
                           type="radio"
                           name="location"
-                          className="mt-1 text-pink-500 focus:ring-pink-400"
+                          className="mt-1 text-black focus:ring-white"
                           checked={selectedLocationId === location._id}
                           onChange={() => setSelectedLocationId(location._id)}
                         />
                         <div className="ml-3">
                           <p className="font-medium text-black">{location.area}</p>
-                          <p className="text-sm text-gray-600">{location.city}, {location.pincode}</p>
+                          <p className="text-sm text-black">{location.city}, {location.pincode}</p>
                         </div>
                       </div>
                     </div>
@@ -423,17 +445,17 @@ const Cart = () => {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowLocationModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-white rounded-md text-black transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleChangeLocation}
                 disabled={!selectedLocationId || !locations.length}
-                className={`px-4 py-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-md transition-colors ${
+                className={`px-4 py-2 bg-black text-white rounded-md transition-colors ${
                   (!selectedLocationId || !locations.length) 
                     ? 'opacity-50 cursor-not-allowed' 
-                    : 'hover:from-rose-500 hover:to-pink-600'
+                    : 'hover:bg-gray-800'
                 }`}
               >
                 Update Location
@@ -448,3 +470,9 @@ const Cart = () => {
 };
 
 export default Cart;
+
+
+
+
+
+

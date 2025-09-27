@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
 import { useProduct } from '../context/ProductContext/ProductContext';
@@ -17,7 +17,7 @@ const ProductDisplayPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { getProduct, fetchProducts } = useProduct();
-  const { addToCart, getProductQuantity, updateProductQuantity } = useCart();
+  const { addToCart, getItemQuantity, updateQuantity, cartItems, isLoading } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { fetchRecentlyViewed, trackProductView } = useRecentlyViewed();
   const { user } = useAuth();
@@ -40,11 +40,13 @@ const ProductDisplayPage = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [forceCartUpdate, setForceCartUpdate] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isCareInstructionsOpen, setIsCareInstructionsOpen] = useState(false);
   const [isDeliveryInfoOpen, setIsDeliveryInfoOpen] = useState(false);
+  const [showReservationModal, setShowReservationModal] = useState(false);
   
   // References to the main "Reserve Yours" buttons (mobile & desktop) to determine when to show sticky bars
   const reserveButtonMobileRef = useRef(null);
@@ -91,7 +93,25 @@ const ProductDisplayPage = () => {
   const [showMobileStickyReserve, setShowMobileStickyReserve] = useState(false);
   const productInfoRef = useRef(null);
 
-  const currentCartQuantity = getProductQuantity(productId);
+  // Calculate current cart quantity - ensure it updates when cart changes
+  const currentCartQuantity = useMemo(() => {
+    if (!product?._id) return 0;
+    return getItemQuantity(product._id);
+  }, [product?._id, getItemQuantity, cartItems]);
+  
+  // Debug cart state
+  useEffect(() => {
+    if (product) {
+      console.log('🔍 ProductDisplayPage - Cart State Debug:', {
+        productId: product._id,
+        urlProductId: productId,
+        currentCartQuantity,
+        isLoading,
+        cartItemsLength: cartItems.length,
+        shouldShowQuantity: currentCartQuantity > 0
+      });
+    }
+  }, [product, productId, currentCartQuantity, isLoading, cartItems]);
 
   // Generate consistent random rating for each product based on product ID
   const getProductRating = (productId) => {
@@ -305,30 +325,67 @@ const ProductDisplayPage = () => {
     };
   }, [reserveButtonMobileRef, reserveButtonDesktopRef, showStickyNavbar, showStickyBreadcrumb, showMobileStickyReserve]);
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (!product || totalStock === 0) return;
+    
     try {
-      await addToCart(product, 1);
+      addToCart(product, 1);
     } catch (error) {
       console.error('Error adding to cart:', error);
     }
   };
 
-  const handleReserve = (event) => {
+  const handleReserve = async (event) => {
     event.preventDefault();
     event.stopPropagation();
-    console.log('🎯 Reserve button clicked - redirecting to cart');
-    // Simply redirect to cart page
+    
+    if (!product) {
+      console.log('❌ No product found');
+      return;
+    }
+    
+    const currentQuantity = getItemQuantity(product._id);
+    console.log('🔍 Current quantity in cart:', currentQuantity);
+    console.log('🔍 Product details:', { id: product._id, name: product.name, price: product.price });
+    
+    if (currentQuantity > 0) {
+      // Product already in cart - show custom modal
+      console.log('📦 Product already in cart, showing modal');
+      setShowReservationModal(true);
+    } else {
+      // Product not in cart - add one and redirect
+      try {
+        console.log('🎯 Reserve button clicked - adding 1 item to cart');
+        console.log('🛒 About to call addToCart with:', product);
+        
+        // Add to cart and wait for completion
+        await addToCart(product, 1);
+        
+        console.log('✅ Product added to cart successfully');
+        navigate('/cart');
+        
+      } catch (error) {
+        console.error('❌ Error reserving product:', error);
+        alert('Failed to add product to cart. Please try again.');
+      }
+    }
+  };
+
+  const handleGoToCart = () => {
+    setShowReservationModal(false);
     navigate('/cart');
   };
 
-  const handleBuyNow = async () => {
+  const handleCloseReservationModal = () => {
+    setShowReservationModal(false);
+  };
+
+  const handleBuyNow = () => {
     if (!product || totalStock === 0) return;
     try {
-      const currentQuantity = getProductQuantity(product._id);
+      const currentQuantity = getItemQuantity(product._id);
       if (currentQuantity === 0) {
-        // Add to cart without spark animation
-        await addToCart(product, 1);
+        addToCart(product, 1);
       }
       navigate('/cart');
     } catch (error) {
@@ -338,7 +395,12 @@ const ProductDisplayPage = () => {
 
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity < 0) return;
-    updateProductQuantity(product._id, newQuantity);
+    
+    try {
+      updateQuantity(product._id, newQuantity);
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+    }
   };
 
   const handleFavoriteToggle = async () => {
@@ -541,19 +603,20 @@ const ProductDisplayPage = () => {
                         e.stopPropagation();
                         handleQuantityChange(currentCartQuantity - 1);
                       }}
-                      className="w-8 sm:w-9 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors rounded-l-lg"
+                      disabled={isAddingToCart}
+                      className="w-8 sm:w-9 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg"
                     >
                       <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
                     <span className="px-2 sm:px-3 text-black font-semibold text-sm min-w-[2rem] text-center">
-                      {currentCartQuantity}
+                      {isAddingToCart ? '...' : currentCartQuantity}
                     </span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleQuantityChange(currentCartQuantity + 1);
                       }}
-                      disabled={currentCartQuantity >= totalStock}
+                      disabled={currentCartQuantity >= totalStock || isAddingToCart}
                       className="w-8 sm:w-9 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
                     >
                       <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1633,6 +1696,47 @@ const ProductDisplayPage = () => {
           initialIndex={selectedImageIndex}
           onClose={() => setIsImageModalOpen(false)}
         />
+      )}
+
+      {/* Reservation Modal */}
+      {showReservationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+            <div className="text-center">
+              {/* Icon */}
+              <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <ShoppingCart className="w-8 h-8 text-green-600" />
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Already Reserved!
+              </h3>
+              
+              {/* Message */}
+              <p className="text-gray-600 mb-6">
+                This product is already reserved in your cart. Would you like to go to cart to view your items?
+              </p>
+              
+              {/* Buttons */}
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={handleCloseReservationModal}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Stay Here
+                </button>
+                <button
+                  onClick={handleGoToCart}
+                  className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Go to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

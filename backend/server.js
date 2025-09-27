@@ -21,6 +21,7 @@ import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
 import bannerRoutes from './routes/bannerRoutes.js';
 import timeSettingsRoutes from './routes/timeSettingsRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
+import newCartRoutes from './routes/newCartRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -139,6 +140,7 @@ const startServer = async () => {
     app.use('/api/banners', bannerRoutes);
     app.use('/api/time-settings', timeSettingsRoutes);
     app.use('/api/cart', cartRoutes);
+    app.use('/api/newcart', newCartRoutes);
 
     // Health check endpoint
     app.get('/health', (req, res) => {
