@@ -109,7 +109,14 @@ const CategorySwiperHome = ({
     );
   }
 
-  if (!categories.length) {
+  // Filter out special images category if it somehow gets through
+  const filteredCategories = categories.filter(category => 
+    category.name !== '__SPECIAL_IMAGES__' && 
+    !category.name?.includes('__SPECIAL_IMAGES__') &&
+    !category.name?.includes('_SPEC')
+  );
+
+  if (!filteredCategories.length) {
     return (
       <div className="text-center text-gray-500 py-4 font-sans">
         No categories found.
@@ -141,9 +148,9 @@ const CategorySwiperHome = ({
     const firstRow = [];
     const secondRow = [];
 
-    const half = Math.ceil(categories.length / 2);
-    const firstHalf = categories.slice(0, half);
-    const secondHalf = categories.slice(half);
+    const half = Math.ceil(filteredCategories.length / 2);
+    const firstHalf = filteredCategories.slice(0, half);
+    const secondHalf = filteredCategories.slice(half);
 
     const totalSpecial = specialButtons.length;
     const firstCount = Math.ceil(totalSpecial / 2);

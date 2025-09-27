@@ -706,7 +706,11 @@ const Products = () => {
                   }}>
                     All Categories
                   </h2>
-                  {categories.map(category => {
+                  {categories.filter(category => 
+                    category.name !== '__SPECIAL_IMAGES__' && 
+                    !category.name?.includes('__SPECIAL_IMAGES__') &&
+                    !category.name?.includes('_SPEC')
+                  ).map(category => {
                     // Show all categories including selected one
                     const isSelectedCategory = category._id === selectedCategory;
                     return (

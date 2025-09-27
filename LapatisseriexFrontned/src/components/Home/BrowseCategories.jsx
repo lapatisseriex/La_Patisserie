@@ -8,8 +8,12 @@ const BrowseCategories = ({ categories }) => {
     return null;
   }
 
-  // Only use the real categories, no placeholders
-  const displayCategories = [...categories];
+  // Filter out special images category and use real categories
+  const displayCategories = categories.filter(category => 
+    category.name !== '__SPECIAL_IMAGES__' && 
+    !category.name?.includes('__SPECIAL_IMAGES__') &&
+    !category.name?.includes('_SPEC')
+  );
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 mb-2">

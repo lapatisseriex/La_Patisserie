@@ -113,7 +113,12 @@ const Header = ({ isAdminView = false }) => {
     }
     
     return dbCategories
-      .filter(category => category.isActive)
+      .filter(category => 
+        category.isActive && 
+        category.name !== '__SPECIAL_IMAGES__' && 
+        !category.name?.includes('__SPECIAL_IMAGES__') &&
+        !category.name?.includes('_SPEC')
+      )
       .map(category => ({
         _id: category._id,
         id: category._id,

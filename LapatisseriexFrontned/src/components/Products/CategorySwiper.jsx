@@ -175,7 +175,11 @@ const CategorySwiper = ({
                 </div>
               ))
           : categories.length > 0
-          ? categories.map((category) => (
+          ? categories.filter(category => 
+              category.name !== '__SPECIAL_IMAGES__' && 
+              !category.name?.includes('__SPECIAL_IMAGES__') &&
+              !category.name?.includes('_SPEC')
+            ).map((category) => (
               <div
                 key={category._id || category.id}
                 ref={(el) => categoryRefs.current[category._id || category.id] = el}

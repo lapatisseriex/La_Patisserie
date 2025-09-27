@@ -12,6 +12,9 @@ export const getCategories = asyncHandler(async (req, res) => {
   // Filter options
   const filter = {};
   
+  // Always exclude the special images category from regular category lists
+  filter.name = { $ne: '__SPECIAL_IMAGES__' };
+  
   // Add isActive filter if specified
   if (req.query.isActive !== undefined) {
     // If isActive query param is explicitly 'all', don't filter by active status
