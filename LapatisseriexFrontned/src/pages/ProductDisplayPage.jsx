@@ -46,7 +46,6 @@ const ProductDisplayPage = () => {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isCareInstructionsOpen, setIsCareInstructionsOpen] = useState(false);
   const [isDeliveryInfoOpen, setIsDeliveryInfoOpen] = useState(false);
-  const [showReservationModal, setShowReservationModal] = useState(false);
   
   // References to the main "Reserve Yours" buttons (mobile & desktop) to determine when to show sticky bars
   const reserveButtonMobileRef = useRef(null);
@@ -345,25 +344,37 @@ const ProductDisplayPage = () => {
     }
     
     const currentQuantity = getItemQuantity(product._id);
+    console.log('🔍 Reserve button clicked!');
     console.log('🔍 Current quantity in cart:', currentQuantity);
     console.log('🔍 Product details:', { id: product._id, name: product.name, price: product.price });
+    console.log('🔍 Cart items:', cartItems);
+    console.log('🔍 User status:', user ? 'logged in' : 'guest');
     
     if (currentQuantity > 0) {
-      // Product already in cart - show custom modal
-      console.log('📦 Product already in cart, showing modal');
-      setShowReservationModal(true);
+      // Product already in cart - just redirect
+      console.log('📦 Product already in cart (quantity:', currentQuantity, '), redirecting to cart');
+      try {
+        navigate('/cart');
+      } catch (navError) {
+        console.error('❌ Navigation error:', navError);
+        window.location.href = '/cart'; // Fallback navigation
+      }
     } else {
       // Product not in cart - add one and redirect
       try {
-        console.log('🎯 Reserve button clicked - adding 1 item to cart');
-        console.log('🛒 About to call addToCart with:', product);
-        
-        // Add to cart and wait for completion
+        console.log('🎯 Product not in cart, adding 1 item...');
         await addToCart(product, 1);
         
-        console.log('✅ Product added to cart successfully');
-        navigate('/cart');
-        
+        // Double check the cart was updated
+        const newQuantity = getItemQuantity(product._id);
+        console.log('✅ Product added successfully! New quantity:', newQuantity);
+        console.log('🔄 Navigating to cart...');
+        try {
+          navigate('/cart');
+        } catch (navError) {
+          console.error('❌ Navigation error:', navError);
+          window.location.href = '/cart'; // Fallback navigation
+        }
       } catch (error) {
         console.error('❌ Error reserving product:', error);
         alert('Failed to add product to cart. Please try again.');
@@ -371,14 +382,7 @@ const ProductDisplayPage = () => {
     }
   };
 
-  const handleGoToCart = () => {
-    setShowReservationModal(false);
-    navigate('/cart');
-  };
 
-  const handleCloseReservationModal = () => {
-    setShowReservationModal(false);
-  };
 
   const handleBuyNow = () => {
     if (!product || totalStock === 0) return;
@@ -1698,46 +1702,7 @@ const ProductDisplayPage = () => {
         />
       )}
 
-      {/* Reservation Modal */}
-      {showReservationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-            <div className="text-center">
-              {/* Icon */}
-              <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <ShoppingCart className="w-8 h-8 text-green-600" />
-              </div>
-              
-              {/* Title */}
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Already Reserved!
-              </h3>
-              
-              {/* Message */}
-              <p className="text-gray-600 mb-6">
-                This product is already reserved in your cart. Would you like to go to cart to view your items?
-              </p>
-              
-              {/* Buttons */}
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={handleCloseReservationModal}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Stay Here
-                </button>
-                <button
-                  onClick={handleGoToCart}
-                  className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  Go to Cart
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

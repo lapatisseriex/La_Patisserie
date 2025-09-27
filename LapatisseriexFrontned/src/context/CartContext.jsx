@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from './AuthContext/AuthContext';
 import newCartService from '../services/newCartService';
 
@@ -17,6 +17,7 @@ export const CartProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [dbCartLoaded, setDbCartLoaded] = useState(false);
   const { user } = useAuth();
+  const updateTimeoutRef = useRef({});
 
   // Load cart based on authentication status
   useEffect(() => {
@@ -122,21 +123,12 @@ export const CartProvider = ({ children }) => {
 
   // Add item to cart
   const addToCart = async (product, quantity = 1) => {
-    console.log('🛒 CartContext: addToCart called', {
-      product: product,
-      productId: product._id,
-      quantity: quantity,
-      user: user ? 'logged in' : 'guest'
-    });
-
     try {
       setIsLoading(true);
 
       if (user) {
         // User is logged in, add to database
-        console.log('👤 User logged in, adding to database...');
         const updatedCart = await newCartService.addToCart(product._id, quantity);
-        console.log('📦 Database cart response:', updatedCart);
         
         const dbCartItems = updatedCart.items.map(item => ({
           id: item._id,
@@ -148,29 +140,23 @@ export const CartProvider = ({ children }) => {
           addedAt: item.addedAt
         }));
         
-        console.log('💾 Setting cart items to:', dbCartItems);
         setCartItems(dbCartItems);
       } else {
         // Guest user, add to localStorage
-        console.log('👻 Guest user, adding to localStorage...');
         setCartItems(prevItems => {
-          console.log('📋 Previous cart items:', prevItems);
           const existingItemIndex = prevItems.findIndex(item => item.productId === product._id);
           
           if (existingItemIndex !== -1) {
             // Update existing item quantity
-            console.log('📝 Updating existing item at index:', existingItemIndex);
             const updatedItems = [...prevItems];
             updatedItems[existingItemIndex] = {
               ...updatedItems[existingItemIndex],
               quantity: updatedItems[existingItemIndex].quantity + quantity
             };
-            console.log('✏️ Updated items:', updatedItems);
             return updatedItems;
           } else {
             // Add new item
-            console.log('➕ Adding new item to cart');
-            const newItems = [...prevItems, {
+            return [...prevItems, {
               id: Date.now().toString(),
               productId: product._id,
               name: product.name,
@@ -179,13 +165,9 @@ export const CartProvider = ({ children }) => {
               quantity: quantity,
               addedAt: new Date().toISOString()
             }];
-            console.log('🆕 New items array:', newItems);
-            return newItems;
           }
         });
       }
-      
-      console.log('✅ CartContext: addToCart completed successfully');
     } catch (error) {
       console.error('❌ Error adding to cart:', error);
       throw error;
@@ -193,6 +175,24 @@ export const CartProvider = ({ children }) => {
       setIsLoading(false);
     }
   };
+
+  // Debounced database update function
+  const debouncedDatabaseUpdate = useCallback((productId, quantity) => {
+    // Clear existing timeout for this product
+    if (updateTimeoutRef.current[productId]) {
+      clearTimeout(updateTimeoutRef.current[productId]);
+    }
+
+    // Set new timeout
+    updateTimeoutRef.current[productId] = setTimeout(async () => {
+      try {
+        await newCartService.updateQuantity(productId, quantity);
+      } catch (error) {
+        console.error('❌ Error updating quantity in database:', error);
+      }
+      delete updateTimeoutRef.current[productId];
+    }, 300); // 300ms debounce
+  }, []);
 
   // Update item quantity
   const updateQuantity = async (productId, quantity) => {
@@ -202,28 +202,18 @@ export const CartProvider = ({ children }) => {
         return;
       }
 
+      // Optimistic update - update UI immediately
+      setCartItems(prevItems =>
+        prevItems.map(item =>
+          item.productId === productId
+            ? { ...item, quantity }
+            : item
+        )
+      );
+
       if (user) {
-        // Update in database
-        const updatedCart = await newCartService.updateQuantity(productId, quantity);
-        const dbCartItems = updatedCart.items.map(item => ({
-          id: item._id,
-          productId: item.productId,
-          name: item.productDetails.name,
-          price: item.productDetails.price,
-          image: item.productDetails.image,
-          quantity: item.quantity,
-          addedAt: item.addedAt
-        }));
-        setCartItems(dbCartItems);
-      } else {
-        // Update in localStorage
-        setCartItems(prevItems =>
-          prevItems.map(item =>
-            item.productId === productId
-              ? { ...item, quantity }
-              : item
-          )
-        );
+        // Debounced database update
+        debouncedDatabaseUpdate(productId, quantity);
       }
     } catch (error) {
       console.error('❌ Error updating quantity:', error);
@@ -284,7 +274,16 @@ export const CartProvider = ({ children }) => {
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 
-  const value = {
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(updateTimeoutRef.current).forEach(timeoutId => {
+        clearTimeout(timeoutId);
+      });
+    };
+  }, []);
+
+  const value = useMemo(() => ({
     cartItems,
     cartCount,
     cartTotal,
@@ -294,7 +293,7 @@ export const CartProvider = ({ children }) => {
     removeFromCart,
     clearCart,
     getItemQuantity
-  };
+  }), [cartItems, cartCount, cartTotal, isLoading, addToCart, updateQuantity, removeFromCart, clearCart, getItemQuantity]);
 
   return (
     <CartContext.Provider value={value}>

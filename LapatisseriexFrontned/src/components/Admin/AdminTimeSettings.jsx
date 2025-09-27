@@ -4,6 +4,8 @@ import { Clock, Save, Plus, Trash2, Calendar, AlertCircle } from 'lucide-react';
 const AdminTimeSettings = () => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
   const [settings, setSettings] = useState({
     weekday: {
       startTime: '09:00',
@@ -75,7 +77,7 @@ const AdminTimeSettings = () => {
       const idToken = await authUser.getIdToken(true);
       console.log('AdminTimeSettings: Got auth token, making API request...');
       
-      const response = await fetch('http://localhost:3000/api/time-settings', {
+      const response = await fetch(`${API_URL}/api/time-settings`, {
         headers: {
           'Authorization': `Bearer ${idToken}`
         }
@@ -124,7 +126,7 @@ const AdminTimeSettings = () => {
     try {
       setSaving(true);
       const idToken = await user.getIdToken(true);
-      const response = await fetch('http://localhost:3000/api/time-settings', {
+      const response = await fetch(`${API_URL}/api/time-settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +165,7 @@ const AdminTimeSettings = () => {
 
     try {
       const idToken = await user.getIdToken(true);
-      const response = await fetch('http://localhost:3000/api/time-settings/special-day', {
+      const response = await fetch(`${API_URL}/api/time-settings/special-day`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +204,7 @@ const AdminTimeSettings = () => {
 
     try {
       const idToken = await user.getIdToken(true);
-      const response = await fetch(`http://localhost:3000/api/time-settings/special-day/${date}`, {
+      const response = await fetch(`${API_URL}/api/time-settings/special-day/${date}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${idToken}`

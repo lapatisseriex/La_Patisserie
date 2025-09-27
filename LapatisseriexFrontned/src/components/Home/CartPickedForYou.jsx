@@ -34,10 +34,10 @@ const CartPickedForYou = () => {
           sort: 'rating:-1' // Sort by highest rated first
         });
 
-        // Filter out products already in cart and take first 6
+        // Filter out products already in cart and take first 3
         const recommendedProducts = result.products
           .filter(product => !cartProductIds.includes(product._id))
-          .slice(0, 6);
+          .slice(0, 3);
         
         setRecommendedProducts(recommendedProducts);
         
@@ -86,45 +86,10 @@ const CartPickedForYou = () => {
             Picked for Your Cart
           </h2>
           <p className="text-gray-600 text-sm">
-            Your cart items and similar recommendations
+            Recommended products for you
           </p>
         </div>
         
-        {/* Show current cart items first */}
-        {cartItems.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">In Your Cart</h3>
-
-          </div>
-            <div className="overflow-x-auto pb-4 scrollbar-hide" style={{ scrollBehavior: 'smooth' }}>
-              <div className="flex space-x-4 min-w-max px-1">
-                {cartItems.map(item => (
-                  <div key={item._id} className="flex-shrink-0 w-64 sm:w-72 bg-gray-50 rounded-lg p-4 border-2 border-orange-200 shadow-sm hover:shadow-md transition-all duration-200 active:scale-95">
-                    <div className="flex items-center space-x-3">
-                      {item.productSnapshot?.image && (
-                        <img 
-                          src={item.productSnapshot.image} 
-                          alt={item.productSnapshot?.name || 'Cart item'}
-                          className="w-12 h-12 object-cover rounded-lg"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">
-                          {item.productSnapshot?.name || 'Product'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Qty: {item.quantity} • ₹{item.productSnapshot?.price || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Show recommended products */}
         {recommendedProducts.length > 0 ? (
           <div>

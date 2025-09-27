@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import MediaDisplay from '../common/MediaDisplay';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
@@ -15,7 +15,6 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  const [showReservationModal, setShowReservationModal] = useState(false);
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
   const { addToCart, getItemQuantity, updateQuantity, cartItems } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -29,12 +28,11 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     return getItemQuantity(product._id);
   }, [product._id, getItemQuantity, cartItems]);
   
-  // Debug current quantity state and button transitions
-  useEffect(() => {
-    const shouldShowAdd = currentQuantity === 0;
-    const shouldShowQuantity = currentQuantity > 0;
-    console.log(`🔄 ${product.name}: currentQuantity = ${currentQuantity}, showAdd = ${shouldShowAdd}, showQuantity = ${shouldShowQuantity}, cartItems = ${cartItems?.length || 0}`);
-  }, [currentQuantity, product.name, cartItems?.length]);
+  // Memoize button state to prevent unnecessary re-renders
+  const buttonState = useMemo(() => ({
+    shouldShowAdd: currentQuantity === 0,
+    shouldShowQuantity: currentQuantity > 0
+  }), [currentQuantity]);
 
   // Generate consistent random rating for each product based on product ID
   const getProductRating = (productId) => {
@@ -148,14 +146,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     const currentQuantity = getItemQuantity(product._id);
     
     if (currentQuantity > 0) {
-      // Product already in cart - show custom modal
-      setShowReservationModal(true);
+      // Product already in cart - just redirect
+      navigate('/cart');
     } else {
       // Product not in cart - add one and redirect
       try {
-        console.log('➕ Adding product to cart from home page');
         await addToCart(product, 1);
-        console.log('✅ Product added successfully, navigating to cart');
         navigate('/cart');
       } catch (error) {
         console.error('❌ Error adding product to cart:', error);
@@ -164,14 +160,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     }
   };
 
-  const handleGoToCart = () => {
-    setShowReservationModal(false);
-    navigate('/cart');
-  };
 
-  const handleCloseReservationModal = () => {
-    setShowReservationModal(false);
-  };
 
   const handleBuyNow = async (e) => {
     e.stopPropagation();
@@ -199,16 +188,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     }
   };
 
-  const handleQuantityChange = (newQuantity) => {
+  const handleQuantityChange = useCallback((newQuantity) => {
     if (newQuantity < 0) return;
-    console.log(`🔧 ProductCard handleQuantityChange: ${product.name} -> quantity: ${newQuantity} (current: ${currentQuantity})`);
-    
-    if (newQuantity === 0) {
-      console.log(`🔄 Quantity becoming 0 - should trigger removal and revert to Add button`);
-    }
-    
     updateQuantity(product._id, newQuantity);
-  };
+  }, [updateQuantity, product._id]);
 
   const handleFavoriteToggle = async (e) => {
     e.stopPropagation();
@@ -237,7 +220,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   return (
     <div
       onClick={handleCardClick}
-      className={`relative overflow-hidden bg-white cursor-pointer transition-all duration-200 ${
+      className={`relative overflow-hidden bg-white cursor-pointer transition-all duration-150 ${
         featured
           ? 'h-full flex flex-col rounded-lg'
           : compact
@@ -357,7 +340,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
                   : isAddingToCart
                   ? 'bg-white text-red-500 border-red-500 cursor-wait scale-95'
-                  : 'bg-white text-red-500 border-red-500 hover:bg-red-50 hover:scale-105 shadow-sm transform active:scale-95'
+                  : 'bg-white text-red-500 border-red-500 hover:bg-red-50 hover:shadow-md shadow-sm'
               }`}
             >
               {isAddingToCart ? (
@@ -383,10 +366,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   handleQuantityChange(currentQuantity - 1);
                 }}
                 disabled={!isProductAvailable}
-                className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-200 rounded-l-lg font-medium ${
+                className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-medium ${
                   !isProductAvailable
                     ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-red-500 hover:bg-red-50 hover:scale-110 active:scale-95'
+                    : 'text-red-500 hover:bg-red-50'
                 }`}
               >
                 −
@@ -404,10 +387,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   handleQuantityChange(currentQuantity + 1);
                 }}
                 disabled={currentQuantity >= totalStock || !isProductAvailable}
-                className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-medium ${
+                className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-medium ${
                   !isProductAvailable
                     ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-red-500 hover:bg-red-50 hover:scale-110 active:scale-95'
+                    : 'text-red-500 hover:bg-red-50'
                 }`}
               >
                 +
@@ -512,15 +495,15 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         <button
           onClick={handleReserve}
           disabled={!isActive || totalStock === 0 || !isProductAvailable}
-          className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-semibold transition-all duration-300 rounded-lg overflow-hidden ${
+          className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-semibold transition-all duration-200 rounded-lg overflow-hidden ${
             !isActive || totalStock === 0 || !isProductAvailable
               ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
-              : 'bg-white text-black border-2 border-black hover:text-white transform hover:scale-[1.02] active:scale-[0.98] active:text-white touch-manipulation'
+              : 'bg-white text-black border-2 border-black hover:text-white active:text-white touch-manipulation'
           }`}
         >
           {/* Animated background fill - works on both hover and active (touch) */}
           {isActive && totalStock > 0 && isProductAvailable && (
-            <div className="absolute inset-0 bg-black transform -translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-300 ease-out"></div>
+            <div className="absolute inset-0 bg-black transform -translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-200 ease-out"></div>
           )}
           
           {/* Button content with animations for both hover and touch */}
@@ -534,7 +517,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             ) : (
               <>
                 <svg 
-                  className="w-3 h-3 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-12 group-active:scale-110" 
+                  className="w-3 h-3 transition-transform duration-200 group-hover:rotate-6 group-active:rotate-6" 
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
@@ -573,46 +556,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         </button>
       </div>
 
-      {/* Reservation Modal */}
-      {showReservationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-            <div className="text-center">
-              {/* Icon */}
-              <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <ShoppingCart className="w-8 h-8 text-green-600" />
-              </div>
-              
-              {/* Title */}
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Already Reserved!
-              </h3>
-              
-              {/* Message */}
-              <p className="text-gray-600 mb-6">
-                This product is already reserved in your cart. Would you like to go to cart to view your items?
-              </p>
-              
-              {/* Buttons */}
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={handleCloseReservationModal}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Stay Here
-                </button>
-                <button
-                  onClick={handleGoToCart}
-                  className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors flex items-center gap-2"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  Go to Cart
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
