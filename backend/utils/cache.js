@@ -66,8 +66,18 @@ class MemoryCache {
   }
 }
 
-// Export singleton instance
+// Create singleton instance
 export const cache = new MemoryCache();
+
+// Set up automatic cache cleanup every 30 minutes
+const CACHE_CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutes in ms
+
+setInterval(() => {
+  const cleanedCount = cache.cleanExpired();
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cache cleanup: removed ${cleanedCount} expired items. Cache size: ${cache.size()}`);
+  }
+}, CACHE_CLEANUP_INTERVAL);
 
 // Export the class for creating custom caches
 export default MemoryCache;

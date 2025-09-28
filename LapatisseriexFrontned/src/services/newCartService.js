@@ -25,10 +25,34 @@ class NewCartService {
   // Get user's cart from database
   async getCart() {
     try {
-      const response = await api.get('/newcart');
+      // Add ETag support for caching
+      const eTag = localStorage.getItem('lapatisserie_cart_etag');
+      
+      const headers = {};
+      if (eTag) {
+        headers['If-None-Match'] = eTag;
+      }
+      
+      const response = await api.get('/newcart', { headers });
+      
+      // Store the ETag for future requests
+      const newETag = response.headers?.etag;
+      if (newETag) {
+        localStorage.setItem('lapatisserie_cart_etag', newETag);
+      }
+      
       console.log('📋 Cart fetched from server:', response.data);
       return response.data;
     } catch (error) {
+      // If status is 304 Not Modified, return the cached response
+      if (error.response?.status === 304) {
+        console.log('⚡ Cart not modified, using cached version');
+        const cachedCart = localStorage.getItem('lapatisserie_cart_cache');
+        if (cachedCart) {
+          return JSON.parse(cachedCart);
+        }
+      }
+      
       console.error('❌ Error fetching cart:', error);
       if (error.response?.status === 401) {
         throw new Error('Please login to access your cart');

@@ -7,6 +7,7 @@ import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import SparkAnimation from '../common/SparkAnimation/SparkAnimation';
 import { useSparkAnimationContext } from '../../context/SparkAnimationContext/SparkAnimationContext';
+import FavoritesIcon from '../Favorites/FavoritesIcon';
 import './Header.css';
 import './remove-focus.css';
 import './hide-search.css';
@@ -22,7 +23,6 @@ import {
   MapPin, 
   ChevronDown,
   ShoppingBag,
-  Heart,
   AlertTriangle,
   Settings,
   Package,
@@ -67,13 +67,11 @@ const Header = ({ isAdminView = false }) => {
   const cartContext = useCart();
   const { cartCount = 0 } = cartContext || {};
   
-  const favoritesContext = useFavorites();
-  const { favorites = [] } = favoritesContext || {};
-
   // Get categories from CategoryContext with error handling
   const categoryContext = useCategory();
   const { 
-    categories: dbCategories = [], 
+    categories = [],
+    fetchCategories,
     loading: categoriesLoading = false,
     error: categoriesError = null 
   } = categoryContext || {};
@@ -107,12 +105,12 @@ const Header = ({ isAdminView = false }) => {
   const memoizedCartCount = useMemo(() => cartCount, [cartCount]);
   
   // Use categories from database or fall back to empty array
-  const categories = useMemo(() => {
-    if (!dbCategories || !Array.isArray(dbCategories) || dbCategories.length === 0) {
+  const filteredCategories = useMemo(() => {
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
       return [];
     }
     
-    return dbCategories
+    return categories
       .filter(category => 
         category.isActive && 
         category.name !== '__SPECIAL_IMAGES__' && 
@@ -126,7 +124,7 @@ const Header = ({ isAdminView = false }) => {
         featuredImage: category.featuredImage || null,
         images: category.images || [],
       }));
-  }, [dbCategories]);
+  }, [categories]);
   
   // Get user's location display name
   const [userLocationDisplay, setUserLocationDisplay] = useState('Select Location');
@@ -350,9 +348,9 @@ const Header = ({ isAdminView = false }) => {
     // Close location dropdown when opening mega menu
     setIsLocationDropdownOpen(false);
     setIsMegaMenuOpen(true);
-    // Set first category as default hover if categories exist
-    if (categories.length > 0 && !hoveredCategory) {
-      setHoveredCategory(categories[0]);
+    // Set first category as default hover if filteredCategories exist
+    if (filteredCategories.length > 0 && !hoveredCategory) {
+      setHoveredCategory(filteredCategories[0]);
     }
   }, [categories, hoveredCategory]);
   
@@ -589,7 +587,7 @@ const Header = ({ isAdminView = false }) => {
                 )}
                 
                 {/* Mega Menu Dropdown */}
-                {isMegaMenuOpen && categories.length > 0 && (
+                {isMegaMenuOpen && filteredCategories.length > 0 && (
                   <div
                     className="absolute top-full left-0 mt-3 w-[600px] h-[400px] bg-white backdrop-blur-sm shadow-xl rounded-lg overflow-hidden z-50 border border-gray-200 transform opacity-0 scale-95 animate-dropdown"
                     style={{fontFamily: 'sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
@@ -602,7 +600,7 @@ const Header = ({ isAdminView = false }) => {
                         </div>
                         <div className="p-4 overflow-y-auto h-[calc(100%-56px)] custom-scrollbar">
                           <div className="space-y-1">
-                            {categories.map((category) => (
+                            {filteredCategories.map((category) => (
                               <button
                                 key={category._id}
                                 className={`w-full text-left px-3 py-2 rounded-md transition-all duration-200 group relative ${
@@ -746,22 +744,10 @@ const Header = ({ isAdminView = false }) => {
                 {/* User Menu - Uses role-based display */}
                 <UserMenu />
 
-                {/* Favorites Link - Premium Design with Tooltip */}
-                {user && (
-                  <div className="tooltip">
-                    <div className="tooltip-content">
-                      <div className="animate-bounce text-orange-400 -rotate-10 text-xl font-black italic select-none">Favorites</div>
-                    </div>
-                    <Link to="/favorites" className="flex items-center px-3 py-2 text-gray-700 hover:text-black rounded-lg transition-all duration-300 relative group border border-transparent" style={{fontFamily: 'sans-serif'}}>
-                      <Heart className="h-4 w-4 text-gray-600 group-hover:text-red-500 transition-colors duration-300" />
-                      {favorites?.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium">
-                          {favorites.length}
-                        </span>
-                      )}
-                    </Link>
-                  </div>
-                )}
+
+
+                {/* Favorites component */}
+                <FavoritesIcon />
 
                 {/* Cart component - Premium Design with Tooltip */}
                 <div className="tooltip">

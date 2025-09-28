@@ -1,215 +1,21 @@
-import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useEffect, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../AuthContext/AuthContext';
-import api, { apiGet } from '../../services/apiService';
+import { useProduct } from '../ProductContext/ProductContext';
+import { 
+  fetchFavorites, 
+  addToFavorites as addToFavoritesThunk, 
+  removeFromFavorites as removeFromFavoritesThunk,
+  localAddToFavorites,
+  localRemoveFromFavorites,
+  loadLocalFavorites,
+  clearFavorites
+} from '../../redux/favoritesSlice';
 
+// Create context
 const FavoritesContext = createContext();
 
-export const FavoritesProvider = ({ children }) => {
-  const [favorites, setFavorites] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const { user } = useAuth();
-
-  const API_URL = import.meta.env.VITE_API_URL;
-  const fetchingRef = useRef(false);
-  const favoritesRef = useRef([]);
-
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-  const cacheKey = (uid) => `favorites_cache_${uid}`;
-
-  const readCache = () => {
-    if (!user?.uid) return null;
-    try {
-      const raw = localStorage.getItem(cacheKey(user.uid));
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (parsed.timestamp && parsed.timestamp + CACHE_TTL > Date.now()) {
-        return parsed.favorites || [];
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  };
-
-  const writeCache = (data) => {
-    if (!user?.uid) return;
-    try {
-      localStorage.setItem(
-        cacheKey(user.uid),
-        JSON.stringify({ favorites: data, timestamp: Date.now() })
-      );
-    } catch {}
-  };
-
-  // Fetch user's favorites
-  const fetchFavorites = async () => {
-    if (!user) {
-      setFavorites([]);
-      return;
-    }
-
-    try {
-      // Only show spinner if we don't have cached data displayed
-      const hasData = favoritesRef.current && favoritesRef.current.length > 0;
-      if (!hasData) setLoading(true);
-      setError(null);
-      if (fetchingRef.current) return; // guard against rapid re-entry
-      fetchingRef.current = true;
-
-      // Use apiGet with de-dup and short cache to minimize redundant calls
-      const data = await apiGet('/users/favorites', {
-        cache: true,
-        cacheTTL: 15000,
-        dedupe: true
-      });
-
-      const list = data.favorites || [];
-      setFavorites(list);
-      favoritesRef.current = list;
-      writeCache(list);
-    } catch (err) {
-      console.error('Error fetching favorites:', err);
-      setError('Failed to load favorites');
-      setFavorites([]);
-      favoritesRef.current = [];
-    } finally {
-      fetchingRef.current = false;
-      setLoading(false);
-    }
-  };
-
-  // Add product to favorites with optimistic update
-  const addToFavorites = async (productId) => {
-    if (!user) {
-      setError('Please login to add favorites');
-      return false;
-    }
-
-  // Avoid duplicating if already present in UI
-    setFavorites(prev => {
-      const next = prev.some(f => f._id === productId) ? prev : [...prev, { _id: productId, name: 'Loading...', images: [] }];
-      favoritesRef.current = next;
-      writeCache(next);
-      return next;
-    });
-
-    try {
-      // Auth headers handled by apiService interceptor
-      const response = await api.post(`/users/favorites/${productId}`, {});
-
-      // Update with actual product data if returned by API
-      if (response.data.product) {
-        setFavorites(prevFavorites => {
-          const next = prevFavorites.map(fav => fav._id === productId ? response.data.product : fav);
-          favoritesRef.current = next;
-          writeCache(next);
-          return next;
-        });
-      }
-
-      return true;
-    } catch (err) {
-      console.error('Error adding to favorites:', err);
-      setError(err.response?.data?.message || 'Failed to add to favorites');
-      
-      // Rollback optimistic update on error
-      setFavorites(prevFavorites => {
-        const next = prevFavorites.filter(fav => fav._id !== productId);
-        favoritesRef.current = next;
-        writeCache(next);
-        return next;
-      });
-      
-      return false;
-    }
-  };
-
-  // Remove product from favorites with optimistic update
-  const removeFromFavorites = async (productId) => {
-    if (!user) return false;
-
-    // Store the favorite item for potential rollback
-    const favoriteItem = favorites.find(fav => fav._id === productId);
-
-    // Optimistic update - remove immediately from UI
-    setFavorites(prevFavorites => 
-      prevFavorites.filter(fav => fav._id !== productId)
-    );
-
-    try {
-      // Auth headers handled by apiService interceptor
-      await api.delete(`/users/favorites/${productId}`);
-
-      return true;
-    } catch (err) {
-      console.error('Error removing from favorites:', err);
-      setError(err.response?.data?.message || 'Failed to remove from favorites');
-      
-      // Rollback optimistic update on error
-      if (favoriteItem) {
-        setFavorites(prevFavorites => {
-          const next = [...prevFavorites, favoriteItem];
-          favoritesRef.current = next;
-          writeCache(next);
-          return next;
-        });
-      }
-      
-      return false;
-    }
-  };
-
-  // Check if product is in favorites
-  const isFavorite = (productId) => {
-    return favorites.some(fav => fav._id === productId);
-  };
-
-  // Toggle favorite status
-  const toggleFavorite = async (productId) => {
-    if (isFavorite(productId)) {
-      return await removeFromFavorites(productId);
-    } else {
-      return await addToFavorites(productId);
-    }
-  };
-
-  // Fetch favorites when user changes
-  useEffect(() => {
-    // Load from cache immediately for instant UI
-    const cached = readCache();
-    if (cached && cached.length) {
-      setFavorites(cached);
-      favoritesRef.current = cached;
-      setLoading(false);
-    } else {
-      // Reset if no cache
-      setFavorites([]);
-      favoritesRef.current = [];
-    }
-    // Always revalidate in background
-    fetchFavorites();
-  }, [user]);
-
-  const value = {
-    favorites,
-    loading,
-    error,
-    fetchFavorites,
-    addToFavorites,
-    removeFromFavorites,
-    isFavorite,
-    toggleFavorite
-  };
-
-  return (
-    <FavoritesContext.Provider value={value}>
-      {children}
-    </FavoritesContext.Provider>
-  );
-};
-
+// Custom hook to use the favorites context
 export const useFavorites = () => {
   const context = useContext(FavoritesContext);
   if (!context) {
@@ -218,4 +24,148 @@ export const useFavorites = () => {
   return context;
 };
 
-export default FavoritesContext;
+// Provider component
+export const FavoritesProvider = ({ children }) => {
+  const dispatch = useDispatch();
+  const { user } = useAuth();
+  
+  // Get data from Redux store
+  const favorites = useSelector(state => state.favorites.favorites);
+  const favoriteIds = useSelector(state => state.favorites.favoriteIds);
+  const count = useSelector(state => state.favorites.count);
+  const status = useSelector(state => state.favorites.status);
+  const error = useSelector(state => state.favorites.error);
+  
+  const isLoading = status === 'loading';
+  
+  // Load favorites when component mounts
+  useEffect(() => {
+    if (user) {
+      // User is logged in, fetch favorites from server
+      dispatch(fetchFavorites());
+    } else {
+      // Guest user, load favorites from localStorage
+      dispatch(loadLocalFavorites());
+    }
+  }, [dispatch, user]);
+  
+  // For guest users, try to fetch product details for favoriteIds
+  const { fetchProducts } = useProduct && useProduct();
+  
+  useEffect(() => {
+    // Only for guest users with local favorites
+    if (!user && favoriteIds.length > 0 && fetchProducts) {
+      const loadProductDetails = async () => {
+        try {
+          // Fetch product details for each favorite ID
+          const productPromises = favoriteIds.map(id => 
+            fetchProducts({ productId: id })
+          );
+          
+          const results = await Promise.allSettled(productPromises);
+          
+          // Process successful results
+          const loadedProducts = results
+            .filter(result => result.status === 'fulfilled' && result.value?.products?.length > 0)
+            .map(result => result.value.products[0]);
+          
+          // Format products for favorites array
+          const favoritesWithDetails = loadedProducts.map(product => ({
+            productId: product._id,
+            productDetails: product
+          }));
+          
+          // Update Redux store with product details
+          if (favoritesWithDetails.length > 0) {
+            dispatch({
+              type: 'favorites/setFavoriteDetails',
+              payload: favoritesWithDetails
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching product details for favorites:', error);
+        }
+      };
+      
+      loadProductDetails();
+    }
+  }, [user, favoriteIds, fetchProducts, dispatch]);
+  
+  // Toggle favorite
+  const toggleFavorite = useCallback((productId) => {
+    if (!productId) return;
+    
+    const isCurrentlyFavorite = favoriteIds.includes(productId);
+    
+    if (isCurrentlyFavorite) {
+      // Remove from favorites
+      if (user) {
+        dispatch(removeFromFavoritesThunk(productId))
+          .then(() => {
+            // Refresh favorites data after removing
+            dispatch(fetchFavorites());
+          });
+      } else {
+        dispatch(localRemoveFromFavorites(productId));
+      }
+    } else {
+      // Add to favorites
+      if (user) {
+        dispatch(addToFavoritesThunk(productId))
+          .then(() => {
+            // Refresh favorites data after adding
+            dispatch(fetchFavorites());
+          });
+      } else {
+        dispatch(localAddToFavorites(productId));
+      }
+    }
+  }, [dispatch, favoriteIds, user]);
+  
+  // Check if a product is in favorites
+  const isFavorite = useCallback((productId) => {
+    return favoriteIds.includes(productId);
+  }, [favoriteIds]);
+  
+  // Merge local favorites with database when user logs in
+  useEffect(() => {
+    if (user) {
+      // Load local favorites
+      const localFavorites = localStorage.getItem('lapatisserie_favorites');
+      if (localFavorites) {
+        const parsedFavorites = JSON.parse(localFavorites);
+        
+        // Add each local favorite to database
+        parsedFavorites.forEach(productId => {
+          dispatch(addToFavoritesThunk(productId));
+        });
+        
+        // Clear local favorites
+        localStorage.removeItem('lapatisserie_favorites');
+      }
+    }
+  }, [dispatch, user]);
+  
+  // Clear favorites when user logs out
+  const clearUserFavorites = useCallback(() => {
+    dispatch(clearFavorites());
+  }, [dispatch]);
+  
+  // Context value
+  const contextValue = {
+    favorites,
+    favoriteIds,
+    count,
+    loading: isLoading,
+    error,
+    toggleFavorite,
+    isFavorite,
+    clearUserFavorites
+  };
+  
+  return (
+    <FavoritesContext.Provider value={contextValue}>
+      {children}
+    </FavoritesContext.Provider>
+  );
+};

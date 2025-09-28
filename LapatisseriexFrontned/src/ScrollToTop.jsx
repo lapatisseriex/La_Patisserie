@@ -11,6 +11,11 @@ const ScrollToTop = () => {
       return;
     }
     
+    // Don't auto-scroll for ProductDisplayPage - it handles its own scrolling
+    if (pathname.startsWith('/product/')) {
+      return;
+    }
+    
     // For all other navigation, scroll to top
     window.scrollTo({
       top: 0,

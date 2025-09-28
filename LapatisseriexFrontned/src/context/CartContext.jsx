@@ -20,12 +20,42 @@ export const CartProvider = ({ children }) => {
   const updateTimeoutRef = useRef({});
 
   // Load cart based on authentication status
+  const cartLoadedRef = useRef(false);
+  const lastCartFetchTimestamp = useRef(0);
+  const minimumFetchInterval = 3000; // 3 seconds
+
   useEffect(() => {
     const loadCart = async () => {
+      // Prevent loading cart multiple times in a short interval
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastCartFetchTimestamp.current;
+      
+      if (timeSinceLastFetch < minimumFetchInterval && cartLoadedRef.current) {
+        console.log(`🛑 Skipping cart fetch - last fetch was ${timeSinceLastFetch}ms ago`);
+        return;
+      }
+
       if (user && !dbCartLoaded) {
         // User is logged in, load from database
         try {
           setIsLoading(true);
+          lastCartFetchTimestamp.current = Date.now();
+          
+          // Try to get cart from cache first
+          const cachedCart = localStorage.getItem('lapatisserie_cart_cache');
+          const cachedTimestamp = localStorage.getItem('lapatisserie_cart_cache_timestamp');
+          
+          // Use cache if it exists and is less than 30 seconds old
+          if (cachedCart && cachedTimestamp && (Date.now() - parseInt(cachedTimestamp, 10) < 30000)) {
+            console.log('📦 Using cached cart data');
+            const parsedCart = JSON.parse(cachedCart);
+            setCartItems(parsedCart.items);
+            setDbCartLoaded(true);
+            setIsLoading(false);
+            cartLoadedRef.current = true;
+            return;
+          }
+          
           const dbCart = await newCartService.getCart();
           
           // Convert database cart format to local format
@@ -59,11 +89,28 @@ export const CartProvider = ({ children }) => {
               addedAt: item.addedAt
             }));
             setCartItems(updatedCartItems);
+            
+            // Cache the cart
+            localStorage.setItem('lapatisserie_cart_cache', JSON.stringify({
+              items: updatedCartItems,
+              total: updatedDbCart.cartTotal,
+              count: updatedDbCart.cartCount
+            }));
+            localStorage.setItem('lapatisserie_cart_cache_timestamp', Date.now().toString());
           } else {
             setCartItems(dbCartItems);
+            
+            // Cache the cart
+            localStorage.setItem('lapatisserie_cart_cache', JSON.stringify({
+              items: dbCartItems,
+              total: dbCart.cartTotal,
+              count: dbCart.cartCount
+            }));
+            localStorage.setItem('lapatisserie_cart_cache_timestamp', Date.now().toString());
           }
           
           setDbCartLoaded(true);
+          cartLoadedRef.current = true;
         } catch (error) {
           console.error('❌ Error loading cart from database:', error);
           // Fallback to localStorage if database fails
@@ -75,6 +122,7 @@ export const CartProvider = ({ children }) => {
         // User not logged in, load from localStorage
         loadLocalCart();
         setDbCartLoaded(false);
+        cartLoadedRef.current = true;
       }
     };
 

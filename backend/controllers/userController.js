@@ -8,17 +8,10 @@ import { deleteFromCloudinary } from '../utils/cloudinary.js';
 // @route   GET /api/users/me
 // @access  Private
 export const getCurrentUser = asyncHandler(async (req, res) => {
-  // Fetch user with populated location, hostel, and favorites
+  // Fetch user with populated location and hostel
   const user = await User.findOne({ uid: req.user.uid })
     .populate('location')
-    .populate('hostel')
-    .populate({
-      path: 'favorites',
-      populate: {
-        path: 'category',
-        select: 'name'
-      }
-    });
+    .populate('hostel');
 
   if (!user) {
     res.status(404);
@@ -49,7 +42,6 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       location: user.location,
       hostel: user.hostel,
       profilePhoto: user.profilePhoto || { url: '', public_id: '' },
-      favorites: user.favorites || [],
       createdAt: user.createdAt,
       email: user.email || '',
       emailVerified: user.emailVerified || false,
@@ -226,92 +218,7 @@ export const getUsers = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Add product to favorites
-// @route   POST /api/users/favorites/:productId
-// @access  Private
-export const addToFavorites = asyncHandler(async (req, res) => {
-  const { productId } = req.params;
-  const userId = req.user.uid;
-
-  // Check if product exists
-  const product = await Product.findById(productId);
-  if (!product) {
-    res.status(404);
-    throw new Error('Product not found');
-  }
-
-  // Find user and update favorites
-  const user = await User.findOne({ uid: userId });
-  if (!user) {
-    res.status(404);
-    throw new Error('User not found');
-  }
-
-  // Check if product is already in favorites
-  if (user.favorites.includes(productId)) {
-    res.status(400);
-    throw new Error('Product already in favorites');
-  }
-
-  // Add to favorites
-  user.favorites.push(productId);
-  await user.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'Product added to favorites'
-  });
-});
-
-// @desc    Remove product from favorites
-// @route   DELETE /api/users/favorites/:productId
-// @access  Private
-export const removeFromFavorites = asyncHandler(async (req, res) => {
-  const { productId } = req.params;
-  const userId = req.user.uid;
-
-  // Find user and update favorites
-  const user = await User.findOne({ uid: userId });
-  if (!user) {
-    res.status(404);
-    throw new Error('User not found');
-  }
-
-  // Remove from favorites
-  user.favorites = user.favorites.filter(fav => fav.toString() !== productId);
-  await user.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'Product removed from favorites'
-  });
-});
-
-// @desc    Get user's favorite products
-// @route   GET /api/users/favorites
-// @access  Private
-export const getFavorites = asyncHandler(async (req, res) => {
-  const userId = req.user.uid;
-
-  // Find user with populated favorites
-  const user = await User.findOne({ uid: userId }).populate({
-    path: 'favorites',
-    populate: {
-      path: 'category',
-      select: 'name'
-    }
-  });
-
-  if (!user) {
-    res.status(404);
-    throw new Error('User not found');
-  }
-
-  res.status(200).json({
-    success: true,
-    favorites: user.favorites || []
-  });
-});
+// Favorites functionality has been removed
 
 // @desc    Add product to recently viewed
 // @route   POST /api/users/recently-viewed/:productId
@@ -364,9 +271,31 @@ export const addRecentlyViewed = asyncHandler(async (req, res) => {
 // @access  Private
 export const getRecentlyViewed = asyncHandler(async (req, res) => {
   const userId = req.user.uid;
+  
+  // Support conditional GET with ETag
+  const ifNoneMatch = req.headers['if-none-match'];
+  
+  // First find user without population to check if data has changed
+  const user = await User.findOne({ uid: userId }, 'recentlyViewed');
 
-  // Find user with populated recently viewed products
-  const user = await User.findOne({ uid: userId }).populate({
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+  
+  // Generate simple ETag from recently viewed count and timestamps
+  const recentCount = user.recentlyViewed.length;
+  const latestTimestamp = recentCount > 0 ? 
+    user.recentlyViewed[0].viewedAt.getTime() : 0;
+  const etag = `W/"recent-${recentCount}-${latestTimestamp}"`;
+  
+  // If ETag matches, return 304 Not Modified
+  if (ifNoneMatch && ifNoneMatch === etag) {
+    return res.status(304).end();
+  }
+  
+  // Only populate if we need to return the full data
+  const populatedUser = await User.findOne({ uid: userId }).populate({
     path: 'recentlyViewed.productId',
     populate: {
       path: 'category',
@@ -374,19 +303,18 @@ export const getRecentlyViewed = asyncHandler(async (req, res) => {
     }
   });
 
-  if (!user) {
-    res.status(404);
-    throw new Error('User not found');
-  }
-
   // Filter out any null products (in case products were deleted)
-  let validRecentlyViewed = user.recentlyViewed.filter(item => item.productId);
+  let validRecentlyViewed = populatedUser.recentlyViewed.filter(item => item.productId);
 
   // Ensure we only return the latest 3 items
   if (validRecentlyViewed.length > 3) {
     validRecentlyViewed = validRecentlyViewed.slice(0, 3);
   }
 
+  // Set ETag header for client caching
+  res.set('ETag', etag);
+  res.set('Cache-Control', 'private, max-age=300'); // 5 minute client cache
+  
   res.status(200).json({
     success: true,
     recentlyViewed: validRecentlyViewed || []

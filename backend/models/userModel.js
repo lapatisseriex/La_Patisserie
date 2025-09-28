@@ -71,10 +71,6 @@ const userSchema = new mongoose.Schema(
       url: { type: String, default: '' },
       public_id: { type: String, default: '' }
     },
-    favorites: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
-    }],
     recentlyViewed: [{
       productId: {
         type: mongoose.Schema.Types.ObjectId,

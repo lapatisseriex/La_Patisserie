@@ -11,6 +11,15 @@ export const getNewCart = async (req, res) => {
 
     const cart = await NewCart.getOrCreateCart(userId);
     
+    // Generate ETag based on cart data for caching
+    const eTag = `W/"cart-${userId}-${cart.updatedAt.getTime()}"`;
+    
+    // Check if client has fresh version
+    if (req.headers['if-none-match'] === eTag) {
+      console.log(`⚡ Cart not modified for user: ${userId}`);
+      return res.status(304).end(); // Not Modified
+    }
+    
     // Return cart with virtual totals
     const cartData = {
       _id: cart._id,
@@ -24,6 +33,10 @@ export const getNewCart = async (req, res) => {
     };
 
     console.log(`✅ Cart retrieved: ${cart.items.length} items, total: ₹${cart.cartTotal}`);
+    
+    // Set ETag header
+    res.setHeader('ETag', eTag);
+    res.setHeader('Cache-Control', 'private, max-age=30'); // Cache for 30 seconds
     res.json(cartData);
   } catch (error) {
     console.error('❌ Error getting cart:', error);

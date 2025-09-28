@@ -2,6 +2,10 @@ import firebaseAdmin from '../config/firebase.js';
 import User from '../models/userModel.js';
 import asyncHandler from 'express-async-handler';
 
+// Simple token verification cache with TTL
+const tokenCache = new Map();
+const TOKEN_CACHE_TTL = 15 * 60 * 1000; // 15 minutes in milliseconds
+
 // Authentication middleware - verifies Firebase token
 export const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -17,14 +21,29 @@ export const protect = asyncHandler(async (req, res, next) => {
         res.status(401);
         throw new Error('Invalid token format');
       }
-
-      console.log('Attempting to verify token with length:', token.length);
       
-      // Verify token with Firebase Admin SDK
-      // Set checkRevoked to false initially to avoid extra verification calls
-      const decodedToken = await firebaseAdmin.auth().verifyIdToken(token, false);
+      // Check if token is in cache
+      let decodedToken;
+      const cacheKey = token;
+      const cachedResult = tokenCache.get(cacheKey);
       
-      console.log('Token verified successfully for uid:', decodedToken.uid);
+      if (cachedResult && cachedResult.expiresAt > Date.now()) {
+        // Use cached token validation result
+        decodedToken = cachedResult.decodedToken;
+        // No need to log on every request when using cache
+      } else {
+        // Token not in cache or expired, verify with Firebase
+        console.log('Attempting to verify token with length:', token.length);
+        decodedToken = await firebaseAdmin.auth().verifyIdToken(token, false);
+        
+        // Cache the result with expiry
+        tokenCache.set(cacheKey, {
+          decodedToken,
+          expiresAt: Date.now() + TOKEN_CACHE_TTL
+        });
+        
+        console.log('Token verified successfully for uid:', decodedToken.uid);
+      }
       
       // Find user in database
       const user = await User.findOne({ uid: decodedToken.uid });
@@ -91,3 +110,23 @@ export const admin = asyncHandler(async (req, res, next) => {
     throw new Error('Not authorized as admin');
   }
 });
+
+// Implement cache cleanup function to avoid memory leaks
+function cleanupTokenCache() {
+  const now = Date.now();
+  let expiredCount = 0;
+  
+  for (const [key, value] of tokenCache.entries()) {
+    if (value.expiresAt <= now) {
+      tokenCache.delete(key);
+      expiredCount++;
+    }
+  }
+  
+  if (expiredCount > 0) {
+    console.log(`Token cache cleanup: removed ${expiredCount} expired tokens. Cache size: ${tokenCache.size}`);
+  }
+}
+
+// Run cleanup every 30 minutes
+setInterval(cleanupTokenCache, 30 * 60 * 1000);

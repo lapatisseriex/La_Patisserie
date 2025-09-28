@@ -15,60 +15,71 @@ export const CategoryProvider = ({ children }) => {
   
   // Cache to prevent redundant API calls
   const requestCache = useRef(new Map());
+  const pendingRequests = useRef(new Map());
   const requestInProgress = useRef(new Map());
   
   const API_URL = import.meta.env.VITE_API_URL;
   
-  // Set a timeout for cache validity (5 minutes for special images)
-  const CACHE_TIMEOUT = 300000;
+  // Set timeouts for cache validity (longer for special images to reduce API calls)
+  const CACHE_TIMEOUT = 300000; // 5 minutes for regular content
+  const SPECIAL_IMAGES_CACHE_TIMEOUT = 900000; // 15 minutes for special images
 
   // Fetch all categories with caching
-  const fetchCategories = useCallback(async (includeInactive = false) => {
-    try {
-      // Add query params if we need to include inactive categories
-      // Use the proper value for isActive parameter: 'all' to include inactive categories
-      const queryParams = includeInactive ? '?isActive=all' : '';
-      const cacheKey = `categories-${includeInactive ? 'all' : 'active'}`;
-      
-      // Check if we have a valid cached response
+  const fetchCategories = useCallback(async (includeInactive = false, options = {}) => {
+    const { forceRefresh = false } = options;
+
+    // Build cache key and query string
+    const queryParams = includeInactive ? '?isActive=all' : '';
+    const cacheKey = `categories-${includeInactive ? 'all' : 'active'}`;
+    const now = Date.now();
+
+    if (!forceRefresh) {
+      // Return cached data when still fresh (30s)
       const cachedResult = requestCache.current.get(cacheKey);
-      const now = Date.now();
-      
       if (cachedResult && (now - cachedResult.timestamp < 30000)) {
         console.log(`Using cached category data for key: ${cacheKey}`);
         return cachedResult.data;
       }
-      
-      // Mark this request as in progress
-      requestInProgress.current.set(cacheKey, true);
-      
-      // Set loading state
-      setLoading(true);
-      setError(null);
-      
-      const response = await axios.get(`${API_URL}/categories${queryParams}`);
-      
-      // Debug the data received
-      console.log(`📂 Categories loaded: ${response.data.length} (${includeInactive ? 'all' : 'active only'})`);
-      
-      // Update state with the fetched categories
-      setCategories(response.data);
-      
-      // Store the result in cache with current timestamp
-      requestCache.current.set(cacheKey, {
-        data: response.data,
-        timestamp: now
-      });
-      
-      // Request is no longer in progress
-      requestInProgress.current.delete(cacheKey);
-      
-      setLoading(false);
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching categories:", err);
-      setError("Failed to load categories");
-      setLoading(false);
+
+      // Share ongoing requests between callers
+      const pending = pendingRequests.current.get(cacheKey);
+      if (pending) {
+        console.log(`Waiting for in-flight category request: ${cacheKey}`);
+        return pending;
+      }
+    }
+
+    const requestPromise = (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await axios.get(`${API_URL}/categories${queryParams}`);
+        console.log(`📂 Categories loaded: ${response.data.length} (${includeInactive ? 'all' : 'active only'})`);
+
+        // Persist data
+        setCategories(response.data);
+        requestCache.current.set(cacheKey, {
+          data: response.data,
+          timestamp: Date.now()
+        });
+
+        return response.data;
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+        setError("Failed to load categories");
+        throw err;
+      } finally {
+        pendingRequests.current.delete(cacheKey);
+        setLoading(false);
+      }
+    })();
+
+    pendingRequests.current.set(cacheKey, requestPromise);
+
+    try {
+      return await requestPromise;
+    } catch {
       return [];
     }
   }, [API_URL]);
@@ -303,7 +314,8 @@ export const CategoryProvider = ({ children }) => {
       const cachedResult = requestCache.current.get(cacheKey);
       const now = Date.now();
       
-      if (cachedResult && (now - cachedResult.timestamp < CACHE_TIMEOUT)) {
+      // Use longer cache timeout for special images to reduce API calls
+      if (cachedResult && (now - cachedResult.timestamp < SPECIAL_IMAGES_CACHE_TIMEOUT)) {
         console.log('📸 Using cached special images data');
         return cachedResult.data;
       }

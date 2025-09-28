@@ -7,7 +7,6 @@ import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';
 import HandpickedForYou from './HandpickedForYou';
 import CartPickedForYou from './CartPickedForYou';
-import FavoritesSection from './FavoritesSection';
 import RecentlyViewedSection from './RecentlyViewedSection';
 import CategorySwiper from './categorySwiper';
 import PageLoadingAnimation from '../common/PageLoadingAnimation';
@@ -23,7 +22,6 @@ const Home = () => {
   const bestSellersRef = useRef(null);
   const newlyLaunchedRef = useRef(null);
   const handpickedRef = useRef(null);
-  const favoritesRef = useRef(null);
 
   const { categories, fetchCategories, getSpecialImages, specialImagesVersion, loading: categoriesLoading } = useCategory();
   const { fetchProducts } = useProduct();
@@ -81,27 +79,40 @@ const Home = () => {
 
   // Set up auto-refresh interval in a separate useEffect
   useEffect(() => {
-    // Set up an interval to refresh special images every 5 minutes (much longer to reduce server load)
+    // Set up an interval to refresh special images every 15 minutes to reduce server load
     const refreshInterval = setInterval(async () => {
-      console.log('🔄 Auto-refreshing special images...');
+      // The getSpecialImages function will check the cache internally first
+      // and only make an API call if the cache is expired
+      console.log('🔄 Checking for special images updates...');
       try {
         const images = await getSpecialImages();
         setSpecialImages(images);
       } catch (err) {
-        console.error("Error auto-refreshing special images:", err);
+        console.error("Error refreshing special images:", err);
       }
-    }, 300000); // Refresh every 5 minutes instead of 30 seconds
+    }, 900000); // Refresh every 15 minutes instead of 5 minutes
     
-    // Also refresh when page becomes visible (user switches back to tab)
+    // Only refresh when page becomes visible after being hidden for a while
+    let lastVisibilityChange = Date.now();
+    const VISIBILITY_REFRESH_THRESHOLD = 300000; // 5 minutes
+    
     const handleVisibilityChange = async () => {
       if (!document.hidden) {
-        console.log('📱 Page became visible, refreshing special images');
-        try {
-          const images = await getSpecialImages();
-          setSpecialImages(images);
-        } catch (err) {
-          console.error("Error refreshing special images on visibility change:", err);
+        const now = Date.now();
+        // Only refresh if it's been at least 5 minutes since last visibility change
+        if (now - lastVisibilityChange > VISIBILITY_REFRESH_THRESHOLD) {
+          console.log('📱 Page became visible after significant time, checking for updates');
+          try {
+            // getSpecialImages will check cache first
+            const images = await getSpecialImages();
+            setSpecialImages(images);
+          } catch (err) {
+            console.error("Error refreshing special images on visibility change:", err);
+          }
+        } else {
+          console.log('📱 Page became visible but using cached data (< 5 minutes)');
         }
+        lastVisibilityChange = now;
       }
     };
     
@@ -185,7 +196,7 @@ const Home = () => {
           bestSellersRef={bestSellersRef} 
           newlyLaunchedRef={newlyLaunchedRef}
           handpickedRef={handpickedRef}
-          favoritesRef={favoritesRef}
+  
           bestSellersImage={specialImages.bestSeller || bestSellersProducts[0]?.images[0]}
           newlyLaunchedImage={specialImages.newlyLaunched || newlyLaunchedProducts[0]?.images[0]}
         />
@@ -199,9 +210,7 @@ const Home = () => {
         <HandpickedForYou />
       </section>
 
-      <section ref={favoritesRef} className="w-full">
-        <FavoritesSection />
-      </section>
+
 
     </div>
     </>

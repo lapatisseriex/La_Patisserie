@@ -78,13 +78,43 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Debug middleware for CORS
-if (NODE_ENV === 'development') {
-  app.use((req, res, next) => {
+// Track API request rates
+const requestCounts = new Map();
+const RATE_REPORTING_INTERVAL = 15 * 60 * 1000; // 15 minutes
+
+// Debug middleware for CORS and track request rates
+app.use((req, res, next) => {
+  // Track API endpoint usage
+  const endpoint = `${req.method} ${req.path.split('?')[0]}`; // Remove query params for cleaner stats
+  
+  // Update request count
+  requestCounts.set(endpoint, (requestCounts.get(endpoint) || 0) + 1);
+  
+  // Debug logs in development
+  if (NODE_ENV === 'development') {
     console.log(`${req.method} ${req.path} - Origin: ${req.get('origin') || 'No origin'}`);
-    next();
-  });
-}
+  }
+  
+  next();
+});
+
+// Log API request rates periodically
+setInterval(() => {
+  if (requestCounts.size > 0) {
+    console.log('📊 API Request Rate Report (past 15 minutes):');
+    const sortedEndpoints = [...requestCounts.entries()]
+      .sort((a, b) => b[1] - a[1]) // Sort by count descending
+      .slice(0, 10); // Top 10 endpoints
+      
+    sortedEndpoints.forEach(([endpoint, count]) => {
+      console.log(`  ${endpoint}: ${count} requests`);
+    });
+    
+    console.log(`  Total endpoints tracked: ${requestCounts.size}`);
+    // Reset counts for next interval
+    requestCounts.clear();
+  }
+}, RATE_REPORTING_INTERVAL);
 
 // Middleware to check database connection
 app.use((req, res, next) => {

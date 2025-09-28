@@ -16,15 +16,18 @@ export const getCategories = asyncHandler(async (req, res) => {
   filter.name = { $ne: '__SPECIAL_IMAGES__' };
   
   // Add isActive filter if specified
+  let isActive = 'true'; // Default value
   if (req.query.isActive !== undefined) {
     // If isActive query param is explicitly 'all', don't filter by active status
     if (req.query.isActive.toLowerCase() === 'all') {
       // No filter needed, include both active and inactive
       console.log('Returning all categories (active and inactive)');
+      isActive = 'all';
     } else {
       // Otherwise, filter by the boolean value
       filter.isActive = req.query.isActive === 'true';
       console.log(`Filtering categories by isActive=${filter.isActive}`);
+      isActive = req.query.isActive;
     }
   } else {
     // Default to active categories only if not specified
@@ -32,8 +35,23 @@ export const getCategories = asyncHandler(async (req, res) => {
     console.log('Default: Returning active categories only');
   }
   
+  // Create a cache key based on the filter
+  const cacheKey = `categories-${isActive}`;
+  
+  // Try to get from cache first (valid for 5 minutes)
+  const cachedCategories = cache.get(cacheKey);
+  if (cachedCategories) {
+    console.log(`Returning ${cachedCategories.length} cached categories for filter: ${isActive}`);
+    return res.status(200).json(cachedCategories);
+  }
+  
+  // If not in cache, fetch from database
   const categories = await Category.find(filter).sort('name');
   console.log(`Found ${categories.length} categories matching filter:`, filter);
+  
+  // Store in cache for 5 minutes (300 seconds)
+  cache.set(cacheKey, categories, 300);
+  
   res.status(200).json(categories);
 });
 
@@ -449,8 +467,9 @@ export const getSpecialImages = asyncHandler(async (req, res) => {
       }
     };
     
-    // Cache the result for 5 minutes
-    cache.set(cacheKey, result, 300);
+    // Cache the result for 15 minutes instead of 5 to reduce database calls
+    // These special images don't change often so longer cache is acceptable
+    cache.set(cacheKey, result, 900);
     
     console.log('📸 Returning special images:', result);
     res.status(200).json(result);

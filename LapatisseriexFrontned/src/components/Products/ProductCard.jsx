@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { Heart } from 'lucide-react';
+
 import MediaDisplay from '../common/MediaDisplay';
 import { useCart } from '../../context/CartContext';
-import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
+import FavoriteButton from '../Favorites/FavoriteButton';
+
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
@@ -14,10 +15,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
-  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
   const { addToCart, getItemQuantity, updateQuantity, cartItems } = useCart();
-  const { isFavorite, toggleFavorite } = useFavorites();
+
   const { user } = useAuth();
   const { trackProductView } = useRecentlyViewed();
   const { buttonRef: addToCartButtonRef } = useSparkToCart();
@@ -193,28 +194,18 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     updateQuantity(product._id, newQuantity);
   }, [updateQuantity, product._id]);
 
-  const handleFavoriteToggle = async (e) => {
-    e.stopPropagation();
-    if (!user) {
-      return;
-    }
-    
-    setIsTogglingFavorite(true);
-    try {
-      await toggleFavorite(product._id);
-    } finally {
-      setIsTogglingFavorite(false);
-    }
-  };
 
-  const handleCardClick = async () => {
-    // Track the product view for logged-in users
-    if (user && product._id) {
-      await trackProductView(product._id);
-    }
-    
-    // Navigate to product display page
+
+  const handleCardClick = () => {
+    // Navigate immediately for better UX
     navigate(`/product/${product._id}`);
+    
+    // Track the product view in background (don't await)
+    if (user && product._id) {
+      trackProductView(product._id, product).catch(error => {
+        console.error('Error tracking product view:', error);
+      });
+    }
   };
 
   return (
@@ -243,6 +234,15 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             : 'aspect-square'
             }`}
           >
+            {/* Favorite Button */}
+            <div className="absolute top-2 right-2 z-20">
+              <FavoriteButton 
+                productId={product._id} 
+                size={featured ? 'lg' : 'md'} 
+                className="drop-shadow-md hover:scale-110 transition-transform duration-300"
+              />
+            </div>
+            
             <MediaDisplay
           src={product.images?.[currentImageIndex] || null}
           alt={product.name}
@@ -269,24 +269,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </div>
             )}
 
-            <button
-          onClick={handleFavoriteToggle}
-          disabled={isTogglingFavorite}
-          className={`absolute top-2 right-2 p-2 ${
-            isFavorite(product._id)
-              ? 'text-red-500'
-              : 'text-gray-600'
-          } ${isTogglingFavorite ? 'opacity-70 cursor-not-allowed' : ''}`}
-          title={isFavorite(product._id) ? 'Remove from favorites' : 'Add to favorites'}
-            >
-          <Heart
-            className={`w-4 h-4 stroke-red-500 stroke-2 ${
-              isFavorite(product._id) 
-                ? 'fill-current' 
-                : 'fill-none'
-            }`}
-          />
-          </button>
+
 
           {/* Discount Badge on Image */}
        

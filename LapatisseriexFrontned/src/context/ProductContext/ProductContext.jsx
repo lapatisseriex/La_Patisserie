@@ -1,8 +1,11 @@
 import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import axiosInstance from '../../utils/axiosConfig';
 import { useAuth } from '../AuthContext/AuthContext';
 
 const ProductContext = createContext();
+
+const PRODUCT_CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 export const useProduct = () => useContext(ProductContext);
 export const useProducts = () => useContext(ProductContext); // Alias for backward compatibility
@@ -17,6 +20,8 @@ export const ProductProvider = ({ children }) => {
   // Cache to prevent redundant API calls
   const requestCache = useRef(new Map());
   const requestInProgress = useRef(new Map());
+  const productCache = useRef(new Map());
+  const productRequestMap = useRef(new Map());
   
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -82,7 +87,7 @@ export const ProductProvider = ({ children }) => {
       setError(null);
       
       console.log(`📦 Fetching products: ${queryString ? queryString : 'all products'}`);
-      const response = await axios.get(`${API_URL}/products?${queryString}`);
+      const response = await axiosInstance.get(`${API_URL}/products?${queryString}`);
       
       // Success log
       console.log(`✅ Products loaded: ${response.data.products?.length || 0} items`);
@@ -156,21 +161,65 @@ export const ProductProvider = ({ children }) => {
   }, [API_URL]);
   
   // Get a single product by ID
-  const getProduct = useCallback(async (productId) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await axios.get(`${API_URL}/products/${productId}`);
-      return response.data;
-    } catch (err) {
-      console.error(`Error fetching product ${productId}:`, err);
-      setError("Failed to load product");
+  const getProduct = useCallback(async (productId, options = {}) => {
+    if (!productId) {
       return null;
-    } finally {
-      setLoading(false);
     }
-  }, []); 
+
+    const { forceRefresh = false } = options;
+    const now = Date.now();
+    const cached = productCache.current.get(productId);
+
+    if (!forceRefresh && cached && (now - cached.timestamp < PRODUCT_CACHE_TIMEOUT)) {
+      return cached.data;
+    }
+
+    if (!forceRefresh) {
+      const pending = productRequestMap.current.get(productId);
+      if (pending) {
+        return pending;
+      }
+    }
+
+    const requestPromise = (async () => {
+      const hasUsableCache = !forceRefresh && Boolean(cached) && (now - cached.timestamp < PRODUCT_CACHE_TIMEOUT);
+
+      try {
+        if (!hasUsableCache) {
+          setLoading(true);
+        }
+        setError(null);
+
+        const response = await axiosInstance.get(`${API_URL}/products/${productId}`, {
+          timeout: 10000 // 10 seconds timeout for product fetch
+        });
+        productCache.current.set(productId, {
+          data: response.data,
+          timestamp: Date.now()
+        });
+
+        return response.data;
+      } catch (err) {
+        console.error(`Error fetching product ${productId}:`, err);
+        setError("Failed to load product");
+        throw err;
+      } finally {
+        productRequestMap.current.delete(productId);
+        if (!hasUsableCache) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    productRequestMap.current.set(productId, requestPromise);
+
+    try {
+      return await requestPromise;
+    } catch {
+      const fallback = productCache.current.get(productId);
+      return fallback ? fallback.data : null;
+    }
+  }, [API_URL]);
   
   // Admin function: Create a new product
   const createProduct = useCallback(async (productData) => {

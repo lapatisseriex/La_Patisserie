@@ -9,8 +9,8 @@ import AdminLayout from './components/Layout/AdminLayout';
 
 // Pages
 import ProfilePage from './pages/Profile';
-import FavoritesPage from './pages/Favorites';
 import ProductDisplayPage from './pages/ProductDisplayPage';
+import Favorites from './pages/Favorites';
 
 // Home Components
 import Home from './components/Home/Home';
@@ -39,12 +39,17 @@ import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext/AuthContext';
 import { LocationProvider } from './context/LocationContext/LocationContext';
 import { HostelProvider } from './context/HostelContext/HostelContext';
+import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
 import { CategoryProvider } from './context/CategoryContext/CategoryContext';
 import { ProductProvider } from './context/ProductContext/ProductContext';
-import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
 import { RecentlyViewedProvider } from './context/RecentlyViewedContext/RecentlyViewedContext';
+
 import { ShopStatusProvider } from './context/ShopStatusContext';
 import { SparkAnimationProvider } from './context/SparkAnimationContext/SparkAnimationContext';
+
+// Redux Provider
+import { Provider } from 'react-redux';
+import store from './redux/store';
 
 // Main Homepage that combines all sections
 const HomePage = () => {
@@ -89,33 +94,36 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
   return (
-    <ShopStatusProvider>
-      <AuthProvider>
-        <LocationProvider>
-          <HostelProvider>
-            <CategoryProvider>
-              <ProductProvider>
-                <FavoritesProvider>
-                  <RecentlyViewedProvider>
-                    <CartProvider>
-                      <SparkAnimationProvider>
+    <Provider store={store}>
+      <ShopStatusProvider>
+        <AuthProvider>
+          <LocationProvider>
+            <HostelProvider>
+              <CategoryProvider>
+                <ProductProvider>
+                    <RecentlyViewedProvider>
+                      <CartProvider>
+                        <FavoritesProvider>
+                          <SparkAnimationProvider>
                         <Router>
-                <ScrollToTop />
-                  {/* Auth Modal - available on all pages */}
-                  <AuthModal />
-                
-            <Routes>
-             
-              {/* Home with regular Layout */}
-              <Route path="/" element={<Layout />}>
-                <Route index element={<HomePage />} />
-                <Route path="contact" element={<Newsletter />} />
-                <Route path="products" element={<Products />} />
-                <Route path="product/:productId" element={<ProductDisplayPage />} />
-                <Route path="favorites" element={<FavoritesPage />} />
-                <Route path="cart" element={<Cart />} />
-                <Route path="payment" element={<Payment />} />
-              </Route>
+                          <ScrollToTop />
+                          {/* Auth Modal - available on all pages */}
+                          <AuthModal />
+                          {/* Debug component for development only */}
+                         
+                        
+                          <Routes>
+                           
+                            {/* Home with regular Layout */}
+                            <Route path="/" element={<Layout />}>
+                              <Route index element={<HomePage />} />
+                              <Route path="contact" element={<Newsletter />} />
+                              <Route path="products" element={<Products />} />
+                              <Route path="product/:productId" element={<ProductDisplayPage />} />
+                              <Route path="cart" element={<Cart />} />
+                              <Route path="favorites" element={<Favorites />} />
+                              <Route path="payment" element={<Payment />} />
+                            </Route>
               
               {/* Profile and Orders with regular Layout */}
               <Route path="/" element={<Layout />}>
@@ -159,15 +167,16 @@ function App() {
             </Routes>
           </Router>
                       </SparkAnimationProvider>
+                      </FavoritesProvider>
                     </CartProvider>
-                </RecentlyViewedProvider>
-              </FavoritesProvider>
+                  </RecentlyViewedProvider>
               </ProductProvider>
             </CategoryProvider>
           </HostelProvider>
         </LocationProvider>
       </AuthProvider>
     </ShopStatusProvider>
+    </Provider>
   );
 }
 

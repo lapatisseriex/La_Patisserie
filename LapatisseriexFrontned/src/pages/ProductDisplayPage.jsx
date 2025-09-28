@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
 import { useProduct } from '../context/ProductContext/ProductContext';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
+import FavoriteButton from '../components/Favorites/FavoriteButton';
+
 import { useRecentlyViewed } from '../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useAuth } from '../context/AuthContext/AuthContext';
 import MediaDisplay from '../components/common/MediaDisplay';
@@ -14,16 +16,44 @@ import '../styles/ProductDisplayPage-mobile.css';
 import '../styles/premiumButtons.css';
 
 const ProductDisplayPage = () => {
+  // Gentle scroll to top once when component mounts
+  React.useLayoutEffect(() => {
+    // Set scroll behavior to auto temporarily
+    const originalBehavior = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = 'auto';
+    
+    // Scroll to top once
+    window.scrollTo(0, 0);
+    
+    // Reset scroll behavior
+    setTimeout(() => {
+      document.documentElement.style.scrollBehavior = originalBehavior;
+    }, 50);
+  }, []);
+
   const { productId } = useParams();
   const navigate = useNavigate();
   const { getProduct, fetchProducts } = useProduct();
   const { addToCart, getItemQuantity, updateQuantity, cartItems, isLoading } = useCart();
-  const { isFavorite, toggleFavorite } = useFavorites();
+
   const { fetchRecentlyViewed, trackProductView } = useRecentlyViewed();
   const { user } = useAuth();
+  const { isFavorite } = useFavorites();
   
   // Add custom CSS for ProductDisplayPage to hide header on mobile
   useEffect(() => {
+    // Prevent scroll restoration behavior
+    if ('scrollRestoration' in history) {
+      const original = history.scrollRestoration;
+      history.scrollRestoration = 'manual';
+      
+      // Restore original behavior on cleanup
+      return () => {
+        history.scrollRestoration = original;
+        document.body.classList.remove('product-display-page-mobile');
+      };
+    }
+
     // Add class to body when component mounts
     document.body.classList.add('product-display-page-mobile');
     
@@ -32,6 +62,14 @@ const ProductDisplayPage = () => {
       document.body.classList.remove('product-display-page-mobile');
     };
   }, []);
+
+  // Simple scroll to top when productId changes
+  useEffect(() => {
+    if (productId) {
+      // Single scroll to top with auto behavior
+      window.scrollTo(0, 0);
+    }
+  }, [productId]);
 
   const [product, setProduct] = useState(null);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
@@ -156,7 +194,14 @@ const ProductDisplayPage = () => {
     return /^[0-9a-fA-F]{24}$/.test(id);
   };
 
+  // Track retry attempts
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  
   useEffect(() => {
+    // Reset retry count when product ID changes
+    setRetryCount(0);
+    
     const loadProduct = async () => {
       if (productId) {
         if (!isValidObjectId(productId)) {
@@ -168,7 +213,15 @@ const ProductDisplayPage = () => {
 
         setLoading(true);
         try {
-          const productData = await getProduct(productId);
+          // Load main product data with timeout handling
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout')), 10000);
+          });
+          
+          const productData = await Promise.race([
+            getProduct(productId),
+            timeoutPromise
+          ]);
           
           if (!productData) {
             console.error('Product not found:', productId);
@@ -177,70 +230,106 @@ const ProductDisplayPage = () => {
             return;
           }
 
+          // Set product immediately to show the page faster
           setProduct(productData);
+          setLoading(false);
+          setRetryCount(0); // Reset retry count on success
 
-          // Track product view for logged-in users
+          // Load secondary data in background (non-blocking and with error isolation)
+          // Each Promise is wrapped to prevent one failure from affecting others
+          const backgroundTasks = [];
+          
+          // Task 1: Track product view
           if (user) {
-            try {
-              await trackProductView(productId);
-            } catch (trackError) {
-              console.error('Error tracking product view:', trackError);
-            }
+            const trackTask = async () => {
+              try {
+                await trackProductView(productId, productData);
+              } catch (error) {
+                console.error('Error tracking product view:', error);
+                // Non-critical error, continue
+              }
+            };
+            backgroundTasks.push(trackTask());
           }
-
-          // Load recently viewed products for logged-in users
+          
+          // Task 2: Load recently viewed products for logged-in users
           if (user) {
-            try {
-              const recentlyViewedData = await fetchRecentlyViewed();
-              const filteredRecent = recentlyViewedData
-                .filter(item => item.productId && item.productId._id !== productId)
-                .slice(0, 3);
-              setRecentlyViewed(filteredRecent);
-            } catch (recentError) {
-              console.error('Error loading recently viewed:', recentError);
-              setRecentlyViewed([]);
-            }
-          }
-
-          // Load products from the same category
-          if (productData.category) {
-            try {
-              const categoryProductsResponse = await fetchProducts({
-                category: productData.category._id,
-                limit: 6,
-                isActive: true
-              });
-              
-              // Handle different response structures
-              const categoryProducts = categoryProductsResponse?.products || categoryProductsResponse || [];
-              
-              // Ensure categoryProducts is an array before filtering
-              if (Array.isArray(categoryProducts)) {
-                const filteredCategoryProducts = categoryProducts
-                  .filter(p => p._id !== productId)
+            const recentTask = async () => {
+              try {
+                const recentlyViewedData = await fetchRecentlyViewed();
+                const filteredRecent = recentlyViewedData
+                  .filter(item => item.productId && item.productId._id !== productId)
                   .slice(0, 3);
-                setSameCategoryProducts(filteredCategoryProducts);
-              } else {
-                console.warn('Category products is not an array:', categoryProducts);
+                setRecentlyViewed(filteredRecent);
+              } catch (error) {
+                console.error('Error loading recently viewed:', error);
+                setRecentlyViewed([]);
+              }
+            };
+            backgroundTasks.push(recentTask());
+          }
+          
+          // Task 3: Load products from the same category
+          if (productData.category) {
+            const categoryTask = async () => {
+              try {
+                const categoryProductsResponse = await fetchProducts({
+                  category: productData.category._id,
+                  limit: 6,
+                  isActive: true
+                });
+                
+                const categoryProducts = categoryProductsResponse?.products || categoryProductsResponse || [];
+                
+                if (Array.isArray(categoryProducts)) {
+                  const filteredCategoryProducts = categoryProducts
+                    .filter(p => p._id !== productId)
+                    .slice(0, 3);
+                  setSameCategoryProducts(filteredCategoryProducts);
+                } else {
+                  console.warn('Category products is not an array:', categoryProducts);
+                  setSameCategoryProducts([]);
+                }
+              } catch (error) {
+                console.error('Error loading category products:', error);
                 setSameCategoryProducts([]);
               }
-            } catch (categoryError) {
-              console.error('Error loading category products:', categoryError);
-              setSameCategoryProducts([]);
-            }
+            };
+            backgroundTasks.push(categoryTask());
           }
+          
+          // Execute all background tasks without waiting or blocking
+          Promise.allSettled(backgroundTasks);
 
         } catch (error) {
-          console.error('Error loading product:', error);
-          setProduct(null);
-        } finally {
-          setLoading(false);
+          console.error(`Error loading product (attempt ${retryCount + 1}/${maxRetries}):`, error);
+          
+          // Implement retry logic for network errors
+          if (retryCount < maxRetries && 
+              (error.name === 'AxiosError' || 
+               error.message === 'Request timeout' || 
+               error.code === 'ECONNABORTED' || 
+               error.message?.includes('network'))) {
+            
+            // Increment retry count
+            setRetryCount(prev => prev + 1);
+            
+            // Wait before retrying (exponential backoff)
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 8000);
+            console.log(`Retrying in ${delay}ms...`);
+            
+            setTimeout(() => loadProduct(), delay);
+          } else {
+            // Max retries exceeded or non-retriable error
+            setProduct(null);
+            setLoading(false);
+          }
         }
       }
     };
 
     loadProduct();
-  }, [productId, getProduct, fetchProducts, trackProductView, fetchRecentlyViewed, user]);
+  }, [productId, getProduct, fetchProducts, trackProductView, fetchRecentlyViewed, user, retryCount]);
 
   // Auto-sliding functionality for multiple images - smooth and slow
   useEffect(() => {
@@ -297,16 +386,19 @@ const ProductDisplayPage = () => {
       setLastScrollY(window.scrollY);
     };
 
-    // Throttled scroll listener
-    let ticking = false;
+    // Better throttled scroll listener with debounce
+    let scrollTimeout;
     const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
+      // Clear any existing timeout
+      if (scrollTimeout) {
+        cancelAnimationFrame(scrollTimeout);
       }
+      
+      // Set a new timeout
+      scrollTimeout = requestAnimationFrame(() => {
+        handleScroll();
+        scrollTimeout = null;
+      });
     };
 
     const onResize = () => handleScroll();
@@ -407,14 +499,7 @@ const ProductDisplayPage = () => {
     }
   };
 
-  const handleFavoriteToggle = async () => {
-    if (!user || !product) return;
-    try {
-      await toggleFavorite(product._id);
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-    }
-  };
+
 
   const handleImageSelect = (index) => {
     setSelectedImageIndex(index);
@@ -540,7 +625,10 @@ const ProductDisplayPage = () => {
   const totalStock = product.stock || selectedVariant.stock || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 relative overflow-hidden">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 relative overflow-hidden"
+      style={{ scrollMarginTop: 0, scrollPaddingTop: 0 }}
+    >
       {/* Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-10 w-32 h-32 bg-pink-200/20 rounded-full blur-3xl animate-pulse"></div>
@@ -559,7 +647,7 @@ const ProductDisplayPage = () => {
           zIndex: 100 // Ensure above page content and header if necessary
         }}>
         {/* Backdrop blur for better visual separation */}
-        <div className="bg-white/80 backdrop-blur-lg border-t border-pink-200/50 shadow-lg" data-aos="fade-down" data-aos-delay="100">
+        <div className="bg-white/80 backdrop-blur-lg border-t border-pink-200/50 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 sm:py-3">
             <div className="flex items-center justify-between gap-3 sm:gap-6">
               
@@ -599,6 +687,14 @@ const ProductDisplayPage = () => {
 
               {/* Right: Action Buttons */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                {/* Favorite Button */}
+                <button
+                  className="bg-gray-50 border border-rose-300 h-9 sm:h-10 w-9 sm:w-10 flex items-center justify-center rounded-lg hover:border-rose-500"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FavoriteButton productId={productId} size="md" className="text-rose-500" />
+                </button>
+                
                 {/* Quantity Controls or Add to Cart */}
                 {currentCartQuantity > 0 ? (
                   <div className="flex items-center bg-gray-50 border border-gray-300 h-9 sm:h-10 rounded-lg">
@@ -668,7 +764,7 @@ const ProductDisplayPage = () => {
       {/* Mobile Layout with Gradient Background and Glassmorphism Cards */}
       <div className="md:hidden min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
         {/* Mobile Image Display */}
-        <div className="relative w-full" data-aos="fade-in" data-aos-duration="800">
+        <div className="relative w-full">
           <div className="relative w-full overflow-hidden">
             <div 
               className="relative w-full aspect-square cursor-pointer group"
@@ -681,7 +777,7 @@ const ProductDisplayPage = () => {
               />
               
               {/* Navigation Controls - Back Arrow and Search */}
-              <div className="absolute top-3 left-3 z-10" data-aos="fade-right" data-aos-delay="200">
+              <div className="absolute top-3 left-3 z-10">
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -694,8 +790,8 @@ const ProductDisplayPage = () => {
               </div>
               
               {/* Search and Share Icons */}
-              <div className="absolute top-3 right-3 flex gap-2 z-10" data-aos="fade-left" data-aos-delay="300">
-              
+              <div className="absolute top-3 right-3 flex gap-2 z-10">
+                
                 <button 
                   onClick={(e) => e.stopPropagation()}
                   className="w-10 h-10 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center shadow-xl border border-white/30 hover:bg-white/30 transition-all duration-300"
@@ -732,28 +828,25 @@ const ProductDisplayPage = () => {
         {/* Mobile Product Info Cards with Glassmorphism */}
         <div className="bg-gradient-to-br from-pink-50 via-white to-purple-50 px-4 pb-6 space-y-4">
           {/* Product Info Card (Glassmorphism) */}
-          <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/30" ref={productInfoRef} data-aos="fade-up" data-aos-delay="400">
+          <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/30" ref={productInfoRef}>
             {/* Product Title and Quantity */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h1 className="text-xl font-bold text-yellow-600 leading-tight">
-                  {product.name}
-                </h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl font-bold text-yellow-600 leading-tight flex-1">
+                    {product.name}
+                  </h1>
+                  <div className="flex-shrink-0">
+                    <FavoriteButton 
+                      productId={productId} 
+                      size="md" 
+                      className="bg-white/80 rounded-full p-1.5 shadow-sm hover:shadow-md transition-shadow duration-200" 
+                    />
+                  </div>
+                </div>
                 <p className="text-sm text-gray-600 mt-2 font-medium">Net Qty: Serves 1</p>
               </div>
-              {/* Heart Icon with enhanced styling */}
-              <button
-                onClick={handleFavoriteToggle}
-                className="ml-3 p-3 bg-white/50 backdrop-blur-sm rounded-full hover:bg-white/70 transition-all duration-300"
-              >
-                <Heart 
-                  className={`w-6 h-6 transition-all duration-300 ${
-                    isFavorite(product._id) 
-                      ? 'text-red-500 fill-current scale-110' 
-                      : 'text-gray-400 hover:text-red-500 hover:scale-110'
-                  }`}
-                />
-              </button>
+
             </div>
 
             {/* Price Row - mobile matches reference */}
@@ -1190,18 +1283,18 @@ const ProductDisplayPage = () => {
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:block" data-aos="fade-in" data-aos-duration="1000">
+      <div className="hidden md:block">
         <div className="max-w-7xl mx-auto p-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Image Gallery */}
-          <div className="lg:col-span-7" data-aos="fade-right" data-aos-delay="200">
+          <div className="lg:col-span-7">
             {/* Desktop Image Display Layout - Bounded sticky so sections below don't overlap */}
             <div className="relative">
               <div className="flex gap-4">
               {/* Thumbnail Images - Left Side */}
               {product.images && product.images.length > 1 && (
-                <div className="flex flex-col gap-2 w-20 md:w-24 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300" data-aos="fade-right" data-aos-delay="400">
+                <div className="flex flex-col gap-2 w-20 md:w-24 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
                   {product.images.map((image, index) => (
                     <button
                       key={index}
@@ -1211,8 +1304,7 @@ const ProductDisplayPage = () => {
                           ? 'border-black shadow-lg'
                           : 'border-gray-300 hover:border-gray-500'
                       }`}
-                      data-aos="zoom-in"
-                      data-aos-delay={500 + index * 100}
+
                     >
                       <MediaDisplay
                         src={image}
@@ -1225,7 +1317,7 @@ const ProductDisplayPage = () => {
               )}
               
               {/* Main Image - Right Side */}
-              <div className="flex-1" data-aos="fade-left" data-aos-delay="300">
+              <div className="flex-1">
                 <div className="relative bg-white/70 backdrop-blur-lg border border-pink-200/50 rounded-2xl shadow-xl">
                   <div 
                     className="aspect-square cursor-pointer group relative overflow-hidden rounded-2xl"
@@ -1261,7 +1353,7 @@ const ProductDisplayPage = () => {
             {/* Moved info sections below the image for large devices */}
             <div className="mt-6 space-y-4">
               {/* Highlights Section */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-pink-200/50" data-aos="fade-up" data-aos-delay="600">
+              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-pink-200/50">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Highlights</h3>
                   <ChevronDown className="w-5 h-5 text-gray-400" />
@@ -1282,7 +1374,7 @@ const ProductDisplayPage = () => {
               </div>
 
               {/* Information Section (Expandable) */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-pink-200/50" data-aos="fade-up" data-aos-delay="700">
+              <div className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-pink-200/50">
                 <button
                   onClick={handleDescriptionToggle}
                   className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-pink-50/50 transition-colors rounded-2xl"
@@ -1431,38 +1523,33 @@ const ProductDisplayPage = () => {
           </div>
 
           {/* Product Information - Right Side with Layered Design */}
-          <div className="lg:col-span-5" data-aos="fade-left" data-aos-delay="400">
+          <div className="lg:col-span-5">
             <div className="space-y-4">
               
               {/* Product Info Card (White Block) */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 border border-pink-200/50" data-aos="fade-up" data-aos-delay="500">
+              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 border border-pink-200/50">
                 {/* Product Title and Quantity */}
-                <div className="flex items-start justify-between mb-4" data-aos="fade-down" data-aos-delay="600">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-medium leading-tight text-yellow-600">
-                      {product.name}
-                    </h1>
+                    <div className="flex items-center gap-4">
+                      <h1 className="text-2xl md:text-3xl font-medium leading-tight text-yellow-600 flex-1">
+                        {product.name}
+                      </h1>
+                      <div className="flex-shrink-0">
+                        <FavoriteButton 
+                          productId={productId} 
+                          size="lg" 
+                          className="bg-white/90 p-2  transition-all duration-200" 
+                        />
+                      </div>
+                    </div>
                     <p className="text-sm text-gray-500 mt-2">Net Qty: Serves 1</p>
                   </div>
-                  {/* Heart Icon */}
-                  <button
-                    onClick={handleFavoriteToggle}
-                    className="ml-4 p-2 hover:scale-110 transition-transform"
-                    data-aos="zoom-in"
-                    data-aos-delay="700"
-                  >
-                    <Heart 
-                      className={`w-6 h-6 transition-colors ${
-                        isFavorite(product._id) 
-                          ? 'text-red-500 fill-current' 
-                          : 'text-gray-400 hover:text-red-500'
-                      }`}
-                    />
-                  </button>
+
                 </div>
 
                 {/* Price Row (matches reference) */}
-                <div className="flex items-center gap-3 mb-2" data-aos="fade-right" data-aos-delay="800">
+                <div className="flex items-center gap-3 mb-2">
                   <span className="text-3xl font-bold text-gray-900">
                     ₹{Math.round(discountedPrice)}
                   </span>
@@ -1482,7 +1569,7 @@ const ProductDisplayPage = () => {
                 </div>
 
                 {/* Rating chip below price */}
-                <div className="mb-4" data-aos="fade-left" data-aos-delay="900">
+                <div className="mb-4">
                   <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-pink-200/50 rounded-full px-3 py-1">
                     <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-600 text-white">★</span>
                     <span className="text-sm font-medium text-gray-900">{productRating.rating}</span>
@@ -1492,7 +1579,7 @@ const ProductDisplayPage = () => {
                 </div>
 
                 {/* Delivery Time */}
-                <div className="flex items-center text-green-600 text-base font-medium" data-aos="fade-up" data-aos-delay="1000">
+                <div className="flex items-center text-green-600 text-base font-medium">
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                   </svg>
@@ -1500,7 +1587,7 @@ const ProductDisplayPage = () => {
                 </div>
 
                 {/* Dietary Indicators - show both options like reference UI */}
-                <div className="flex items-center gap-3 mt-4" data-aos="fade-up" data-aos-delay="1100">
+                <div className="flex items-center gap-3 mt-4">
                   {/* WITH EGG pill */}
                   <div
                     className={`flex items-center gap-2 rounded-[14px] px-4 py-2 border ${
@@ -1532,11 +1619,11 @@ const ProductDisplayPage = () => {
               </div>
 
               {/* Feature Row (Icons in White Card) */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 border border-pink-200/50 mb-4" data-aos="fade-up" data-aos-delay="1200">
+              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 border border-pink-200/50 mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Features</h3>
                 <div className="grid grid-cols-2 gap-6">
                   {/* No Return or Exchange */}
-                  <div className="flex flex-col items-center text-center p-5 bg-white/50 backdrop-blur-sm rounded-xl border border-pink-200/30 hover:scale-105 transition-all" data-aos="zoom-in" data-aos-delay="1300">
+                  <div className="flex flex-col items-center text-center p-5 bg-white/50 backdrop-blur-sm rounded-xl border border-pink-200/30 hover:scale-105 transition-all">
                     <div className="w-12 h-12 mb-3 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full">
                       <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1547,7 +1634,7 @@ const ProductDisplayPage = () => {
                   </div>
 
                   {/* Fast Delivery */}
-                  <div className="flex flex-col items-center text-center p-5 bg-white/50 backdrop-blur-sm rounded-xl border border-pink-200/30 hover:scale-105 transition-all" data-aos="zoom-in" data-aos-delay="1400">
+                  <div className="flex flex-col items-center text-center p-5 bg-white/50 backdrop-blur-sm rounded-xl border border-pink-200/30 hover:scale-105 transition-all">
                     <div className="w-12 h-12 mb-3 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full">
                       <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1560,7 +1647,7 @@ const ProductDisplayPage = () => {
 
 
               {/* Variant Selection and Action Buttons */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 space-y-6 border border-pink-200/50 mb-4" data-aos="fade-up" data-aos-delay="1500">
+              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 space-y-6 border border-pink-200/50 mb-4">
               
                 {/* Variant Selection */}
                 {product.variants && product.variants.length > 1 && (
@@ -1601,8 +1688,8 @@ const ProductDisplayPage = () => {
                 )}
 
                 {/* Action Buttons - Horizontal pair on desktop */}
-                <div className="flex items-stretch gap-3" data-aos="fade-up" data-aos-delay="1600">
-                  <div className="flex-1" data-aos="slide-right" data-aos-delay="1700">
+                <div className="flex items-stretch gap-3">
+                  <div className="flex-1">
                     {currentCartQuantity > 0 ? (
                       <div className="w-full h-12 flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3">
                         <button
@@ -1653,8 +1740,8 @@ const ProductDisplayPage = () => {
         
         {/* Recently Viewed / Similar Products - Desktop */}
         {(recentlyViewed.length > 0 || sameCategoryProducts.length > 0) && (
-          <section className="mt-16" data-aos="fade-up" data-aos-delay="1800">
-            <div className="text-center mb-8 border-b border-pink-200/50 pb-6" data-aos="fade-down" data-aos-delay="1900">
+          <section className="mt-16">
+            <div className="text-center mb-8 border-b border-pink-200/50 pb-6">
               <h2 className="text-2xl font-semibold mb-2" style={{ 
                 background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
                 WebkitBackgroundClip: 'text',
@@ -1679,7 +1766,7 @@ const ProductDisplayPage = () => {
                 }
 
                 return (
-                  <div key={productToShow._id} data-aos="zoom-in" data-aos-delay={2000 + index * 100}>
+                  <div key={productToShow._id}>
                     <ProductCard
                       product={productToShow}
                     />
