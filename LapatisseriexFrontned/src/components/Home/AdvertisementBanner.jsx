@@ -28,7 +28,7 @@ const AdvertisementBanner = memo(() => {
       {
         _id: 'local-vid',
         type: 'video',
-        src: '/baners/La-patesserie.mp4',
+        src: '/images/La-patesserie.mp4',
         title: 'La Patisserie',
         subtitle: 'Artisan Treats, Fresh Daily',
         description: 'From flaky croissants to creamy tiramisu—made with love, served with joy.',
@@ -37,7 +37,7 @@ const AdvertisementBanner = memo(() => {
       {
         _id: 'local-1',
         type: 'image',
-        src: '/baners/mini_crossants.jpg',
+        src: '/images/mini_crossants.jpg',
         title: 'Golden Croissants',
         subtitle: 'Crisp Layers, Buttery Heart',
         description: 'Perfectly laminated layers that melt in your mouth.',
@@ -46,7 +46,7 @@ const AdvertisementBanner = memo(() => {
       {
         _id: 'local-2',
         type: 'image',
-        src: '/baners/creme_bruls.jpg',
+        src: '/images/creme_bruls.jpg',
         title: 'Crème Brûlée',
         subtitle: 'Silky Custard, Caramelized Top',
         description: 'A classic French dessert with a perfect crack.',
@@ -55,7 +55,7 @@ const AdvertisementBanner = memo(() => {
       {
         _id: 'local-3',
         type: 'image',
-        src: '/baners/tirumisu.jpg',
+        src: '/images/tirumisu.jpg',
         title: 'Classic Tiramisu',
         subtitle: 'Coffee-soaked Bliss',
         description: 'Layers of mascarpone, espresso, and cocoa.',
