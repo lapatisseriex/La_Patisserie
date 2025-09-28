@@ -88,13 +88,13 @@ class MemoryCache {
   }
 }
 
-<<<<<<< HEAD
+
 // Create singleton instance
-export const cache = new MemoryCache();
-=======
+
+
 // Export singleton instance
 export const cache = new MemoryCache(Number(process.env.CACHE_DEFAULT_TTL || 300), Number(process.env.CACHE_MAX_ITEMS || 1000));
->>>>>>> c290b4f41fb5b6583c1ba4b68550031c8d3f46e5
+
 
 // Set up automatic cache cleanup every 30 minutes
 const CACHE_CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutes in ms
