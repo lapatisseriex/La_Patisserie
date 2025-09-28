@@ -441,7 +441,7 @@ const AdminLocations = () => {
   }, [authReady, authUser]);
 
   return (
-    <div className="container mx-auto pl-8 pr-4 py-6 pt-8 font-sans overflow-x-hidden relative">
+    <div className="container mx-auto pl-8 pr-4 py-6 pt-8 md:pb-6 pb-28 font-sans overflow-x-hidden relative">
       {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
       {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
   <div className="mb-0 md:mb-6 flex justify-between items-center">
@@ -478,8 +478,8 @@ const AdminLocations = () => {
         </div>
       )}
       
-      {/* Mobile: Locations as Cards */}
-      <div className="md:hidden space-y-4">
+  {/* Mobile: Locations as Cards */}
+  <div className="md:hidden space-y-4 pb-24">
         {loading ? (
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center text-black font-light">
             Loading locations...
