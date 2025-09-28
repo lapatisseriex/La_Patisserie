@@ -197,9 +197,33 @@ export const getUserById = asyncHandler(async (req, res) => {
   });
 });
 export const getUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).populate('location').populate('hostel').sort('-createdAt');
+  const { page = 1, limit = 10, search = '' } = req.query;
+
+  const filter = {};
+  if (search) {
+    const regex = new RegExp(search, 'i');
+    filter.$or = [
+      { name: regex },
+      { email: regex },
+      { phone: regex },
+    ];
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+  const skip = (pageNum - 1) * limitNum;
+
+  const [users, totalUsers] = await Promise.all([
+    User.find(filter).populate('location').populate('hostel').sort('-createdAt').skip(skip).limit(limitNum),
+    User.countDocuments(filter)
+  ]);
   
-  res.status(200).json(users);
+  res.status(200).json({
+    users,
+    page: pageNum,
+    pages: Math.ceil(totalUsers / limitNum) || 1,
+    totalUsers,
+  });
 });
 
 // @desc    Add product to favorites

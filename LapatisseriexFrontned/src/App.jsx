@@ -23,7 +23,6 @@ import AdminUsers from './components/Admin/AdminUsers';
 import AdminLocations from './components/Admin/AdminLocations';
 import AdminProducts from './components/Admin/Products/AdminProducts';
 import AdminCategories from './components/Admin/Categories/AdminCategories';
-import AdminBannerManagement from './components/Admin/AdminBannerManagement';
 import AdminTimeSettings from './components/Admin/AdminTimeSettings';
 
 // Cart and Payment Components
@@ -150,7 +149,7 @@ function App() {
                   <Route path="products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
                   <Route path="categories" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCategories /></React.Suspense>} />
                   <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
-                  <Route path="banners" element={<React.Suspense fallback={<div>Loading...</div>}><AdminBannerManagement /></React.Suspense>} />
+                  {/* Banners route removed: banners are managed statically in codebase */}
                   <Route path="time-settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTimeSettings /></React.Suspense>} />
                 </Route>
               </Route>

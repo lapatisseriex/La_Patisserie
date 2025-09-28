@@ -18,7 +18,6 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import hostelRoutes from './routes/hostelRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
-import bannerRoutes from './routes/bannerRoutes.js';
 import timeSettingsRoutes from './routes/timeSettingsRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import newCartRoutes from './routes/newCartRoutes.js';
@@ -137,7 +136,7 @@ const startServer = async () => {
     app.use('/api/upload', uploadRoutes);
     app.use('/api/hostels', hostelRoutes);
     app.use('/api/image-reprocess', imageReprocessRoutes);
-    app.use('/api/banners', bannerRoutes);
+  // Banners are now static on the frontend; backend routes removed
     app.use('/api/time-settings', timeSettingsRoutes);
     app.use('/api/cart', cartRoutes);
     app.use('/api/newcart', newCartRoutes);

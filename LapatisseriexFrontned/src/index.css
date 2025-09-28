@@ -50,22 +50,71 @@ main {
 
 /* Animation for fade-in */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-in-out;
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 body {
   font-family: sans-serif;
   background-color: white;
   padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Admin pages: remove any body top padding (including safe-area) so the mobile header is flush */
+body.admin-layout {
+  padding-top: 0 !important;
+}
+
+:root {
+  --admin-mobile-header-height: 56px; /* default header height; keep in sync with the header bar height */
+  --admin-mobile-header-inner-padding: 2px; /* small breathing room inside header; set 0px for perfectly flush */
+  --admin-mobile-content-gap: 0px;    /* space between header and content; set 2-6px if you want a subtle gap */
+  --admin-mobile-bottom-gap: 72px;    /* extra space at the bottom so last items and FAB/pagination aren't clipped on mobile */
+  --admin-mobile-header-offset: calc(
+    var(--admin-mobile-header-height) + var(--admin-mobile-content-gap)
+  );
+}
+
+/* Global scrollbar styles - default black thumb */
+/* Firefox */
+* {
+  scrollbar-color: #000 #e5e7eb; /* thumb, track */
+  scrollbar-width: thin;
+}
+/* WebKit (Chrome/Edge/Safari) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #e5e7eb; /* gray-200 */
+}
+::-webkit-scrollbar-thumb {
+  background: #000; /* black */
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #111;
+}
+
+/* Tables get their own distinct scrollbar */
+.table-scroll {
+  /* Firefox */
+  scrollbar-color: #6b7280 #f3f4f6; /* gray-500 thumb on gray-100 track */
+  scrollbar-width: thin;
+}
+.table-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.table-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6; /* gray-100 */
+}
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #6b7280; /* gray-500 */
+  border-radius: 6px;
+}
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #4b5563; /* gray-600 */
 }
 
 /* When product image modal is open on large devices, hide header */
@@ -100,9 +149,29 @@ body {
   }
 }
 
+/* Admin pages: let Admin layout control its own spacing on mobile */
+@media (max-width: 767px) {
+  body.admin-layout main {
+    padding-top: 0 !important;
+  }
+}
+
 /* Class for body when header is fixed */
 body.has-fixed-header {
   padding-top: 0; /* Managed by main tag */
+}
+
+/* Admin: remove any residual top spacing on desktop */
+body.admin-layout main {
+  padding-top: 0 !important;
+}
+.admin-content-root {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.admin-content-root > *:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 /* Category swiper styling */

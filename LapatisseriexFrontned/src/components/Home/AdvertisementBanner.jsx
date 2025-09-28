@@ -17,33 +17,54 @@ const AdvertisementBanner = memo(() => {
   const intervalRef = useRef(null);
   const bannerRef = useRef(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  // Backend banners API removed – use static assets
   const minSwipeDistance = 50;
 
-  // === FETCH BANNERS ===
+  // === LOAD STATIC BANNERS FROM ASSETS ===
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${API_URL}/banners`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('🎯 Banner API loaded successfully, count:', data.banners?.length || 0);
-          setBannerSlides(data.banners || []);
-        } else {
-          console.error('🚨 Failed to fetch banners, status:', response.status);
-          // fallback
-          setBannerSlides([fallbackBanner()]);
-        }
-      } catch (error) {
-        console.error('🚨 Banner fetch error:', error);
-        setBannerSlides([fallbackBanner()]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBanners();
-  }, [API_URL]); // Add API_URL as dependency
+    setLoading(true);
+    // Static banners list
+    const slides = [
+      {
+        _id: 'local-vid',
+        type: 'video',
+        src: '/src/assets/baners/La-patesserie.mp4',
+        title: 'La Patisserie',
+        subtitle: 'Artisan Treats, Fresh Daily',
+        description: 'From flaky croissants to creamy tiramisu—made with love, served with joy.',
+        leftContent: { features: ['Premium Ingredients','Baked Fresh Daily','Authentic French Methods'] },
+      },
+      {
+        _id: 'local-1',
+        type: 'image',
+        src: '/src/assets/baners/mini_crossants.jpg',
+        title: 'Golden Croissants',
+        subtitle: 'Crisp Layers, Buttery Heart',
+        description: 'Perfectly laminated layers that melt in your mouth.',
+        leftContent: { features: ['Handcrafted Dough','European Butter','Irresistibly Flaky'] },
+      },
+      {
+        _id: 'local-2',
+        type: 'image',
+        src: '/src/assets/baners/creme_bruls.jpg',
+        title: 'Crème Brûlée',
+        subtitle: 'Silky Custard, Caramelized Top',
+        description: 'A classic French dessert with a perfect crack.',
+        leftContent: { features: ['Torch-caramelized','Silky Texture','Vanilla Aroma'] },
+      },
+      {
+        _id: 'local-3',
+        type: 'image',
+        src: '/src/assets/baners/tirumisu.jpg',
+        title: 'Classic Tiramisu',
+        subtitle: 'Coffee-soaked Bliss',
+        description: 'Layers of mascarpone, espresso, and cocoa.',
+        leftContent: { features: ['Mascarpone-rich','Balanced Sweetness','Italian Classic'] },
+      },
+    ];
+    setBannerSlides(slides);
+    setLoading(false);
+  }, []);
 
   // === PRELOAD IMAGES ===
   useEffect(() => {

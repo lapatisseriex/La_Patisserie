@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaLeaf, FaEgg, FaCheckCircle, FaImage, FaVideo, FaMoneyBillAlt, FaCog, FaPen } from 'react-icons/fa';
 import { useProduct } from '../../../context/ProductContext/ProductContext';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import MediaUploader from '../../common/MediaUpload/MediaUploader';
@@ -322,10 +323,10 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       <div className="mb-8 border-b border-gray-200">
         <nav className="flex flex-wrap -mb-px gap-1 sm:gap-0">
           {[
-            { key: 'basic', label: 'Basic Info', icon: '📝' },
-            { key: 'media', label: 'Media', icon: '🖼️' },
-            { key: 'pricing', label: 'Pricing & Stock', icon: '💰' },
-            { key: 'details', label: 'Details', icon: '⚙️' }
+            { key: 'basic', label: 'Basic Info', icon: <FaPen /> },
+            { key: 'media', label: 'Media', icon: <FaImage /> },
+            { key: 'pricing', label: 'Pricing & Stock', icon: <FaMoneyBillAlt /> },
+            { key: 'details', label: 'Details', icon: <FaCog /> }
           ].map(tab => (
             <button
               key={tab.key}
@@ -337,7 +338,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                   : 'text-gray-600 hover:text-pink-600 hover:bg-gray-50'
               }`}
             >
-              <span className="mr-2 text-base">{tab.icon}</span>
+              <span className="mr-2 text-base inline-flex items-center">{tab.icon}</span>
               <span className="hidden sm:inline">{tab.label}</span>
               <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
             </button>
@@ -418,7 +419,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                     className="h-4 w-4 text-pink-500 focus:ring-pink-500 border-gray-300 rounded"
                   />
                   <div className="flex items-center space-x-2">
-                    <span className="text-green-600">🥬</span>
+                    <FaLeaf className="text-green-600" />
                     <span className="text-sm font-medium text-gray-700">Vegetarian</span>
                   </div>
                 </label>
@@ -432,7 +433,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                     className="h-4 w-4 text-pink-500 focus:ring-pink-500 border-gray-300 rounded"
                   />
                   <div className="flex items-center space-x-2">
-                    <span className="text-orange-600">🥚</span>
+                    <FaEgg className="text-orange-600" />
                     <span className="text-sm font-medium text-gray-700">Contains Egg</span>
                   </div>
                 </label>
@@ -446,7 +447,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                     className="h-4 w-4 text-pink-500 focus:ring-pink-500 border-gray-300 rounded"
                   />
                   <div className="flex items-center space-x-2">
-                    <span className="text-green-600">✅</span>
+                    <FaCheckCircle className="text-green-600" />
                     <span className="text-sm font-medium text-gray-700">Active Product</span>
                   </div>
                 </label>
@@ -462,7 +463,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
             {/* Product Images Section */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
-                <span className="text-lg">🖼️</span>
+                <FaImage className="text-lg" />
                 <h3 className="text-lg font-semibold text-gray-800">Product Images</h3>
                 <span className="text-red-500 text-sm">*</span>
               </div>
@@ -508,7 +509,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
             {/* Product Videos Section */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
-                <span className="text-lg">🎥</span>
+                <FaVideo className="text-lg" />
                 <h3 className="text-lg font-semibold text-gray-800">Product Videos</h3>
                 <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Optional</span>
               </div>
@@ -559,7 +560,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="text-lg">💰</span>
+                <FaMoneyBillAlt className="text-lg" />
                 <h3 className="text-lg font-semibold text-gray-800">Pricing & Stock</h3>
                 <span className="text-red-500 text-sm">*</span>
               </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaCheckCircle, FaImage, FaVideo } from 'react-icons/fa';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import MediaUploader from '../../common/MediaUpload/MediaUploader';
 import MediaPreview from '../../common/MediaUpload/MediaPreview';
@@ -232,7 +233,7 @@ const CategoryForm = ({ category = null, onClose }) => {
               className="h-4 w-4 text-pink-500 focus:ring-pink-500 border-gray-300 rounded"
             />
             <div className="flex items-center space-x-2">
-              <span className="text-green-600">✅</span>
+              <FaCheckCircle className="text-green-600" />
               <span className="text-sm font-medium text-gray-700">Active Category</span>
             </div>
           </label>
@@ -242,7 +243,7 @@ const CategoryForm = ({ category = null, onClose }) => {
         {/* Category Images Section */}
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
-            <span className="text-lg">🖼️</span>
+            <FaImage className="text-lg" />
             <h3 className="text-lg font-semibold text-gray-800">Category Images</h3>
             <span className="text-red-500 text-sm">*</span>
           </div>
@@ -294,7 +295,7 @@ const CategoryForm = ({ category = null, onClose }) => {
         {/* Category Videos Section */}
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
-            <span className="text-lg">🎥</span>
+            <FaVideo className="text-lg" />
             <h3 className="text-lg font-semibold text-gray-800">Category Videos</h3>
             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Optional</span>
           </div>

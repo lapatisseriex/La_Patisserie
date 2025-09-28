@@ -125,7 +125,10 @@ const SpecialCategoryImages = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div
+      className="space-y-6 overflow-x-hidden pb-6 md:pb-10 min-w-0"
+      style={{ paddingBottom: 'var(--admin-mobile-bottom-gap)' }}
+    >
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
           <FaImage className="mr-3 text-pink-600" />
@@ -137,9 +140,9 @@ const SpecialCategoryImages = () => {
           the system will automatically use the first product image from each category.
         </p>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 w-full min-w-0">
           {/* Best Seller Image */}
-          <div className="border rounded-lg p-4 space-y-4">
+          <div className="border rounded-lg p-4 space-y-4 overflow-hidden w-full min-w-0">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-800 flex items-center">
                 <FaStar className="mr-2 text-yellow-500" />
@@ -193,7 +196,7 @@ const SpecialCategoryImages = () => {
               />
               <label
                 htmlFor="bestSellerUpload"
-                className={`flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 cursor-pointer transition-colors ${
+                className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 cursor-pointer transition-colors ${
                   uploading.bestSeller ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -213,7 +216,7 @@ const SpecialCategoryImages = () => {
           </div>
 
           {/* Newly Launched Image */}
-          <div className="border rounded-lg p-4 space-y-4">
+          <div className="border rounded-lg p-4 space-y-4 overflow-hidden w-full min-w-0">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-800 flex items-center">
                 <FaNewspaper className="mr-2 text-blue-500" />
@@ -267,7 +270,7 @@ const SpecialCategoryImages = () => {
               />
               <label
                 htmlFor="newlyLaunchedUpload"
-                className={`flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors ${
+                className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors ${
                   uploading.newlyLaunched ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >

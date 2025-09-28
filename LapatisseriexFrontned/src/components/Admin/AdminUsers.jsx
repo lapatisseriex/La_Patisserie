@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaUser, FaPhone, FaMapMarkerAlt, FaCrown, FaExclamationTriangle, FaEye } from 'react-icons/fa';
+import { FaUser, FaPhone, FaMapMarkerAlt, FaCrown, FaExclamationTriangle, FaEye, FaFilter, FaEnvelope } from 'react-icons/fa';
+import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -8,11 +9,28 @@ const AdminUsers = () => {
   const [error, setError] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  // Filters
+  const [nameQuery, setNameQuery] = useState('');
+  const [phoneQuery, setPhoneQuery] = useState('');
+  const [globalSearch, setGlobalSearch] = useState(''); // name/email/phone
+  const [locationId, setLocationId] = useState(''); // from dropdown
+  // Joined (createdAt) filters: year/month/day
+  const [joinYear, setJoinYear] = useState('');
+  const [joinMonth, setJoinMonth] = useState('');
+  const [joinDay, setJoinDay] = useState('');
+  // Toggle filters
+  const [showFilters, setShowFilters] = useState(false);
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  const { locations } = useLocationContext?.() || { locations: [] };
   
   const API_URL = import.meta.env.VITE_API_URL;
   
   // Fetch all users
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageNum = page, searchText = globalSearch) => {
     try {
       setLoading(true);
       
@@ -21,11 +39,26 @@ const AdminUsers = () => {
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      const response = await axios.get(`${API_URL}/admin/users`, {
+      const params = new URLSearchParams();
+      params.set('page', String(pageNum || 1));
+      params.set('limit', '10');
+      if (searchText) params.set('search', searchText);
+
+      const response = await axios.get(`${API_URL}/admin/users?${params.toString()}`, {
         headers: { Authorization: `Bearer ${idToken}` }
       });
-      
-      setUsers(response.data);
+      const data = response.data;
+      // Support both wrapped and raw array formats
+      const usersArray = Array.isArray(data) ? data : (data.users || []);
+      setUsers(usersArray);
+      if (!Array.isArray(data)) {
+        setPage(data.page || 1);
+        setPages(data.pages || 1);
+        setTotalUsers(data.totalUsers || usersArray.length);
+      } else {
+        setPages(1);
+        setTotalUsers(usersArray.length);
+      }
       setError(null);
     } catch (err) {
       console.error('Error fetching users:', err);
@@ -40,20 +73,146 @@ const AdminUsers = () => {
     setSelectedUser(user);
     setShowUserModal(true);
   };
+
+  // Clear all filters and close panel
+  const clearAllFilters = () => {
+    setNameQuery('');
+    setPhoneQuery('');
+    setGlobalSearch('');
+    setLocationId('');
+    setJoinYear('');
+    setJoinMonth('');
+    setJoinDay('');
+    setShowFilters(false);
+  };
   
   // Load users on component mount
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(page, globalSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  // Refetch when global search changes, reset to page 1 (debounced)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPage(1);
+      fetchUsers(1, globalSearch);
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [globalSearch]);
+
+  // Highlight helpers for name matches (case-insensitive)
+  const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const highlightMatch = (text, query) => {
+    const base = (text || '').toString();
+    const q = (query || '').toString();
+    if (!q) return base;
+    try {
+      const parts = base.split(new RegExp(`(${escapeRegExp(q)})`, 'ig'));
+      return (
+        <>
+          {parts.map((part, idx) =>
+            part.toLowerCase() === q.toLowerCase() ? (
+              <mark key={idx} className="bg-yellow-200 px-0.5 rounded">
+                {part}
+              </mark>
+            ) : (
+              <span key={idx}>{part}</span>
+            )
+          )}
+        </>
+      );
+    } catch {
+      return base;
+    }
+  };
+
+  // Helpers for date parts
+  const getDateParts = (value) => {
+    if (!value) return { y: '', m: '', d: '' };
+    const dt = new Date(value);
+    if (isNaN(dt)) return { y: '', m: '', d: '' };
+    return {
+      y: String(dt.getFullYear()),
+      m: String(dt.getMonth() + 1).padStart(2, '0'),
+      d: String(dt.getDate()).padStart(2, '0'),
+    };
+  };
+
+  // Derived filtered users
+  const filteredUsers = React.useMemo(() => {
+    const norm = (s) => (s || '').toString().toLowerCase();
+    const pad2 = (s) => (s ? String(s).padStart(2, '0') : s);
+    const matchesDateParts = (dateValue, y, m, d) => {
+      if (!y && !m && !d) return true; // no constraint
+      if (!dateValue) return false;
+      const parts = getDateParts(dateValue);
+      if (y && parts.y !== y) return false;
+      if (m && parts.m !== pad2(m)) return false;
+      if (d && parts.d !== pad2(d)) return false;
+      return true;
+    };
+
+    return users.filter((u) => {
+  const nameOk = !nameQuery || norm(u?.name).includes(norm(nameQuery));
+  const phoneOk = !phoneQuery || norm(u?.phone).includes(norm(phoneQuery));
+  const emailOkGlobal = !globalSearch || norm(u?.email).includes(norm(globalSearch));
+  const nameOkGlobal = !globalSearch || norm(u?.name).includes(norm(globalSearch));
+  const phoneOkGlobal = !globalSearch || norm(u?.phone).includes(norm(globalSearch));
+      const locationOk = !locationId || u?.location?._id === locationId;
+      const joinOk = matchesDateParts(u?.createdAt, joinYear, joinMonth, joinDay);
+      const globalOk = emailOkGlobal || nameOkGlobal || phoneOkGlobal;
+      return nameOk && phoneOk && locationOk && joinOk && globalOk;
+    });
+  }, [users, nameQuery, phoneQuery, locationId, joinYear, joinMonth, joinDay, globalSearch]);
 
   return (
-    <div className="container mx-auto pl-8 pr-4 py-6 pt-8 font-sans">
+    <div className="container mx-auto pl-8 pr-4 py-6 pt-8 font-sans overflow-x-hidden min-w-0">
       {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
       {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
-      <div className="mb-0 md:mb-6">
+  <div className="mb-2 md:mb-4 flex items-center justify-between">
         {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
-        <h1 className="text-2xl font-bold text-black">User Management</h1>
-        <p className="text-black font-light">View and manage user accounts</p>
+        <div>
+          <h1 className="text-2xl font-bold text-black">User Management</h1>
+          <p className="text-black font-light">View and manage user accounts</p>
+        </div>
+        <button
+          className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-sm"
+          onClick={() => setShowFilters((v) => !v)}
+        >
+          <FaFilter className="text-gray-700" />
+          <span className="hidden sm:inline">Filters</span>
+        </button>
+      </div>
+
+      {/* Mobile: search + filter icon under title */}
+  <div className="sm:hidden mb-4 flex items-center gap-2">
+        <input
+          type="text"
+          value={globalSearch}
+          onChange={(e) => setGlobalSearch(e.target.value)}
+          placeholder="name/email/number"
+          className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
+        />
+        <button
+          className="inline-flex sm:hidden items-center justify-center px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50"
+          onClick={() => setShowFilters((v) => !v)}
+          aria-label="Toggle filters"
+        >
+          <FaFilter className="text-gray-700" />
+        </button>
+      </div>
+
+      {/* Desktop: search bar optional too */}
+      <div className="hidden sm:block mb-4">
+        <input
+          type="text"
+          value={globalSearch}
+          onChange={(e) => setGlobalSearch(e.target.value)}
+          placeholder="name/email/number"
+          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
+        />
       </div>
       
       {error && (
@@ -65,9 +224,94 @@ const AdminUsers = () => {
         </div>
       )}
       
-      {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+      {/* Filters */}
+      {showFilters && (
+      <div className="mb-4 bg-white border border-gray-100 rounded-lg shadow-sm p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+            <input
+              type="text"
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+              placeholder="Search by name"
+              className={`w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 ${nameQuery ? 'ring-yellow-300 bg-yellow-50' : 'focus:ring-pink-300'}`}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+            <input
+              type="text"
+              value={phoneQuery}
+              onChange={(e) => setPhoneQuery(e.target.value)}
+              placeholder="Search by phone"
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Location</label>
+            <select
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-300"
+            >
+              <option value="">All locations</option>
+              {locations?.map((loc) => (
+                <option key={loc._id} value={loc._id}>{loc.area}, {loc.city}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {/* Joined date inline below location */}
+        <div className="mt-3">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Joined date</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              placeholder="YYYY"
+              value={joinYear}
+              onChange={(e) => setJoinYear(e.target.value)}
+              className="w-24 border border-gray-300 rounded px-2 py-2 text-sm bg-white"
+            />
+            {/* Month with inline +/- buttons inside the field */}
+            <div className="relative w-20">
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="MM"
+                value={joinMonth}
+                onChange={(e) => setJoinMonth(e.target.value)}
+                className="w-full border border-gray-300 rounded py-2 text-sm bg-white text-center appearance-none pl-13 pr-6"
+              />
+            </div>
+            {/* Day with inline +/- buttons inside the field */}
+            <div className="relative w-20">
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="DD"
+                value={joinDay}
+                onChange={(e) => setJoinDay(e.target.value)}
+                className="w-full border border-gray-300 rounded py-2 text-sm bg-white text-center appearance-none pl-13 pr-6"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="ml-2 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50"
+            >
+              Clear all
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
+
+      {/* Desktop table (md+) with its own vertical scroller */}
+      <div className="hidden md:block bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
+        <div className="max-w-full overflow-x-auto max-h-[65vh] overflow-y-auto">
+          <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
@@ -104,7 +348,7 @@ const AdminUsers = () => {
                 </td>
               </tr>
             ) : (
-              users.map((user) => (
+              filteredUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-100">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -113,10 +357,14 @@ const AdminUsers = () => {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm text-black">
-                          {user.name || 'No name'}
+                          {nameQuery
+                            ? highlightMatch(user.name || 'unnamed user', nameQuery)
+                            : (globalSearch
+                                ? highlightMatch(user.name || 'unnamed user', globalSearch)
+                                : (user.name || 'unnamed user'))}
                         </div>
-                        <div className="text-sm text-black font-light">
-                          {user.email || 'No email'}
+                        <div className="text-sm text-black font-light flex items-center">
+                          {globalSearch ? highlightMatch(user.email || 'No email', globalSearch) : (user.email || 'No email')}
                         </div>
                       </div>
                     </div>
@@ -124,7 +372,9 @@ const AdminUsers = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <FaPhone className="text-gray-500 mr-2" />
-                      <span className="text-sm text-black font-normal">{user.phone || 'Not provided'}</span>
+                      <span className="text-sm text-black font-normal">
+                        {globalSearch ? highlightMatch(user.phone || 'Not provided', globalSearch) : (user.phone || 'Not provided')}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -162,30 +412,141 @@ const AdminUsers = () => {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination controls */}
+      <div className="mt-4 mb-8 flex items-center justify-between">
+        <div className="text-sm text-gray-600">Total: {totalUsers}</div>
+        <div className="flex items-center gap-2">
+          <button
+            className="px-3 py-1 border rounded disabled:opacity-50"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1 || loading}
+          >
+            Prev
+          </button>
+          <span className="text-sm">Page {page} of {pages}</span>
+          <button
+            className="px-3 py-1 border rounded disabled:opacity-50"
+            onClick={() => setPage((p) => Math.min(pages, p + 1))}
+            disabled={page >= pages || loading}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile cards (<md) */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="text-center text-black py-6">Loading users...</div>
+        ) : users.length === 0 ? (
+          <div className="text-center text-black py-6">No users found</div>
+        ) : (
+          filteredUsers.map((user) => (
+            <div key={user._id} className="bg-white rounded-lg shadow-md border border-gray-100 p-3">
+              {/* Title: avatar + name */}
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center">
+                  <FaUser className="text-gray-600" />
+                </div>
+                <div className="text-base font-semibold text-black">
+                  {nameQuery
+                    ? highlightMatch(user.name || 'unnamed user', nameQuery)
+                    : (globalSearch
+                        ? highlightMatch(user.name || 'unnamed user', globalSearch)
+                        : (user.name || 'unnamed user'))}
+                </div>
+              </div>
+
+              {/* Body: two columns with alignment */}
+              <div className="grid grid-cols-[1.7fr_1fr] gap-1 text-xs">
+                {/* Left: left-aligned with more spacing */}
+                <div className="space-y-3 text-left pr-5 min-w-0">
+                  <div>
+                    <div className="text-gray-500">Email</div>
+                    <div className="text-black flex items-center min-w-0 whitespace-nowrap overflow-hidden">
+                      <FaEnvelope className="text-gray-500 mr-2 shrink-0" />
+                      <span className="truncate">{globalSearch ? highlightMatch(user.email || 'No email', globalSearch) : (user.email || 'No email')}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">Phone</div>
+                    <div className="text-black flex items-center min-w-0 whitespace-nowrap overflow-hidden">
+                      <FaPhone className="text-gray-500 mr-2 shrink-0" />
+                      <span className="truncate">{globalSearch ? highlightMatch(user.phone || 'Not provided', globalSearch) : (user.phone || 'Not provided')}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">Location</div>
+                    <div className="text-black flex items-center min-w-0">
+                      {user.location ? (
+                        <>
+                          <FaMapMarkerAlt className={`mr-1 shrink-0 ${user.location.isActive ? 'text-black' : 'text-gray-400'}`} />
+                          <span className="truncate">{user.location.area}, {user.location.city}</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500">Not set</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Right: right-aligned */}
+                <div className="space-y-3 text-right min-w-0">
+                  <div>
+                    <div className="text-gray-500">Role</div>
+                    <div className={`inline-flex items-center gap-1 ${user.role === 'admin' ? 'text-amber-700' : 'text-gray-800'}`}>
+                      {user.role === 'admin' && <FaCrown className="text-amber-500" />}
+                      <span>{user.role}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">Joined</div>
+                    <div className="text-black">{new Date(user.createdAt).toLocaleDateString()}</div>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <button
+                      onClick={() => viewUserDetails(user)}
+                      className="p-2 rounded hover:bg-gray-100 text-blue-600 hover:text-blue-900"
+                      aria-label="View"
+                    >
+                      <FaEye />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
       
       {/* User Details Modal */}
       {showUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-sans">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl">
-            <h3 className="text-lg font-bold text-black mb-4 flex items-center">
-              <FaUser className="mr-2" />
-              User Details
-            </h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-24 md:pt-28">
+          <div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] shadow-2xl flex flex-col mx-4 sm:mx-6 md:mx-8 lg:mx-10">
+
+            {/* Header / padding wrapper */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+                <h3 className="text-lg font-bold text-black mb-6 md:mb-4 flex items-center">
+                  <FaUser className="mr-2" />
+                  User Details
+                </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h4 className="text-sm font-bold text-black mb-2">Basic Information</h4>
                 <div className="bg-gray-100 rounded-md p-4">
                   <p className="mb-2">
-                    <span className="font-bold">Name:</span> <span className="font-normal">{selectedUser.name || 'Not provided'}</span>
+                    <span className="font-bold">Name:</span> <span className="font-normal break-words">{selectedUser.name || 'Not provided'}</span>
                   </p>
                   <p className="mb-2">
-                    <span className="font-bold">Phone:</span> <span className="font-normal">{selectedUser.phone || 'Not provided'}</span>
+                    <span className="font-bold">Phone:</span> <span className="font-normal break-words">{selectedUser.phone || 'Not provided'}</span>
                   </p>
                   <p className="mb-2">
-                    <span className="font-bold">Email:</span> <span className="font-normal">{selectedUser.email || 'Not provided'}</span>
+                    <span className="font-bold">Email:</span> <span className="font-normal break-words">{selectedUser.email || 'Not provided'}</span>
                   </p>
                   <p className="mb-2">
                     <span className="font-bold">Role:</span> 
@@ -206,9 +567,9 @@ const AdminUsers = () => {
                     <>
                       <div className="flex items-start mb-2">
                         <FaMapMarkerAlt className={`mt-1 mr-2 ${selectedUser.location.isActive ? 'text-black' : 'text-gray-400'}`} />
-                        <div>
-                          <p className="font-bold">{selectedUser.location.area}</p>
-                          <p className="font-normal">{selectedUser.location.city}, {selectedUser.location.pincode}</p>
+                        <div className="min-w-0">
+                          <p className="font-bold break-words">{selectedUser.location.area}</p>
+                          <p className="font-normal break-words">{selectedUser.location.city}, {selectedUser.location.pincode}</p>
                         </div>
                       </div>
                       <div className={`text-xs mt-2 px-2 py-1 rounded inline-block font-medium ${
@@ -236,13 +597,15 @@ const AdminUsers = () => {
               </div>
             </div>
             
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setShowUserModal(false)}
-                className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
-              >
-                Close
-              </button>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setShowUserModal(false)}
+                    className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

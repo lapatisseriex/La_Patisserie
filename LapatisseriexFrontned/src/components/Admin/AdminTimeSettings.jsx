@@ -275,8 +275,9 @@ const AdminTimeSettings = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      <div className="flex items-center justify-between">
+    // Tweak spacing to fixed mobile header: mt-20 keeps content below the fixed header; adjust pt-2 to reduce space above the title
+    <div className="max-w-4xl mx-auto px-6 pb-6 space-y-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Clock className="h-8 w-8 text-pink-500" />
           Time Settings
@@ -332,7 +333,7 @@ const AdminTimeSettings = () => {
             </label>
 
             {settings.weekday.isActive && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                   <input
@@ -370,7 +371,7 @@ const AdminTimeSettings = () => {
             </label>
 
             {settings.weekend.isActive && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                   <input
@@ -500,9 +501,9 @@ const AdminTimeSettings = () => {
         {settings.specialDays && settings.specialDays.length > 0 ? (
           <div className="space-y-2">
             {settings.specialDays.map((day, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-4">
+              <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                     <span className="font-medium text-gray-900">
                       {new Date(day.date).toLocaleDateString()}
                     </span>
@@ -514,7 +515,9 @@ const AdminTimeSettings = () => {
                       {day.isClosed ? 'Closed' : `${day.startTime} - ${day.endTime}`}
                     </span>
                     {day.description && (
-                      <span className="text-sm text-gray-600">{day.description}</span>
+                      <span className="text-sm text-gray-600 break-words">
+                        {day.description}
+                      </span>
                     )}
                   </div>
                 </div>

@@ -55,8 +55,9 @@ const AdminDashboard = () => {
         const headers = { Authorization: `Bearer ${idToken}` };
 
         // Fetch users from the admin endpoint
-        const usersResponse = await axios.get(`${API_URL}/admin/users`, { headers });
-        const usersData = usersResponse.data || [];
+  const usersResponse = await axios.get(`${API_URL}/admin/users`, { headers });
+  const raw = usersResponse.data;
+  const usersData = Array.isArray(raw) ? raw : (raw?.users || []);
 
         console.log("User data fetched:", usersData);
 
@@ -72,7 +73,7 @@ const AdminDashboard = () => {
 
         // Update the stats with real data
         setStats({
-          totalUsers: Array.isArray(usersData) ? usersData.length : 0,
+          totalUsers: Array.isArray(raw) ? usersData.length : (raw?.totalUsers ?? usersData.length ?? 0),
           totalOrders: 0, // We're setting this to 0 as requested
           pendingOrders: 0, // We're setting this to 0 as requested
           totalProducts: 0, // We're setting this to 0 as requested
@@ -96,7 +97,7 @@ const AdminDashboard = () => {
   }, [authReady, user, locations]);
 
   return (
-    <div className="container mx-auto pl-8 pr-4 py-6 md:px-6 md:py-8 font-sans">
+    <div className="container mx-auto pl-8 pr-4 py-8 md:px-6 md:py-8 font-sans">
       {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
       {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
       <div className="mb-2 md:mb-8">

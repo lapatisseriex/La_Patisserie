@@ -1,4 +1,5 @@
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 import Product from '../models/productModel.js';
 import Category from '../models/categoryModel.js';
 import TimeSettings from '../models/timeSettingsModel.js';
@@ -70,12 +71,20 @@ export const getProducts = asyncHandler(async (req, res) => {
     filter.tags = { $in: tagArray };
   }
   
-  // Search by name or description
+  // Search by name, description, product id, and optionally Mongo _id if valid
   if (search) {
-    filter.$or = [
+    const orConditions = [
       { name: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } }
+      { description: { $regex: search, $options: 'i' } },
+      { id: { $regex: search, $options: 'i' } },
     ];
+
+    // If search looks like a Mongo ObjectId, include an exact match on _id
+    if (mongoose.Types.ObjectId.isValid(search)) {
+      orConditions.push({ _id: new mongoose.Types.ObjectId(search) });
+    }
+
+    filter.$or = orConditions;
   }
 
   // Calculate pagination
