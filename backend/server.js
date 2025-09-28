@@ -75,8 +75,10 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Tighten request body limits (configurable)
+const REQ_LIMIT = process.env.REQUEST_LIMIT_MB ? `${process.env.REQUEST_LIMIT_MB}mb` : '10mb';
+app.use(express.json({ limit: REQ_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: REQ_LIMIT }));
 
 // Debug middleware for CORS
 if (NODE_ENV === 'development') {
@@ -86,8 +88,8 @@ if (NODE_ENV === 'development') {
   });
 }
 
-// Middleware to check database connection
-app.use((req, res, next) => {
+// Lightweight DB readiness gate only for API routes (mounted once)
+const dbReadyGate = (req, res, next) => {
   if (mongoose.connection.readyState !== 1) {
     return res.status(503).json({
       success: false,
@@ -96,7 +98,7 @@ app.use((req, res, next) => {
     });
   }
   next();
-});
+};
 
 // Use compression to reduce response size
 app.use(compression());
@@ -125,7 +127,9 @@ const startServer = async () => {
       }
     }, 15 * 60 * 1000);
 
-    // Routes - only set up after DB connection is established
+  // Routes - only set up after DB connection is established
+  // Apply the DB readiness gate to API routes
+  app.use('/api', dbReadyGate);
     app.use('/api/auth', authRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/email', emailRoutes);

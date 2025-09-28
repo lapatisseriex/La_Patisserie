@@ -17,10 +17,14 @@ export const removeBackground = async (imageUrl) => {
     console.log(`Starting background removal for: ${imageUrl}`);
     
     // Remove.bg API key from environment variables
-    const apiKey = process.env.REMOVE_BG_API_KEY || 'NDYoCdpJYwabFvP62GS7wjHG';
+    const apiKey = process.env.REMOVE_BG_API_KEY;
+    if (!apiKey) {
+      console.warn('REMOVE_BG_API_KEY not set; skipping background removal');
+      return imageUrl;
+    }
     
     // Make the API request to remove.bg
-    console.log(`Using remove.bg API key: ${apiKey.substring(0, 4)}...`); // Log part of the key for debugging
+  // Do not log API keys
     
     // API call using URLSearchParams for form data (per official docs)
     const formData = new URLSearchParams();
@@ -67,17 +71,17 @@ export const removeBackground = async (imageUrl) => {
     const uploadResult = await uploadToCloudinary(base64File, {
       folder: 'la_patisserie/categories/processed',
       resource_type: 'image',
-      format: 'png',  // Explicitly set the format to png
       type: 'upload', // Ensure it's saved as an upload, not raw
       transformation: [
-        { quality: 'auto:good' } // Optimize quality
+        { fetch_format: 'auto', quality: 'auto' },
+        { width: 1600, crop: 'limit' }
       ]
     });
     
     console.log(`Successfully processed image, new URL: ${uploadResult.url}`);
     return uploadResult.url;
   } catch (error) {
-    console.error('Background removal error:', error.message);
+  console.error('Background removal error:', error.message);
     
     // Enhanced error logging for better debugging
     if (error.response) {

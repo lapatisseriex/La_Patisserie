@@ -11,11 +11,20 @@ class DatabaseConnection {
 
   async connect() {
     try {
+      // Global mongoose settings
+      mongoose.set('strictQuery', true);
+      mongoose.set('bufferCommands', false);
+
       const options = {
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
-        family: 4
+        maxPoolSize: Number(process.env.MONGO_MAX_POOL_SIZE || 50),
+        minPoolSize: Number(process.env.MONGO_MIN_POOL_SIZE || 5),
+        maxIdleTimeMS: Number(process.env.MONGO_MAX_IDLE_MS || 30000),
+        waitQueueTimeoutMS: Number(process.env.MONGO_WAIT_QUEUE_MS || 10000),
+        serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_MS || 5000),
+        socketTimeoutMS: Number(process.env.MONGO_SOCKET_TIMEOUT_MS || 45000),
+        heartbeatFrequencyMS: Number(process.env.MONGO_HEARTBEAT_MS || 10000),
+        family: 4,
+        retryWrites: true
       };
 
       await mongoose.connect(process.env.MONGODB_URI, options);

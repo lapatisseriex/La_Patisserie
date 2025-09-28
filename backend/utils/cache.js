@@ -2,9 +2,10 @@
 // For production, consider using Redis or another dedicated caching solution
 
 class MemoryCache {
-  constructor(defaultTtl = 300) { // Default TTL: 5 minutes
+  constructor(defaultTtl = 300, maxItems = 1000) { // Default TTL: 5 minutes, max 1000 items
     this.cache = new Map();
     this.defaultTtl = defaultTtl;
+    this.maxItems = maxItems;
   }
 
   // Get an item from cache
@@ -19,19 +20,28 @@ class MemoryCache {
       return null;
     }
     
+    // Touch for naive LRU: reinsert to end
+    this.cache.delete(key);
+    this.cache.set(key, { ...item, lastAccess: Date.now() });
     return item.value;
   }
 
   // Set an item in cache with optional TTL in seconds
   set(key, value, ttl = this.defaultTtl) {
     const expiry = Date.now() + (ttl * 1000);
-    
+
+    // Evict if over capacity (remove oldest by insertion order)
+    if (this.cache.size >= this.maxItems) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) this.cache.delete(oldestKey);
+    }
+
     this.cache.set(key, {
       value,
-      expiry
+      expiry,
+      lastAccess: Date.now()
     });
-    
-    // Return the value for convenience
+
     return value;
   }
 
@@ -64,10 +74,22 @@ class MemoryCache {
     
     return cleaned;
   }
+
+  // Delete keys by prefix (namespace invalidation)
+  deleteByPrefix(prefix) {
+    let removed = 0;
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.cache.delete(key);
+        removed++;
+      }
+    }
+    return removed;
+  }
 }
 
 // Export singleton instance
-export const cache = new MemoryCache();
+export const cache = new MemoryCache(Number(process.env.CACHE_DEFAULT_TTL || 300), Number(process.env.CACHE_MAX_ITEMS || 1000));
 
 // Export the class for creating custom caches
 export default MemoryCache;
