@@ -120,17 +120,20 @@ export const getProducts = asyncHandler(async (req, res) => {
         // Don't filter out inactive categories for admin views
         match: req.user?.role === 'admin' ? {} : { isActive: true }
       })
-      .select('-__v') // Exclude version field
+      // Return only fields needed for list views
+      .select('name id price variants featuredImage images category isActive hasEgg isVeg badge createdAt updatedAt')
       .sort('-createdAt')
       .skip(skip)
-      .limit(Number(limit));
+      .limit(Number(limit))
+      .lean();
 
     // Get total count for pagination (run in parallel)
     totalProducts = await Product.countDocuments(filter);
     
     // Store in cache - shorter timeout (2 minutes) for product listing
     // Admin requests aren't cached (they need fresh data)
-    if (!req.user?.role === 'admin') {
+    const isAdmin = req.user?.role === 'admin';
+    if (!isAdmin) {
       cache.set(cacheKey, { products, totalProducts }, 120);
     }
   }
@@ -142,7 +145,7 @@ export const getProducts = asyncHandler(async (req, res) => {
 
   // Add availability status to each product
   const productsWithAvailability = products.map(product => ({
-    ...product.toObject(),
+    ...product, // already lean
     isAvailable: isShopOpen,
     shopStatus: {
       isOpen: isShopOpen,
@@ -174,7 +177,9 @@ export const getProduct = asyncHandler(async (req, res) => {
       .populate({
         path: 'category',
         select: 'name images description isActive'
-      });
+      })
+      .select('-__v')
+      .lean();
 
     if (!product) {
       res.status(404);
@@ -194,7 +199,7 @@ export const getProduct = asyncHandler(async (req, res) => {
 
     // Add availability status to the product
     const productWithAvailability = {
-      ...product.toObject(),
+      ...product,
       isAvailable: isShopOpen,
       shopStatus: {
         isOpen: isShopOpen,

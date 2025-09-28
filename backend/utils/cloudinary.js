@@ -33,7 +33,12 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
     resource_type: 'image',
     overwrite: true,
     unique_filename: true,
-    use_filename: false
+    use_filename: false,
+    // Default transformations for optimization if not provided
+    transformation: options.transformation || [
+      { fetch_format: 'auto', quality: 'auto' },
+      { width: 1600, crop: 'limit' }
+    ]
   };
 
   // Add additional options if provided (but be very careful about format)
