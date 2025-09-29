@@ -12,6 +12,9 @@ import ProfilePage from './pages/Profile';
 import ProductDisplayPage from './pages/ProductDisplayPage';
 import Favorites from './pages/Favorites';
 
+// Error Boundary for Product Pages
+import ProductErrorBoundary from './components/common/ProductErrorBoundary';
+
 // Home Components
 import Home from './components/Home/Home';
 import Products from './components/Products/Products';
@@ -119,7 +122,11 @@ function App() {
                               <Route index element={<HomePage />} />
                               <Route path="contact" element={<Newsletter />} />
                               <Route path="products" element={<Products />} />
-                              <Route path="product/:productId" element={<ProductDisplayPage />} />
+                              <Route path="product/:productId" element={
+                                <ProductErrorBoundary>
+                                  <ProductDisplayPage />
+                                </ProductErrorBoundary>
+                              } />
                               <Route path="cart" element={<Cart />} />
                               <Route path="favorites" element={<Favorites />} />
                               <Route path="payment" element={<Payment />} />

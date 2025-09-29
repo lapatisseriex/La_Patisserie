@@ -196,17 +196,35 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
 
 
-  const handleCardClick = () => {
-    // Navigate immediately for better UX
-    navigate(`/product/${product._id}`);
-    
-    // Track the product view in background (don't await)
-    if (user && product._id) {
-      trackProductView(product._id, product).catch(error => {
-        console.error('Error tracking product view:', error);
-      });
+  const handleCardClick = useCallback(() => {
+    // Validate product data before navigation
+    if (!product || !product._id) {
+      console.error('Invalid product data for navigation:', product);
+      return;
     }
-  };
+    
+    console.log(`🎯 Navigating to product: ${product.name} (${product._id})`);
+    
+    try {
+      // Prepare for immediate navigation - disable any interfering smooth scroll
+      document.documentElement.style.scrollBehavior = 'auto';
+      document.body.style.scrollBehavior = 'auto';
+      
+      // Navigate immediately for better UX
+      navigate(`/product/${product._id}`);
+      
+      // Track the product view in background (don't await)
+      if (user && product._id) {
+        trackProductView(product._id, product).catch(error => {
+          console.error('Error tracking product view:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback navigation method
+      window.location.href = `/product/${product._id}`;
+    }
+  }, [product, navigate, user, trackProductView]);
 
   return (
     <div

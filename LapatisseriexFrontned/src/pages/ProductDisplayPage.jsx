@@ -12,25 +12,12 @@ import MediaDisplay from '../components/common/MediaDisplay';
 import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
+import ProductDebugPanel from '../components/common/ProductDebugPanel';
+import ScrollManager from '../utils/scrollManager';
 import '../styles/ProductDisplayPage-mobile.css';
 import '../styles/premiumButtons.css';
 
 const ProductDisplayPage = () => {
-  // Gentle scroll to top once when component mounts
-  React.useLayoutEffect(() => {
-    // Set scroll behavior to auto temporarily
-    const originalBehavior = document.documentElement.style.scrollBehavior;
-    document.documentElement.style.scrollBehavior = 'auto';
-    
-    // Scroll to top once
-    window.scrollTo(0, 0);
-    
-    // Reset scroll behavior
-    setTimeout(() => {
-      document.documentElement.style.scrollBehavior = originalBehavior;
-    }, 50);
-  }, []);
-
   const { productId } = useParams();
   const navigate = useNavigate();
   const { getProduct, fetchProducts } = useProduct();
@@ -39,37 +26,34 @@ const ProductDisplayPage = () => {
   const { fetchRecentlyViewed, trackProductView } = useRecentlyViewed();
   const { user } = useAuth();
   const { isFavorite } = useFavorites();
-  
-  // Add custom CSS for ProductDisplayPage to hide header on mobile
-  useEffect(() => {
-    // Prevent scroll restoration behavior
-    if ('scrollRestoration' in history) {
-      const original = history.scrollRestoration;
-      history.scrollRestoration = 'manual';
-      
-      // Restore original behavior on cleanup
-      return () => {
-        history.scrollRestoration = original;
-        document.body.classList.remove('product-display-page-mobile');
-      };
-    }
 
-    // Add class to body when component mounts
+  // IMMEDIATE scroll prevention - before any other effects
+  React.useLayoutEffect(() => {
+    console.log(`🚀 ProductDisplayPage mounting for product: ${productId}`);
+    
+    // Use the comprehensive scroll reset utility
+    const cleanupScroll = ScrollManager.resetScrollForProductNavigation(productId);
+    
+    // Add mobile class for styling
     document.body.classList.add('product-display-page-mobile');
     
-    return () => {
-      // Remove class when component unmounts
-      document.body.classList.remove('product-display-page-mobile');
-    };
-  }, []);
-
-  // Simple scroll to top when productId changes
-  useEffect(() => {
-    if (productId) {
-      // Single scroll to top with auto behavior
-      window.scrollTo(0, 0);
+    // Monitor scroll for debugging in development
+    let stopMonitoring = null;
+    if (process.env.NODE_ENV === 'development') {
+      stopMonitoring = ScrollManager.monitorScroll((info) => {
+        if (info.windowScrollY > 50) {
+          console.warn('⚠️ Unexpected scroll detected:', info);
+        }
+      }, 3000);
     }
-  }, [productId]);
+    
+    return () => {
+      console.log(`🧹 ProductDisplayPage cleanup for product: ${productId}`);
+      document.body.classList.remove('product-display-page-mobile');
+      cleanupScroll();
+      if (stopMonitoring) stopMonitoring();
+    };
+  }, [productId]); // Re-run when productId changes
 
   const [product, setProduct] = useState(null);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
@@ -194,28 +178,32 @@ const ProductDisplayPage = () => {
     return /^[0-9a-fA-F]{24}$/.test(id);
   };
 
-  // Track retry attempts
+  // Track retry attempts and error state
   const [retryCount, setRetryCount] = useState(0);
+  const [productError, setProductError] = useState(null);
   const maxRetries = 3;
   
   useEffect(() => {
-    // Reset retry count when product ID changes
+    // Reset states when product ID changes
     setRetryCount(0);
+    setProductError(null);
     
     const loadProduct = async () => {
       if (productId) {
         if (!isValidObjectId(productId)) {
           console.error('Invalid product ID format:', productId);
+          setProductError('Invalid product ID format');
           setProduct(null);
           setLoading(false);
           return;
         }
 
         setLoading(true);
+        setProductError(null);
         try {
           // Load main product data with timeout handling
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 10000);
+            setTimeout(() => reject(new Error('Request timeout')), 8000); // Reduced timeout
           });
           
           const productData = await Promise.race([
@@ -225,6 +213,7 @@ const ProductDisplayPage = () => {
           
           if (!productData) {
             console.error('Product not found:', productId);
+            setProductError('Product not found');
             setProduct(null);
             setLoading(false);
             return;
@@ -304,23 +293,33 @@ const ProductDisplayPage = () => {
         } catch (error) {
           console.error(`Error loading product (attempt ${retryCount + 1}/${maxRetries}):`, error);
           
-          // Implement retry logic for network errors
+          // Set appropriate error message
+          let errorMessage = 'Failed to load product';
+          if (error.message === 'Request timeout') {
+            errorMessage = 'Product loading timed out. Please check your internet connection.';
+          } else if (error.name === 'AxiosError' && error.response?.status === 404) {
+            errorMessage = 'Product not found';
+          } else if (error.name === 'AxiosError' && !navigator.onLine) {
+            errorMessage = 'No internet connection. Please check your network.';
+          }
+          
+          // Implement retry logic for network errors only
           if (retryCount < maxRetries && 
               (error.name === 'AxiosError' || 
                error.message === 'Request timeout' || 
                error.code === 'ECONNABORTED' || 
-               error.message?.includes('network'))) {
+               error.message?.includes('network')) &&
+               error.response?.status !== 404) { // Don't retry 404 errors
             
-            // Increment retry count
+            console.log(`Retrying... (${retryCount + 1}/${maxRetries})`);
             setRetryCount(prev => prev + 1);
             
             // Wait before retrying (exponential backoff)
-            const delay = Math.min(1000 * Math.pow(2, retryCount), 8000);
-            console.log(`Retrying in ${delay}ms...`);
-            
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
             setTimeout(() => loadProduct(), delay);
           } else {
             // Max retries exceeded or non-retriable error
+            setProductError(errorMessage);
             setProduct(null);
             setLoading(false);
           }
@@ -593,23 +592,37 @@ const ProductDisplayPage = () => {
     return <ProductDisplaySkeleton />;
   }
 
-  if (!product) {
+  if (!product && !loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center bg-white border border-black p-12 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold mb-4" style={{ 
-            background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
-          }}>Product Not Found</h2>
-          <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
-          <button
-            onClick={() => navigate('/')}
-            className="bg-black text-white px-8 py-3 font-medium hover:bg-gray-900 transition-colors rounded-lg"
-          >
-            Return Home
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 flex items-center justify-center px-4">
+        <div className="text-center bg-white border border-gray-200 p-8 md:p-12 rounded-2xl shadow-xl max-w-md w-full">
+          <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+            <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-900">
+            {productError === 'Product not found' ? 'Product Not Found' : 'Unable to Load Product'}
+          </h2>
+          <p className="text-gray-600 mb-6 text-sm md:text-base">
+            {productError || "The product you're looking for doesn't exist or couldn't be loaded."}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {productError && productError !== 'Product not found' && (
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-blue-600 text-white px-6 py-3 font-medium hover:bg-blue-700 transition-colors rounded-lg text-sm"
+              >
+                Try Again
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/')}
+              className="bg-black text-white px-6 py-3 font-medium hover:bg-gray-900 transition-colors rounded-lg text-sm"
+            >
+              Return Home
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1789,6 +1802,8 @@ const ProductDisplayPage = () => {
         />
       )}
 
+      {/* Debug Panel - Development Only */}
+      <ProductDebugPanel productId={productId} />
 
     </div>
   );

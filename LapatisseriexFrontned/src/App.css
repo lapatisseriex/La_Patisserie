@@ -23,9 +23,7 @@ main {
 }
 
 /* Enhance global styling */
-:root {
-  scroll-behavior: smooth;
-}
+/* Removed scroll-behavior: smooth to prevent conflicts with product page navigation */
 
 body {
   overflow-x: hidden;

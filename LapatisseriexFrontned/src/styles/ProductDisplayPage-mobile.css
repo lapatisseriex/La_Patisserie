@@ -1,6 +1,8 @@
 /* ProductDisplayPage-mobile.css */
 /* Force scroll position and prevent scroll restoration */
-body.product-display-page-mobile {
+body.product-display-page-mobile,
+body.product-display-page-mobile *,
+body.product-display-page-mobile html {
   scroll-behavior: auto !important;
 }
 
@@ -9,6 +11,7 @@ body.product-display-page-mobile body {
   scroll-behavior: auto !important;
   scroll-padding-top: 0 !important;
   scroll-margin-top: 0 !important;
+  scroll-snap-type: none !important;
 }
 
 /* Hide header and breadcrumbs on mobile for ProductDisplayPage */

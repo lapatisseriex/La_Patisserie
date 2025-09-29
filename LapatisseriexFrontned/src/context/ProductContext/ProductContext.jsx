@@ -2,6 +2,7 @@ import { createContext, useState, useContext, useEffect, useCallback, useRef } f
 import axios from 'axios';
 import axiosInstance from '../../utils/axiosConfig';
 import { useAuth } from '../AuthContext/AuthContext';
+import CacheManager from '../../utils/cacheManager';
 
 const ProductContext = createContext();
 
@@ -160,7 +161,7 @@ export const ProductProvider = ({ children }) => {
     }
   }, [API_URL]);
   
-  // Get a single product by ID
+  // Get a single product by ID with improved error handling
   const getProduct = useCallback(async (productId, options = {}) => {
     if (!productId) {
       return null;
@@ -170,19 +171,23 @@ export const ProductProvider = ({ children }) => {
     const now = Date.now();
     const cached = productCache.current.get(productId);
 
-    if (!forceRefresh && cached && (now - cached.timestamp < PRODUCT_CACHE_TIMEOUT)) {
+    // Check cache validity - reduced timeout for better freshness
+    const CACHE_TIMEOUT = 2 * 60 * 1000; // 2 minutes instead of 5
+    if (!forceRefresh && cached && (now - cached.timestamp < CACHE_TIMEOUT)) {
+      console.log(`Using cached product data for ${productId}`);
       return cached.data;
     }
 
     if (!forceRefresh) {
       const pending = productRequestMap.current.get(productId);
       if (pending) {
+        console.log(`Waiting for existing request for product ${productId}`);
         return pending;
       }
     }
 
     const requestPromise = (async () => {
-      const hasUsableCache = !forceRefresh && Boolean(cached) && (now - cached.timestamp < PRODUCT_CACHE_TIMEOUT);
+      const hasUsableCache = !forceRefresh && Boolean(cached) && (now - cached.timestamp < CACHE_TIMEOUT);
 
       try {
         if (!hasUsableCache) {
@@ -190,18 +195,40 @@ export const ProductProvider = ({ children }) => {
         }
         setError(null);
 
+        console.log(`Fetching product ${productId} from API...`);
         const response = await axiosInstance.get(`${API_URL}/products/${productId}`, {
-          timeout: 10000 // 10 seconds timeout for product fetch
+          timeout: 8000 // Reduced timeout for faster failure detection
         });
+        
+        if (!response.data) {
+          throw new Error('Product not found');
+        }
+        
+        // Validate product data before caching
+        if (!CacheManager.isValidProductData(response.data)) {
+          throw new Error('Invalid product data received from server');
+        }
+        
         productCache.current.set(productId, {
           data: response.data,
           timestamp: Date.now()
         });
 
+        console.log(`Successfully loaded product: ${response.data.name}`);
         return response.data;
       } catch (err) {
         console.error(`Error fetching product ${productId}:`, err);
-        setError("Failed to load product");
+        
+        // Use cache manager for better error messages
+        const errorMessage = CacheManager.handleNetworkError(err);
+        
+        // Return cached data if available on error (better UX)
+        if (cached) {
+          console.log(`Returning stale cached data for product ${productId} due to error`);
+          return cached.data;
+        }
+        
+        setError(errorMessage);
         throw err;
       } finally {
         productRequestMap.current.delete(productId);
@@ -215,11 +242,37 @@ export const ProductProvider = ({ children }) => {
 
     try {
       return await requestPromise;
-    } catch {
+    } catch (error) {
+      // Final fallback to cache if available
       const fallback = productCache.current.get(productId);
-      return fallback ? fallback.data : null;
+      if (fallback) {
+        console.log(`Using fallback cached data for product ${productId}`);
+        return fallback.data;
+      }
+      return null;
     }
   }, [API_URL]);
+  
+  // Clear product cache function for troubleshooting
+  const clearProductCache = useCallback(() => {
+    productCache.current.clear();
+    requestCache.current.clear();
+    productRequestMap.current.clear();
+    requestInProgress.current.clear();
+    CacheManager.clearProductCache();
+    console.log('🧹 All product caches cleared');
+  }, []);
+  
+  // Clear specific product from cache
+  const clearSpecificProductCache = useCallback((productId) => {
+    if (productId) {
+      productCache.current.delete(productId);
+      productRequestMap.current.delete(productId);
+      requestInProgress.current.delete(productId);
+      CacheManager.clearSpecificProduct(productId);
+      console.log(`🧹 Cache cleared for product: ${productId}`);
+    }
+  }, []);
   
   // Admin function: Create a new product
   const createProduct = useCallback(async (productData) => {
@@ -395,7 +448,9 @@ export const ProductProvider = ({ children }) => {
     createProduct,
     updateProduct,
     updateProductDiscount,
-    deleteProduct
+    deleteProduct,
+    clearProductCache,
+    clearSpecificProductCache
   };
 
   return (
