@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Phone, MapPin, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext/AuthContext';
+import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 // Email verification flow removed
 

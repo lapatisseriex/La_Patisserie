@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext/AuthContext';
+import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
 
 // Auth components
 import Login from '../Login/Login';

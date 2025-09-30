@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 import { Mail, Phone, User, MapPin, ChevronRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 const Checkout = () => {

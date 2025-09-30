@@ -1,6 +1,6 @@
 import React, { memo, useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext/AuthContext';
+import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
 import { User, Package, Heart, LogOut, Settings, ShoppingCart } from 'lucide-react';
 import './UserMenu.css';
 

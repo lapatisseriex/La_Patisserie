@@ -6,7 +6,7 @@ import MediaDisplay from '../common/MediaDisplay';
 import { useCart } from '../../hooks/useCart';
 import FavoriteButton from '../Favorites/FavoriteButton';
 
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import { useSparkToCart } from '../../hooks/useSparkToCart';

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext/AuthContext';
+import { useAuth } from '../context/AuthContext/AuthContextRedux';
+import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
+import { useCart } from '../hooks/useCart';
 import Profile from '../components/Auth/Profile/Profile';
+
 import './ProfileStyles.css';
 import ProductCard from '../components/Products/ProductCard';
 import { 
@@ -29,6 +32,83 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { favorites, loading: favLoading, error: favError, fetchFavorites } = useFavorites();
+  const { 
+    cartItems, 
+    cartTotal, 
+    cartCount, 
+    isLoading: cartLoading, 
+    error: cartError,
+    updateQuantity,
+    removeFromCart,
+    addToCart
+  } = useCart();
+  
+  // Debug logs for favorites and cart
+  console.log('Profile Page - Favorites Debug:', {
+    favorites,
+    favLoading,
+    favError,
+    favoritesLength: favorites?.length,
+    favoritesStructure: favorites?.slice(0, 1) // Show first item structure
+  });
+  
+  console.log('Profile Page - Cart Debug:', {
+    cartItems,
+    cartLoading,
+    cartError,
+    cartCount,
+    cartTotal,
+    cartItemsStructure: cartItems?.slice(0, 1) // Show first item structure
+  });
+
+  // Cart quantity update handlers
+  const handleQuantityIncrease = async (productId, currentQuantity, product) => {
+    try {
+      await updateQuantity(productId, currentQuantity + 1);
+      console.log(`✅ Quantity increased for ${product.name || 'product'}`);
+    } catch (error) {
+      console.error('Error increasing quantity:', error);
+      alert('Failed to update quantity. Please try again.');
+    }
+  };
+
+  const handleQuantityDecrease = async (productId, currentQuantity, product) => {
+    if (currentQuantity <= 1) {
+      // Remove item if quantity would go to 0
+      await handleRemoveFromCart(productId);
+      return;
+    }
+    try {
+      await updateQuantity(productId, currentQuantity - 1);
+      console.log(`✅ Quantity decreased for ${product.name || 'product'}`);
+    } catch (error) {
+      console.error('Error decreasing quantity:', error);
+      alert('Failed to update quantity. Please try again.');
+    }
+  };
+
+  const handleRemoveFromCart = async (productId) => {
+    if (!confirm('Are you sure you want to remove this item from your cart?')) {
+      return;
+    }
+    try {
+      await removeFromCart(productId);
+      console.log('✅ Item removed from cart');
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      alert('Failed to remove item. Please try again.');
+    }
+  };
+
+  console.log('Profile Page - Cart Debug:', {
+    cartItems,
+    cartLoading,
+    cartError,
+    cartCount,
+    cartTotal,
+    cartItemsLength: cartItems?.length,
+    cartStructure: cartItems?.slice(0, 1) // Show first item structure
+  });
   
   // Log user data to check profile photo
   console.log('Profile Page - User data:', user);
@@ -91,16 +171,21 @@ const ProfilePage = () => {
                 { id: 'tracking', label: 'Order Tracking', icon: Truck, color: 'bg-green-50' },
                 { id: 'addresses', label: 'Saved Addresses', icon: MapPin, color: 'bg-purple-50' },
                 { id: 'security', label: 'Security', icon: Lock, color: 'bg-gray-50' },
-                { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart, color: 'bg-rose-50' },
-                { id: 'favorites', label: 'Favorites', icon: Heart, color: 'bg-red-50' },
+                { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart, color: 'bg-rose-50', count: cartCount },
+                { id: 'favorites', label: 'Favorites', icon: Heart, color: 'bg-red-50', count: favorites?.length || 0 },
               ].map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className="flex flex-col items-center justify-center p-3 border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm no-scrollbar aspect-square"
+                  className="flex flex-col items-center justify-center p-3 border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm no-scrollbar aspect-square relative"
                 >
-                  <div className={`p-3 rounded-full ${item.color} mb-2`}>
+                  <div className={`p-3 rounded-full ${item.color} mb-2 relative`}>
                     <item.icon className="h-5 w-5 text-gray-700" />
+                    {item.count > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {item.count > 99 ? '99+' : item.count}
+                      </span>
+                    )}
                   </div>
                   <h4 className="font-medium text-gray-900 text-center text-sm">{item.label}</h4>
                 </button>
@@ -115,17 +200,22 @@ const ProfilePage = () => {
                 { id: 'tracking', label: 'Order Tracking', icon: Truck, description: 'Track your active deliveries', color: 'bg-green-50' },
                 { id: 'addresses', label: 'Saved Addresses', icon: MapPin, description: 'Manage your saved addresses', color: 'bg-purple-50' },
                 { id: 'security', label: 'Security', icon: Lock, description: 'Manage security settings', color: 'bg-gray-50' },
-                { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart, description: 'View items in your cart', color: 'bg-rose-50' },
-                { id: 'favorites', label: 'Favorites', icon: Heart, description: 'View your favorite products', color: 'bg-red-50' },
+                { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart, description: 'View items in your cart', color: 'bg-rose-50', count: cartCount },
+                { id: 'favorites', label: 'Favorites', icon: Heart, description: 'View your favorite products', color: 'bg-red-50', count: favorites?.length || 0 },
               ].map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className="flex items-center justify-between gap-3 px-5 py-4 border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm rounded-md"
+                  className="flex items-center justify-between gap-3 px-5 py-4 border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm rounded-md relative"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${item.color} flex-shrink-0`}>
+                    <div className={`p-2 rounded-full ${item.color} flex-shrink-0 relative`}>
                       <item.icon className="h-5 w-5 text-gray-700" />
+                      {item.count > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {item.count > 99 ? '99+' : item.count}
+                        </span>
+                      )}
                     </div>
                     <div className="text-left">
                       <h4 className="font-medium text-gray-900">{item.label}</h4>
@@ -322,7 +412,14 @@ const ProfilePage = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">Shopping Cart</h3>
+              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">
+                Shopping Cart
+                {cartCount > 0 && (
+                  <span className="ml-2 px-3 py-1 bg-rose-500 text-white text-sm rounded-full">
+                    {cartCount} items
+                  </span>
+                )}
+              </h3>
               <Link 
                 to="/cart" 
                 className="px-5 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
@@ -330,19 +427,410 @@ const ProfilePage = () => {
                 View Full Cart
               </Link>
             </div>
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                <ShoppingCart className="h-10 w-10 text-gray-500" />
+            
+            {cartLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading your cart...</p>
               </div>
-              <h4 className="text-xl font-serif font-medium text-black mb-3">Your Cart is Empty</h4>
-              <p className="text-gray-600 mb-6">Add some delicious items to get started</p>
+            ) : cartError ? (
+              <div className="bg-red-50 border border-red-200 p-6 rounded-xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <ShoppingCart className="w-3 h-3 text-white" />
+                  </div>
+                  <p className="text-red-600 font-medium text-lg">Error loading cart</p>
+                </div>
+                <p className="text-red-600 text-sm mb-4">{cartError}</p>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                  >
+                    Retry Loading
+                  </button>
+                  <Link 
+                    to="/products" 
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  >
+                    Continue Shopping
+                  </Link>
+                </div>
+              </div>
+            ) : cartItems.length === 0 ? (
+              <div className="bg-gradient-to-br from-gray-50 to-rose-50 rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center shadow-sm">
+                <div className="w-24 h-24 bg-gradient-to-br from-rose-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-lg">
+                  <ShoppingCart className="h-12 w-12 text-rose-400" />
+                </div>
+                <h4 className="text-2xl font-serif font-medium text-black mb-4">Your Cart is Empty</h4>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+                  Discover our delicious collection of cakes, pastries, and sweet treats. 
+                  Add your favorites to get started!
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link 
+                    to="/products" 
+                    className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl hover:from-rose-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl font-medium text-lg"
+                  >
+                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    Start Shopping
+                  </Link>
+                  <Link 
+                    to="/favorites" 
+                    className="inline-flex items-center justify-center px-8 py-4 bg-white text-rose-600 border-2 border-rose-200 rounded-xl hover:bg-rose-50 hover:border-rose-300 transition-all duration-300 shadow-md font-medium text-lg"
+                  >
+                    <Heart className="w-5 h-5 mr-2" />
+                    View Favorites
+                  </Link>
+                </div>
+                
+                {/* Quick suggestions */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <p className="text-sm text-gray-500 mb-3">Popular categories:</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {['Cakes', 'Pastries', 'Desserts', 'Cookies'].map((category) => (
+                      <Link
+                        key={category}
+                        to={`/products?category=${category.toLowerCase()}`}
+                        className="px-4 py-2 bg-white text-gray-600 rounded-full text-sm hover:bg-rose-50 hover:text-rose-600 transition-colors border border-gray-200 hover:border-rose-200"
+                      >
+                        {category}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Enhanced Cart Summary */}
+                <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-rose-50 p-6 rounded-xl border border-rose-200 shadow-sm">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                      <h4 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                        <ShoppingCart className="w-5 h-5 text-rose-500" />
+                        Cart Summary
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Total Items:</span>
+                          <span className="ml-2 font-medium text-gray-900">{cartCount}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Subtotal:</span>
+                          <span className="ml-2 font-semibold text-rose-600">₹{(parseFloat(cartTotal) || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        *Taxes and delivery charges will be calculated at checkout
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Link 
+                        to="/cart" 
+                        className="px-6 py-3 bg-white text-rose-600 border-2 border-rose-500 rounded-lg hover:bg-rose-50 transition-all duration-300 font-medium text-center shadow-sm hover:shadow-md"
+                      >
+                        View Full Cart
+                      </Link>
+                      <Link 
+                        to="/checkout" 
+                        className="px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-lg hover:from-rose-600 hover:to-pink-600 transition-all duration-300 font-medium text-center shadow-md hover:shadow-lg"
+                      >
+                        Proceed to Checkout
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Cart Items - Full List Layout like Cart Page */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                  <div className="p-6 border-b border-gray-200">
+                    <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Package className="w-5 h-5 text-gray-600" />
+                      Cart Items ({cartItems.length})
+                    </h4>
+                  </div>
+                  
+                  <div className="divide-y divide-gray-100">
+                    {cartItems.map((item) => {
+                      // Handle different data structures from cart
+                      const product = item.productDetails || item.product || item;
+                      const productId = item.productId || item.id || product._id;
+                      const productName = product.name || item.name || 'Product';
+                      const productPrice = parseFloat(product.price || item.price || 0) || 0;
+                      const productImage = product.image?.url || product.image || item.image || product.images?.[0] || '/placeholder-image.jpg';
+                      const quantity = parseInt(item.quantity) || 1;
+                      
+                      return (
+                        <div key={productId} className="p-6 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start gap-4">
+                            {/* Product Image */}
+                            <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                              <img 
+                                src={productImage} 
+                                alt={productName} 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = '/placeholder-image.jpg';
+                                }}
+                              />
+                            </div>
+                            
+                            {/* Product Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <h5 className="font-semibold text-gray-900 text-base md:text-lg mb-1">{productName}</h5>
+                                  <p className="text-sm text-gray-600">Premium quality handcrafted item</p>
+                                </div>
+                                <button 
+                                  onClick={() => handleRemoveFromCart(productId)}
+                                  className="text-gray-400 hover:text-red-500 transition-colors p-1 disabled:opacity-50 disabled:cursor-not-allowed group"
+                                  title="Remove from cart"
+                                  disabled={cartLoading}
+                                >
+                                  {cartLoading ? (
+                                    <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    <Package className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                  )}
+                                </button>
+                              </div>
+                              
+                              {/* Mobile/Desktop Layout */}
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                {/* Quantity Controls */}
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm text-gray-600">Quantity:</span>
+                                  <div className="flex items-center border border-gray-300 rounded-lg">
+                                    <button 
+                                      onClick={() => handleQuantityDecrease(productId, quantity, product)}
+                                      className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                      disabled={cartLoading}
+                                    >
+                                      {cartLoading ? (
+                                        <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                      ) : (
+                                        '-'
+                                      )}
+                                    </button>
+                                    <span className="w-12 h-8 flex items-center justify-center text-sm font-medium border-x border-gray-300">
+                                      {quantity}
+                                    </span>
+                                    <button 
+                                      onClick={() => handleQuantityIncrease(productId, quantity, product)}
+                                      className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                      disabled={cartLoading}
+                                    >
+                                      {cartLoading ? (
+                                        <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                      ) : (
+                                        '+'
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                                
+                                {/* Price Information */}
+                                <div className="flex items-center justify-between md:justify-end gap-6">
+                                  <div className="text-right">
+                                    <div className="text-sm text-gray-600">₹{productPrice > 0 ? productPrice.toFixed(2) : '0.00'} each</div>
+                                    <div className="font-semibold text-lg text-gray-900">₹{((productPrice * quantity) || 0).toFixed(2)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Action Buttons */}
+                              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                                <Link 
+                                  to={`/products/${productId}`}
+                                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-center text-sm font-medium flex items-center justify-center gap-2"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  View Product
+                                </Link>
+                                <Link 
+                                  to="/cart"
+                                  className="flex-1 px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100 transition-colors text-center text-sm font-medium flex items-center justify-center gap-2"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                  Edit in Cart
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Show more button if there are many items */}
+                  {cartItems.length > 5 && (
+                    <div className="p-6 border-t border-gray-200 text-center">
+                      <Link 
+                        to="/cart"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                        View All {cartItems.length} Items in Cart
+                      </Link>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Quick Actions */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Link 
+                      to="/cart"
+                      className="flex items-center justify-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+                    >
+                      <ShoppingCart className="w-5 h-5 text-gray-600 group-hover:text-gray-900" />
+                      <span className="font-medium text-gray-900">Manage Cart</span>
+                    </Link>
+                    <Link 
+                      to="/checkout"
+                      className="flex items-center justify-center gap-3 p-4 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors group"
+                    >
+                      <CreditCard className="w-5 h-5 text-rose-600 group-hover:text-rose-700" />
+                      <span className="font-medium text-rose-700">Checkout</span>
+                    </Link>
+                    <Link 
+                      to="/products"
+                      className="flex items-center justify-center gap-3 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group"
+                    >
+                      <Package className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
+                      <span className="font-medium text-blue-700">Continue Shopping</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'favorites':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">
+                My Favorites
+                {favorites?.length > 0 && (
+                  <span className="ml-2 px-3 py-1 bg-red-500 text-white text-sm rounded-full">
+                    {favorites.length} items
+                  </span>
+                )}
+              </h3>
               <Link 
-                to="/products" 
-                className="inline-flex items-center px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
+                to="/favorites" 
+                className="px-5 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-md font-medium"
               >
-                Browse Products
+                View All Favorites
               </Link>
             </div>
+            
+            {favLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading your favorites...</p>
+              </div>
+            ) : favError ? (
+              <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                  <p className="text-red-600 font-medium">Error loading favorites</p>
+                </div>
+                <p className="text-red-600 text-sm mb-3">{favError}</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-sm"
+                >
+                  Retry Loading
+                </button>
+              </div>
+            ) : !favorites || favorites.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
+                  <Heart className="h-10 w-10 text-gray-500" />
+                </div>
+                <h4 className="text-xl font-serif font-medium text-black mb-3">No Favorites Yet</h4>
+                <p className="text-gray-600 mb-6">Add your favorite cakes and pastries here</p>
+                <Link 
+                  to="/products" 
+                  className="inline-flex items-center px-6 py-3 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-md font-medium"
+                >
+                  Browse Products
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Favorites Summary */}
+                <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-lg border">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-lg font-semibold text-gray-900">Your Favorites</p>
+                      <p className="text-sm text-gray-600">{favorites.length} favorite items</p>
+                    </div>
+                    <Link 
+                      to="/favorites" 
+                      className="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium"
+                    >
+                      View All
+                    </Link>
+                  </div>
+                </div>
+                
+                {/* Favorites Items Preview - Full Product Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {favorites.slice(0, 8).map((item) => {
+                    // Handle different data structures from backend
+                    const product = item.productDetails || item.product || item;
+                    if (!product) {
+                      console.warn('No product data found for favorite item:', item);
+                      return null;
+                    }
+                    
+                    return (
+                      <div key={product._id || product.id || item.productId} className="relative">
+                        {/* Favorite Badge */}
+                        <div className="absolute top-2 left-2 z-10 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                          <Heart className="w-3 h-3 fill-current" />
+                        </div>
+                        
+                        {/* Product Card */}
+                        <ProductCard 
+                          product={product} 
+                          className="h-full"
+                          compact={true}
+                        />
+                        
+                        {/* Favorite-specific actions */}
+                        <div className="mt-2 flex gap-2">
+                          <Link 
+                            to={`/products/${product._id || product.id}`} 
+                            className="flex-1 text-center px-3 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200 transition-colors"
+                          >
+                            View Details
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {favorites.length > 8 && (
+                  <div className="text-center">
+                    <Link 
+                      to="/favorites" 
+                      className="text-red-500 hover:text-red-600 font-medium"
+                    >
+                      View {favorites.length - 8} more favorites →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 

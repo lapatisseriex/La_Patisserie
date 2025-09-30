@@ -38,7 +38,7 @@ import Newsletter from './components/Newsletter/Newsletter';
 import AuthModal from './components/Auth/AuthModal/AuthModal';
 
 // Context Providers
-import { AuthProvider, useAuth } from './context/AuthContext/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext/AuthContextRedux';
 import { LocationProvider } from './context/LocationContext/LocationContext';
 import { HostelProvider } from './context/HostelContext/HostelContext';
 import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';

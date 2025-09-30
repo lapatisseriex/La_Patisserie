@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useCart } from '../../hooks/useCart';
 import { useProduct } from '../../context/ProductContext/ProductContext';
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';

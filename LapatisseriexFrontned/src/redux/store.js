@@ -1,12 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
 import favoritesReducer from './favoritesSlice';
 import cartReducer from './cartSlice';
+import userReducer from './userSlice';
 import cartMiddleware from './cartMiddleware';
 
 export const store = configureStore({
   reducer: {
     favorites: favoritesReducer,
     cart: cartReducer,
+    user: userReducer,
     // Add other reducers here as needed
   },
   // Enable Redux DevTools extension

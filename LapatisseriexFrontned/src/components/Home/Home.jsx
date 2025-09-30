@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useProduct } from '../../context/ProductContext/ProductContext';
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 
 import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';

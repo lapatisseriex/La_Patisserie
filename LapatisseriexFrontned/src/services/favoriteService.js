@@ -8,7 +8,19 @@ class FavoriteService {
       return response.data.data;
     } catch (error) {
       console.error('Error fetching favorites:', error);
-      throw error;
+      
+      // Provide more specific error messages
+      if (error.response?.status === 500) {
+        throw new Error('Server error while fetching favorites. Please try again later.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Please log in to view your favorites.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Favorites endpoint not found.');
+      } else if (!error.response) {
+        throw new Error('Network error. Please check your connection.');
+      } else {
+        throw new Error(`Error ${error.response.status}: ${error.response.data?.message || 'Unknown error'}`);
+      }
     }
   }
 

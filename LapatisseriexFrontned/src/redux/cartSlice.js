@@ -152,7 +152,8 @@ const cartSlice = createSlice({
       
       // Update totals optimistically
       state.cartCount += quantity;
-      state.cartTotal += (product.price * quantity);
+      const price = parseFloat(product.price) || 0;
+      state.cartTotal += (price * quantity);
       state.isOptimisticLoading = true;
     },
 
@@ -162,11 +163,12 @@ const cartSlice = createSlice({
       
       if (itemIndex >= 0) {
         const oldQuantity = state.items[itemIndex].quantity;
-        const priceDiff = (quantity - oldQuantity) * state.items[itemIndex].price;
+        const itemPrice = parseFloat(state.items[itemIndex].productDetails?.price || state.items[itemIndex].price) || 0;
+        const priceDiff = (quantity - oldQuantity) * itemPrice;
         
         if (quantity === 0) {
           // Remove item
-          state.cartTotal -= (state.items[itemIndex].price * oldQuantity);
+          state.cartTotal -= (itemPrice * oldQuantity);
           state.cartCount -= oldQuantity;
           state.items.splice(itemIndex, 1);
         } else {
@@ -186,7 +188,8 @@ const cartSlice = createSlice({
       
       if (itemIndex >= 0) {
         const item = state.items[itemIndex];
-        state.cartTotal -= (item.price * item.quantity);
+        const itemPrice = parseFloat(item.productDetails?.price || item.price) || 0;
+        state.cartTotal -= (itemPrice * item.quantity);
         state.cartCount -= item.quantity;
         state.items.splice(itemIndex, 1);
       }
@@ -215,7 +218,10 @@ const cartSlice = createSlice({
       const localItems = action.payload;
       state.items = localItems;
       state.cartCount = localItems.reduce((total, item) => total + item.quantity, 0);
-      state.cartTotal = localItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+      state.cartTotal = localItems.reduce((total, item) => {
+        const price = parseFloat(item.productDetails?.price || item.price) || 0;
+        return total + (price * item.quantity);
+      }, 0);
     },
 
     clearLocalOptimisticUpdates: (state) => {
@@ -347,7 +353,8 @@ const cartSlice = createSlice({
         const optimisticIndex = state.items.findIndex(i => i.productId === productId && i.isOptimistic);
         if (optimisticIndex >= 0) {
           const item = state.items[optimisticIndex];
-          state.cartTotal -= (item.price * item.quantity);
+          const itemPrice = parseFloat(item.productDetails?.price || item.price) || 0;
+          state.cartTotal -= (itemPrice * item.quantity);
           state.cartCount -= item.quantity;
           state.items.splice(optimisticIndex, 1);
         }
