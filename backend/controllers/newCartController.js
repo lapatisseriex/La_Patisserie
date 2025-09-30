@@ -75,8 +75,14 @@ export const addToNewCart = async (req, res) => {
     }
 
     // Get product price (from variants or main price)
-    const productPrice = product.variants?.[0]?.price || product.price || 0;
+    const productPrice = parseFloat(product.variants?.[0]?.price || product.price || 0);
     const productStock = product.stock || product.variants?.[0]?.stock || 0;
+
+    // Validate that we have a valid price
+    if (isNaN(productPrice) || productPrice <= 0) {
+      console.error(`Invalid price for product ${productId}: ${productPrice}`);
+      return res.status(400).json({ error: 'Product price is not valid' });
+    }
 
     // Check stock availability
     if (productStock < quantity) {

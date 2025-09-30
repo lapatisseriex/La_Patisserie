@@ -60,7 +60,9 @@ const newCartSchema = new mongoose.Schema({
 // Virtual to calculate cart total
 newCartSchema.virtual('cartTotal').get(function() {
   return this.items.reduce((total, item) => {
-    return total + (item.productDetails.price * item.quantity);
+    const price = parseFloat(item.productDetails?.price) || 0;
+    const quantity = parseInt(item.quantity) || 0;
+    return total + (price * quantity);
   }, 0);
 });
 

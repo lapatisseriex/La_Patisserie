@@ -12,11 +12,21 @@ export const getFavorites = asyncHandler(async (req, res) => {
     // If favorites exist, populate with product details
     if (favorites.productIds.length > 0) {
       // Get complete product data with all fields including images and variants
-      const products = await Product.find({
-        _id: { $in: favorites.productIds }
-      })
-      .populate('category')
-      .lean();
+      // Use try-catch for the populate in case of missing categories
+      let products;
+      try {
+        products = await Product.find({
+          _id: { $in: favorites.productIds }
+        })
+        .populate('category')
+        .lean();
+      } catch (populateError) {
+        console.warn('Error populating categories, fetching without populate:', populateError);
+        // Fallback: fetch products without populating category
+        products = await Product.find({
+          _id: { $in: favorites.productIds }
+        }).lean();
+      }
       
       // Create a map of products by id for easier access
       const productsMap = products.reduce((acc, product) => {
@@ -27,17 +37,40 @@ export const getFavorites = asyncHandler(async (req, res) => {
       // Add product details to favorites
       const favoritesWithDetails = favorites.productIds.map(id => {
         const idStr = id.toString();
+        const product = productsMap[idStr];
+        
+        if (product) {
+          // Ensure compatibility with ProductCard component
+          // Convert images array to image object if needed
+          if (product.images && product.images.length > 0 && !product.image) {
+            product.image = {
+              url: product.images[0],
+              alt: product.name
+            };
+          }
+          
+          // Ensure price is available from variants
+          if (product.variants && product.variants.length > 0 && !product.price) {
+            product.price = product.variants[0].price;
+          }
+        }
+        
         return {
           productId: id,
-          productDetails: productsMap[idStr] || { name: 'Product not found' }
+          productDetails: product || { 
+            _id: id,
+            name: 'Product not found',
+            price: 0,
+            isActive: false 
+          }
         };
-      });
+      }).filter(item => item.productDetails.isActive !== false); // Filter out inactive products
       
       return res.status(200).json({
         success: true,
         data: {
           items: favoritesWithDetails,
-          count: favorites.count
+          count: favoritesWithDetails.length
         }
       });
     }

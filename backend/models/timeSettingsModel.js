@@ -116,12 +116,51 @@ timeSettingsSchema.methods.getNextOpeningTime = function() {
 
 // Static method to get current settings (create default if none exist)
 timeSettingsSchema.statics.getCurrentSettings = async function() {
-  let settings = await this.findOne();
-  if (!settings) {
-    settings = new this();
-    await settings.save();
+  try {
+    // Add timeout to prevent long-running queries
+    let settings = await this.findOne().maxTimeMS(5000).lean();
+    if (!settings) {
+      // Create default settings
+      const defaultSettings = {
+        weekday: {
+          startTime: '09:00',
+          endTime: '21:00',
+          isActive: true
+        },
+        weekend: {
+          startTime: '09:00',
+          endTime: '21:00',
+          isActive: true
+        },
+        timezone: 'Asia/Kolkata',
+        specialDays: []
+      };
+      
+      settings = new this(defaultSettings);
+      await settings.save();
+    } else {
+      // Convert lean object back to document for method access
+      settings = new this(settings);
+    }
+    return settings;
+  } catch (error) {
+    console.error('Error in getCurrentSettings:', error);
+    // Return default settings if database fails
+    return new this({
+      weekday: {
+        startTime: '09:00',
+        endTime: '21:00',
+        isActive: true
+      },
+      weekend: {
+        startTime: '09:00',
+        endTime: '21:00',
+        isActive: true
+      },
+      timezone: 'Asia/Kolkata',
+      specialDays: []
+    });
   }
-  return settings;
 };
 
 const TimeSettings = mongoose.model('TimeSettings', timeSettingsSchema);

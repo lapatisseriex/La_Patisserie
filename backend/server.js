@@ -6,6 +6,13 @@ import mongoose from 'mongoose';
 import compression from 'compression';
 import helmet from 'helmet';
 import dbConnection from './utils/database.js';
+import { 
+  generalRateLimit, 
+  authRateLimit, 
+  cartRateLimit, 
+  productRateLimit,
+  connectionPoolMiddleware 
+} from './middleware/rateLimitMiddleware.js';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -156,22 +163,26 @@ const startServer = async () => {
       }
     }, 15 * 60 * 1000);
 
+  // Apply rate limiting and connection pool protection
+  app.use(connectionPoolMiddleware);
+  app.use('/api', generalRateLimit);
+
   // Routes - only set up after DB connection is established
   // Apply the DB readiness gate to API routes
   app.use('/api', dbReadyGate);
-    app.use('/api/auth', authRoutes);
+    app.use('/api/auth', authRateLimit, authRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/email', emailRoutes);
     app.use('/api/locations', locationRoutes);
     app.use('/api/admin', adminRoutes);
     app.use('/api/categories', categoryRoutes);
-    app.use('/api/products', productRoutes);
+    app.use('/api/products', productRateLimit, productRoutes);
     app.use('/api/upload', uploadRoutes);
     app.use('/api/hostels', hostelRoutes);
     app.use('/api/image-reprocess', imageReprocessRoutes);
   // Banners are now static on the frontend; backend routes removed
     app.use('/api/time-settings', timeSettingsRoutes);
-    app.use('/api/newcart', newCartRoutes);
+    app.use('/api/newcart', cartRateLimit, newCartRoutes);
 
     // Health check endpoint
     app.get('/health', (req, res) => {

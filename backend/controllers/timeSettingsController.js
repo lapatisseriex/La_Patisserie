@@ -166,7 +166,14 @@ export const removeSpecialDay = asyncHandler(async (req, res) => {
 // @access  Public
 export const checkShopStatus = asyncHandler(async (req, res) => {
   try {
-    const settings = await TimeSettings.getCurrentSettings();
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database query timeout')), 8000);
+    });
+    
+    const settingsPromise = TimeSettings.getCurrentSettings();
+    const settings = await Promise.race([settingsPromise, timeoutPromise]);
+    
     const isOpen = settings.isShopOpen();
     const nextOpenTime = isOpen ? null : settings.getNextOpeningTime();
     
@@ -186,9 +193,23 @@ export const checkShopStatus = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Error checking shop status:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while checking shop status'
+    
+    // Return default "open" status if database fails
+    const defaultTimezone = 'Asia/Kolkata';
+    res.status(200).json({
+      success: true,
+      data: {
+        isOpen: true, // Default to open when database is unavailable
+        nextOpeningTime: null,
+        currentTime: new Date().toLocaleTimeString('en-US', {
+          hour12: false,
+          timeZone: defaultTimezone,
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        timezone: defaultTimezone
+      },
+      warning: 'Using default shop status due to database connectivity issues'
     });
   }
 });
