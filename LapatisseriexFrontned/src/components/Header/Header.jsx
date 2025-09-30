@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from '
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../../hooks/useCart';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import SparkAnimation from '../common/SparkAnimation/SparkAnimation';
@@ -64,8 +64,7 @@ const Header = ({ isAdminView = false }) => {
     hasValidDeliveryLocation
   } = locationContext || {};
   
-  const cartContext = useCart();
-  const { cartCount = 0 } = cartContext || {};
+  const { cartCount = 0 } = useCart();
   
   // Get categories from CategoryContext with error handling
   const categoryContext = useCategory();

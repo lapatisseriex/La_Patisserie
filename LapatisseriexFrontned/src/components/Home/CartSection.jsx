@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../../hooks/useCart';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaDisplay from '../common/MediaDisplay';

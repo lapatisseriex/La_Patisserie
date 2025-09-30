@@ -171,6 +171,7 @@ export const RecentlyViewedProvider = ({ children }) => {
         setLoading(true);
         setError(null);
 
+        let idToken;
         try {
           const { getAuth } = await import('firebase/auth');
           const auth = getAuth();
@@ -181,7 +182,7 @@ export const RecentlyViewedProvider = ({ children }) => {
             return [];
           }
   
-          const idToken = await Promise.race([
+          idToken = await Promise.race([
             auth.currentUser.getIdToken(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Auth token request timeout')), 5000))
           ]);

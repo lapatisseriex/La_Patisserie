@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useSparkAnimationContext } from '../context/SparkAnimationContext/SparkAnimationContext';
-import { useCart } from '../context/CartContext';
+import { useCart } from './useCart';
 
 export const useSparkToCart = () => {
   const { triggerSparkAnimation } = useSparkAnimationContext();

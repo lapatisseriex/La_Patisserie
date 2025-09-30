@@ -38,7 +38,6 @@ import Newsletter from './components/Newsletter/Newsletter';
 import AuthModal from './components/Auth/AuthModal/AuthModal';
 
 // Context Providers
-import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext/AuthContext';
 import { LocationProvider } from './context/LocationContext/LocationContext';
 import { HostelProvider } from './context/HostelContext/HostelContext';
@@ -105,7 +104,6 @@ function App() {
               <CategoryProvider>
                 <ProductProvider>
                     <RecentlyViewedProvider>
-                      <CartProvider>
                         <FavoritesProvider>
                           <SparkAnimationProvider>
                         <Router>
@@ -175,7 +173,6 @@ function App() {
           </Router>
                       </SparkAnimationProvider>
                       </FavoritesProvider>
-                    </CartProvider>
                   </RecentlyViewedProvider>
               </ProductProvider>
             </CategoryProvider>

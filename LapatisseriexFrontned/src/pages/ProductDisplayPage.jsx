@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
 import { useProduct } from '../context/ProductContext/ProductContext';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import FavoriteButton from '../components/Favorites/FavoriteButton';
 

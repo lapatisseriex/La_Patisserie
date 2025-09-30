@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext/AuthContext';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../../hooks/useCart';
 import { 
   Home, 
   Utensils, 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 import MediaDisplay from '../common/MediaDisplay';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../../hooks/useCart';
 import FavoriteButton from '../Favorites/FavoriteButton';
 
 import { useAuth } from '../../context/AuthContext/AuthContext';
@@ -11,9 +11,8 @@ import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyV
 import { useShopStatus } from '../../context/ShopStatusContext';
 import { useSparkToCart } from '../../hooks/useSparkToCart';
 
-const ProductCard = ({ product, className = '', compact = false, featured = false }) => {
+const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
 
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
@@ -116,22 +115,19 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     e.stopPropagation();
     if (!isProductAvailable) return;
     
-    setIsAddingToCart(true);
     try {
       // Check shop status in real-time before adding to cart
       const currentStatus = await checkShopStatusNow();
       
       if (!currentStatus.isOpen) {
         // Shop is now closed, UI will update automatically
-        setIsAddingToCart(false);
         return;
       }
       
+      // Add to cart with immediate UI update (optimistic)
       addToCart(product, 1);
     } catch (error) {
       console.error('Error adding to cart:', error);
-    } finally {
-      setIsAddingToCart(false);
     }
   };
 
@@ -331,72 +327,63 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           </div>
 
           {/* Add to Cart Button or Quantity Controls - positioned in bottom right corner of image */}
-          {currentQuantity === 0 ? (
-            <button
-              ref={addToCartButtonRef}
-              onClick={handleAddToCart}
-              disabled={!isActive || totalStock === 0 || isAddingToCart || !isProductAvailable}
-              className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-semibold transition-all duration-300 ease-out rounded-lg border ${
-                !isActive || totalStock === 0 || !isProductAvailable
-                  ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
-                  : isAddingToCart
-                  ? 'bg-white text-red-500 border-red-500 cursor-wait scale-95'
-                  : 'bg-white text-red-500 border-red-500 hover:bg-red-50 hover:shadow-md shadow-sm'
-              }`}
-            >
-              {isAddingToCart ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-gray-400 mr-1"></div>
-                  Adding...
-                </div>
-              ) : !isProductAvailable ? (
-                'Closed'
-              ) : (
-                'Add'
-              )}
-            </button>
-          ) : (
-            <div className={`absolute bottom-2 right-2 flex items-center rounded-lg shadow-sm ${
-              !isProductAvailable 
-                ? 'bg-gray-100 border border-gray-300' 
-                : 'bg-white border border-red-500'
-            }`}>
+          {!hideCartButton && (
+            currentQuantity === 0 ? (
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuantityChange(currentQuantity - 1);
-                }}
-                disabled={!isProductAvailable}
-                className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-medium ${
-                  !isProductAvailable
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-red-500 hover:bg-red-50'
+                ref={addToCartButtonRef}
+                onClick={handleAddToCart}
+                disabled={!isActive || totalStock === 0 || !isProductAvailable}
+                className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-semibold transition-all duration-300 ease-out rounded-lg border ${
+                  !isActive || totalStock === 0 || !isProductAvailable
+                    ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
+                    : 'bg-white text-red-500 border-red-500 hover:bg-red-50 hover:shadow-md shadow-sm transform hover:scale-105'
                 }`}
               >
-                −
+                {!isProductAvailable ? 'Closed' : 'Add'}
               </button>
-              <span className={`px-3 py-1 font-semibold text-xs min-w-[1.5rem] text-center border-l border-r ${
-                !isProductAvailable
-                  ? 'text-gray-400 border-gray-300'
-                  : 'text-red-500 border-red-500'
+            ) : (
+              <div className={`absolute bottom-2 right-2 flex items-center rounded-lg shadow-sm ${
+                !isProductAvailable 
+                  ? 'bg-gray-100 border border-gray-300' 
+                  : 'bg-white border border-red-500'
               }`}>
-                {currentQuantity}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuantityChange(currentQuantity + 1);
-                }}
-                disabled={currentQuantity >= totalStock || !isProductAvailable}
-                className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-medium ${
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuantityChange(currentQuantity - 1);
+                  }}
+                  disabled={!isProductAvailable}
+                  className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-medium ${
+                    !isProductAvailable
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-red-500 hover:bg-red-50'
+                  }`}
+                >
+                  −
+                </button>
+                <span className={`px-3 py-1 font-semibold text-xs min-w-[1.5rem] text-center border-l border-r ${
                   !isProductAvailable
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-red-500 hover:bg-red-50'
-                }`}
-              >
-                +
-              </button>
-            </div>
+                    ? 'text-gray-400 border-gray-300'
+                    : 'text-red-500 border-red-500'
+                }`}>
+                  {currentQuantity}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuantityChange(currentQuantity + 1);
+                  }}
+                  disabled={currentQuantity >= totalStock || !isProductAvailable}
+                  className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-medium ${
+                    !isProductAvailable
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-red-500 hover:bg-red-50'
+                  }`}
+                >
+                  +
+                </button>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -585,6 +572,7 @@ ProductCard.propTypes = {
   className: PropTypes.string,
   compact: PropTypes.bool,
   featured: PropTypes.bool,
+  hideCartButton: PropTypes.bool,
 };
 
 export default ProductCard;

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useCart } from '../../context/CartContext';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useCart } from '../../hooks/useCart';
 import { useProduct } from '../../context/ProductContext/ProductContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 
@@ -9,52 +10,147 @@ const CartPickedForYou = () => {
   const { cartItems } = useCart();
   const { fetchProducts } = useProduct();
   const { user } = useAuth();
+  const { recentlyViewed } = useRecentlyViewed();
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recommendationType, setRecommendationType] = useState('');
+
+  // Memoize cart analysis for performance
+  const cartAnalysis = useMemo(() => {
+    if (!cartItems || cartItems.length === 0) {
+      return {
+        lastProduct: null,
+        categories: [],
+        productIds: [],
+        hasItems: false
+      };
+    }
+
+    const productIds = cartItems.map(item => item.productId);
+    const lastProduct = cartItems[cartItems.length - 1]; // Most recently added
+    
+    // Extract unique categories from cart items
+    const categories = [...new Set(
+      cartItems
+        .map(item => item.category || item.productDetails?.category)
+        .filter(Boolean)
+    )];
+
+    return {
+      lastProduct,
+      categories,
+      productIds,
+      hasItems: true
+    };
+  }, [cartItems]);
 
   useEffect(() => {
-    const loadCartRecommendations = async () => {
+    const loadSmartRecommendations = async () => {
       try {
         setLoading(true);
 
         // If no user or no cart items, don't show recommendations
-        if (!user || !cartItems || cartItems.length === 0) {
+        if (!user || !cartAnalysis.hasItems) {
           setRecommendedProducts([]);
           setLoading(false);
           return;
         }
 
-        // Get product IDs that are already in cart to exclude them from recommendations
-        const cartProductIds = cartItems.map(item => item.productId);
-        console.log('🛒 Cart product IDs to exclude:', cartProductIds);
+        console.log('🛒 Cart Analysis:', cartAnalysis);
+        console.log('👀 Recently Viewed:', recentlyViewed);
 
-        // Fetch products and show popular ones (excluding items already in cart)
-        const result = await fetchProducts({
-          limit: 20,
-          sort: 'rating:-1' // Sort by highest rated first
-        });
+        let recommendations = [];
+        let recType = '';
 
-        // Filter out products already in cart and take first 3
-        const recommendedProducts = result.products
-          .filter(product => !cartProductIds.includes(product._id))
-          .slice(0, 3);
+        // Strategy 1: Products from same category as last added item
+        if (cartAnalysis.lastProduct?.category) {
+          console.log('🎯 Finding products from same category as last item...');
+          try {
+            const categoryResult = await fetchProducts({
+              category: cartAnalysis.lastProduct.category,
+              limit: 15,
+              sort: 'rating:-1',
+              isActive: true
+            });
+            
+            const categoryRecommendations = categoryResult.products
+              ?.filter(product => 
+                product && 
+                product._id && 
+                !cartAnalysis.productIds.includes(product._id)
+              ) || [];
+            
+            if (categoryRecommendations.length >= 3) {
+              recommendations = categoryRecommendations.slice(0, 3);
+              recType = `More ${cartAnalysis.lastProduct.category.name || 'similar items'}`;
+            }
+          } catch (error) {
+            console.error('Error fetching category recommendations:', error);
+          }
+        }
+
+        // Strategy 2: If category strategy didn't work, use recently viewed
+        if (recommendations.length < 3 && recentlyViewed && recentlyViewed.length > 0) {
+          console.log('� Using recently viewed products...');
+          const recentProducts = recentlyViewed
+            .map(item => item.productId || item)
+            .filter(product => 
+              product && 
+              product._id && 
+              !cartAnalysis.productIds.includes(product._id)
+            )
+            .slice(0, 3);
+          
+          if (recentProducts.length > 0) {
+            recommendations = recentProducts;
+            recType = 'From your recent views';
+          }
+        }
+
+        // Strategy 3: Fallback to popular products
+        if (recommendations.length < 3) {
+          console.log('⭐ Falling back to popular products...');
+          try {
+            const popularResult = await fetchProducts({
+              limit: 20,
+              sort: 'rating:-1',
+              isActive: true
+            });
+            
+            const popularRecommendations = popularResult.products
+              ?.filter(product => 
+                product && 
+                product._id && 
+                !cartAnalysis.productIds.includes(product._id)
+              ) || [];
+            
+            recommendations = popularRecommendations.slice(0, 3);
+            recType = 'Popular choices';
+          } catch (error) {
+            console.error('Error fetching popular recommendations:', error);
+          }
+        }
         
-        setRecommendedProducts(recommendedProducts);
+        console.log('✅ Final recommendations:', recommendations.length, 'items');
+        console.log('📝 Recommendation type:', recType);
+        
+        setRecommendedProducts(recommendations);
+        setRecommendationType(recType);
         
       } catch (err) {
-        console.error("Error loading cart-based recommendations:", err);
+        console.error("Error loading smart recommendations:", err);
         setRecommendedProducts([]);
+        setRecommendationType('');
       } finally {
         setLoading(false);
       }
     };
 
-    loadCartRecommendations();
-  }, [cartItems, fetchProducts, user]);
+    loadSmartRecommendations();
+  }, [cartAnalysis, fetchProducts, user, recentlyViewed]);
 
   // Don't render section if no cart items, or no recommendations
-  if (!cartItems || cartItems.length === 0 || 
-      (recommendedProducts.length === 0 && !loading)) {
+  if (!cartAnalysis.hasItems || (recommendedProducts.length === 0 && !loading)) {
     return null;
   }
 
@@ -86,7 +182,10 @@ const CartPickedForYou = () => {
             Picked for Your Cart
           </h2>
           <p className="text-gray-600 text-sm">
-            Recommended products for you
+            {cartAnalysis.lastProduct ? 
+              `Based on your cart` : 
+              'Recommended just for you'
+            }
           </p>
         </div>
         
@@ -94,14 +193,16 @@ const CartPickedForYou = () => {
         {recommendedProducts.length > 0 ? (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">You Might Also Like</h3>
+              <h3 className="text-lg font-semibold text-gray-800">
+                {recommendationType || 'You Might Also Like'}
+              </h3>
             
             </div>
             <div className="overflow-x-auto pb-4 scrollbar-hide" style={{ scrollBehavior: 'smooth' }}>
               <div className="flex space-x-6 min-w-max px-1">
                 {recommendedProducts.map(product => (
                   <div key={product._id} className="flex-shrink-0 w-64 sm:w-72 md:w-80">
-                    <ProductCard product={product} />
+                    <ProductCard product={product} hideCartButton={true} />
                   </div>
                 ))}
               </div>

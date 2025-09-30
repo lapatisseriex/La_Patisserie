@@ -21,7 +21,7 @@ api.interceptors.request.use(
   }
 );
 
-class NewCartService {
+class CartService {
   // Get user's cart from database
   async getCart() {
     try {
@@ -142,5 +142,5 @@ class NewCartService {
   }
 }
 
-const newCartService = new NewCartService();
-export default newCartService;
+const cartService = new CartService();
+export default cartService;

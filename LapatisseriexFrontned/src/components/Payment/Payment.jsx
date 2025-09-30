@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheckCircle, FaMapMarkerAlt, FaCreditCard, FaWallet, FaExclamationTriangle } from 'react-icons/fa';
 import { BsCashCoin } from 'react-icons/bs';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
@@ -10,11 +10,14 @@ import ShopClosureOverlay from '../common/ShopClosureOverlay';
 
 const Payment = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
-  const { cartItems, cartTotal, couponDiscount, clearCart } = useCart();
+  const { cartItems, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
   const { hasValidDeliveryLocation, getCurrentLocationName, locations } = useLocation();
   const navigate = useNavigate();
   const [showLocationError, setShowLocationError] = useState(false);
+  
+  // Coupon discount is managed locally in this component
+  const [couponDiscount, setCouponDiscount] = useState(0);
   
   // Check for valid delivery location and handle gracefully
   useEffect(() => {

@@ -19,7 +19,6 @@ import hostelRoutes from './routes/hostelRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
 import timeSettingsRoutes from './routes/timeSettingsRoutes.js';
-import cartRoutes from './routes/cartRoutes.js';
 import newCartRoutes from './routes/newCartRoutes.js';
 
 // Initialize Express app
@@ -172,7 +171,6 @@ const startServer = async () => {
     app.use('/api/image-reprocess', imageReprocessRoutes);
   // Banners are now static on the frontend; backend routes removed
     app.use('/api/time-settings', timeSettingsRoutes);
-    app.use('/api/cart', cartRoutes);
     app.use('/api/newcart', newCartRoutes);
 
     // Health check endpoint
