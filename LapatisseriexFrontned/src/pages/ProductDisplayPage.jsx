@@ -45,14 +45,6 @@ const ProductDisplayPage = () => {
     
     // Monitor scroll for debugging in development
     let stopMonitoring = null;
-    if (process.env.NODE_ENV === 'development') {
-      stopMonitoring = ScrollManager.monitorScroll((info) => {
-        if (info.windowScrollY > 50) {
-          console.warn('⚠️ Unexpected scroll detected:', info);
-        }
-      }, 3000);
-    }
-    
     return () => {
       console.log(`🧹 ProductDisplayPage cleanup for product: ${productId}`);
       document.body.classList.remove('product-display-page-mobile');
