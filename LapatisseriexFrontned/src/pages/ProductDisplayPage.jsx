@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
-import { useProduct } from '../context/ProductContext/ProductContext';
+import { fetchProductById, fetchProducts, makeSelectListByKey } from '../redux/productsSlice';
 import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import FavoriteButton from '../components/Favorites/FavoriteButton';
@@ -20,9 +21,14 @@ import '../styles/premiumButtons.css';
 const ProductDisplayPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { getProduct, fetchProducts } = useProduct();
+  const dispatch = useDispatch();
+  
+  // Get product data from Redux store (stable selectors)
+  const product = useSelector((state) => state.products.selectedProduct);
+  const loading = useSelector((state) => state.products.loading);
+  const error = useSelector((state) => state.products.error);
+  
   const { addToCart, getItemQuantity, updateQuantity, cartItems, isLoading } = useCart();
-
   const { fetchRecentlyViewed, trackProductView } = useRecentlyViewed();
   const { user } = useAuth();
   const { isFavorite } = useFavorites();
@@ -55,19 +61,17 @@ const ProductDisplayPage = () => {
     };
   }, [productId]); // Re-run when productId changes
 
-  const [product, setProduct] = useState(null);
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [sameCategoryProducts, setSameCategoryProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [forceCartUpdate, setForceCartUpdate] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isCareInstructionsOpen, setIsCareInstructionsOpen] = useState(false);
   const [isDeliveryInfoOpen, setIsDeliveryInfoOpen] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   
   // References to the main "Reserve Yours" buttons (mobile & desktop) to determine when to show sticky bars
   const reserveButtonMobileRef = useRef(null);
@@ -85,11 +89,40 @@ const ProductDisplayPage = () => {
     return rect.top < vh && rect.bottom > 0 && rect.left < vw && rect.right > 0;
   };
 
-  // Measure header height on desktop so sticky bar doesn't hide under it
+  // Fetch product data
+  useEffect(() => {
+    if (productId) {
+      dispatch(fetchProductById(productId));
+    }
+  }, [dispatch, productId]);
+
+  // Set initial variant when product loads
+  useEffect(() => {
+    if (product?.variants?.length > 0) {
+      setSelectedVariant(product.variants[0]);
+      setSelectedVariantIndex(0);
+    }
+  }, [product]);
+  
+  // Keep selectedVariant state in sync with selectedVariantIndex
+  useEffect(() => {
+    if (product?.variants && product.variants[selectedVariantIndex]) {
+      setSelectedVariant(product.variants[selectedVariantIndex]);
+    }
+  }, [selectedVariantIndex, product]);
+
+  // Track product view
+  useEffect(() => {
+    if (product?._id && user) {
+      trackProductView(product._id, product).catch(console.error);
+    }
+  }, [product, user, trackProductView]);
+  
+  // Calculate sticky offset based on header height
   useEffect(() => {
     const computeOffset = () => {
-      const isDesktop = window.innerWidth >= 768;
-      if (isDesktop) {
+      // Check if we're on desktop
+      if (window.innerWidth >= 768) { // md breakpoint
         const headerEl = document.querySelector('header');
         const headerHeight = headerEl ? headerEl.offsetHeight : 0;
         setStickyTopOffset(headerHeight);
@@ -183,152 +216,35 @@ const ProductDisplayPage = () => {
   const [productError, setProductError] = useState(null);
   const maxRetries = 3;
   
+  // Fetch Recently Viewed when user is available
   useEffect(() => {
-    // Reset states when product ID changes
-    setRetryCount(0);
-    setProductError(null);
-    
-    const loadProduct = async () => {
-      if (productId) {
-        if (!isValidObjectId(productId)) {
-          console.error('Invalid product ID format:', productId);
-          setProductError('Invalid product ID format');
-          setProduct(null);
-          setLoading(false);
-          return;
-        }
-
-        setLoading(true);
-        setProductError(null);
-        try {
-          // Load main product data with timeout handling
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 8000); // Reduced timeout
-          });
-          
-          const productData = await Promise.race([
-            getProduct(productId),
-            timeoutPromise
-          ]);
-          
-          if (!productData) {
-            console.error('Product not found:', productId);
-            setProductError('Product not found');
-            setProduct(null);
-            setLoading(false);
-            return;
-          }
-
-          // Set product immediately to show the page faster
-          setProduct(productData);
-          setLoading(false);
-          setRetryCount(0); // Reset retry count on success
-
-          // Load secondary data in background (non-blocking and with error isolation)
-          // Each Promise is wrapped to prevent one failure from affecting others
-          const backgroundTasks = [];
-          
-          // Task 1: Track product view
-          if (user) {
-            const trackTask = async () => {
-              try {
-                await trackProductView(productId, productData);
-              } catch (error) {
-                console.error('Error tracking product view:', error);
-                // Non-critical error, continue
-              }
-            };
-            backgroundTasks.push(trackTask());
-          }
-          
-          // Task 2: Load recently viewed products for logged-in users
-          if (user) {
-            const recentTask = async () => {
-              try {
-                const recentlyViewedData = await fetchRecentlyViewed();
-                const filteredRecent = recentlyViewedData
-                  .filter(item => item.productId && item.productId._id !== productId)
-                  .slice(0, 3);
-                setRecentlyViewed(filteredRecent);
-              } catch (error) {
-                console.error('Error loading recently viewed:', error);
-                setRecentlyViewed([]);
-              }
-            };
-            backgroundTasks.push(recentTask());
-          }
-          
-          // Task 3: Load products from the same category
-          if (productData.category) {
-            const categoryTask = async () => {
-              try {
-                const categoryProductsResponse = await fetchProducts({
-                  category: productData.category._id,
-                  limit: 6,
-                  isActive: true
-                });
-                
-                const categoryProducts = categoryProductsResponse?.products || categoryProductsResponse || [];
-                
-                if (Array.isArray(categoryProducts)) {
-                  const filteredCategoryProducts = categoryProducts
-                    .filter(p => p._id !== productId)
-                    .slice(0, 3);
-                  setSameCategoryProducts(filteredCategoryProducts);
-                } else {
-                  console.warn('Category products is not an array:', categoryProducts);
-                  setSameCategoryProducts([]);
-                }
-              } catch (error) {
-                console.error('Error loading category products:', error);
-                setSameCategoryProducts([]);
-              }
-            };
-            backgroundTasks.push(categoryTask());
-          }
-          
-          // Execute all background tasks without waiting or blocking
-          Promise.allSettled(backgroundTasks);
-
-        } catch (error) {
-          console.error(`Error loading product (attempt ${retryCount + 1}/${maxRetries}):`, error);
-          
-          // Set appropriate error message
-          let errorMessage = 'Failed to load product';
-          if (error.message === 'Request timeout') {
-            errorMessage = 'Product loading timed out. Please check your internet connection.';
-          } else if (error.name === 'AxiosError' && error.response?.status === 404) {
-            errorMessage = 'Product not found';
-          } else if (error.name === 'AxiosError' && !navigator.onLine) {
-            errorMessage = 'No internet connection. Please check your network.';
-          }
-          
-          // Implement retry logic for network errors only
-          if (retryCount < maxRetries && 
-              (error.name === 'AxiosError' || 
-               error.message === 'Request timeout' || 
-               error.code === 'ECONNABORTED' || 
-               error.message?.includes('network')) &&
-               error.response?.status !== 404) { // Don't retry 404 errors
-            
-            console.log(`Retrying... (${retryCount + 1}/${maxRetries})`);
-            setRetryCount(prev => prev + 1);
-            
-            // Wait before retrying (exponential backoff)
-            const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
-            setTimeout(() => loadProduct(), delay);
-          } else {
-            // Max retries exceeded or non-retriable error
-            setProductError(errorMessage);
-            setProduct(null);
-            setLoading(false);
-          }
-        }
+    const loadRecent = async () => {
+      if (!user) { setRecentlyViewed([]); return; }
+      try {
+        const data = await fetchRecentlyViewed();
+        const filtered = (Array.isArray(data) ? data : []).filter(item => item.productId && item.productId._id !== productId).slice(0, 3);
+        setRecentlyViewed(filtered);
+      } catch (err) {
+        console.error('Error loading recently viewed:', err);
+        setRecentlyViewed([]);
       }
     };
+    loadRecent();
+  }, [user, productId, fetchRecentlyViewed]);
 
-    loadProduct();
-  }, [productId, getProduct, fetchProducts, trackProductView, fetchRecentlyViewed, user, retryCount]);
+  // Fetch products from the same category via Redux keyed list
+  const selectSameCategory = makeSelectListByKey('sameCategory');
+  const sameCategoryAll = useSelector(selectSameCategory);
+  useEffect(() => {
+    if (product?.category?._id) {
+      dispatch(fetchProducts({ key: 'sameCategory', category: product.category._id, limit: 6, isActive: true }));
+    }
+  }, [dispatch, product?.category?._id]);
+
+  const sameCategoryProducts = useMemo(() => {
+    const list = Array.isArray(sameCategoryAll) ? sameCategoryAll : [];
+    return list.filter(p => p && p._id !== productId).slice(0, 3);
+  }, [sameCategoryAll, productId]);
 
   // Auto-sliding functionality for multiple images - smooth and slow
   useEffect(() => {
@@ -415,13 +331,15 @@ const ProductDisplayPage = () => {
     };
   }, [reserveButtonMobileRef, reserveButtonDesktopRef, showStickyNavbar, showStickyBreadcrumb, showMobileStickyReserve]);
 
-  const handleAddToCart = () => {
-    if (!product || totalStock === 0) return;
-    
+  const handleAddToCart = async () => {
+    if (!product || totalStock === 0 || isAddingToCart) return;
+    setIsAddingToCart(true);
     try {
-      addToCart(product, 1);
+      await addToCart(product, 1, selectedVariantIndex);
     } catch (error) {
       console.error('Error adding to cart:', error);
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
@@ -454,7 +372,7 @@ const ProductDisplayPage = () => {
       // Product not in cart - add one and redirect
       try {
         console.log('🎯 Product not in cart, adding 1 item...');
-        await addToCart(product, 1);
+  await addToCart(product, 1, selectedVariantIndex);
         
         // Double check the cart was updated
         const newQuantity = getItemQuantity(product._id);
@@ -475,16 +393,19 @@ const ProductDisplayPage = () => {
 
 
 
-  const handleBuyNow = () => {
-    if (!product || totalStock === 0) return;
+  const handleBuyNow = async () => {
+    if (!product || totalStock === 0 || isAddingToCart) return;
     try {
       const currentQuantity = getItemQuantity(product._id);
       if (currentQuantity === 0) {
-        addToCart(product, 1);
+        setIsAddingToCart(true);
+        await addToCart(product, 1, selectedVariantIndex);
       }
       navigate('/cart');
     } catch (error) {
       console.error('Error in buy now:', error);
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
@@ -592,50 +513,20 @@ const ProductDisplayPage = () => {
     return <ProductDisplaySkeleton />;
   }
 
-  if (!product && !loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 flex items-center justify-center px-4">
-        <div className="text-center bg-white border border-gray-200 p-8 md:p-12 rounded-2xl shadow-xl max-w-md w-full">
-          <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
-            <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-900">
-            {productError === 'Product not found' ? 'Product Not Found' : 'Unable to Load Product'}
-          </h2>
-          <p className="text-gray-600 mb-6 text-sm md:text-base">
-            {productError || "The product you're looking for doesn't exist or couldn't be loaded."}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {productError && productError !== 'Product not found' && (
-              <button
-                onClick={() => window.location.reload()}
-                className="bg-blue-600 text-white px-6 py-3 font-medium hover:bg-blue-700 transition-colors rounded-lg text-sm"
-              >
-                Try Again
-              </button>
-            )}
-            <button
-              onClick={() => navigate('/')}
-              className="bg-black text-white px-6 py-3 font-medium hover:bg-gray-900 transition-colors rounded-lg text-sm"
-            >
-              Return Home
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  if (!product) {
+    // Keep showing the skeleton until product is available
+    return <ProductDisplaySkeleton />;
   }
 
-  const selectedVariant = product.variants?.[selectedVariantIndex] || product.variants?.[0] || { price: 0, discount: { value: 0 }, stock: 0 };
-  const discountedPrice = selectedVariant.price && selectedVariant.discount?.value
+  // Set default values for derived properties from the selected variant
+  const tracks = !!selectedVariant?.isStockActive;
+  const discountedPrice = selectedVariant?.price && selectedVariant?.discount?.value
     ? selectedVariant.price - selectedVariant.discount.value
-    : selectedVariant.price || 0;
-  const discountPercentage = selectedVariant.price && selectedVariant.discount?.value
+    : selectedVariant?.price || 0;
+  const discountPercentage = selectedVariant?.price && selectedVariant?.discount?.value
     ? Math.round((selectedVariant.discount.value / selectedVariant.price) * 100)
     : 0;
-  const totalStock = product.stock || selectedVariant.stock || 0;
+  const totalStock = tracks ? (selectedVariant?.stock || 0) : Number.POSITIVE_INFINITY;
 
   return (
     <div 
@@ -700,17 +591,19 @@ const ProductDisplayPage = () => {
 
               {/* Right: Action Buttons */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                {/* Favorite Button */}
-                <button
+                {/* Favorite Button - avoid nested <button> by using a non-button wrapper */}
+                <div
                   className="bg-gray-50 border border-rose-300 h-9 sm:h-10 w-9 sm:w-10 flex items-center justify-center rounded-lg hover:border-rose-500"
                   onClick={(e) => e.stopPropagation()}
+                  role="presentation"
                 >
                   <FavoriteButton productId={productId} size="md" className="text-rose-500" />
-                </button>
+                </div>
                 
                 {/* Quantity Controls or Add to Cart */}
                 {currentCartQuantity > 0 ? (
-                  <div className="flex items-center bg-gray-50 border border-gray-300 h-9 sm:h-10 rounded-lg">
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center bg-gray-50 border border-gray-300 h-9 sm:h-10 rounded-lg">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -729,18 +622,22 @@ const ProductDisplayPage = () => {
                         e.stopPropagation();
                         handleQuantityChange(currentCartQuantity + 1);
                       }}
-                      disabled={currentCartQuantity >= totalStock || isAddingToCart}
+                      disabled={(tracks && currentCartQuantity >= totalStock) || isAddingToCart}
                       className="w-8 sm:w-9 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
                     >
                       <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
+                    </div>
+                    {tracks && currentCartQuantity >= totalStock && (
+                      <div className="text-[10px] text-gray-600 mt-1">Max stock reached</div>
+                    )}
                   </div>
                 ) : (
                   <button
                     onClick={handleAddToCart}
-                    disabled={!product?.isActive || totalStock === 0 || isAddingToCart}
+                    disabled={!product?.isActive || (tracks && totalStock === 0) || isAddingToCart}
                     className={`btn-premium-outline px-3 sm:px-5 py-2 text-xs font-medium h-9 sm:h-10 ${
-                      !product?.isActive || totalStock === 0
+                      !product?.isActive || (tracks && totalStock === 0)
                         ? 'opacity-50 cursor-not-allowed'
                         : isAddingToCart
                         ? 'cursor-wait'
@@ -761,7 +658,7 @@ const ProductDisplayPage = () => {
                 {/* Prominent Reserve Yours Button */}
                 <ReserveCTA
                   onClick={handleReserve}
-                  disabled={!product?.isActive || totalStock === 0}
+                  disabled={!product?.isActive || (tracks && totalStock === 0)}
                   label="Reserve Yours"
                   small
                   className="h-9 sm:h-10 px-3 sm:px-5"
@@ -1133,6 +1030,7 @@ const ProductDisplayPage = () => {
               {/* Left: Add/Quantity */}
               <div className="flex-1">
                 {currentCartQuantity > 0 ? (
+                  <>
                   <div className="w-full h-[2.25rem] flex items-center justify-between bg-white border border-gray-300 rounded-lg px-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity - 1); }}
@@ -1143,18 +1041,22 @@ const ProductDisplayPage = () => {
                     <span className="text-sm font-semibold text-black min-w-[2rem] text-center">{currentCartQuantity}</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
-                      disabled={currentCartQuantity >= totalStock}
+                      disabled={tracks && currentCartQuantity >= totalStock}
                       className="w-7 h-7 flex items-center justify-center text-black transition-colors border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 rounded"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  {tracks && currentCartQuantity >= totalStock && (
+                    <div className="text-[10px] text-gray-600 mt-1">Max stock reached</div>
+                  )}
+                  </>
                 ) : (
                   <button
                     onClick={handleAddToCart}
-                    disabled={isAddingToCart || totalStock === 0}
+                    disabled={isAddingToCart || (tracks && totalStock === 0)}
                     className={`w-full btn-premium-outline btn-sm-compact font-medium flex items-center justify-center gap-2 ${
-                      isAddingToCart || totalStock === 0 ? 'opacity-60 cursor-not-allowed' : ''
+                      isAddingToCart || (tracks && totalStock === 0) ? 'opacity-60 cursor-not-allowed' : ''
                     }`}
                   >
                     {isAddingToCart ? (
@@ -1162,7 +1064,7 @@ const ProductDisplayPage = () => {
                     ) : (
                       <ShoppingCart className="w-4 h-4 text-gold-soft" />
                     )}
-                    <span>{isAddingToCart ? 'Adding...' : totalStock === 0 ? 'Out of Stock' : 'Add to Box'}</span>
+                    <span>{isAddingToCart ? 'Adding...' : (tracks && totalStock === 0) ? 'Out of Stock' : 'Add to Box'}</span>
                   </button>
                 )}
               </div>
@@ -1171,7 +1073,7 @@ const ProductDisplayPage = () => {
               <div className="flex-1" ref={reserveButtonMobileRef}>
                 <ReserveCTA
                   onClick={handleReserve}
-                  disabled={totalStock === 0}
+                  disabled={tracks && totalStock === 0}
                   label="Reserve Yours"
                   small
                   className="w-full btn-sm-compact"
@@ -1248,7 +1150,8 @@ const ProductDisplayPage = () => {
               {/* Right: Actions */}
               <div className="flex items-stretch gap-2 flex-shrink-0">
                 {currentCartQuantity > 0 ? (
-                  <div className="flex items-center bg-gray-50 border border-gray-300 h-7 rounded-lg">
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center bg-gray-50 border border-gray-300 h-7 rounded-lg">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity - 1); }}
                       className="w-8 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors rounded-l-lg"
@@ -1258,18 +1161,22 @@ const ProductDisplayPage = () => {
                     <span className="px-2 text-black font-semibold text-sm min-w-[2rem] text-center">{currentCartQuantity}</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
-                      disabled={currentCartQuantity >= totalStock}
+                      disabled={tracks && currentCartQuantity >= totalStock}
                       className="w-8 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
+                    </div>
+                    {tracks && currentCartQuantity >= totalStock && (
+                      <div className="text-[10px] text-gray-600 mt-1">Max stock reached</div>
+                    )}
                   </div>
                 ) : (
                   <button
                     onClick={handleAddToCart}
-                    disabled={!product?.isActive || totalStock === 0 || isAddingToCart}
+                    disabled={!product?.isActive || (tracks && totalStock === 0) || isAddingToCart}
                     className={`bg-white border border-gray-300 px-4 h-10 text-sm font-medium rounded-lg flex items-center justify-center leading-none box-border appearance-none whitespace-nowrap select-none ${
-                      !product?.isActive || totalStock === 0
+                      !product?.isActive || (tracks && totalStock === 0)
                         ? 'opacity-50 cursor-not-allowed text-gray-400'
                         : isAddingToCart
                         ? 'cursor-wait text-gray-600'
@@ -1281,7 +1188,7 @@ const ProductDisplayPage = () => {
                 )}
                 <button
                   onClick={handleBuyNow}
-                  disabled={!product?.isActive || totalStock === 0}
+                  disabled={!product?.isActive || (tracks && totalStock === 0)}
                   className={`px-4 h-10 text-sm font-medium rounded-lg flex items-center justify-center leading-none box-border appearance-none whitespace-nowrap select-none border ${
                     !product?.isActive || totalStock === 0
                       ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
@@ -1353,7 +1260,7 @@ const ProductDisplayPage = () => {
                     </div>
                     
                     {/* Stock Status */}
-                    {totalStock === 0 && (
+                    {tracks && totalStock === 0 && (
                       <div className="absolute top-4 right-4 bg-black text-white px-3 py-1 text-sm rounded-lg">
                         Out of Stock
                       </div>
@@ -1704,6 +1611,7 @@ const ProductDisplayPage = () => {
                 <div className="flex items-stretch gap-3">
                   <div className="flex-1">
                     {currentCartQuantity > 0 ? (
+                      <>
                       <div className="w-full h-12 flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity - 1); }}
@@ -1720,6 +1628,10 @@ const ProductDisplayPage = () => {
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
+                      {tracks && currentCartQuantity >= totalStock && (
+                        <div className="text-[11px] text-gray-600 mt-1">Max stock reached</div>
+                      )}
+                      </>
                     ) : (
                       <button
                         onClick={handleAddToCart}

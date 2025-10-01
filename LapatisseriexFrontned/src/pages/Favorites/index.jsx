@@ -19,7 +19,7 @@ const FavoritesPage = () => {
   };
   
   const handleAddToCart = (product) => {
-    addToCart(product);
+    addToCart(product, 1, 0);
   };
   
   if (loading) {

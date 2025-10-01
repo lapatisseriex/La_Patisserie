@@ -1,8 +1,14 @@
+import { useSelector } from 'react-redux';
+import { makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
 import ProductCard from "../Products/ProductCard";
 import DessertLoader from "../common/DessertLoader";
 
 // BestSellers.jsx
-const BestSellers = ({ products, loading = false }) => {
+const BestSellers = () => {
+  const selectProducts = makeSelectListByKey('bestSellers');
+  const selectLoading = makeSelectLoadingByKey('bestSellers');
+  const products = useSelector(selectProducts);
+  const loading = useSelector(selectLoading);
   if (loading || !products || products.length === 0) {
     return (
       <section className="w-full py-0 md:py-6">

@@ -50,9 +50,9 @@ export const getNewCart = async (req, res) => {
 export const addToNewCart = async (req, res) => {
   try {
     const userId = req.user.uid;
-    const { productId, quantity = 1 } = req.body;
+    const { productId, quantity = 1, variantIndex } = req.body;
 
-    console.log(`🛒 Adding to cart: userId=${userId}, productId=${productId}, quantity=${quantity}`);
+  console.log(`🛒 Adding to cart: userId=${userId}, productId=${productId}, quantity=${quantity}, variantIndex=${req.body?.variantIndex}`);
 
     // Validate input
     if (!productId) {
@@ -63,8 +63,8 @@ export const addToNewCart = async (req, res) => {
       return res.status(400).json({ error: 'Quantity must be greater than 0' });
     }
 
-    // Get product details
-    const product = await Product.findById(productId);
+  // Get product details
+  const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
@@ -75,8 +75,11 @@ export const addToNewCart = async (req, res) => {
     }
 
     // Get product price (from variants or main price)
-    const productPrice = parseFloat(product.variants?.[0]?.price || product.price || 0);
-    const productStock = product.stock || product.variants?.[0]?.stock || 0;
+  const vi = Number.isInteger(variantIndex) ? variantIndex : 0;
+  const variant = Array.isArray(product.variants) ? product.variants[vi] : undefined;
+  const productPrice = parseFloat(variant?.price || product.price || 0);
+  const productStock = (variant?.stock ?? product.stock ?? 0);
+  console.log(`🔎 Variant selection: vi=${vi}, tracks=${!!variant?.isStockActive}, stock=${productStock}, price=${productPrice}`);
 
     // Validate that we have a valid price
     if (isNaN(productPrice) || productPrice <= 0) {
@@ -84,9 +87,15 @@ export const addToNewCart = async (req, res) => {
       return res.status(400).json({ error: 'Product price is not valid' });
     }
 
-    // Check stock availability
-    if (productStock < quantity) {
-      return res.status(400).json({ error: 'Insufficient stock available' });
+    // Check stock availability only if tracking stock
+    const variantTracks = Boolean(variant?.isStockActive);
+    if (variantTracks) {
+      console.log(`✅ Variant tracks stock; validating requested qty ${quantity} <= current stock ${productStock}`);
+      if (productStock < quantity) {
+        return res.status(400).json({ error: 'Insufficient stock available' });
+      }
+    } else {
+      console.log('ℹ️ Variant does not track stock; skipping stock availability checks');
     }
 
     // Prepare product details for cart
@@ -95,7 +104,8 @@ export const addToNewCart = async (req, res) => {
       price: productPrice,
       image: product.image || product.images?.[0] || '',
       category: product.category?.name || product.category,
-      isActive: product.isActive
+      isActive: product.isActive,
+      variantIndex: vi
     };
 
     // Get or create cart
@@ -106,9 +116,10 @@ export const addToNewCart = async (req, res) => {
       item.productId.toString() === productId.toString()
     );
 
-    if (existingItem) {
+  if (existingItem && variantTracks) {
       // Check total quantity won't exceed stock
       const newTotalQuantity = existingItem.quantity + quantity;
+      console.log(`🧮 Existing item in cart. prevQty=${existingItem.quantity}, req=${quantity}, newTotal=${newTotalQuantity}, stock=${productStock}`);
       if (newTotalQuantity > productStock) {
         return res.status(400).json({ 
           error: `Cannot add ${quantity} more items. Only ${productStock - existingItem.quantity} available.`
@@ -117,7 +128,33 @@ export const addToNewCart = async (req, res) => {
     }
 
     // Add or update item in cart
-    await cart.addOrUpdateItem(productId, quantity, productDetails);
+    // If tracking, atomically decrement stock on the selected variant index
+  let decremented = false;
+  if (variantTracks && Array.isArray(product.variants) && product.variants.length > vi) {
+      const path = `variants.${vi}.stock`;
+      const dec = await Product.updateOne(
+        { _id: productId, [path]: { $gte: quantity } },
+        { $inc: { [path]: -quantity } }
+      );
+      console.log(`📉 Stock decrement attempt on ${path}: matched=${dec.matchedCount}, modified=${dec.modifiedCount}`);
+      if (dec.modifiedCount === 0) {
+        return res.status(400).json({ error: 'Insufficient stock available' });
+      }
+      decremented = true;
+    } else {
+      console.log('⏭️ Skipping stock decrement (variant does not track or invalid index)');
+    }
+
+    try {
+      await cart.addOrUpdateItem(productId, quantity, productDetails);
+    } catch (err) {
+      if (decremented) {
+        const path = `variants.${vi}.stock`;
+        console.log(`↩️ Rolling back stock decrement on failure for ${path} by +${quantity}`);
+        await Product.updateOne({ _id: productId }, { $inc: { [path]: quantity } });
+      }
+      throw err;
+    }
 
     // Return updated cart
     const updatedCartData = {
@@ -129,7 +166,7 @@ export const addToNewCart = async (req, res) => {
       lastUpdated: cart.lastUpdated
     };
 
-    console.log(`✅ Item added to cart: ${product.name} x${quantity}`);
+  console.log(`✅ Item added to cart: ${product.name} x${quantity} (vi=${vi}, tracks=${variantTracks})`);
     res.json(updatedCartData);
 
   } catch (error) {
@@ -165,16 +202,32 @@ export const updateNewCartItem = async (req, res) => {
       await cart.removeItem(productId);
     } else {
       // Check stock availability for the product
-      const product = await Product.findById(productId);
+  const product = await Product.findById(productId);
       if (!product) {
         return res.status(404).json({ error: 'Product not found' });
       }
 
-      const productStock = product.stock || product.variants?.[0]?.stock || 0;
-      if (quantity > productStock) {
-        return res.status(400).json({ 
-          error: `Only ${productStock} items available in stock`
-        });
+  const existingItem = cart.items.find(i => i.productId.toString() === productId.toString());
+  const prevQty = existingItem ? existingItem.quantity : 0;
+  const vi = Number.isInteger(existingItem?.productDetails?.variantIndex) ? existingItem.productDetails.variantIndex : 0;
+  const variant = Array.isArray(product.variants) ? product.variants[vi] : undefined;
+      const delta = quantity - prevQty;
+
+  const variantTracks = Boolean(variant?.isStockActive);
+  if (variantTracks && Array.isArray(product.variants) && product.variants.length > vi) {
+        const path = `variants.${vi}.stock`;
+        if (delta > 0) {
+          const dec = await Product.updateOne(
+            { _id: productId, [path]: { $gte: delta } },
+            { $inc: { [path]: -delta } }
+          );
+          if (dec.modifiedCount === 0) {
+            const currentStock = product.variants?.[vi]?.stock || 0;
+            return res.status(400).json({ error: `Only ${currentStock} items available in stock` });
+          }
+        } else if (delta < 0) {
+          await Product.updateOne({ _id: productId }, { $inc: { [path]: Math.abs(delta) } });
+        }
       }
 
       // Update quantity
@@ -219,8 +272,24 @@ export const removeFromNewCart = async (req, res) => {
       return res.status(404).json({ error: 'Cart not found' });
     }
 
+    // Find the item quantity and variant for restock
+  const item = cart.items.find(i => i.productId.toString() === productId.toString());
+  const qtyToReturn = item ? item.quantity : 0;
+  const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+
     // Remove item
     await cart.removeItem(productId);
+
+    // Restock if tracking
+    if (qtyToReturn > 0) {
+      const product = await Product.findById(productId);
+      const variant = Array.isArray(product?.variants) ? product.variants[vi] : undefined;
+      const variantTracks = Boolean(variant?.isStockActive);
+      if (variantTracks && Array.isArray(product?.variants) && product.variants.length > vi) {
+        const path = `variants.${vi}.stock`;
+        await Product.updateOne({ _id: productId }, { $inc: { [path]: qtyToReturn } });
+      }
+    }
 
     // Return updated cart
     const updatedCartData = {
@@ -256,6 +325,18 @@ export const clearNewCart = async (req, res) => {
     const cart = await NewCart.findOne({ userId });
     if (!cart) {
       return res.status(404).json({ error: 'Cart not found' });
+    }
+
+    // Restock items for products that track stock
+    for (const item of cart.items) {
+      const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+      const product = await Product.findById(item.productId);
+      const variant = Array.isArray(product?.variants) ? product.variants[vi] : undefined;
+      const variantTracks = Boolean(variant?.isStockActive);
+      if (variantTracks && Array.isArray(product?.variants) && product.variants.length > vi) {
+        const path = `variants.${vi}.stock`;
+        await Product.updateOne({ _id: item.productId }, { $inc: { [path]: item.quantity } });
+      }
     }
 
     // Clear cart

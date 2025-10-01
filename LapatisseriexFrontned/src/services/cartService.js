@@ -62,13 +62,12 @@ class CartService {
   }
 
   // Add item to cart
-  async addToCart(productId, quantity = 1) {
+  async addToCart(productId, quantity = 1, variantIndex) {
     try {
-      console.log(`🛒 Adding to cart: ${productId} x${quantity}`);
-      const response = await api.post('/newcart', {
-        productId,
-        quantity
-      });
+      console.log(`🛒 Adding to cart: ${productId} x${quantity}${variantIndex !== undefined ? ` (variant ${variantIndex})` : ''}`);
+      const payload = { productId, quantity };
+      if (variantIndex !== undefined) payload.variantIndex = variantIndex;
+      const response = await api.post('/newcart', payload);
       console.log('✅ Item added to cart:', response.data);
       return response.data;
     } catch (error) {

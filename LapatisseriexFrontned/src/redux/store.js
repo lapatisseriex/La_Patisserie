@@ -1,13 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
 import favoritesReducer from './favoritesSlice';
 import cartReducer from './cartSlice';
+import productsReducer from './productsSlice';
 import cartMiddleware from './cartMiddleware';
 
 export const store = configureStore({
   reducer: {
     favorites: favoritesReducer,
     cart: cartReducer,
-    // Add other reducers here as needed
+    products: productsReducer,
   },
   // Enable Redux DevTools extension
   devTools: import.meta.env.MODE !== 'production',

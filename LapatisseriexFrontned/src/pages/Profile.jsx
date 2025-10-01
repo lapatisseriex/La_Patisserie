@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext/AuthContext';
 import Profile from '../components/Auth/Profile/Profile';
 import './ProfileStyles.css';
-import ProductCard from '../components/Products/ProductCard';
+import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import { 
   User, 
   Package, 
@@ -28,7 +28,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('main');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const { favorites, loading: favLoading, error: favError, fetchFavorites } = useFavorites();
+  const { favorites, loading: favLoading, error: favError } = useFavorites();
   
   // Log user data to check profile photo
   console.log('Profile Page - User data:', user);

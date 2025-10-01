@@ -117,10 +117,10 @@ timeSettingsSchema.methods.getNextOpeningTime = function() {
 // Static method to get current settings (create default if none exist)
 timeSettingsSchema.statics.getCurrentSettings = async function() {
   try {
-    // Add timeout to prevent long-running queries
-    let settings = await this.findOne().maxTimeMS(5000).lean();
-    if (!settings) {
-      // Create default settings
+    // Fetch as a real document (not lean) so instance methods work and save() performs an update
+    let settingsDoc = await this.findOne().maxTimeMS(5000);
+    if (!settingsDoc) {
+      // Create default settings once
       const defaultSettings = {
         weekday: {
           startTime: '09:00',
@@ -135,17 +135,12 @@ timeSettingsSchema.statics.getCurrentSettings = async function() {
         timezone: 'Asia/Kolkata',
         specialDays: []
       };
-      
-      settings = new this(defaultSettings);
-      await settings.save();
-    } else {
-      // Convert lean object back to document for method access
-      settings = new this(settings);
+      settingsDoc = await this.create(defaultSettings);
     }
-    return settings;
+    return settingsDoc;
   } catch (error) {
     console.error('Error in getCurrentSettings:', error);
-    // Return default settings if database fails
+    // Return an unsaved document with defaults if database fails
     return new this({
       weekday: {
         startTime: '09:00',

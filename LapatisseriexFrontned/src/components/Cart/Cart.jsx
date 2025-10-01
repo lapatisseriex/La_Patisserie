@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaTag, FaShoppingCart, FaExclamationTriangle } from 'react-icons/fa';
 import { useCart } from '../../hooks/useCart';
+import { useProduct } from '../../context/ProductContext/ProductContext';
 import { useAuth } from '../../context/AuthContext/AuthContext';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
@@ -9,7 +10,8 @@ import ShopClosureOverlay from '../common/ShopClosureOverlay';
 
 const Cart = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
-  const { cartItems, cartTotal, cartCount, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { cartItems, cartTotal, cartCount, updateQuantity, removeFromCart, clearCart, error: cartError } = useCart();
+  const { products, fetchProducts } = useProduct();
   
   // Use our hooks
   const { user } = useAuth();
@@ -24,12 +26,58 @@ const Cart = () => {
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState('');
   const [couponError, setCouponError] = useState(false);
+  const [stockError, setStockError] = useState('');
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   
   const navigate = useNavigate();
+
+  // Ensure products are loaded so we can check variant availability in the cart
+  useEffect(() => {
+    if (!products || products.length === 0) {
+      fetchProducts().catch(() => {});
+    }
+  }, [products, fetchProducts]);
+
+  // Helper to derive availability from product + variantIndex stored in cart item
+  const getItemAvailability = (item) => {
+    try {
+      const pid = typeof item.productId === 'object' ? item.productId?._id : item.productId;
+      const prod = products?.find(p => p._id === pid);
+      if (!prod) {
+        console.log('Product not found in products list:', pid);
+        return { unavailable: false, tracks: false, stock: Infinity, variantIndex: 0 };
+      }
+      
+      const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+      const variant = prod?.variants?.[vi];
+      if (!variant) {
+        console.log('Variant not found:', { pid, vi, variants: prod?.variants?.length });
+        return { unavailable: false, tracks: false, stock: Infinity, variantIndex: vi };
+      }
+      
+      const tracks = !!variant?.isStockActive;
+      const stock = tracks ? (variant?.stock ?? 0) : Infinity;
+      const unavailable = tracks && stock <= 0;
+      
+      console.log('Stock check:', { 
+        pid, 
+        name: prod.name,
+        vi, 
+        tracks, 
+        stock,
+        currentQty: item.quantity,
+        maxReached: tracks && item.quantity >= stock
+      });
+      
+      return { unavailable, tracks, stock, variantIndex: vi };
+    } catch (error) {
+      console.error('Error in getItemAvailability:', error);
+      return { unavailable: false, tracks: false, stock: Infinity, variantIndex: 0 };
+    }
+  };
 
   // Delivery charge (free above 500, else 49)
   const deliveryCharge = cartTotal >= 500 ? 0 : 49;
@@ -40,8 +88,20 @@ const Cart = () => {
   // Grand total
   const grandTotal = cartTotal + deliveryCharge + taxAmount - couponDiscount;
 
-  const handleQuantityChange = (productId, newQuantity) => {
-    updateQuantity(productId, newQuantity);
+  const handleQuantityChange = async (productId, newQuantity, maxStock) => {
+    if (maxStock !== undefined && newQuantity > maxStock) {
+      setStockError(`Cannot add more items. Only ${maxStock} available in stock.`);
+      // Clear error after 3 seconds
+      setTimeout(() => setStockError(''), 3000);
+      return;
+    }
+    try {
+      await updateQuantity(productId, newQuantity);
+      setStockError(''); // Clear any previous error
+    } catch (error) {
+      setStockError(error?.message || 'Failed to update quantity');
+      setTimeout(() => setStockError(''), 3000);
+    }
   };
 
   // Simple coupon system (you can enhance this later)
@@ -106,12 +166,12 @@ const Cart = () => {
         return;
       }
       
-      navigate('/reservedmethod');
+      // Go to the checkout page (payment)
+      navigate('/payment');
     } catch (error) {
       console.error('Error during checkout:', error);
     }
   };
-
   // If cart is empty
   if (cartItems.length === 0) {
     return (
@@ -186,7 +246,16 @@ const Cart = () => {
               
               {/* Cart item list */}
               <div className="space-y-6">
-                {cartItems.map((item) => (
+                {stockError && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">
+                    {stockError}
+                  </div>
+                )}
+                {cartItems.map((item) => {
+                  const { unavailable, tracks, stock } = getItemAvailability(item);
+                  const maxReached = tracks && item.quantity >= stock;
+                  const canIncrease = !unavailable && !maxReached;
+                  return (
                   <div key={item.id} className="flex border-b border-gray-100 pb-6">
                     {/* Mobile-optimized image container */}
                     <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 mr-4">
@@ -211,6 +280,13 @@ const Cart = () => {
                           <FaTrash />
                         </button>
                       </div>
+                      {unavailable && (
+                        <div className="mb-2">
+                          <span className="inline-block text-xs font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded px-2 py-0.5">
+                            Product out of stock
+                          </span>
+                        </div>
+                      )}
                       
                       {/* Quantity controls and price - mobile optimized */}
                       <div className="flex justify-between items-center">
@@ -218,9 +294,9 @@ const Cart = () => {
                           <button 
                             onClick={() => {
                               console.log('➖ Decreasing quantity for:', item.productId, 'from', item.quantity, 'to', item.quantity - 1);
-                              handleQuantityChange(item.productId, item.quantity - 1);
+                              handleQuantityChange(item.productId, item.quantity - 1, stock);
                             }}
-                            className="w-7 h-7 md:w-8 md:h-8 rounded-l-md bg-gray-100 flex items-center justify-center border border-gray-200 text-sm"
+                            className={`w-7 h-7 md:w-8 md:h-8 rounded-l-md flex items-center justify-center border text-sm bg-gray-100 border-gray-200`}
                           >
                             -
                           </button>
@@ -232,10 +308,22 @@ const Cart = () => {
                           />
                           <button
                             onClick={() => {
+                              if (!canIncrease) return;
                               console.log('➕ Increasing quantity for:', item.productId, 'from', item.quantity, 'to', item.quantity + 1);
-                              handleQuantityChange(item.productId, item.quantity + 1);
+                              const nextQty = item.quantity + 1;
+                              if (tracks && nextQty > stock) {
+                                setStockError(`Cannot add more items. Only ${stock} available in stock.`);
+                                setTimeout(() => setStockError(''), 3000);
+                                return;
+                              }
+                              handleQuantityChange(item.productId, nextQty, stock);
                             }}
-                            className="w-7 h-7 md:w-8 md:h-8 rounded-r-md bg-gray-100 flex items-center justify-center border border-gray-200 text-sm"
+                            disabled={!canIncrease}
+                            className={`w-7 h-7 md:w-8 md:h-8 rounded-r-md flex items-center justify-center border text-sm ${
+                              !canIncrease
+                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                : 'bg-gray-100 border-gray-200'
+                            }`}
                           >
                             +
                           </button>
@@ -244,11 +332,14 @@ const Cart = () => {
                         <div className="text-right">
                           <div className="font-medium text-black text-sm md:text-base">₹{Math.round(item.price * item.quantity)}</div>
                           <div className="text-xs md:text-sm text-gray-500">₹{Math.round(item.price)} each</div>
+                          {maxReached && (
+                            <div className="text-[10px] md:text-xs text-amber-600 mt-1">Max available stock reached</div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                );})}
               </div>
             </div>
           </div>

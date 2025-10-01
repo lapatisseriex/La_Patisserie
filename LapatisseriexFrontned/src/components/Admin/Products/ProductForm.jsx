@@ -78,7 +78,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
     category: preSelectedCategory || '',
     images: [],
     videos: [],
-    isVeg: true,
+  isVeg: true,
     hasEgg: false, // Added hasEgg default
     isActive: true,
     id: '',
@@ -91,7 +91,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
 
   // Variants state
   const [variants, setVariants] = useState([
-    { quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true }
+    { quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true, isStockActive: false }
   ]);
 
   // State for managing extra fields and tags
@@ -144,9 +144,10 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       setVariants(product.variants && product.variants.length > 0
         ? product.variants.map(v => ({
             ...v,
-            stock: v.stock !== undefined && v.stock !== null ? v.stock : ''
+            stock: v.stock !== undefined && v.stock !== null ? v.stock : '',
+            isStockActive: v.isStockActive !== undefined ? v.isStockActive : false
           }))
-        : [{ quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true }]
+        : [{ quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true, isStockActive: false }]
       );
     } else if (preSelectedCategory) {
       setFormData(prev => ({ ...prev, category: preSelectedCategory }));
@@ -261,7 +262,8 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
           ...v,
           quantity: Number(v.quantity),
           price: Number(v.price),
-          stock: v.stock === '' ? undefined : Number(v.stock),
+          isStockActive: !!v.isStockActive,
+          stock: v.isStockActive ? (v.stock === '' ? 0 : Number(v.stock)) : undefined,
           discount: { type: v.discount.type || null, value: Number(v.discount.value) || 0 }
         }))
       };
@@ -576,6 +578,8 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
               </button>
             </div>
 
+            {/* Per-variant stock tracking toggle is provided inside each variant card */}
+
             {/* Variants */}
             {variants.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
@@ -663,22 +667,43 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                       </div>
                     </div>
 
-                    {/* Stock and Discount */}
+                    {/* Variant-level tracking and Stock/Discount */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">
-                          Stock Quantity
-                        </label>
-                        <input
-                          type="number"
-                          value={variant.stock}
-                          onChange={(e) => handleVariantChange(idx, 'stock', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-                          placeholder="Leave empty for unlimited"
-                          min="0"
-                        />
-                        <p className="text-xs text-gray-500">Leave empty for unlimited stock</p>
+                        <label className="block text-sm font-semibold text-gray-700">Track stock (this variant)</label>
+                        <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
+                          <button
+                            type="button"
+                            className={`px-3 py-2 text-sm ${variant.isStockActive ? 'bg-pink-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
+                            onClick={() => handleVariantChange(idx, 'isStockActive', true)}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            className={`px-3 py-2 text-sm border-l border-gray-300 ${!variant.isStockActive ? 'bg-pink-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
+                            onClick={() => handleVariantChange(idx, 'isStockActive', false)}
+                          >
+                            No
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500">If No, the cart won’t limit quantity for this variant.</p>
                       </div>
+
+                      {variant.isStockActive && (
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-gray-700">Stock Quantity</label>
+                          <input
+                            type="number"
+                            value={variant.stock}
+                            onChange={(e) => handleVariantChange(idx, 'stock', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                            placeholder="Enter stock quantity"
+                            min="0"
+                          />
+                          <p className="text-xs text-gray-500">Set stock to 0 when sold out</p>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <label className="block text-sm font-semibold text-gray-700">

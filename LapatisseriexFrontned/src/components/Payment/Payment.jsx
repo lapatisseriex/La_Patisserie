@@ -598,8 +598,15 @@ const Payment = () => {
                       <p className="text-sm font-medium">{item.name}</p>
                       <div className="flex justify-between items-center">
                         <p className="text-xs text-black">
-                          {item.options.weight && `${item.options.weight} • `}
-                          {item.options.flavor && `${item.options.flavor}`}
+                          {(() => {
+                            const opts = item.options || item.productDetails?.options || {};
+                            const weight = opts.weight || item.productDetails?.weight || item.productDetails?.variant?.weight || '';
+                            const flavor = opts.flavor || item.productDetails?.flavor || '';
+                            const parts = [];
+                            if (weight) parts.push(weight);
+                            if (flavor) parts.push(flavor);
+                            return parts.length ? parts.join(' • ') : null;
+                          })()}
                         </p>
                         <div className="text-xs">
                           <span className="font-medium">₹{item.price}</span>

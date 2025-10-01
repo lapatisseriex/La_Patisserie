@@ -16,30 +16,39 @@ export const fetchCart = createAsyncThunk(
 
 export const addToCart = createAsyncThunk(
   'cart/addToCart',
-  async ({ product, quantity = 1 }, { rejectWithValue, getState }) => {
+  async ({ product, quantity = 1, variantIndex }, { rejectWithValue, getState }) => {
     try {
       // Optimistic update data
       const optimisticItem = {
         id: `temp_${Date.now()}`,
         productId: product._id,
         name: product.name,
-        price: product.price,
+        // Prefer variant price if provided
+        price: (Number.isInteger(variantIndex) && product.variants?.[variantIndex]?.price)
+          ? product.variants[variantIndex].price
+          : product.price,
         image: product.images?.[0] || product.image,
         quantity,
         addedAt: new Date().toISOString(),
-        productDetails: product,
+        productDetails: { ...product, variantIndex },
         isOptimistic: true
       };
 
       // Return optimistic data immediately
-      const response = await cartService.addToCart(product._id, quantity, product);
-      
-      // Return actual server response
+      const response = await cartService.addToCart(product._id, quantity, variantIndex);
+
+      // Backend returns the full cart (items array), not a single item. Derive the added/updated item.
+      const derivedItem = response?.item
+        || response?.items?.find((i) => i.productId === product._id);
+
+      // Return normalized payload that reducers can handle flexibly
       return {
-        item: response.item,
+        item: derivedItem,
+        items: response.items,
         cartTotal: response.cartTotal,
         cartCount: response.cartCount,
-        optimisticId: optimisticItem.id
+        optimisticId: optimisticItem.id,
+        productId: product._id
       };
     } catch (error) {
       return rejectWithValue({
@@ -127,32 +136,38 @@ const cartSlice = createSlice({
   reducers: {
     // Optimistic updates for immediate UI feedback
     addToCartOptimistic: (state, action) => {
-      const { product, quantity = 1 } = action.payload;
+      const { product, quantity = 1, variantIndex } = action.payload;
       const existingItemIndex = state.items.findIndex(item => item.productId === product._id);
+      const optimisticPrice = (Number.isInteger(variantIndex) && product.variants?.[variantIndex]?.price)
+        ? product.variants[variantIndex].price
+        : product.price;
       
       if (existingItemIndex >= 0) {
         // Update existing item
         state.items[existingItemIndex].quantity += quantity;
         state.items[existingItemIndex].isOptimistic = true;
+        // Update totals using the existing item's price
+        state.cartCount += quantity;
+        state.cartTotal += (state.items[existingItemIndex].price * quantity);
       } else {
         // Add new item
         const optimisticItem = {
           id: `temp_${Date.now()}`,
           productId: product._id,
           name: product.name,
-          price: product.price,
+          price: optimisticPrice,
           image: product.images?.[0] || product.image,
           quantity,
           addedAt: new Date().toISOString(),
-          productDetails: product,
+          productDetails: { ...product, variantIndex },
           isOptimistic: true
         };
         state.items.push(optimisticItem);
+        // Update totals for new item
+        state.cartCount += quantity;
+        state.cartTotal += (optimisticPrice * quantity);
       }
       
-      // Update totals optimistically
-      state.cartCount += quantity;
-      state.cartTotal += (product.price * quantity);
       state.isOptimisticLoading = true;
     },
 
@@ -295,38 +310,62 @@ const cartSlice = createSlice({
         }
       })
       .addCase(addToCart.fulfilled, (state, action) => {
-        const { item, cartTotal, cartCount, optimisticId } = action.payload;
-        
-        // Remove pending operation
-        delete state.pendingOperations[item.productId];
-        
-        // Remove optimistic item and add real item
+        const { item, items, cartTotal, cartCount, optimisticId, productId } = action.payload;
+
+        // Remove pending operation (prefer item.productId if available, else fallback to provided productId)
+        const pid = item?.productId || productId;
+        if (pid) {
+          delete state.pendingOperations[pid];
+        }
+
+        // Remove optimistic placeholder if present
         if (optimisticId) {
           const optimisticIndex = state.items.findIndex(i => i.id === optimisticId);
           if (optimisticIndex >= 0) {
             state.items.splice(optimisticIndex, 1);
           }
         }
-        
-        // Add or update real item
-        const existingIndex = state.items.findIndex(i => i.productId === item.productId);
-        const realItem = {
-          id: item._id,
-          productId: item.productId,
-          name: item.productDetails.name,
-          price: item.productDetails.price,
-          image: item.productDetails.image,
-          quantity: item.quantity,
-          addedAt: item.addedAt,
-          productDetails: item.productDetails
-        };
-        
-        if (existingIndex >= 0) {
-          state.items[existingIndex] = realItem;
-        } else {
-          state.items.push(realItem);
+
+        // If server returned full cart but not a single item, replace state from server payload
+        if (!item && Array.isArray(items)) {
+          state.items = items.map(srvItem => ({
+            id: srvItem._id,
+            productId: srvItem.productId,
+            name: srvItem.productDetails.name,
+            price: srvItem.productDetails.price,
+            image: srvItem.productDetails.image,
+            quantity: srvItem.quantity,
+            addedAt: srvItem.addedAt,
+            productDetails: srvItem.productDetails
+          }));
+          state.cartTotal = cartTotal;
+          state.cartCount = cartCount;
+          state.isOptimisticLoading = false;
+          state.lastUpdated = Date.now();
+          return;
         }
-        
+
+        // Otherwise, merge/update the single returned item
+        if (item) {
+          const existingIndex = state.items.findIndex(i => i.productId === item.productId);
+          const realItem = {
+            id: item._id,
+            productId: item.productId,
+            name: item.productDetails.name,
+            price: item.productDetails.price,
+            image: item.productDetails.image,
+            quantity: item.quantity,
+            addedAt: item.addedAt,
+            productDetails: item.productDetails
+          };
+
+          if (existingIndex >= 0) {
+            state.items[existingIndex] = realItem;
+          } else {
+            state.items.push(realItem);
+          }
+        }
+
         // Update totals with server values
         state.cartTotal = cartTotal;
         state.cartCount = cartCount;

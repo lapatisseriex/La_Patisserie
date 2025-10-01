@@ -165,18 +165,18 @@ export const useCart = () => {
   }, [cartItems, cartTotal, cartCount, user, saveToCahe]);
 
   // Cart operations with optimistic updates
-  const addToCart = useCallback(async (product, quantity = 1) => {
+  const addToCart = useCallback(async (product, quantity = 1, variantIndex) => {
     try {
       if (!product || !product._id) {
         throw new Error('Invalid product data');
       }
 
-      console.log(`🛒 Adding ${quantity}x ${product.name} to cart`);
+      console.log(`🛒 Adding ${quantity}x ${product.name} to cart${Number.isInteger(variantIndex) ? ` (variant ${variantIndex})` : ''}`);
 
       if (user) {
-        // For authenticated users: optimistic update + API call
-        dispatch(addToCartOptimistic({ product, quantity }));
-        const result = await dispatch(addToCartAction({ product, quantity })).unwrap();
+  // For authenticated users: optimistic update + API call
+  dispatch(addToCartOptimistic({ product, quantity, variantIndex }));
+        const result = await dispatch(addToCartAction({ product, quantity, variantIndex })).unwrap();
         console.log('✅ Item added to cart successfully');
         return result;
       } else {
@@ -191,11 +191,13 @@ export const useCart = () => {
             id: `local_${Date.now()}`,
             productId: product._id,
             name: product.name,
-            price: product.price,
+            price: (Number.isInteger(variantIndex) && product.variants?.[variantIndex]?.price)
+              ? product.variants[variantIndex].price
+              : product.price,
             image: product.images?.[0] || product.image,
             quantity,
             addedAt: new Date().toISOString(),
-            productDetails: product
+            productDetails: { ...product, variantIndex }
           });
         }
         

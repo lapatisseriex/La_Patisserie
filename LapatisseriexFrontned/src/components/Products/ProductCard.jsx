@@ -87,10 +87,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   // Ensure we have variants and handle missing data
   const variant = product.variants?.[0] || { price: 0, discount: { value: 0 }, stock: 0 };
+  const tracks = !!variant?.isStockActive;
   const isActive = product.isActive !== false; // Default to true if undefined
-  const totalStock = product.stock || variant.stock || 0;
-  // Use global shop status instead of individual product availability
-  const isProductAvailable = isActive && totalStock > 0 && isShopOpen;
+  // If stock tracking is disabled, treat stock as unlimited
+  const totalStock = tracks ? (variant.stock || 0) : Number.POSITIVE_INFINITY;
+  // Use global shop status; if not tracking stock, skip stock-based unavailability
+  const isProductAvailable = isActive && isShopOpen && (tracks ? totalStock > 0 : true);
+  const isOutOfStockTracked = tracks && totalStock === 0;
 
   const discountedPrice = variant.price && variant.discount?.value
     ? variant.price - variant.discount.value
@@ -101,7 +104,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     : 0;
 
   // Debug logging for troubleshooting
-  if (!isActive || totalStock === 0) {
+  if (!isActive || (tracks && totalStock === 0)) {
     console.log('Product availability issue:', {
       productId: product._id,
       name: product.name,
@@ -123,9 +126,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         // Shop is now closed, UI will update automatically
         return;
       }
-      
+
+      // Debug: log variant tracking behavior
+      console.log('[AddToCart from Card] product=', product._id, 'variantIndex=0', 'tracks=', tracks, 'stock=', totalStock);
+
       // Add to cart with immediate UI update (optimistic)
-      addToCart(product, 1);
+      // Note: Backend will only decrement stock if this variant tracks stock
+      addToCart(product, 1, 0);
     } catch (error) {
       console.error('Error adding to cart:', error);
     }
@@ -148,7 +155,8 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     } else {
       // Product not in cart - add one and redirect
       try {
-        await addToCart(product, 1);
+        console.log('[Reserve] product=', product._id, 'variantIndex=0', 'tracks=', tracks, 'stock=', totalStock);
+        await addToCart(product, 1, 0);
         navigate('/cart');
       } catch (error) {
         console.error('❌ Error adding product to cart:', error);
@@ -176,7 +184,8 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       }
       
       if (currentQuantity === 0) {
-        addToCart(product, 1);
+        console.log('[BuyNow] product=', product._id, 'variantIndex=0', 'tracks=', tracks, 'stock=', totalStock);
+        addToCart(product, 1, 0);
       }
       
       navigate('/cart');
@@ -231,7 +240,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           : compact
           ? 'flex flex-col rounded-lg max-w-sm mx-auto'
           : 'flex flex-row rounded-lg'
-      } ${!isShopOpen ? 'grayscale opacity-80' : ''} ${className}`}
+      } ${!isShopOpen || isOutOfStockTracked ? 'grayscale opacity-80' : ''} ${className}`}
     >
       {/* Product Image */}
         <div
@@ -269,15 +278,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           objectFit="cover"
             />
 
-            {/* Shop Closed Overlay */}
-            {!isShopOpen && (
+            {/* Shop Closed / Unavailable Overlay */}
+            {(!isShopOpen || isOutOfStockTracked) && (
               <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10">
                 <div className="text-white text-center">
-                  <div className="text-sm font-bold mb-1">CURRENTLY CLOSED</div>
-                  {getClosureMessage() && (
-                    <div className="text-xs opacity-90">
-                      {getClosureMessage()}
-                    </div>
+                  <div className="text-sm font-bold mb-1">{!isShopOpen ? 'CURRENTLY CLOSED' : 'CURRENTLY UNAVAILABLE'}</div>
+                  {!isShopOpen && getClosureMessage() && (
+                    <div className="text-xs opacity-90">{getClosureMessage()}</div>
                   )}
                 </div>
               </div>
@@ -332,14 +339,14 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               <button
                 ref={addToCartButtonRef}
                 onClick={handleAddToCart}
-                disabled={!isActive || totalStock === 0 || !isProductAvailable}
+                disabled={!isActive || isOutOfStockTracked || !isProductAvailable}
                 className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-semibold transition-all duration-300 ease-out rounded-lg border ${
-                  !isActive || totalStock === 0 || !isProductAvailable
+                  !isActive || isOutOfStockTracked || !isProductAvailable
                     ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
                     : 'bg-white text-red-500 border-red-500 hover:bg-red-50 hover:shadow-md shadow-sm transform hover:scale-105'
                 }`}
               >
-                {!isProductAvailable ? 'Closed' : 'Add'}
+                {!isProductAvailable ? 'Closed' : isOutOfStockTracked ? 'Unavailable' : 'Add'}
               </button>
             ) : (
               <div className={`absolute bottom-2 right-2 flex items-center rounded-lg shadow-sm ${
@@ -352,9 +359,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                     e.stopPropagation();
                     handleQuantityChange(currentQuantity - 1);
                   }}
-                  disabled={!isProductAvailable}
+                  disabled={!isProductAvailable || isOutOfStockTracked}
                   className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-medium ${
-                    !isProductAvailable
+                    !isProductAvailable || isOutOfStockTracked
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-red-500 hover:bg-red-50'
                   }`}
@@ -362,7 +369,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   −
                 </button>
                 <span className={`px-3 py-1 font-semibold text-xs min-w-[1.5rem] text-center border-l border-r ${
-                  !isProductAvailable
+                  !isProductAvailable || isOutOfStockTracked
                     ? 'text-gray-400 border-gray-300'
                     : 'text-red-500 border-red-500'
                 }`}>
@@ -373,9 +380,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                     e.stopPropagation();
                     handleQuantityChange(currentQuantity + 1);
                   }}
-                  disabled={currentQuantity >= totalStock || !isProductAvailable}
+                  disabled={isOutOfStockTracked || (tracks && currentQuantity >= totalStock) || !isProductAvailable}
                   className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-medium ${
-                    !isProductAvailable
+                    !isProductAvailable || isOutOfStockTracked
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-red-500 hover:bg-red-50'
                   }`}
@@ -466,13 +473,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             )}
           </div>
 
-          {totalStock > 0 && totalStock < 15 && (
+          {tracks && totalStock > 0 && totalStock < 15 && (
             <span className="text-red-600 font-medium text-sm">
               Only {totalStock} left
             </span>
           )}
 
-          {totalStock === 0 && (
+          {tracks && totalStock === 0 && (
             <span className="text-gray-500 font-medium text-sm">
               Out of Stock
             </span>
