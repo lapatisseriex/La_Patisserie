@@ -144,22 +144,4 @@ cartMiddleware.startListening({
   }
 });
 
-// Debugging listener for cart state changes
-if (import.meta.env.MODE === 'development') {
-  cartMiddleware.startListening({
-    predicate: (action) => action.type.startsWith('cart/'),
-    effect: (action, listenerApi) => {
-      const state = listenerApi.getState();
-      console.log('🛒 Cart Action:', action.type);
-      console.log('🛒 Cart State:', {
-        itemCount: state.cart.items.length,
-        cartTotal: state.cart.cartTotal,
-        cartCount: state.cart.cartCount,
-        isLoading: state.cart.isLoading,
-        dbCartLoaded: state.cart.dbCartLoaded
-      });
-    }
-  });
-}
-
 export default cartMiddleware;

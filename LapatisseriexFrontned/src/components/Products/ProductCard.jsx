@@ -6,7 +6,7 @@ import MediaDisplay from '../common/MediaDisplay';
 import { useCart } from '../../hooks/useCart';
 import FavoriteButton from '../Favorites/FavoriteButton';
 
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import { useSparkToCart } from '../../hooks/useSparkToCart';
@@ -14,6 +14,7 @@ import { useSparkToCart } from '../../hooks/useSparkToCart';
 const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
+  const [lastQuantityChangeTime, setLastQuantityChangeTime] = useState(0);
 
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
   const { addToCart, getItemQuantity, updateQuantity, cartItems } = useCart();
@@ -194,10 +195,24 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     }
   };
 
-  const handleQuantityChange = useCallback((newQuantity) => {
+  const handleQuantityChange = useCallback(async (newQuantity) => {
     if (newQuantity < 0) return;
-    updateQuantity(product._id, newQuantity);
-  }, [updateQuantity, product._id]);
+    
+    // Prevent only genuine rapid clicking (very fast consecutive clicks)
+    const now = Date.now();
+    const timeSinceLastClick = now - lastQuantityChangeTime;
+    
+    if (timeSinceLastClick < 50) {
+      return; // Silently ignore super rapid clicks
+    }
+    
+    setLastQuantityChangeTime(now);
+    
+    // Fire and forget - no loading states for smooth experience
+    updateQuantity(product._id, newQuantity).catch(error => {
+      console.error('Error updating quantity:', error);
+    });
+  }, [updateQuantity, product._id, lastQuantityChangeTime]);
 
 
 

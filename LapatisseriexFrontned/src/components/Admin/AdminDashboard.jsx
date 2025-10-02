@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaUsers, FaShoppingCart, FaMapMarkerAlt, FaList, FaCheckCircle } from 'react-icons/fa';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 

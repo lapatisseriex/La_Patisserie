@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import PremiumSectionSkeleton from "../common/PremiumSectionSkeleton";
 // Icons
 import { FaStar, FaFire, FaNewspaper } from "react-icons/fa";
-import { useProduct } from "../../context/ProductContext/ProductContext"; // Import it here
 import { normalizeImageUrl } from "../../utils/imageUtils";
 
 const CategorySwiperHome = ({

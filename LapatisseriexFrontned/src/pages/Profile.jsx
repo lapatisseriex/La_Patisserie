@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import Profile from '../components/Auth/Profile/Profile';
+import CartComponent from '../components/common/CartComponent';
+import FavoritesComponent from '../components/common/FavoritesComponent';
+import useInitializeUserData from '../hooks/useInitializeUserData';
 import './ProfileStyles.css';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import { 
@@ -29,6 +32,9 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { favorites, loading: favLoading, error: favError } = useFavorites();
+  
+  // Initialize user data (cart and favorites) when user logs in
+  useInitializeUserData();
   
   // Log user data to check profile photo
   console.log('Profile Page - User data:', user);
@@ -330,19 +336,23 @@ const ProfilePage = () => {
                 View Full Cart
               </Link>
             </div>
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                <ShoppingCart className="h-10 w-10 text-gray-500" />
-              </div>
-              <h4 className="text-xl font-serif font-medium text-black mb-3">Your Cart is Empty</h4>
-              <p className="text-gray-600 mb-6">Add some delicious items to get started</p>
+            <CartComponent showHeader={false} isProfileTab={true} />
+          </div>
+        );
+
+      case 'favorites':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">My Favorites</h3>
               <Link 
-                to="/products" 
-                className="inline-flex items-center px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
+                to="/favorites" 
+                className="px-5 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-md font-medium"
               >
-                Browse Products
+                View All Favorites
               </Link>
             </div>
+            <FavoritesComponent showHeader={false} isProfileTab={true} />
           </div>
         );
 

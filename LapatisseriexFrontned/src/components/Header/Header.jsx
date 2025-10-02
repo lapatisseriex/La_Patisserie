@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 import { useCart } from '../../hooks/useCart';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';

@@ -1,5 +1,8 @@
 /* App.css */
 
+/* Import auth styles */
+@import './styles/auth.css';
+
 /* Fix for header overlay */
 .homepage-container {
   position: relative;

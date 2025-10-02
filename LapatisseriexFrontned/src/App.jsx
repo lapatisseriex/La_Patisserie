@@ -37,25 +37,27 @@ import Newsletter from './components/Newsletter/Newsletter';
 // Auth Components
 import AuthModal from './components/Auth/AuthModal/AuthModal';
 
+
+
 // Context Providers
-import { AuthProvider, useAuth } from './context/AuthContext/AuthContext';
 import { LocationProvider } from './context/LocationContext/LocationContext';
 import { HostelProvider } from './context/HostelContext/HostelContext';
 import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
 import { CategoryProvider } from './context/CategoryContext/CategoryContext';
-import { ProductProvider } from './context/ProductContext/ProductContext';
+import { ProductProvider } from './context/ProductContext/ProductContext'; // Only for admin routes
 import { RecentlyViewedProvider } from './context/RecentlyViewedContext/RecentlyViewedContext';
 
 import { ShopStatusProvider } from './context/ShopStatusContext';
 import { SparkAnimationProvider } from './context/SparkAnimationContext/SparkAnimationContext';
 
-// Redux Provider
-import { Provider } from 'react-redux';
-import store from './redux/store';
+// Redux Provider and Auth
+import ReduxProvider from './redux/ReduxProvider';
+import AuthInitializer from './components/Auth/AuthInitializer';
+import { useAuth as useReduxAuth } from './hooks/useAuth';
 
 // Main Homepage that combines all sections
 const HomePage = () => {
-  const { user } = useAuth(); // Access user from context
+  const { user } = useReduxAuth(); // Access user from Redux
 
   return (
     <div className="homepage-container">
@@ -66,7 +68,7 @@ const HomePage = () => {
 };
 // Protected route for admin pages
 const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useReduxAuth();
   
   if (loading) {
     return <div>Loading...</div>;
@@ -81,7 +83,7 @@ const AdminRoute = ({ children }) => {
 
 // Protected route for authenticated users
 const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useReduxAuth();
   
   if (loading) {
     return <div>Loading...</div>;
@@ -96,28 +98,27 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
   return (
-    <Provider store={store}>
+    <ReduxProvider>
+      <AuthInitializer />
       <ShopStatusProvider>
-        <AuthProvider>
-          <LocationProvider>
-            <HostelProvider>
-              <CategoryProvider>
-                <ProductProvider>
-                    <RecentlyViewedProvider>
-                        <FavoritesProvider>
-                          <SparkAnimationProvider>
-                        <Router>
-                          <ScrollToTop />
-                          {/* Auth Modal - available on all pages */}
-                          <AuthModal />
-                          {/* Debug component for development only */}
+        <LocationProvider>
+          <HostelProvider>
+            <CategoryProvider>
+              <RecentlyViewedProvider>
+                <FavoritesProvider>
+                  <SparkAnimationProvider>
+                    <Router>
+                      <ScrollToTop />
+                      {/* Auth Modal - available on all pages */}
+                      <AuthModal />
+
+                     
+                    
+                      <Routes>
                          
-                        
-                          <Routes>
-                           
-                            {/* Home with regular Layout */}
-                            <Route path="/" element={<Layout />}>
-                              <Route index element={<HomePage />} />
+                          {/* Home with regular Layout */}
+                          <Route path="/" element={<Layout />}>
+                            <Route index element={<HomePage />} />
                               <Route path="contact" element={<Newsletter />} />
                               <Route path="products" element={<Products />} />
                               <Route path="product/:productId" element={
@@ -128,6 +129,7 @@ function App() {
                               <Route path="cart" element={<Cart />} />
                               <Route path="favorites" element={<Favorites />} />
                               <Route path="payment" element={<Payment />} />
+
                             </Route>
               
               {/* Profile and Orders with regular Layout */}
@@ -150,7 +152,9 @@ function App() {
               {/* Admin Routes with custom AdminLayout */}
               <Route path="/admin" element={
                 <AdminRoute>
-                  <AdminLayout />
+                  <ProductProvider>
+                    <AdminLayout />
+                  </ProductProvider>
                 </AdminRoute>
               }>
                 <Route element={<AdminDashboardLayout />}>
@@ -171,16 +175,14 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
-                      </SparkAnimationProvider>
-                      </FavoritesProvider>
-                  </RecentlyViewedProvider>
-              </ProductProvider>
-            </CategoryProvider>
-          </HostelProvider>
-        </LocationProvider>
-      </AuthProvider>
-    </ShopStatusProvider>
-    </Provider>
+                    </SparkAnimationProvider>
+                  </FavoritesProvider>
+                </RecentlyViewedProvider>
+              </CategoryProvider>
+            </HostelProvider>
+          </LocationProvider>
+      </ShopStatusProvider>
+    </ReduxProvider>
   );
 }
 

@@ -2,6 +2,31 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+// Request throttling to prevent rapid API calls
+const pendingRequests = new Map();
+const REQUEST_THROTTLE_MS = 50; // Reduced from 100ms for better UX
+
+const throttleRequest = (key, requestFn) => {
+  // Cancel any pending request for this key
+  if (pendingRequests.has(key)) {
+    clearTimeout(pendingRequests.get(key));
+  }
+  
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(async () => {
+      pendingRequests.delete(key);
+      try {
+        const result = await requestFn();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    }, REQUEST_THROTTLE_MS);
+    
+    pendingRequests.set(key, timeoutId);
+  });
+};
+
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -55,7 +80,7 @@ class CartService {
       
       console.error('❌ Error fetching cart:', error);
       if (error.response?.status === 401) {
-        throw new Error('Please login to access your cart');
+        throw new Error('Please login to view cart');
       }
       throw new Error(error.response?.data?.error || 'Failed to fetch cart');
     }
@@ -64,10 +89,12 @@ class CartService {
   // Add item to cart
   async addToCart(productId, quantity = 1, variantIndex) {
     try {
-      console.log(`🛒 Adding to cart: ${productId} x${quantity}${variantIndex !== undefined ? ` (variant ${variantIndex})` : ''}`);
-      const payload = { productId, quantity };
-      if (variantIndex !== undefined) payload.variantIndex = variantIndex;
-      const response = await api.post('/newcart', payload);
+      console.log(`🛒 Adding to cart: ${productId} (qty: ${quantity}, variant: ${variantIndex})`);
+      const response = await api.post('/newcart', {
+        productId,
+        quantity,
+        variantIndex
+      });
       console.log('✅ Item added to cart:', response.data);
       return response.data;
     } catch (error) {
@@ -79,22 +106,26 @@ class CartService {
     }
   }
 
-  // Update cart item quantity
+  // Update cart item quantity with throttling
   async updateQuantity(productId, quantity) {
-    try {
-      console.log(`🔄 Updating quantity: ${productId} -> ${quantity}`);
-      const response = await api.put(`/newcart/${productId}`, {
-        quantity
-      });
-      console.log('✅ Quantity updated:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Error updating quantity:', error);
-      if (error.response?.status === 401) {
-        throw new Error('Please login to update cart');
+    const throttleKey = `updateQuantity_${productId}`;
+    
+    return throttleRequest(throttleKey, async () => {
+      try {
+        console.log(`🔄 Updating quantity: ${productId} -> ${quantity}`);
+        const response = await api.put(`/newcart/${productId}`, {
+          quantity
+        });
+        console.log('✅ Quantity updated:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('❌ Error updating quantity:', error);
+        if (error.response?.status === 401) {
+          throw new Error('Please login to update cart');
+        }
+        throw new Error(error.response?.data?.error || 'Failed to update quantity');
       }
-      throw new Error(error.response?.data?.error || 'Failed to update quantity');
-    }
+    });
   }
 
   // Remove item from cart
@@ -107,7 +138,7 @@ class CartService {
     } catch (error) {
       console.error('❌ Error removing from cart:', error);
       if (error.response?.status === 401) {
-        throw new Error('Please login to remove items from cart');
+        throw new Error('Please login to modify cart');
       }
       throw new Error(error.response?.data?.error || 'Failed to remove item from cart');
     }
@@ -133,13 +164,12 @@ class CartService {
   async getCartCount() {
     try {
       const response = await api.get('/newcart/count');
-      return response.data.count;
+      return response.data.count || 0;
     } catch (error) {
-      console.error('❌ Error getting cart count:', error);
+      console.error('❌ Error fetching cart count:', error);
       return 0;
     }
   }
 }
 
-const cartService = new CartService();
-export default cartService;
+export default new CartService();

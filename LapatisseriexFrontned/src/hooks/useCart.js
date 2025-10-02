@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext/AuthContext';
+import { useAuth } from './useAuth';
 import {
   fetchCart,
   addToCart as addToCartAction,

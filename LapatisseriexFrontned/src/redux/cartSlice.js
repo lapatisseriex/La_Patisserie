@@ -61,16 +61,26 @@ export const addToCart = createAsyncThunk(
 
 export const updateCartQuantity = createAsyncThunk(
   'cart/updateQuantity',
-  async ({ productId, quantity }, { rejectWithValue }) => {
+  async ({ productId, quantity }, { rejectWithValue, getState }) => {
     try {
+      // Check if operation is already pending
+      const state = getState();
+      if (state.cart.pendingOperations[productId]) {
+        return rejectWithValue('Operation already in progress');
+      }
+
       if (quantity === 0) {
         const response = await cartService.removeFromCart(productId);
-        return { productId, quantity: 0, ...response };
+        return { productId, quantity: 0, isRemoved: true, ...response };
       } else {
         const response = await cartService.updateQuantity(productId, quantity);
         return { productId, quantity, ...response };
       }
     } catch (error) {
+      // Handle item not found errors gracefully
+      if (error.message?.includes('not found') || error.response?.status === 404) {
+        return { productId, quantity: 0, isRemoved: true, cartTotal: 0, cartCount: 0 };
+      }
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -78,11 +88,21 @@ export const updateCartQuantity = createAsyncThunk(
 
 export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
-  async (productId, { rejectWithValue }) => {
+  async (productId, { rejectWithValue, getState }) => {
     try {
+      // Check if operation is already pending to prevent duplicates
+      const state = getState();
+      if (state.cart.pendingOperations[productId] === 'removing') {
+        return rejectWithValue('Remove operation already in progress');
+      }
+
       const response = await cartService.removeFromCart(productId);
       return { productId, ...response };
     } catch (error) {
+      // If item not found, it might already be removed - just sync the state
+      if (error.message?.includes('not found') || error.response?.status === 404) {
+        return { productId, cartTotal: 0, cartCount: 0, items: [] };
+      }
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -398,11 +418,11 @@ const cartSlice = createSlice({
         state.pendingOperations[productId] = 'updating';
       })
       .addCase(updateCartQuantity.fulfilled, (state, action) => {
-        const { productId, quantity, cartTotal, cartCount } = action.payload;
+        const { productId, quantity, cartTotal, cartCount, isRemoved } = action.payload;
         
         delete state.pendingOperations[productId];
         
-        if (quantity === 0) {
+        if (quantity === 0 || isRemoved) {
           // Remove item
           const itemIndex = state.items.findIndex(item => item.productId === productId);
           if (itemIndex >= 0) {
@@ -417,8 +437,8 @@ const cartSlice = createSlice({
           }
         }
         
-        state.cartTotal = cartTotal;
-        state.cartCount = cartCount;
+        state.cartTotal = cartTotal || 0;
+        state.cartCount = cartCount || 0;
         state.isOptimisticLoading = false;
         state.lastUpdated = Date.now();
       })

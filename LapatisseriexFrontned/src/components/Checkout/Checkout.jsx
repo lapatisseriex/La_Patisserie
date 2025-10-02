@@ -1,66 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext/AuthContext';
-import { Mail, Phone, User, MapPin, ChevronRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { useCart } from '../../hooks/useCart';
+import {
+  Mail,
+  Phone,
+  User,
+  MapPin,
+  ChevronRight,
+  CheckCircle,
+  AlertCircle,
+  ShoppingBag,
+  Package,
+} from 'lucide-react';
 
 const Checkout = () => {
   const { user } = useAuth();
+  const { cartItems, cartTotal, cartCount, isEmpty } = useCart();
+
   const [email, setEmail] = useState(user?.email || '');
-  // email verification removed
   const [error, setError] = useState('');
   const [step, setStep] = useState(1); // 1: User Info, 2: Payment, 3: Confirmation
 
-  // Effect to check if email verification is needed
+  // Redirect if cart is empty
   useEffect(() => {
-    // Email verification flow removed; no-op
-  }, [user]);
+    if (isEmpty) {
+      setError('Your cart is empty. Add some items before proceeding to checkout.');
+    }
+  }, [isEmpty]);
 
-  // Handle proceed to payment - require verified email
   const handleProceedToPayment = () => {
-    // Proceed without email verification requirement
     if (!email) {
       setError('Please enter your email address before proceeding');
       return;
     }
-    
+    setError('');
     setStep(2);
   };
 
-  // Handle email input change
   const handleEmailChange = (e) => {
-    const value = e.target.value;
-    setEmail(value);
-    
-    // No verification flow; hide component
-  // email verification removed
+    setEmail(e.target.value);
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-6xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">Checkout</h1>
-      
-      {/* Progress Steps */}
-      <div className="flex items-center justify-center mb-8">
-        <div className={`flex items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-          <div className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${step >= 1 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'}`}>
-            1
+
+      {/* Cart summary */}
+      {!isEmpty && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+          <div className="flex items-center">
+            <ShoppingBag className="text-blue-500 mr-2" size={20} />
+            <p className="text-blue-800">
+              <strong>{cartCount}</strong> items in your cart - Total:{' '}
+              <strong>₹{cartTotal}</strong>
+            </p>
           </div>
-          <span className="ml-2">User Info</span>
         </div>
-        <div className={`w-12 h-1 mx-2 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-        <div className={`flex items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-          <div className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${step >= 2 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'}`}>
-            2
-          </div>
-          <span className="ml-2">Payment</span>
-        </div>
-        <div className={`w-12 h-1 mx-2 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-        <div className={`flex items-center ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-          <div className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${step >= 3 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'}`}>
-            3
-          </div>
-          <span className="ml-2">Confirmation</span>
-        </div>
-      </div>
+      )}
 
       {/* Error message */}
       {error && (
@@ -72,135 +68,251 @@ const Checkout = () => {
         </div>
       )}
 
-      {/* User Info Step */}
-      {step === 1 && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">User Information</h2>
-          
-          <div className="space-y-4">
-            {/* Name */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={user?.name || ''}
-                  readOnly
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
-                />
-              </div>
-            </div>
-
-            {/* Phone */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Phone <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={user?.phone || ''}
-                  readOnly
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={handleEmailChange}
-                  placeholder="Enter your email address"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-                />
-                {/* email verification badge removed */}
-              </div>
-            </div>
-            
-            {/* Email verification removed */}
-            
-            {/* Location */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Delivery Location <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={user?.location?.name || 'Not set'}
-                  readOnly
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
-                />
-              </div>
-            </div>
-            
-            {/* Proceed button */}
-            <div className="pt-4">
-              <button
-                onClick={handleProceedToPayment}
-                className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-black hover:bg-gray-800 text-white font-medium`}
-              >
-                Proceed to Payment
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Payment Step - Simplified for demonstration */}
-      {step === 2 && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Payment</h2>
+      {/* If cart is empty */}
+      {isEmpty ? (
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm text-center">
+          <Package className="mx-auto text-gray-400 mb-4" size={48} />
+          <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
           <p className="text-gray-600 mb-4">
-            Payment processing would be implemented here.
+            Add some delicious items to your cart before proceeding to checkout.
           </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setStep(1)}
-              className="py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Back
-            </button>
-            <button
-              onClick={() => setStep(3)}
-              className="py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800"
-            >
-              Complete Payment
-            </button>
-          </div>
+          <button
+            onClick={() => (window.location.href = '/products')}
+            className="py-2 px-6 bg-black text-white rounded-md hover:bg-gray-800"
+          >
+            Browse Products
+          </button>
         </div>
-      )}
-      
-      {/* Confirmation Step */}
-      {step === 3 && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex flex-col items-center justify-center py-8">
-            <div className="rounded-full bg-green-100 p-4 mb-4">
-              <CheckCircle className="text-green-600" size={48} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Checkout form */}
+          <div className="lg:col-span-2">
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center mb-8">
+              <div
+                className={`flex items-center ${
+                  step >= 1 ? 'text-blue-600' : 'text-gray-400'
+                }`}
+              >
+                <div
+                  className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
+                    step >= 1 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
+                  }`}
+                >
+                  1
+                </div>
+                <span className="ml-2">User Info</span>
+              </div>
+              <div
+                className={`w-12 h-1 mx-2 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}
+              ></div>
+              <div
+                className={`flex items-center ${
+                  step >= 2 ? 'text-blue-600' : 'text-gray-400'
+                }`}
+              >
+                <div
+                  className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
+                    step >= 2 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
+                  }`}
+                >
+                  2
+                </div>
+                <span className="ml-2">Payment</span>
+              </div>
+              <div
+                className={`w-12 h-1 mx-2 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}
+              ></div>
+              <div
+                className={`flex items-center ${
+                  step >= 3 ? 'text-blue-600' : 'text-gray-400'
+                }`}
+              >
+                <div
+                  className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
+                    step >= 3 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
+                  }`}
+                >
+                  3
+                </div>
+                <span className="ml-2">Confirmation</span>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold mb-2">Order Confirmed!</h2>
-            <p className="text-gray-600 mb-6">
-              A confirmation email has been sent to {email}
-            </p>
-            <button
-              onClick={() => window.location.href = '/'}
-              className="py-2 px-6 bg-black text-white rounded-md hover:bg-gray-800"
-            >
-              Continue Shopping
-            </button>
+
+            {/* User Info Step */}
+            {step === 1 && (
+              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                <h2 className="text-xl font-semibold mb-4">User Information</h2>
+                <div className="space-y-4">
+                  {/* Name */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={user?.name || ''}
+                        readOnly
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Phone <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={user?.phone || ''}
+                        readOnly
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={handleEmailChange}
+                        placeholder="Enter your email address"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Delivery Location <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={user?.location?.name || 'Not set'}
+                        readOnly
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Proceed Button */}
+                <div className="pt-4">
+                  <button
+                    onClick={handleProceedToPayment}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-black hover:bg-gray-800 text-white font-medium"
+                  >
+                    Proceed to Payment <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Payment Step */}
+            {step === 2 && (
+              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                <h2 className="text-xl font-semibold mb-4">Payment</h2>
+                <p className="text-gray-600 mb-4">
+                  Payment processing would be implemented here.
+                </p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setStep(1)}
+                    className="py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setStep(3)}
+                    className="py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800"
+                  >
+                    Complete Payment
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Confirmation Step */}
+            {step === 3 && (
+              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="rounded-full bg-green-100 p-4 mb-4">
+                    <CheckCircle className="text-green-600" size={48} />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-2">Order Confirmed!</h2>
+                  <p className="text-gray-600 mb-6">
+                    A confirmation email has been sent to {email}
+                  </p>
+                  <button
+                    onClick={() => (window.location.href = '/')}
+                    className="py-2 px-6 bg-black text-white rounded-md hover:bg-gray-800"
+                  >
+                    Continue Shopping
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm sticky top-4">
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <Package className="mr-2" size={20} /> Order Summary
+              </h3>
+
+              <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                {cartItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md"
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-12 h-12 object-cover rounded-md"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {item.name}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Qty: {item.quantity}
+                      </p>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">
+                      ₹{(item.price * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Order Total */}
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">Total:</span>
+                  <span className="text-lg font-bold text-black">₹{cartTotal}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600 mt-1">
+                  <span>{cartCount} items</span>
+                  <span>Delivery charges may apply</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

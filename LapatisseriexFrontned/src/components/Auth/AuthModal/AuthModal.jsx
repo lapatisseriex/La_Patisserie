@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext/AuthContext';
+import { useAuth } from '../../../hooks/useAuth';
 
 // Auth components
 import Login from '../Login/Login';
@@ -97,6 +97,9 @@ const AuthModal = () => {
             {authType === 'profile' && <Profile />}
           </div>
         </div>
+        
+        {/* reCAPTCHA container - required for Firebase auth */}
+        <div id="recaptcha-container"></div>
       </div>
     </>
   );

@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useDispatch } from 'react-redux';
 import { useCart } from '../../hooks/useCart';
-import { useProduct } from '../../context/ProductContext/ProductContext';
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { fetchProducts } from '../../redux/productsSlice';
+import { useAuth } from '../../hooks/useAuth';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 
 const CartPickedForYou = () => {
   const { cartItems } = useCart();
-  const { fetchProducts } = useProduct();
+  const dispatch = useDispatch();
   const { user } = useAuth();
   const { recentlyViewed } = useRecentlyViewed();
   const [recommendedProducts, setRecommendedProducts] = useState([]);
@@ -66,12 +67,13 @@ const CartPickedForYou = () => {
         if (cartAnalysis.lastProduct?.category) {
           console.log('🎯 Finding products from same category as last item...');
           try {
-            const categoryResult = await fetchProducts({
+            const categoryResult = await dispatch(fetchProducts({
+              key: 'cartRecommendations',
               category: cartAnalysis.lastProduct.category,
               limit: 15,
               sort: 'rating:-1',
               isActive: true
-            });
+            })).unwrap();
             
             const categoryRecommendations = categoryResult.products
               ?.filter(product => 
@@ -111,11 +113,12 @@ const CartPickedForYou = () => {
         if (recommendations.length < 3) {
           console.log('⭐ Falling back to popular products...');
           try {
-            const popularResult = await fetchProducts({
+            const popularResult = await dispatch(fetchProducts({
+              key: 'popularRecommendations',
               limit: 20,
               sort: 'rating:-1',
               isActive: true
-            });
+            })).unwrap();
             
             const popularRecommendations = popularResult.products
               ?.filter(product => 
@@ -147,7 +150,7 @@ const CartPickedForYou = () => {
     };
 
     loadSmartRecommendations();
-  }, [cartAnalysis, fetchProducts, user, recentlyViewed]);
+  }, [cartAnalysis, dispatch, user, recentlyViewed]);
 
   // Don't render section if no cart items, or no recommendations
   if (!cartAnalysis.hasItems || (recommendedProducts.length === 0 && !loading)) {

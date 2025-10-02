@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import Checkout from '../components/Checkout';
 
 const CheckoutPage = () => {

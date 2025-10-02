@@ -1,9 +1,12 @@
 import rateLimit from 'express-rate-limit';
 
+// Get environment-specific settings
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 // Create different rate limiters for different endpoints
 export const generalRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: isDevelopment ? 500 : 100, // More lenient in development
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.',
@@ -16,7 +19,7 @@ export const generalRateLimit = rateLimit({
 // More restrictive for auth endpoints
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 auth requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 100 : 10, // More lenient in development
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.',
@@ -27,7 +30,7 @@ export const authRateLimit = rateLimit({
 // Cart operations rate limit
 export const cartRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 50, // Limit each IP to 50 cart operations per minute
+  max: isDevelopment ? 200 : 50, // More lenient in development
   message: {
     success: false,
     message: 'Too many cart operations, please slow down.',
@@ -38,7 +41,7 @@ export const cartRateLimit = rateLimit({
 // More generous for product browsing
 export const productRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 200, // Allow more product browsing
+  max: isDevelopment ? 500 : 200, // Even more lenient in development
   message: {
     success: false,
     message: 'Too many product requests, please try again later.',

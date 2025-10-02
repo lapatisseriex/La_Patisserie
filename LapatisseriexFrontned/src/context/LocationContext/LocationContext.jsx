@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../AuthContext/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const LocationContext = createContext();
 
@@ -10,7 +10,7 @@ export const LocationProvider = ({ children }) => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user, setUser } = useAuth();
+  const { user, updateUser } = useAuth();
   
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -44,7 +44,7 @@ export const LocationProvider = ({ children }) => {
       // Get the location object from our locations array first
       const selectedLocation = locations.find(loc => loc._id === locationId);
       
-      if (selectedLocation && setUser) {
+      if (selectedLocation && updateUser) {
         // Update user object immediately for instant UI feedback
         const updatedUser = {
           ...user,
@@ -54,7 +54,7 @@ export const LocationProvider = ({ children }) => {
         };
         
         // Update the user in the auth context immediately
-        setUser(updatedUser);
+        updateUser(updatedUser);
         console.log("Location updated in user state:", updatedUser);
       }
       

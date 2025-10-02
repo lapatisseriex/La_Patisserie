@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { useAuth } from '../AuthContext/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const CategoryContext = createContext();
 

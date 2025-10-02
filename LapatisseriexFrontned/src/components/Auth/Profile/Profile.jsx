@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../../context/AuthContext/AuthContext';
+import { useAuth } from '../../../hooks/useAuth';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
 import ProfileImageUpload from './ProfileImageUpload';

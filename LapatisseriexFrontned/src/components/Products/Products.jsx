@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from './ProductCard';
 import ProductCardSkeleton from './ProductCardSkeleton';
-import { useProduct } from '../../context/ProductContext/ProductContext';
+import { fetchProducts, makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import CategorySwiper from './CategorySwiper';
 import TextCategoryBar from './TextCategoryBar';
 
 const Products = () => {
-  const { fetchProducts } = useProduct();
+  const dispatch = useDispatch();
+  const selectAllProducts = makeSelectListByKey('allProducts');
+  const selectLoadingAll = makeSelectLoadingByKey('allProducts');
+  const allProductsFromRedux = useSelector(selectAllProducts);
+  const loadingFromRedux = useSelector(selectLoadingAll);
   const { categories, fetchCategories, loading: loadingCategories, error: categoryError } = useCategory();
   const location = useLocation();
   
@@ -69,11 +74,13 @@ const Products = () => {
     }
     
     try {
-      const result = await fetchProducts({
+      // Use Redux action to fetch products
+      const result = await dispatch(fetchProducts({
+        key: `category_${categoryId}`,
         limit: 20,
         category: categoryId,
         sort: 'createdAt:-1',
-      });
+      })).unwrap();
       
       // Update the products for this category
       setProductsByCategory(prev => ({
@@ -83,7 +90,7 @@ const Products = () => {
     } catch (err) {
       console.error(`Error loading products for category ${categoryId}:`, err);
     }
-  }, [fetchProducts, productsByCategory]);
+  }, [dispatch, productsByCategory]);
 
   // Measure actual header height dynamically
   useEffect(() => {
@@ -297,10 +304,11 @@ const Products = () => {
       try {
         // Load a minimal set of products for initial display (just 20)
         // This speeds up initial page load significantly
-        const allProductsResult = await fetchProducts({
+        const allProductsResult = await dispatch(fetchProducts({
+          key: 'allProducts',
           limit: 20,
           sort: 'createdAt:-1',
-        });
+        })).unwrap();
         setAllProducts(allProductsResult.products || []);
         
         // Initialize an empty products by category object
@@ -310,11 +318,12 @@ const Products = () => {
         // This ensures the user's selected category loads first
         if (selectedCategory) {
           console.log(`Pre-loading selected category: ${selectedCategory}`);
-          const result = await fetchProducts({
+          const result = await dispatch(fetchProducts({
+            key: `category_${selectedCategory}`,
             limit: 20,
             category: selectedCategory,
             sort: 'createdAt:-1',
-          });
+          })).unwrap();
           productsByCat[selectedCategory] = result.products || [];
           
           // For visible categories near the selected one, prefetch them in the background

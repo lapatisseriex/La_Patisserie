@@ -5,7 +5,7 @@ class FavoriteService {
   async getFavorites() {
     try {
       const response = await api.get('/users/favorites');
-      return response.data.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error('Error fetching favorites:', error);
       throw error;

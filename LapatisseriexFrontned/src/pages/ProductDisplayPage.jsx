@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
@@ -8,7 +8,7 @@ import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import FavoriteButton from '../components/Favorites/FavoriteButton';
 
 import { useRecentlyViewed } from '../context/RecentlyViewedContext/RecentlyViewedContext';
-import { useAuth } from '../context/AuthContext/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import MediaDisplay from '../components/common/MediaDisplay';
 import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
@@ -64,6 +64,7 @@ const ProductDisplayPage = () => {
   const [isCareInstructionsOpen, setIsCareInstructionsOpen] = useState(false);
   const [isDeliveryInfoOpen, setIsDeliveryInfoOpen] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [lastQuantityChangeTime, setLastQuantityChangeTime] = useState(0);
   
   // References to the main "Reserve Yours" buttons (mobile & desktop) to determine when to show sticky bars
   const reserveButtonMobileRef = useRef(null);
@@ -401,15 +402,24 @@ const ProductDisplayPage = () => {
     }
   };
 
-  const handleQuantityChange = (newQuantity) => {
-    if (newQuantity < 0) return;
+  const handleQuantityChange = useCallback(async (newQuantity) => {
+    if (newQuantity < 0 || !product?._id) return;
     
-    try {
-      updateQuantity(product._id, newQuantity);
-    } catch (error) {
-      console.error('Error updating quantity:', error);
+    // Prevent only genuine rapid clicking (very fast consecutive clicks)
+    const now = Date.now();
+    const timeSinceLastClick = now - lastQuantityChangeTime;
+    
+    if (timeSinceLastClick < 50) {
+      return; // Silently ignore super rapid clicks
     }
-  };
+    
+    setLastQuantityChangeTime(now);
+    
+    // Fire and forget - no loading states for smooth experience
+    updateQuantity(product._id, newQuantity).catch(error => {
+      console.error('Error updating quantity:', error);
+    });
+  }, [updateQuantity, product?._id, lastQuantityChangeTime]);
 
 
 
@@ -1033,7 +1043,7 @@ const ProductDisplayPage = () => {
                     <span className="text-sm font-semibold text-black min-w-[2rem] text-center">{currentCartQuantity}</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
-                      disabled={tracks && currentCartQuantity >= totalStock}
+                      disabled={(tracks && currentCartQuantity >= totalStock)}
                       className="w-7 h-7 flex items-center justify-center text-black transition-colors border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 rounded"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -1153,7 +1163,7 @@ const ProductDisplayPage = () => {
                     <span className="px-2 text-black font-semibold text-sm min-w-[2rem] text-center">{currentCartQuantity}</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
-                      disabled={tracks && currentCartQuantity >= totalStock}
+                      disabled={(tracks && currentCartQuantity >= totalStock)}
                       className="w-8 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
                     >
                       <Plus className="w-3 h-3" />
@@ -1614,7 +1624,7 @@ const ProductDisplayPage = () => {
                         <span className="text-base font-semibold text-black min-w-[2.25rem] text-center">{currentCartQuantity}</span>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
-                          disabled={currentCartQuantity >= totalStock}
+                          disabled={(currentCartQuantity >= totalStock)}
                           className="w-9 h-9 flex items-center justify-center text-black transition-colors border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 rounded"
                         >
                           <Plus className="w-4 h-4" />

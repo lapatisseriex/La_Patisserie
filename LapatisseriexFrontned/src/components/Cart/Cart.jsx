@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaTag, FaShoppingCart, FaExclamationTriangle } from 'react-icons/fa';
 import { useCart } from '../../hooks/useCart';
-import { useProduct } from '../../context/ProductContext/ProductContext';
-import { useAuth } from '../../context/AuthContext/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
@@ -11,7 +10,6 @@ import ShopClosureOverlay from '../common/ShopClosureOverlay';
 const Cart = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
   const { cartItems, cartTotal, cartCount, updateQuantity, removeFromCart, clearCart, error: cartError } = useCart();
-  const { products, fetchProducts } = useProduct();
   
   // Use our hooks
   const { user } = useAuth();
@@ -34,27 +32,20 @@ const Cart = () => {
   
   const navigate = useNavigate();
 
-  // Ensure products are loaded so we can check variant availability in the cart
-  useEffect(() => {
-    if (!products || products.length === 0) {
-      fetchProducts().catch(() => {});
-    }
-  }, [products, fetchProducts]);
-
-  // Helper to derive availability from product + variantIndex stored in cart item
+  // Helper to derive availability from product data stored in cart item
   const getItemAvailability = (item) => {
     try {
-      const pid = typeof item.productId === 'object' ? item.productId?._id : item.productId;
-      const prod = products?.find(p => p._id === pid);
+      // Use productDetails from the cart item instead of global products array
+      const prod = item.productDetails;
       if (!prod) {
-        console.log('Product not found in products list:', pid);
+        console.log('Product details not found in cart item:', item);
         return { unavailable: false, tracks: false, stock: Infinity, variantIndex: 0 };
       }
       
       const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
       const variant = prod?.variants?.[vi];
       if (!variant) {
-        console.log('Variant not found:', { pid, vi, variants: prod?.variants?.length });
+        console.log('Variant not found:', { productId: item.productId, vi, variants: prod?.variants?.length });
         return { unavailable: false, tracks: false, stock: Infinity, variantIndex: vi };
       }
       
@@ -63,7 +54,7 @@ const Cart = () => {
       const unavailable = tracks && stock <= 0;
       
       console.log('Stock check:', { 
-        pid, 
+        productId: item.productId, 
         name: prod.name,
         vi, 
         tracks, 

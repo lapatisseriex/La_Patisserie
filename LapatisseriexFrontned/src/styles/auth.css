@@ -1,0 +1,273 @@
+/* Redux Auth Modal Styles */
+.auth-container {
+  max-width: 400px;
+  padding: 2rem;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Phone Input Styles */
+.phone-input-container {
+  display: flex;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.phone-input-container:focus-within {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.country-code {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border-right: 1px solid #d1d5db;
+  font-weight: 500;
+}
+
+.phone-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+.phone-input:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+}
+
+/* OTP Input Styles */
+.otp-input-container {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.otp-input {
+  width: 3rem;
+  height: 3rem;
+  text-align: center;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  transition: border-color 0.2s;
+}
+
+.otp-input:focus {
+  border-color: #f59e0b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.otp-input:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+}
+
+/* Profile Form Styles */
+.profile-form {
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.form-input {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  border-color: #f59e0b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.form-input:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Button Styles */
+.submit-button {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background-color: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #d97706;
+}
+
+.submit-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.skip-button {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.skip-button:hover:not(:disabled) {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.skip-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.back-button {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background-color: transparent;
+  color: #6b7280;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.back-button:hover {
+  color: #374151;
+}
+
+.resend-button {
+  background: none;
+  border: none;
+  color: #f59e0b;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.resend-button:hover {
+  color: #d97706;
+}
+
+.resend-container {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.resend-container p {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Error Message Styles */
+.error-message {
+  padding: 0.75rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Footer Styles */
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.auth-footer p {
+  color: #6b7280;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .auth-container {
+    padding: 1.5rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .otp-input {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1rem;
+  }
+  
+  .otp-input-container {
+    gap: 0.5rem;
+  }
+}
