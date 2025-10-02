@@ -14,8 +14,8 @@ export const useSparkToCart = () => {
     }
   }, [triggerSparkAnimation]);
 
-  const addToCartWithSpark = useCallback(async (product, variant) => {
-    console.log('🎯 addToCartWithSpark called:', { product: product?._id, variant });
+  const addToCartWithSpark = useCallback(async (product, variantIndex) => {
+    console.log('🎯 addToCartWithSpark called:', { product: product?._id, variantIndex });
     console.log('🔗 buttonRef.current:', buttonRef.current);
     
     try {
@@ -29,7 +29,7 @@ export const useSparkToCart = () => {
       
       // Add to cart
       console.log('🛒 Adding to cart...');
-      await addToCart(product, variant);
+      await addToCart(product, 1, variantIndex);
       console.log('✅ Added to cart successfully');
     } catch (error) {
       console.error('❌ Error in addToCartWithSpark:', error);

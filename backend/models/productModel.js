@@ -22,6 +22,8 @@ const variantSchema = new mongoose.Schema({
     value: { type: Number, default: 0, min: 0 }
   },
   stock: { type: Number, default: 0, min: 0 },
+  // Per-variant stock tracking toggle
+  isStockActive: { type: Boolean, default: false },
 }, { _id: false });
 
 // Product schema
@@ -53,6 +55,8 @@ const productSchema = new mongoose.Schema(
 productSchema.virtual('featuredImage').get(function() {
   return this.images && this.images.length > 0 ? this.images[0] : null;
 });
+
+// Removed product-level stock tracking; tracking is strictly per-variant now.
 
 // Virtual for total stock (sum of all variant stocks)
 productSchema.virtual('stock').get(function() {

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../AuthContext/AuthContextRedux';
-import { useProduct } from '../ProductContext/ProductContext';
+import { fetchProductById } from '../../redux/productsSlice';
 import { 
   fetchFavorites, 
   addToFavorites as addToFavoritesThunk, 
@@ -50,24 +50,22 @@ export const FavoritesProvider = ({ children }) => {
   }, [dispatch, user]);
   
   // For guest users, try to fetch product details for favoriteIds
-  const { fetchProducts } = useProduct && useProduct();
-  
   useEffect(() => {
     // Only for guest users with local favorites
-    if (!user && favoriteIds.length > 0 && fetchProducts) {
+    if (!user && favoriteIds.length > 0) {
       const loadProductDetails = async () => {
         try {
           // Fetch product details for each favorite ID
           const productPromises = favoriteIds.map(id => 
-            fetchProducts({ productId: id })
+            dispatch(fetchProductById(id)).unwrap()
           );
           
           const results = await Promise.allSettled(productPromises);
           
           // Process successful results
           const loadedProducts = results
-            .filter(result => result.status === 'fulfilled' && result.value?.products?.length > 0)
-            .map(result => result.value.products[0]);
+            .filter(result => result.status === 'fulfilled' && result.value)
+            .map(result => result.value);
           
           // Format products for favorites array
           const favoritesWithDetails = loadedProducts.map(product => ({
@@ -89,7 +87,7 @@ export const FavoritesProvider = ({ children }) => {
       
       loadProductDetails();
     }
-  }, [user, favoriteIds, fetchProducts, dispatch]);
+  }, [user, favoriteIds, dispatch]);
   
   // Toggle favorite
   const toggleFavorite = useCallback((productId) => {

@@ -2,15 +2,14 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
-import { useProduct } from '../context/ProductContext/ProductContext';
 import { useAuth } from '../context/AuthContext/AuthContextRedux';
+
 import { fetchFavorites } from '../redux/favoritesSlice';
 import { Heart } from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';
 
 const Favorites = () => {
   const { favorites, count, loading, error } = useFavorites();
-  const { products, fetchProducts } = useProduct();
   const { user } = useAuth();
   const dispatch = useDispatch();
 

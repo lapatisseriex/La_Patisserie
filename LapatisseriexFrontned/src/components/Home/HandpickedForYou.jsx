@@ -1,37 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { useProduct } from '../../context/ProductContext/ProductContext';
+import React, { useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProducts, makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
 import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 
 const HandpickedForYou = () => {
-  const { fetchProducts } = useProduct();
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const selectList = makeSelectListByKey('handpicked');
+  const selectLoading = makeSelectLoadingByKey('handpicked');
+  const products = useSelector(selectList);
+  const loading = useSelector(selectLoading);
 
   useEffect(() => {
-    const loadHandpickedProducts = async () => {
-      try {
-        setLoading(true);
-        // Fetch more products than needed so we can randomize
-        const result = await fetchProducts({
-          limit: 20, // Fetch 20 products to randomize from
-          sort: 'createdAt:-1'
-        });
-        
-        // Shuffle the products and take first 3
-        const shuffledProducts = [...result.products].sort(() => Math.random() - 0.5);
-        const randomProducts = shuffledProducts.slice(0, 3);
-        
-        setProducts(randomProducts);
-      } catch (err) {
-        console.error("Error loading Handpicked products:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadHandpickedProducts();
-  }, [fetchProducts]);
+    dispatch(fetchProducts({ key: 'handpicked', limit: 20, sort: 'createdAt:-1' }));
+  }, [dispatch]);
+
+  // Memoize the shuffled and sliced products
+  const handpickedProducts = useMemo(() => {
+    if (!products?.length) return [];
+    const shuffledProducts = [...products].sort(() => Math.random() - 0.5);
+    return shuffledProducts.slice(0, 3);
+  }, [products]);
 
   if (loading) {
     return (
@@ -64,7 +53,7 @@ const HandpickedForYou = () => {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {products.map(product => (
+          {handpickedProducts.map(product => (
             <div key={product._id}>
               <ProductCard product={product} />
             </div>

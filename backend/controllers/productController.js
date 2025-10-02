@@ -120,12 +120,12 @@ export const getProducts = asyncHandler(async (req, res) => {
         // Don't filter out inactive categories for admin views
         match: req.user?.role === 'admin' ? {} : { isActive: true }
       })
-      // Return only fields needed for list views
-      .select('name id price variants featuredImage images category isActive hasEgg isVeg badge createdAt updatedAt')
+    // Return only fields needed for list views
+  .select('name id price variants featuredImage images category isActive hasEgg isVeg badge createdAt updatedAt')
       .sort('-createdAt')
       .skip(skip)
       .limit(Number(limit))
-      .lean();
+      .lean({ virtuals: true });
 
     // Get total count for pagination (run in parallel)
     totalProducts = await Product.countDocuments(filter);
@@ -179,7 +179,7 @@ export const getProduct = asyncHandler(async (req, res) => {
         select: 'name images description isActive'
       })
       .select('-__v')
-      .lean();
+      .lean({ virtuals: true });
 
     if (!product) {
       res.status(404);
@@ -230,7 +230,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     category,
     tags,
     isVeg,
-    hasEgg, // Added hasEgg field
+  hasEgg, // Added hasEgg field
     discount,
     importantField,
     extraFields,
@@ -262,6 +262,15 @@ export const createProduct = asyncHandler(async (req, res) => {
     throw new Error('Variants must be an array');
   }
 
+  // Normalize variants to ensure variant-level stock tracking only
+  const normalizedVariants = Array.isArray(variants)
+    ? variants.map(v => ({
+        ...v,
+        isStockActive: v?.isStockActive === true,
+        stock: Math.max(0, Number(v?.stock || 0))
+      }))
+    : [];
+
   // Create product
   const product = await Product.create({
     name,
@@ -271,13 +280,13 @@ export const createProduct = asyncHandler(async (req, res) => {
     category,
     tags: Array.isArray(tags) ? tags : [],
     isVeg: isVeg !== undefined ? isVeg : true,
-    hasEgg: hasEgg !== undefined ? hasEgg : false, // Added hasEgg field
+  hasEgg: hasEgg !== undefined ? hasEgg : false, // Added hasEgg field
     discount: discount || { type: null, value: 0 },
     importantField,
     extraFields: extraFields || {},
     id,
     badge,
-    variants: variants || [] // Store variants directly
+    variants: normalizedVariants // Store normalized variants only
   });
 
   const createdProduct = await Product.findById(product._id).populate('category', 'name');
@@ -297,7 +306,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
     category,
     tags,
     isVeg,
-    hasEgg, // Added hasEgg field
+  hasEgg, // Added hasEgg field
     discount,
     importantField,
     extraFields,
@@ -311,7 +320,6 @@ export const updateProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
 
   if (!product) {
-    res.status(404);
     throw new Error('Product not found');
   }
 
@@ -353,13 +361,17 @@ export const updateProduct = asyncHandler(async (req, res) => {
     product.tags = Array.isArray(tags) ? tags : [];
   }
 
-  // Update variants if provided
   if (variants) {
     if (!Array.isArray(variants)) {
       res.status(400);
       throw new Error('Variants must be an array');
     }
-    product.variants = variants;
+    // Normalize incoming variants to ensure isStockActive exists only at variant level
+    product.variants = variants.map(v => ({
+      ...v,
+      isStockActive: v?.isStockActive === true,
+      stock: Math.max(0, Number(v?.stock || 0))
+    }));
   }
 
   // Update images if provided

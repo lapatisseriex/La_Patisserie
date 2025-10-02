@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext/AuthContextRedux';
+
 import Checkout from '../components/Checkout';
 
 const CheckoutPage = () => {

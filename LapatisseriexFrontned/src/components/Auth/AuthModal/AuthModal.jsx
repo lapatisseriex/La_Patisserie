@@ -97,6 +97,9 @@ const AuthModal = () => {
             {authType === 'profile' && <Profile />}
           </div>
         </div>
+        
+        {/* reCAPTCHA container - required for Firebase auth */}
+        <div id="recaptcha-container"></div>
       </div>
     </>
   );

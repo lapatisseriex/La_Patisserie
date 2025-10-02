@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+
 import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
+
 
 const OTPVerify = () => {
   const { verifyOTP, changeAuthType, authError, loading, tempPhoneNumber, sendOTP } = useAuth();

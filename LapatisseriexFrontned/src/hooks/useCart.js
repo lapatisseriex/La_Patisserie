@@ -1,6 +1,8 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useCallback, useEffect, useMemo } from 'react';
+
 import { useAuth } from '../context/AuthContext/AuthContextRedux';
+
 import {
   fetchCart,
   addToCart as addToCartAction,
@@ -99,7 +101,7 @@ export const useCart = () => {
     }
   }, []);
 
-  const saveToCahe = useCallback((data) => {
+  const saveToCache = useCallback((data) => {
     try {
       localStorage.setItem(CART_CACHE_KEY, JSON.stringify(data));
       localStorage.setItem(CART_CACHE_TIMESTAMP_KEY, Date.now().toString());
@@ -113,7 +115,7 @@ export const useCart = () => {
     const loadCart = async () => {
       if (user && !dbCartLoaded) {
         // Try cache first
-        const cachedCart = getCachedCart();
+  const cachedCart = getCachedCart();
         if (cachedCart) {
           console.log('📦 Loading cart from cache');
           dispatch(loadFromCache(cachedCart));
@@ -160,23 +162,23 @@ export const useCart = () => {
         cartTotal,
         cartCount
       };
-      saveToCahe(cacheData);
+  saveToCache(cacheData);
     }
-  }, [cartItems, cartTotal, cartCount, user, saveToCahe]);
+  }, [cartItems, cartTotal, cartCount, user, saveToCache]);
 
   // Cart operations with optimistic updates
-  const addToCart = useCallback(async (product, quantity = 1) => {
+  const addToCart = useCallback(async (product, quantity = 1, variantIndex) => {
     try {
       if (!product || !product._id) {
         throw new Error('Invalid product data');
       }
 
-      console.log(`🛒 Adding ${quantity}x ${product.name} to cart`);
+      console.log(`🛒 Adding ${quantity}x ${product.name} to cart${Number.isInteger(variantIndex) ? ` (variant ${variantIndex})` : ''}`);
 
       if (user) {
-        // For authenticated users: optimistic update + API call
-        dispatch(addToCartOptimistic({ product, quantity }));
-        const result = await dispatch(addToCartAction({ product, quantity })).unwrap();
+  // For authenticated users: optimistic update + API call
+  dispatch(addToCartOptimistic({ product, quantity, variantIndex }));
+        const result = await dispatch(addToCartAction({ product, quantity, variantIndex })).unwrap();
         console.log('✅ Item added to cart successfully');
         return result;
       } else {
@@ -191,11 +193,13 @@ export const useCart = () => {
             id: `local_${Date.now()}`,
             productId: product._id,
             name: product.name,
-            price: product.price,
+            price: (Number.isInteger(variantIndex) && product.variants?.[variantIndex]?.price)
+              ? product.variants[variantIndex].price
+              : product.price,
             image: product.images?.[0] || product.image,
             quantity,
             addedAt: new Date().toISOString(),
-            productDetails: product
+            productDetails: { ...product, variantIndex }
           });
         }
         

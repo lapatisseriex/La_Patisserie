@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
-import { useProduct } from '../../context/ProductContext/ProductContext';
 import { useAuth } from '../../context/AuthContext/AuthContextRedux';
+import { fetchProducts, makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
+
 
 import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';
@@ -23,15 +25,23 @@ const Home = () => {
   const newlyLaunchedRef = useRef(null);
   const handpickedRef = useRef(null);
 
+  const dispatch = useDispatch();
   const { categories, fetchCategories, getSpecialImages, specialImagesVersion, loading: categoriesLoading } = useCategory();
-  const { fetchProducts } = useProduct();
   const { isAuthenticated } = useAuth();
 
-  const [bestSellersProducts, setBestSellersProducts] = useState([]);
-  const [newlyLaunchedProducts, setNewlyLaunchedProducts] = useState([]);
-  const [specialImages, setSpecialImages] = useState({ bestSeller: null, newlyLaunched: null });
-  const [productsLoading, setProductsLoading] = useState(true);
-  const [pageLoading, setPageLoading] = useState(true);
+  // Get section lists from Redux store via memoized selectors
+  const selectBestSellers = makeSelectListByKey('bestSellers');
+  const selectNewlyLaunched = makeSelectListByKey('newlyLaunched');
+  const selectBestSellersLoading = makeSelectLoadingByKey('bestSellers');
+  const selectNewlyLaunchedLoading = makeSelectLoadingByKey('newlyLaunched');
+
+  const bestSellersProducts = useSelector(selectBestSellers);
+  const newlyLaunchedProducts = useSelector(selectNewlyLaunched);
+  const bestSellersLoading = useSelector(selectBestSellersLoading);
+  const newlyLaunchedLoading = useSelector(selectNewlyLaunchedLoading);
+  
+  const [specialImages, setSpecialImages] = React.useState({ bestSeller: null, newlyLaunched: null });
+  const pageLoading = categoriesLoading || bestSellersLoading || newlyLaunchedLoading;
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -44,22 +54,11 @@ const Home = () => {
     loadCategories();
   }, [fetchCategories]);
 
+  // Load products for homepage sections using keys so they don't overwrite each other
   useEffect(() => {
-    const loadSectionProducts = async () => {
-      try {
-        setProductsLoading(true);
-        const best = await fetchProducts({ limit: 3, sort: 'rating:-1' });
-        const newly = await fetchProducts({ limit: 3, sort: 'createdAt:-1' });
-        setBestSellersProducts(best.products);
-        setNewlyLaunchedProducts(newly.products);
-      } catch (err) {
-        console.error("Error loading section products:", err);
-      } finally {
-        setProductsLoading(false);
-      }
-    };
-    loadSectionProducts();
-  }, [fetchProducts]);
+    dispatch(fetchProducts({ key: 'bestSellers', limit: 3, sort: 'rating:-1' }));
+    dispatch(fetchProducts({ key: 'newlyLaunched', limit: 3, sort: 'createdAt:-1' }));
+  }, [dispatch]);
 
   // Load special images only once on mount
   useEffect(() => {
@@ -115,29 +114,16 @@ const Home = () => {
         lastVisibilityChange = now;
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       clearInterval(refreshInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [getSpecialImages]); // Keep getSpecialImages dependency for the interval functionality
 
-  // Manage overall page loading state
-  useEffect(() => {
-    // Check if all critical data has loaded
-    const checkLoadingComplete = () => {
-      if (!categoriesLoading && !productsLoading) {
-        // Add a small delay to ensure smooth transition
-        setTimeout(() => {
-          setPageLoading(false);
-        }, 1500); // Show loading for at least 1.5 seconds
-      }
-    };
-    
-    checkLoadingComplete();
-  }, [categoriesLoading, productsLoading]);
+  // Remove broken productsLoading dependency; page loading is computed directly
 
   useEffect(() => {
     const fadeInElements = (element, delay) => {
@@ -174,7 +160,7 @@ const Home = () => {
         </section>
 
         <section ref={newlyLaunchedRef} className="w-full">
-          <NewlyLaunched products={newlyLaunchedProducts} loading={productsLoading} />
+          <NewlyLaunched />
         </section>
 
       {/* Recently Viewed Section - Shows only for authenticated users */}
@@ -203,7 +189,7 @@ const Home = () => {
       </section>
 
       <section ref={bestSellersRef} className="w-full">
-        <BestSellers products={bestSellersProducts} loading={productsLoading} />
+        <BestSellers />
       </section>
 
       <section ref={handpickedRef} className="w-full">

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext/AuthContextRedux';
-import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
+// (removed duplicate import of useFavorites)
 import { useCart } from '../hooks/useCart';
 import Profile from '../components/Auth/Profile/Profile';
-
 import './ProfileStyles.css';
-import ProductCard from '../components/Products/ProductCard';
+import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import { 
   User, 
   Package, 
@@ -25,6 +24,7 @@ import {
   Edit3,
   MoreVertical
 } from 'lucide-react';
+import ProductCard from '../components/Products/ProductCard';
 
 const ProfilePage = () => {
   const { user, loading, logout } = useAuth();
@@ -100,14 +100,14 @@ const ProfilePage = () => {
     }
   };
 
-  console.log('Profile Page - Cart Debug:', {
+  console.log('Profile Page - Cart Debug (final state):', {
     cartItems,
     cartLoading,
     cartError,
     cartCount,
     cartTotal,
     cartItemsLength: cartItems?.length,
-    cartStructure: cartItems?.slice(0, 1) // Show first item structure
+    cartStructure: cartItems?.slice(0, 1)
   });
   
   // Log user data to check profile photo

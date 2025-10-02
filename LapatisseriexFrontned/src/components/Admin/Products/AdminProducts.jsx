@@ -10,7 +10,7 @@ import { FaPlus, FaFilter, FaEgg, FaLeaf } from 'react-icons/fa';
  * AdminProducts component for managing products in admin dashboard
  */
 const AdminProducts = () => {
-  const { products, loading, error, fetchProducts, deleteProduct } = useProduct();
+  const { products, loading, error, fetchProducts, deleteProduct, getProduct } = useProduct();
   const { categories, fetchCategories } = useCategory();
   const { closeSidebarIfOpen, closeSidebarForModal, isSidebarOpen, isMobile } = useSidebar();
   
@@ -216,10 +216,18 @@ const AdminProducts = () => {
   };
 
   // Open form for editing an existing product
-  const handleEdit = (product) => {
+  const handleEdit = async (product) => {
     closeSidebarForModal(); // Force-close sidebar to avoid modal collision
-    setEditingProduct(product);
-    setShowForm(true);
+    try {
+      // Fetch full product details to ensure fields like description are present
+      const full = await getProduct(product._id, { forceRefresh: true });
+      setEditingProduct(full || product);
+    } catch (e) {
+      console.warn('Falling back to list product for editing due to fetch error:', e);
+      setEditingProduct(product);
+    } finally {
+      setShowForm(true);
+    }
   };
 
   // Search handlers
@@ -529,22 +537,18 @@ const AdminProducts = () => {
                   </td>
                 </tr>
               ) : (
-                productList.map((product) => (
+                productList.map((product) => {
+                  const rawSrc = product?.featuredImage || (Array.isArray(product?.images) && product.images[0]) || '/placeholder-image.jpg';
+                  const imgSrc = typeof rawSrc === 'string' && rawSrc.trim() ? rawSrc : '/placeholder-image.jpg';
+                  return (
                   <tr key={product._id} className="border-b border-white">
                     <td className="py-3 px-4">
-                      {product.featuredImage ? (
-                        <img
-                          src={product.featuredImage}
-                          alt={product.name}
-                          className="h-12 w-12 object-cover rounded-md"
-                        />
-                      ) : (
-                        <div className="h-12 w-12 bg-white rounded-md flex items-center justify-center text-white">
-                          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      )}
+                      <img
+                        src={imgSrc}
+                        alt={product.name}
+                        className="h-12 w-12 object-cover rounded-md"
+                        onError={(e) => { e.currentTarget.src = '/placeholder-image.jpg'; }}
+                      />
                     </td>
                     <td className="py-3 px-4">
                       <div className="font-medium">{searchQuery ? highlightMatch(product.name, searchQuery) : product.name}</div>
@@ -649,7 +653,7 @@ const AdminProducts = () => {
                       )}
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>
@@ -660,16 +664,15 @@ const AdminProducts = () => {
           {(productList || []).length === 0 ? (
             <div className="text-center text-black py-6">No products found</div>
           ) : (
-            productList.map((product) => (
+            productList.map((product) => {
+              const rawSrc = product?.featuredImage || (Array.isArray(product?.images) && product.images[0]) || '/placeholder-image.jpg';
+              const imgSrc = typeof rawSrc === 'string' && rawSrc.trim() ? rawSrc : '/placeholder-image.jpg';
+              return (
               <div key={product._id} className="bg-white rounded-lg shadow-md border border-gray-100 p-3">
                 {/* Title: rounded image + name and id */}
                 <div className="flex items-center gap-3 mb-2">
                   <div className="h-12 w-12 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
-                    {product.featuredImage ? (
-                      <img src={product.featuredImage} alt={product.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="text-gray-400 text-xs">No Image</div>
-                    )}
+                    <img src={imgSrc} alt={product.name} className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = '/placeholder-image.jpg'; }} />
                   </div>
                   <div className="min-w-0">
                     <div className="text-base font-semibold text-black truncate">{searchQuery ? highlightMatch(product.name, searchQuery) : product.name}</div>
@@ -738,7 +741,7 @@ const AdminProducts = () => {
                   </div>
                 </div>
               </div>
-            ))
+            )})
           )}
         </div>
         </>

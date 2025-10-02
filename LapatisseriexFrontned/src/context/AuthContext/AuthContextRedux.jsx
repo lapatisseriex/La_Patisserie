@@ -128,38 +128,99 @@ export const AuthProvider = ({ children }) => {
     };
   }, [dispatch]);
 
-  // Send OTP function
-  const sendOTP = useCallback(async (phoneNumber) => {
+  // Helper: Normalize & validate phone number to E.164 (assumes +91 default if none provided)
+  const normalizePhoneNumber = (raw, defaultCountryCode = '+91') => {
+    if (!raw) return null;
+    let phone = String(raw).trim();
+    // Remove spaces, hyphens, parentheses
+    phone = phone.replace(/[\s()-]/g, '');
+    // Prepend default country code if missing '+' and all digits
+    if (!phone.startsWith('+')) {
+      if (/^\d{6,15}$/.test(phone)) {
+        phone = defaultCountryCode + phone;
+      } else {
+        return null;
+      }
+    }
+    // Basic E.164 validation (7-15 digits after +, cannot start with 0)
+    if (!/^\+[1-9]\d{6,14}$/.test(phone)) {
+      return null;
+    }
+    return phone;
+  };
+
+  // Send OTP function with improved validation / reCAPTCHA lifecycle
+  const sendOTP = useCallback(async (rawPhoneNumber) => {
+    // Throttle duplicate rapid requests (5s window)
+    const now = Date.now();
+    if (window.__lastOtpRequestTime && (now - window.__lastOtpRequestTime) < 5000) {
+      dispatch(setError('Please wait a moment before requesting another OTP.'));
+      return false;
+    }
+    window.__lastOtpRequestTime = now;
+
     try {
       dispatch(setError(null));
       dispatch(setLoading(true));
 
-      // Clean up any existing reCAPTCHA
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
+      const phoneNumber = normalizePhoneNumber(rawPhoneNumber);
+      if (!phoneNumber) {
+        dispatch(setError('Invalid phone number format. Use e.g. +911234567890'));
+        return false;
       }
 
-      // Create reCAPTCHA verifier
+      // Clean up any existing reCAPTCHA instance & DOM
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch (_) {}
+        window.recaptchaVerifier = null;
+      }
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (recaptchaContainer) {
+        recaptchaContainer.innerHTML = '';
+      }
+
+      // Create a fresh invisible reCAPTCHA verifier
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible',
         callback: () => console.log('reCAPTCHA solved'),
         'expired-callback': () => {
           console.log('reCAPTCHA expired');
-          dispatch(setError("reCAPTCHA expired. Please try again."));
+          dispatch(setError('reCAPTCHA expired. Please try again.'));
         }
       });
 
-      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-      
+      let confirmation;
+      try {
+        confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+      } catch (recaptchaErr) {
+        // If reCAPTCHA double-render issue occurs, attempt a one-time rebuild
+        if (/already been rendered/i.test(recaptchaErr.message)) {
+          try {
+            window.recaptchaVerifier.clear();
+          } catch (_) {}
+          window.recaptchaVerifier = null;
+          if (recaptchaContainer) recaptchaContainer.innerHTML = '';
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+          confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+        } else {
+          throw recaptchaErr;
+        }
+      }
+
       dispatch(setConfirmationResult(confirmation));
       dispatch(setTempPhoneNumber(phoneNumber));
       dispatch(setAuthType('otp'));
-      
       return true;
     } catch (error) {
-      console.error("Error sending OTP:", error);
-      dispatch(setError(error.message || "Failed to send OTP"));
+      console.error('Error sending OTP:', error);
+      // Provide cleaner messages for common Firebase errors
+      let msg = error.message || 'Failed to send OTP';
+      if (/invalid-phone-number/i.test(msg)) {
+        msg = 'Invalid phone number. Include country code, e.g. +911234567890';
+      } else if (/too-many-requests/i.test(msg)) {
+        msg = 'Too many OTP attempts. Please wait and try again later.';
+      }
+      dispatch(setError(msg));
       return false;
     } finally {
       dispatch(setLoading(false));

@@ -1,36 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { useProducts } from '../../context/ProductContext/ProductContext';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useShopStatus } from '../../context/ShopStatusContext';
+import { fetchProducts, makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
 import ProductCard from '../Products/ProductCard';
 import DessertLoader from '../common/DessertLoader';
 
 const NewlyLaunched = () => {
   const { shouldShowSection } = useShopStatus();
-  const { fetchProducts } = useProducts();
-  const [newProducts, setNewProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+
+  // Get products from Redux store (keyed list)
+  const selectNewlyLaunched = makeSelectListByKey('newlyLaunched');
+  const selectLoading = makeSelectLoadingByKey('newlyLaunched');
+  const newProducts = useSelector(selectNewlyLaunched);
+  const loading = useSelector(selectLoading);
 
   useEffect(() => {
-    const fetchNewProducts = async () => {
-      try {
-        setLoading(true);
-        const response = await fetchProducts({
-          limit: 4,
-          sort: 'createdAt:-1'
-        });
-        // Extract products array from the response object
-        const products = response?.products || [];
-        setNewProducts(products);
-      } catch (error) {
-        console.error('Error fetching new products:', error);
-        setNewProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNewProducts();
-  }, [fetchProducts]);
+    dispatch(fetchProducts({ key: 'newlyLaunched', limit: 4, sort: 'createdAt:-1' }));
+  }, [dispatch]);
 
   if (loading) {
     return <DessertLoader />;

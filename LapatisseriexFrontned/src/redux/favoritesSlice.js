@@ -100,9 +100,24 @@ const favoritesSlice = createSlice({
       })
       .addCase(fetchFavorites.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.favorites = action.payload.items || [];
-        state.favoriteIds = action.payload.items.map(item => item.productId) || [];
-        state.count = action.payload.count || 0;
+        
+        // Handle different response structures
+        const responseData = action.payload;
+        
+        if (responseData && responseData.items) {
+          state.favorites = responseData.items;
+          state.favoriteIds = responseData.items.map(item => item._id || item.productId || item.id);
+          state.count = responseData.count || responseData.items.length;
+        } else if (Array.isArray(responseData)) {
+          state.favorites = responseData;
+          state.favoriteIds = responseData.map(item => item._id || item.productId || item.id);
+          state.count = responseData.length;
+        } else {
+          // Fallback for unexpected response structure
+          state.favorites = [];
+          state.favoriteIds = [];
+          state.count = 0;
+        }
       })
       .addCase(fetchFavorites.rejected, (state, action) => {
         state.status = 'failed';
