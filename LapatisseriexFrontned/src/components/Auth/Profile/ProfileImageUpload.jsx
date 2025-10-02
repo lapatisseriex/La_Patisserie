@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Trash2, Upload, X } from 'lucide-react';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
 import { useProfileImageUpload } from '../../../hooks/useProfileImageUpload';
 import { UPLOAD_CONFIG } from '../../../config/uploadConfig';
 

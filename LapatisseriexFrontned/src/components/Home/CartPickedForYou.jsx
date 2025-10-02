@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { useCart } from '../../hooks/useCart';
+
 import { fetchProducts } from '../../redux/productsSlice';
-import { useAuth } from '../../hooks/useAuth';
+import { useProduct } from '../../context/ProductContext/ProductContext';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
+
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';

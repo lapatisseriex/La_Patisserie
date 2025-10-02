@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from 'react';
-import { useAuth as useReduxAuth } from '../../hooks/useAuth';
+// Deprecated compatibility layer: update to use new AuthContext directly
+import { useAuth } from './AuthContextRedux';
 
 /**
  * Compatibility AuthContext that bridges the old context API with Redux
@@ -17,7 +18,7 @@ export const useAuth = () => {
 };
 
 export const AuthCompatibilityProvider = ({ children }) => {
-  const reduxAuth = useReduxAuth();
+  const reduxAuth = useAuth();
 
   // Map Redux auth state to the old context API structure
   const contextValue = {

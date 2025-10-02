@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 
 const Signup = () => {

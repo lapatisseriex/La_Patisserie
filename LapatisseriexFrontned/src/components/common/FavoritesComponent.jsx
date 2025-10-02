@@ -7,7 +7,7 @@ import {
   removeFromFavorites 
 } from '../../redux/favoritesSlice';
 import { addToCart, updateCartQuantity, removeFromCart } from '../../redux/cartSlice';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 
 const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
   const dispatch = useDispatch();

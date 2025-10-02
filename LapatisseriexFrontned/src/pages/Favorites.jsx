@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext/AuthContextRedux';
+
 import { fetchFavorites } from '../redux/favoritesSlice';
 import { Heart } from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';

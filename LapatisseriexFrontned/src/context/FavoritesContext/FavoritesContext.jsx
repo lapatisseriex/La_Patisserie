@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../AuthContext/AuthContextRedux';
 import { fetchProductById } from '../../redux/productsSlice';
 import { 
   fetchFavorites, 

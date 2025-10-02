@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from '../context/AuthContext/AuthContextRedux';
+
 import axios from 'axios';
 import { UPLOAD_CONFIG } from '../config/uploadConfig';
 

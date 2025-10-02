@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../AuthContext/AuthContextRedux';
 
 const LocationContext = createContext();
 

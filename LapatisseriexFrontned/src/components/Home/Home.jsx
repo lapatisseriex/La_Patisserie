@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 import { fetchProducts, makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
+
 
 import BestSellers from './BestSellers';
 import NewlyLaunched from './NewlyLaunched';

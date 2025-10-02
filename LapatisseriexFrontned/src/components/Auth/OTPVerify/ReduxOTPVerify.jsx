@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
 
 const ReduxOTPVerify = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);

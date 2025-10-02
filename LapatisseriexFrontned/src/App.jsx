@@ -40,6 +40,7 @@ import AuthModal from './components/Auth/AuthModal/AuthModal';
 
 
 // Context Providers
+import { AuthProvider, useAuth } from './context/AuthContext/AuthContextRedux';
 import { LocationProvider } from './context/LocationContext/LocationContext';
 import { HostelProvider } from './context/HostelContext/HostelContext';
 import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
@@ -53,11 +54,10 @@ import { SparkAnimationProvider } from './context/SparkAnimationContext/SparkAni
 // Redux Provider and Auth
 import ReduxProvider from './redux/ReduxProvider';
 import AuthInitializer from './components/Auth/AuthInitializer';
-import { useAuth as useReduxAuth } from './hooks/useAuth';
 
 // Main Homepage that combines all sections
 const HomePage = () => {
-  const { user } = useReduxAuth(); // Access user from Redux
+  const { user } = useAuth();
 
   return (
     <div className="homepage-container">
@@ -68,7 +68,7 @@ const HomePage = () => {
 };
 // Protected route for admin pages
 const AdminRoute = ({ children }) => {
-  const { user, loading } = useReduxAuth();
+  const { user, loading } = useAuth();
   
   if (loading) {
     return <div>Loading...</div>;
@@ -83,7 +83,7 @@ const AdminRoute = ({ children }) => {
 
 // Protected route for authenticated users
 const PrivateRoute = ({ children }) => {
-  const { user, loading } = useReduxAuth();
+  const { user, loading } = useAuth();
   
   if (loading) {
     return <div>Loading...</div>;
@@ -100,88 +100,80 @@ function App() {
   return (
     <ReduxProvider>
       <AuthInitializer />
-      <ShopStatusProvider>
-        <LocationProvider>
-          <HostelProvider>
-            <CategoryProvider>
-              <RecentlyViewedProvider>
-                <FavoritesProvider>
-                  <SparkAnimationProvider>
-                    <Router>
-                      <ScrollToTop />
-                      {/* Auth Modal - available on all pages */}
-                      <AuthModal />
-
-                     
-                    
-                      <Routes>
-                         
+      <AuthProvider>
+        <ShopStatusProvider>
+          <LocationProvider>
+            <HostelProvider>
+              <CategoryProvider>
+                <RecentlyViewedProvider>
+                  <FavoritesProvider>
+                    <SparkAnimationProvider>
+                      <Router>
+                        <ScrollToTop />
+                        {/* Auth Modal - available on all pages */}
+                        <AuthModal />
+                        <Routes>
                           {/* Home with regular Layout */}
                           <Route path="/" element={<Layout />}>
                             <Route index element={<HomePage />} />
-                              <Route path="contact" element={<Newsletter />} />
-                              <Route path="products" element={<Products />} />
-                              <Route path="product/:productId" element={
-                                <ProductErrorBoundary>
-                                  <ProductDisplayPage />
-                                </ProductErrorBoundary>
-                              } />
-                              <Route path="cart" element={<Cart />} />
-                              <Route path="favorites" element={<Favorites />} />
-                              <Route path="payment" element={<Payment />} />
-
+                            <Route path="contact" element={<Newsletter />} />
+                            <Route path="products" element={<Products />} />
+                            <Route path="product/:productId" element={
+                              <ProductErrorBoundary>
+                                <ProductDisplayPage />
+                              </ProductErrorBoundary>
+                            } />
+                            <Route path="cart" element={<Cart />} />
+                            <Route path="favorites" element={<Favorites />} />
+                            <Route path="payment" element={<Payment />} />
+                          </Route>
+                          {/* Profile and Orders with regular Layout */}
+                          <Route path="/" element={<Layout />}>
+                            <Route path="profile" element={
+                              <PrivateRoute>
+                                <React.Suspense fallback={<div>Loading...</div>}>
+                                  <ProfilePage />
+                                </React.Suspense>
+                              </PrivateRoute>
+                            } />
+                            <Route path="orders" element={
+                              <PrivateRoute>
+                                <div>Orders Page</div>
+                              </PrivateRoute>
+                            } />
+                          </Route>
+                          {/* Admin Routes with custom AdminLayout */}
+                          <Route path="/admin" element={
+                            <AdminRoute>
+                              <ProductProvider>
+                                <AdminLayout />
+                              </ProductProvider>
+                            </AdminRoute>
+                          }>
+                            <Route element={<AdminDashboardLayout />}>
+                              <Route index element={<Navigate to="dashboard" />} />
+                              <Route path="dashboard" element={<AdminDashboard />} />
+                              <Route path="users" element={<AdminUsers />} />
+                              <Route path="locations" element={<AdminLocations />} />
+                              <Route path="orders" element={<div>Admin Orders</div>} />
+                              <Route path="products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
+                              <Route path="categories" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCategories /></React.Suspense>} />
+                              <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
+                              <Route path="time-settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTimeSettings /></React.Suspense>} />
                             </Route>
-              
-              {/* Profile and Orders with regular Layout */}
-              <Route path="/" element={<Layout />}>
-                <Route path="profile" element={
-                  <PrivateRoute>
-                    {/* Use the dedicated ProfilePage component */}
-                    <React.Suspense fallback={<div>Loading...</div>}>
-                      <ProfilePage />
-                    </React.Suspense>
-                  </PrivateRoute>
-                } />
-                <Route path="orders" element={
-                  <PrivateRoute>
-                    <div>Orders Page</div>
-                  </PrivateRoute>
-                } />
-              </Route>
-              
-              {/* Admin Routes with custom AdminLayout */}
-              <Route path="/admin" element={
-                <AdminRoute>
-                  <ProductProvider>
-                    <AdminLayout />
-                  </ProductProvider>
-                </AdminRoute>
-              }>
-                <Route element={<AdminDashboardLayout />}>
-                  <Route index element={<Navigate to="dashboard" />} />
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route path="users" element={<AdminUsers />} />
-                  <Route path="locations" element={<AdminLocations />} />
-                  <Route path="orders" element={<div>Admin Orders</div>} />
-                  <Route path="products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
-                  <Route path="categories" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCategories /></React.Suspense>} />
-                  <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
-                  {/* Banners route removed: banners are managed statically in codebase */}
-                  <Route path="time-settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTimeSettings /></React.Suspense>} />
-                </Route>
-              </Route>
-              
-              {/* Catch-all route for any undefined paths */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
+                          </Route>
+                          {/* Catch-all route for any undefined paths */}
+                          <Route path="*" element={<Navigate to="/" replace />} />
+                        </Routes>
+                      </Router>
                     </SparkAnimationProvider>
                   </FavoritesProvider>
                 </RecentlyViewedProvider>
               </CategoryProvider>
             </HostelProvider>
           </LocationProvider>
-      </ShopStatusProvider>
+        </ShopStatusProvider>
+      </AuthProvider>
     </ReduxProvider>
   );
 }

@@ -1,7 +1,7 @@
 import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import axiosInstance from '../../utils/axiosConfig';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../AuthContext/AuthContextRedux';
 import CacheManager from '../../utils/cacheManager';
 
 const ProductContext = createContext();
@@ -17,6 +17,19 @@ export const ProductProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const { user } = useAuth();
 
+  // Circuit breaker state for API resilience
+  const circuitBreakerRef = useRef({
+    failureCount: 0,
+    lastFailureTime: null,
+    state: 'CLOSED', // CLOSED, OPEN, HALF_OPEN
+    halfOpenCalls: 0
+  });
+
+  // Circuit breaker configuration
+  const FAILURE_THRESHOLD = 5;
+  const RECOVERY_TIMEOUT = 60000; // 1 minute
+  const HALF_OPEN_MAX_CALLS = 3;
+
   
   // Cache to prevent redundant API calls
   const requestCache = useRef(new Map());
@@ -25,6 +38,53 @@ export const ProductProvider = ({ children }) => {
   const productRequestMap = useRef(new Map());
   
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Circuit breaker helper functions
+  const isCircuitBreakerOpen = useCallback(() => {
+    const { state, lastFailureTime } = circuitBreakerRef.current;
+    
+    if (state === 'OPEN') {
+      const timeSinceFailure = Date.now() - lastFailureTime;
+      if (timeSinceFailure > RECOVERY_TIMEOUT) {
+        circuitBreakerRef.current.state = 'HALF_OPEN';
+        circuitBreakerRef.current.halfOpenCalls = 0;
+        console.log('🔄 Circuit breaker moving to HALF_OPEN state');
+        return false;
+      }
+      return true;
+    }
+    
+    return false;
+  }, []);
+
+  const recordSuccess = useCallback(() => {
+    const breaker = circuitBreakerRef.current;
+    if (breaker.state === 'HALF_OPEN') {
+      breaker.halfOpenCalls++;
+      if (breaker.halfOpenCalls >= HALF_OPEN_MAX_CALLS) {
+        breaker.state = 'CLOSED';
+        breaker.failureCount = 0;
+        breaker.lastFailureTime = null;
+        console.log('✅ Circuit breaker CLOSED - service recovered');
+      }
+    } else if (breaker.state === 'CLOSED') {
+      breaker.failureCount = 0;
+    }
+  }, []);
+
+  const recordFailure = useCallback((error) => {
+    const breaker = circuitBreakerRef.current;
+    breaker.failureCount++;
+    breaker.lastFailureTime = Date.now();
+
+    if (breaker.failureCount >= FAILURE_THRESHOLD && breaker.state === 'CLOSED') {
+      breaker.state = 'OPEN';
+      console.error(`🚨 Circuit breaker OPEN - too many failures (${breaker.failureCount})`);
+    } else if (breaker.state === 'HALF_OPEN') {
+      breaker.state = 'OPEN';
+      console.error('🚨 Circuit breaker back to OPEN - failure during recovery');
+    }
+  }, []);
 
   // Fetch all products with filtering options
   const fetchProducts = useCallback(async (filters = {}) => {
@@ -44,6 +104,18 @@ export const ProductProvider = ({ children }) => {
     const cacheKey = `products-${queryString}`;
     
     try {
+      // Circuit breaker check
+      if (isCircuitBreakerOpen()) {
+        console.warn('🚨 Circuit breaker is OPEN - returning cached data if available');
+        const cachedResult = requestCache.current.get(cacheKey);
+        if (cachedResult) {
+          setError("Service temporarily unavailable. Showing cached data.");
+          return cachedResult.data;
+        } else {
+          setError("Service temporarily unavailable. Please try again later.");
+          return { products: [] };
+        }
+      }
       
       // Only bypass cache for admin views, keep cache for category pages
       const isAdminView = filters.isActive === 'all';
@@ -59,6 +131,12 @@ export const ProductProvider = ({ children }) => {
       if (!shouldBypassCache && cachedResult && (now - cachedResult.timestamp < CACHE_TIMEOUT)) {
         console.log(`Using cached product data for key: ${cacheKey} (age: ${(now - cachedResult.timestamp)/1000}s)`);
         setLoading(false); // Ensure loading state is correct even when using cache
+        
+        // If it's an error cache, set the error state but still return the cached data
+        if (cachedResult.isError) {
+          setError("Service temporarily unavailable. Please try again later.");
+        }
+        
         return cachedResult.data;
       }
       
@@ -92,6 +170,9 @@ export const ProductProvider = ({ children }) => {
       
       // Success log
       console.log(`✅ Products loaded: ${response.data.products?.length || 0} items`);
+      
+      // Record successful API call for circuit breaker
+      recordSuccess();
       
       let productsData = [];
       let responseData = response.data;
@@ -139,12 +220,17 @@ export const ProductProvider = ({ children }) => {
     } catch (err) {
       console.error("Error fetching products:", err);
       
+      // Record failure for circuit breaker
+      recordFailure(err);
+      
       // Handle different types of errors
       let errorMessage = "Failed to load products";
       if (err.code === 'ECONNABORTED') {
         errorMessage = "Request timeout. Please check your internet connection.";
       } else if (err.response?.status === 500) {
         errorMessage = "Server error. Please try again later.";
+      } else if (err.response?.status === 503) {
+        errorMessage = "Service temporarily unavailable. Please try again later.";
       } else if (err.response?.status === 404) {
         errorMessage = "Products not found.";
       } else if (!navigator.onLine) {
@@ -157,7 +243,17 @@ export const ProductProvider = ({ children }) => {
       // Request is no longer in progress
       requestInProgress.current.delete(cacheKey);
       
-      return { products: [] };
+      // Return empty data instead of retrying to prevent infinite loops
+      const emptyResponse = { products: [] };
+      
+      // Cache the error response for a short time to prevent immediate retries
+      requestCache.current.set(cacheKey, {
+        data: emptyResponse,
+        timestamp: now,
+        isError: true
+      });
+      
+      return emptyResponse;
     }
   }, [API_URL]);
   
@@ -190,6 +286,16 @@ export const ProductProvider = ({ children }) => {
       const hasUsableCache = !forceRefresh && Boolean(cached) && (now - cached.timestamp < CACHE_TIMEOUT);
 
       try {
+        // Circuit breaker check for individual product requests
+        if (isCircuitBreakerOpen()) {
+          console.warn(`🚨 Circuit breaker is OPEN - returning cached data for product ${productId}`);
+          if (cached) {
+            return cached.data;
+          } else {
+            throw new Error('Service temporarily unavailable and no cached data available');
+          }
+        }
+
         if (!hasUsableCache) {
           setLoading(true);
         }
@@ -215,9 +321,16 @@ export const ProductProvider = ({ children }) => {
         });
 
         console.log(`Successfully loaded product: ${response.data.name}`);
+        
+        // Record successful API call for circuit breaker
+        recordSuccess();
+        
         return response.data;
       } catch (err) {
         console.error(`Error fetching product ${productId}:`, err);
+        
+        // Record failure for circuit breaker
+        recordFailure(err);
         
         // Use cache manager for better error messages
         const errorMessage = CacheManager.handleNetworkError(err);
@@ -261,6 +374,30 @@ export const ProductProvider = ({ children }) => {
     requestInProgress.current.clear();
     CacheManager.clearProductCache();
     console.log('🧹 All product caches cleared');
+  }, []);
+
+  // Get circuit breaker status
+  const getCircuitBreakerStatus = useCallback(() => {
+    const breaker = circuitBreakerRef.current;
+    return {
+      state: breaker.state,
+      failureCount: breaker.failureCount,
+      lastFailureTime: breaker.lastFailureTime,
+      timeUntilRetry: breaker.state === 'OPEN' && breaker.lastFailureTime 
+        ? Math.max(0, RECOVERY_TIMEOUT - (Date.now() - breaker.lastFailureTime))
+        : 0
+    };
+  }, []);
+
+  // Reset circuit breaker (for admin/debugging)
+  const resetCircuitBreaker = useCallback(() => {
+    circuitBreakerRef.current = {
+      failureCount: 0,
+      lastFailureTime: null,
+      state: 'CLOSED',
+      halfOpenCalls: 0
+    };
+    console.log('🔄 Circuit breaker manually reset');
   }, []);
   
   // Clear specific product from cache
@@ -450,7 +587,9 @@ export const ProductProvider = ({ children }) => {
     updateProductDiscount,
     deleteProduct,
     clearProductCache,
-    clearSpecificProductCache
+    clearSpecificProductCache,
+    getCircuitBreakerStatus,
+    resetCircuitBreaker
   };
 
   return (

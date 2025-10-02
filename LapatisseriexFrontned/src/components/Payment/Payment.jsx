@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheckCircle, FaMapMarkerAlt, FaCreditCard, FaWallet, FaExclamationTriangle } from 'react-icons/fa';
 import { BsCashCoin } from 'react-icons/bs';
 import { useCart } from '../../hooks/useCart';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';

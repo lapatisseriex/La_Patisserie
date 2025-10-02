@@ -14,7 +14,8 @@ import {
   FaChevronRight,
   FaClock
 } from 'react-icons/fa';
-import { useAuth } from '../../hooks/useAuth';
+
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 
 // Create Sidebar Context
 const SidebarContext = createContext();

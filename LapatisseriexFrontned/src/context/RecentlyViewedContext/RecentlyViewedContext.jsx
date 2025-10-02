@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useCallback, useRef } from 'react';
 import axios from 'axios';
 import axiosInstance from '../../utils/axiosConfig';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../AuthContext/AuthContextRedux';
 
 const RecentlyViewedContext = createContext();
 

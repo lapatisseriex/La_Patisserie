@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Send, ShieldCheck, Mail, Timer, CheckCircle2, XCircle, RefreshCcw } from 'lucide-react';
 import { emailService } from '../../../services/apiService';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
 
 const formatTime = (ms) => {
   const total = Math.max(0, Math.floor(ms / 1000));

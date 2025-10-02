@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 import ReduxLogin from './Login/ReduxLogin';
 import ReduxOTPVerify from './OTPVerify/ReduxOTPVerify';
 import ReduxProfile from './Profile/ReduxProfile';

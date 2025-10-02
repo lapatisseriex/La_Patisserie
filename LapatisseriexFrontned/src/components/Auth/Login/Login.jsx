@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
+
 
 const Login = () => {
   const [phone, setPhone] = useState('');

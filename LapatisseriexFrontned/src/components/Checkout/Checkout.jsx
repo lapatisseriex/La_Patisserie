@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+
 import { useCart } from '../../hooks/useCart';
 import {
   Mail,
@@ -12,6 +12,9 @@ import {
   ShoppingBag,
   Package,
 } from 'lucide-react';
+
+import { useAuth } from '../../context/AuthContext/AuthContextRedux';
+
 
 const Checkout = () => {
   const { user } = useAuth();

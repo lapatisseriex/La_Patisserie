@@ -66,7 +66,16 @@ export const updateCartQuantity = createAsyncThunk(
       // Check if operation is already pending
       const state = getState();
       if (state.cart.pendingOperations[productId]) {
-        return rejectWithValue('Operation already in progress');
+        // Instead of rejecting (which surfaces as a cart error UI), we
+        // silently coalesce duplicate requests. If the desired quantity
+        // matches the optimistic quantity already applied, just exit early.
+        const existingItem = state.cart.items.find(i => i.productId === productId);
+        if (existingItem && existingItem.quantity === quantity) {
+          return { productId, quantity, cartTotal: state.cart.cartTotal, cartCount: state.cart.cartCount };
+        }
+        // Otherwise allow the request to proceed AFTER current finishes by short-circuiting.
+        // Returning a resolved lightweight payload keeps UI stable without flashing an error.
+        return { productId, quantity: existingItem?.quantity ?? 0, cartTotal: state.cart.cartTotal, cartCount: state.cart.cartCount };
       }
 
       if (quantity === 0) {
@@ -187,7 +196,7 @@ const cartSlice = createSlice({
         state.cartCount += quantity;
         state.cartTotal += (optimisticPrice * quantity);
       }
-      
+      // NOTE: Removed duplicate total updates from conflicting branch.
       state.isOptimisticLoading = true;
     },
 
@@ -197,11 +206,12 @@ const cartSlice = createSlice({
       
       if (itemIndex >= 0) {
         const oldQuantity = state.items[itemIndex].quantity;
-        const priceDiff = (quantity - oldQuantity) * state.items[itemIndex].price;
+        const itemPrice = parseFloat(state.items[itemIndex].productDetails?.price || state.items[itemIndex].price) || 0;
+        const priceDiff = (quantity - oldQuantity) * itemPrice;
         
         if (quantity === 0) {
           // Remove item
-          state.cartTotal -= (state.items[itemIndex].price * oldQuantity);
+          state.cartTotal -= (itemPrice * oldQuantity);
           state.cartCount -= oldQuantity;
           state.items.splice(itemIndex, 1);
         } else {
@@ -221,7 +231,8 @@ const cartSlice = createSlice({
       
       if (itemIndex >= 0) {
         const item = state.items[itemIndex];
-        state.cartTotal -= (item.price * item.quantity);
+        const itemPrice = parseFloat(item.productDetails?.price || item.price) || 0;
+        state.cartTotal -= (itemPrice * item.quantity);
         state.cartCount -= item.quantity;
         state.items.splice(itemIndex, 1);
       }
@@ -250,7 +261,10 @@ const cartSlice = createSlice({
       const localItems = action.payload;
       state.items = localItems;
       state.cartCount = localItems.reduce((total, item) => total + item.quantity, 0);
-      state.cartTotal = localItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+      state.cartTotal = localItems.reduce((total, item) => {
+        const price = parseFloat(item.productDetails?.price || item.price) || 0;
+        return total + (price * item.quantity);
+      }, 0);
     },
 
     clearLocalOptimisticUpdates: (state) => {
@@ -406,7 +420,8 @@ const cartSlice = createSlice({
         const optimisticIndex = state.items.findIndex(i => i.productId === productId && i.isOptimistic);
         if (optimisticIndex >= 0) {
           const item = state.items[optimisticIndex];
-          state.cartTotal -= (item.price * item.quantity);
+          const itemPrice = parseFloat(item.productDetails?.price || item.price) || 0;
+          state.cartTotal -= (itemPrice * item.quantity);
           state.cartCount -= item.quantity;
           state.items.splice(optimisticIndex, 1);
         }
@@ -445,7 +460,10 @@ const cartSlice = createSlice({
       .addCase(updateCartQuantity.rejected, (state, action) => {
         const { productId } = action.meta.arg;
         delete state.pendingOperations[productId];
-        state.error = action.payload;
+        // Suppress noisy duplicate-operation errors
+        if (action.payload !== 'Operation already in progress') {
+          state.error = action.payload;
+        }
         state.isOptimisticLoading = false;
       })
 

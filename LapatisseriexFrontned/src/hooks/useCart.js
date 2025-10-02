@@ -1,6 +1,8 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useAuth } from './useAuth';
+
+import { useAuth } from '../context/AuthContext/AuthContextRedux';
+
 import {
   fetchCart,
   addToCart as addToCartAction,
@@ -99,7 +101,7 @@ export const useCart = () => {
     }
   }, []);
 
-  const saveToCahe = useCallback((data) => {
+  const saveToCache = useCallback((data) => {
     try {
       localStorage.setItem(CART_CACHE_KEY, JSON.stringify(data));
       localStorage.setItem(CART_CACHE_TIMESTAMP_KEY, Date.now().toString());
@@ -113,7 +115,7 @@ export const useCart = () => {
     const loadCart = async () => {
       if (user && !dbCartLoaded) {
         // Try cache first
-        const cachedCart = getCachedCart();
+  const cachedCart = getCachedCart();
         if (cachedCart) {
           console.log('📦 Loading cart from cache');
           dispatch(loadFromCache(cachedCart));
@@ -160,9 +162,9 @@ export const useCart = () => {
         cartTotal,
         cartCount
       };
-      saveToCahe(cacheData);
+  saveToCache(cacheData);
     }
-  }, [cartItems, cartTotal, cartCount, user, saveToCahe]);
+  }, [cartItems, cartTotal, cartCount, user, saveToCache]);
 
   // Cart operations with optimistic updates
   const addToCart = useCallback(async (product, quantity = 1, variantIndex) => {
