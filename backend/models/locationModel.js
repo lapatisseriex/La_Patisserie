@@ -17,6 +17,12 @@ const locationSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    deliveryCharge: {
+      type: Number,
+      required: true,
+      default: 49,
+      min: 0
     }
   },
   {

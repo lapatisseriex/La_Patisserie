@@ -240,6 +240,11 @@ export const AuthProvider = ({ children }) => {
 
       await confirmationResult.confirm(otp);
       
+      // Close the auth panel after successful verification
+      setTimeout(() => {
+        dispatch(setIsAuthPanelOpen(false));
+      }, 1000); // Small delay to show success before closing
+      
       // The onAuthStateChanged listener will handle the rest
       return true;
     } catch (error) {
@@ -248,11 +253,8 @@ export const AuthProvider = ({ children }) => {
       return false;
     } finally {
       dispatch(setLoading(false));
-      dispatch(setConfirmationResult(null));
     }
-  }, [confirmationResult, dispatch]);
-
-  // Update profile function
+  }, [confirmationResult, dispatch]);  // Update profile function
   const updateProfile = useCallback(async (profileData) => {
     if (!user) {
       dispatch(setError("You must be logged in to update profile"));

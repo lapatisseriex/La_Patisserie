@@ -4,6 +4,7 @@ import { useProduct } from '../../../context/ProductContext/ProductContext';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import MediaUploader from '../../common/MediaUpload/MediaUploader';
 import MediaPreview from '../../common/MediaUpload/MediaPreview';
+import PricingCalculator from '../../common/PricingCalculator';
 
 // Custom hook to detect admin sidebar state
 const useAdminSidebar = () => {
@@ -91,7 +92,18 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
 
   // Variants state
   const [variants, setVariants] = useState([
-    { quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true, isStockActive: false }
+    { 
+      quantity: '', 
+      measuringUnit: 'g', 
+      price: '', 
+      stock: '', 
+      discount: { type: null, value: 0 }, 
+      isActive: true, 
+      isStockActive: false,
+      costPrice: 0,
+      profitWanted: 0,
+      freeCashExpected: 0
+    }
   ]);
 
   // State for managing extra fields and tags
@@ -145,9 +157,23 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         ? product.variants.map(v => ({
             ...v,
             stock: v.stock !== undefined && v.stock !== null ? v.stock : '',
-            isStockActive: v.isStockActive !== undefined ? v.isStockActive : false
+            isStockActive: v.isStockActive !== undefined ? v.isStockActive : false,
+            costPrice: v.costPrice || 0,
+            profitWanted: v.profitWanted || 0,
+            freeCashExpected: v.freeCashExpected || 0
           }))
-        : [{ quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true, isStockActive: false }]
+        : [{ 
+            quantity: '', 
+            measuringUnit: 'g', 
+            price: '', 
+            stock: '', 
+            discount: { type: null, value: 0 }, 
+            isActive: true, 
+            isStockActive: false,
+            costPrice: 0,
+            profitWanted: 0,
+            freeCashExpected: 0
+          }]
       );
     } else if (preSelectedCategory) {
       setFormData(prev => ({ ...prev, category: preSelectedCategory }));
@@ -219,7 +245,17 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
   const handleAddVariant = () => {
     setVariants(prev => [
       ...prev, 
-      { quantity: '', measuringUnit: 'g', price: '', stock: '', discount: { type: null, value: 0 }, isActive: true }
+      { 
+        quantity: '', 
+        measuringUnit: 'g', 
+        price: '', 
+        stock: '', 
+        discount: { type: null, value: 0 }, 
+        isActive: true,
+        costPrice: 0,
+        profitWanted: 0,
+        freeCashExpected: 0
+      }
     ]);
   };
   
@@ -264,7 +300,10 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
           price: Number(v.price),
           isStockActive: !!v.isStockActive,
           stock: v.isStockActive ? (v.stock === '' ? 0 : Number(v.stock)) : undefined,
-          discount: { type: v.discount.type || null, value: Number(v.discount.value) || 0 }
+          discount: { type: v.discount.type || null, value: Number(v.discount.value) || 0 },
+          costPrice: Number(v.costPrice) || 0,
+          profitWanted: Number(v.profitWanted) || 0,
+          freeCashExpected: Number(v.freeCashExpected) || 0
         }))
       };
 
@@ -663,6 +702,118 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                             step="0.01"
                             required
                           />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pricing Calculator Section */}
+                    <div className="mb-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <h4 className="text-sm font-semibold text-blue-800 mb-4">Pricing Calculator</h4>
+                      
+                      {/* Manual Input Fields */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">Cost Price</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                            <input
+                              type="number"
+                              value={variant.costPrice || ''}
+                              onChange={(e) => handleVariantChange(idx, 'costPrice', e.target.value === '' ? 0 : Number(e.target.value))}
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">Profit Wanted</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                            <input
+                              type="number"
+                              value={variant.profitWanted || ''}
+                              onChange={(e) => handleVariantChange(idx, 'profitWanted', e.target.value === '' ? 0 : Number(e.target.value))}
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">Free Cash Expected</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                            <input
+                              type="number"
+                              value={variant.freeCashExpected || ''}
+                              onChange={(e) => handleVariantChange(idx, 'freeCashExpected', e.target.value === '' ? 0 : Number(e.target.value))}
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Display Calculator Results */}
+                      <div className="mt-4 space-y-3">
+                        <h5 className="text-sm font-medium text-gray-700">Calculation Results:</h5>
+                        {(() => {
+                          const costPrice = variant.costPrice || 0;
+                          const profitWanted = variant.profitWanted || 0;
+                          const freeCashExpected = variant.freeCashExpected || 0;
+                          
+                          const safeSellingPrice = (costPrice + profitWanted + freeCashExpected) * 2;
+                          const yourReturn = costPrice + profitWanted;
+                          
+                          return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="bg-green-100 rounded-lg p-3 border border-green-200">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm font-medium text-green-700">Safe Selling Price</span>
+                                  <span className="text-lg font-bold text-green-800">₹{safeSellingPrice.toFixed(2)}</span>
+                                </div>
+                                <div className="text-xs text-green-600 mt-1">Set this as your product price</div>
+                              </div>
+                              <div className="bg-purple-100 rounded-lg p-3 border border-purple-200">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm font-medium text-purple-700">Your Return</span>
+                                  <span className="text-lg font-bold text-purple-800">₹{yourReturn.toFixed(2)}</span>
+                                </div>
+                                <div className="text-xs text-purple-600 mt-1">Cost + Profit you get</div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        
+                        {/* Formula Display */}
+                        <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                          <div className="text-xs text-amber-700">
+                            <strong>Formula:</strong> Safe Selling Price = ({variant.costPrice || 0} + {variant.profitWanted || 0} + {variant.freeCashExpected || 0}) × 2 = ₹{((variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0)) * 2}
+                          </div>
+                        </div>
+                        
+                        {/* Auto-update main price */}
+                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-blue-700">Auto-update main price field?</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const safeSellingPrice = ((variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0)) * 2;
+                                handleVariantChange(idx, 'price', safeSellingPrice.toFixed(2));
+                              }}
+                              className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                            >
+                              Update Price
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

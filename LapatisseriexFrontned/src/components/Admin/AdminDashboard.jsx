@@ -19,6 +19,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
   const [authReady, setAuthReady] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
@@ -62,6 +63,14 @@ const AdminDashboard = () => {
 
         console.log("User data fetched:", usersData);
 
+        // Fetch order statistics
+        const ordersResponse = await axios.get(`${API_URL}/payments/orders?limit=1000`, { headers });
+        const ordersData = ordersResponse.data.orders || [];
+        const totalOrders = ordersData.length;
+        const pendingOrders = ordersData.filter(order => 
+          ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(order.orderStatus)
+        ).length;
+
         // Set recent users (last 5)
         // Make sure we're sorting correctly based on the actual data structure
         const sortedUsers = Array.isArray(usersData) ?
@@ -72,11 +81,17 @@ const AdminDashboard = () => {
 
         setRecentUsers(sortedUsers);
 
+        // Set recent orders (last 5)
+        const sortedOrders = ordersData
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 5);
+        setRecentOrders(sortedOrders);
+
         // Update the stats with real data
         setStats({
           totalUsers: Array.isArray(raw) ? usersData.length : (raw?.totalUsers ?? usersData.length ?? 0),
-          totalOrders: 0, // We're setting this to 0 as requested
-          pendingOrders: 0, // We're setting this to 0 as requested
+          totalOrders: totalOrders,
+          pendingOrders: pendingOrders,
           totalProducts: 0, // We're setting this to 0 as requested
           activeLocations: locations ? locations.filter(loc => loc.isActive).length : 0
         });
@@ -187,17 +202,52 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-lg font-bold text-black mb-4">Recent Orders</h2>
-          <div className="text-center py-8">
-            <div className="text-white mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
+          {recentOrders.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              </div>
+              <p className="text-black font-medium">No orders available yet</p>
+              <p className="text-sm text-gray-600 mt-2">New orders will appear here</p>
             </div>
-            <p className="text-black font-medium">No orders available yet</p>
-            <p className="text-sm text-black mt-2 font-light">Order management coming soon</p>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {recentOrders.map((order, i) => (
+                <div key={order._id || i} className="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-black">{order.orderNumber}</p>
+                      <p className="text-sm text-gray-600">{order.userDetails?.name || 'Customer'}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-black">₹{order.amount?.toFixed(2)}</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                        order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
+                        ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(order.orderStatus) 
+                          ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {order.orderStatus?.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="mt-4">
-            <a href="/admin/orders" className="text-black text-sm hover:underline font-medium">View orders page</a>
+            <a href="/admin/orders" className="text-blue-600 text-sm hover:underline font-medium">View all orders</a>
           </div>
         </div>
         

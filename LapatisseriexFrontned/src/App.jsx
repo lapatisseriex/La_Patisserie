@@ -11,6 +11,7 @@ import AdminLayout from './components/Layout/AdminLayout';
 import ProfilePage from './pages/Profile';
 import ProductDisplayPage from './pages/ProductDisplayPage';
 import Favorites from './pages/Favorites';
+import Orders from './pages/Orders';
 
 // Error Boundary for Product Pages
 import ProductErrorBoundary from './components/common/ProductErrorBoundary';
@@ -27,6 +28,7 @@ import AdminLocations from './components/Admin/AdminLocations';
 import AdminProducts from './components/Admin/Products/AdminProducts';
 import AdminCategories from './components/Admin/Categories/AdminCategories';
 import AdminTimeSettings from './components/Admin/AdminTimeSettings';
+import AdminOrders from './components/Admin/AdminOrders';
 
 // Cart and Payment Components
 import Cart from './components/Cart/Cart';
@@ -138,7 +140,7 @@ function App() {
                             } />
                             <Route path="orders" element={
                               <PrivateRoute>
-                                <div>Orders Page</div>
+                                <Orders />
                               </PrivateRoute>
                             } />
                           </Route>
@@ -155,7 +157,7 @@ function App() {
                               <Route path="dashboard" element={<AdminDashboard />} />
                               <Route path="users" element={<AdminUsers />} />
                               <Route path="locations" element={<AdminLocations />} />
-                              <Route path="orders" element={<div>Admin Orders</div>} />
+                              <Route path="orders" element={<React.Suspense fallback={<div>Loading...</div>}><AdminOrders /></React.Suspense>} />
                               <Route path="products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
                               <Route path="categories" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCategories /></React.Suspense>} />
                               <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />

@@ -17,6 +17,22 @@ const variantSchema = new mongoose.Schema({
     required: true, 
     min: 0 
   },
+  // New pricing calculator fields
+  costPrice: { 
+    type: Number, 
+    default: 0, 
+    min: 0 
+  },
+  profitWanted: { 
+    type: Number, 
+    default: 0, 
+    min: 0 
+  },
+  freeCashExpected: { 
+    type: Number, 
+    default: 0, 
+    min: 0 
+  },
   discount: {
     type: { type: String, enum: ['flat', 'percentage', null], default: null },
     value: { type: Number, default: 0, min: 0 }
@@ -63,6 +79,56 @@ productSchema.virtual('stock').get(function() {
   if (!this.variants || this.variants.length === 0) return 0;
   return this.variants.reduce((total, variant) => total + (variant.stock || 0), 0);
 });
+
+// Method to calculate safe selling price for a variant
+productSchema.methods.calculateSafeSellingPrice = function(variantIndex = 0) {
+  const variant = this.variants[variantIndex];
+  if (!variant) return 0;
+
+  const { costPrice = 0, profitWanted = 0, freeCashExpected = 0 } = variant;
+  return (costPrice + profitWanted + freeCashExpected) * 2;
+};
+
+// Method to get complete pricing breakdown for a variant
+productSchema.methods.getVariantPricingBreakdown = function(variantIndex = 0) {
+  const variant = this.variants[variantIndex];
+  if (!variant) return null;
+
+  const { costPrice = 0, profitWanted = 0, freeCashExpected = 0, price = 0, discount = {} } = variant;
+  const safeSellingPrice = this.calculateSafeSellingPrice(variantIndex);
+  
+  // Use actual discount from variant settings, not hardcoded value
+  let actualDiscount = 0;
+  let discountedPrice = price;
+  
+  if (discount.type && !this.cancelOffer) {
+    if (discount.type === 'percentage') {
+      actualDiscount = discount.value || 0;
+      discountedPrice = price * (1 - actualDiscount / 100);
+    } else if (discount.type === 'flat') {
+      const flatDiscount = discount.value || 0;
+      discountedPrice = Math.max(0, price - flatDiscount);
+      actualDiscount = price > 0 ? Math.round((flatDiscount / price) * 100) : 0;
+    }
+  }
+  
+  const sellerReturn = costPrice + profitWanted;
+
+  return {
+    costPrice,
+    profitWanted,
+    freeCashExpected,
+    safeSellingPrice,
+    originalPrice: price,
+    discountType: discount.type || null,
+    discountValue: discount.value || 0,
+    actualDiscountPercentage: actualDiscount,
+    finalCustomerPrice: discountedPrice,
+    sellerReturn,
+    // Add a flag to indicate if this product has the new pricing system
+    hasPricingCalculator: (costPrice > 0 || profitWanted > 0 || freeCashExpected > 0)
+  };
+};
 
 // Method to get discounted price of a variant
 productSchema.methods.getVariantPrice = function(variantIndex = 0) {

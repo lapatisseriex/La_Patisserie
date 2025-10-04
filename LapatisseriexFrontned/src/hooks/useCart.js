@@ -41,8 +41,37 @@ export const useCart = () => {
   // Selectors
   const cartItems = useSelector(selectCartItems);
   const cartTotal = useSelector(selectCartTotal);
-  const cartCount = useSelector(selectCartCount);
+  const backendCartCount = useSelector(selectCartCount);
   const isLoading = useSelector(selectCartLoading);
+  
+  // Calculate actual cart count from items (sum of all quantities)
+  const cartCount = useMemo(() => {
+    try {
+      if (!Array.isArray(cartItems)) {
+        console.warn('🛒 cartItems is not an array:', cartItems);
+        return 0;
+      }
+      
+      const actualCount = cartItems.reduce((total, item) => {
+        if (!item) return total;
+        return total + (item.quantity || 0);
+      }, 0);
+      
+      console.log('🛒 Cart Count Calculation:', {
+        actualCount,
+        backendCount: backendCartCount,
+        cartItems: cartItems.map(item => ({ 
+          name: item?.name || 'Unknown', 
+          quantity: item?.quantity || 0 
+        }))
+      });
+      
+      return actualCount;
+    } catch (error) {
+      console.error('🛒 Error calculating cart count:', error);
+      return backendCartCount || 0;
+    }
+  }, [cartItems, backendCartCount]);
   const error = useSelector(selectCartError);
   const isOptimisticLoading = useSelector(selectIsOptimisticLoading);
   const dbCartLoaded = useSelector(selectDbCartLoaded);

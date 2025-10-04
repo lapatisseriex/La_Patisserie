@@ -27,6 +27,7 @@ import emailRoutes from './routes/emailRoutes.js';
 import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
 import timeSettingsRoutes from './routes/timeSettingsRoutes.js';
 import newCartRoutes from './routes/newCartRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -183,6 +184,7 @@ const startServer = async () => {
   // Banners are now static on the frontend; backend routes removed
     app.use('/api/time-settings', timeSettingsRoutes);
     app.use('/api/newcart', cartRateLimit, newCartRoutes);
+    app.use('/api/payments', paymentRoutes);
 
     // Health check endpoint
     app.get('/health', (req, res) => {

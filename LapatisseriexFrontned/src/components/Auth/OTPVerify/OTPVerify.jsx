@@ -9,6 +9,7 @@ const OTPVerify = () => {
   const [localError, setLocalError] = useState('');
   const [resendDisabled, setResendDisabled] = useState(true);
   const [countdown, setCountdown] = useState(30);
+  const [isSuccess, setIsSuccess] = useState(false);
   const inputRefs = useRef([]);
   
   // Mask phone number for display
@@ -82,7 +83,12 @@ const OTPVerify = () => {
     setLocalError('');
     
     // Verify OTP with Firebase
-    await verifyOTP(otpValue);
+    const success = await verifyOTP(otpValue);
+    
+    if (success) {
+      setIsSuccess(true);
+      // The auth panel will close automatically via the AuthContext
+    }
   };
   
   // Handle resend OTP
@@ -177,14 +183,16 @@ const OTPVerify = () => {
         <div className="mt-auto">
           <button 
             type="submit" 
-            disabled={loading || otp.some(digit => !digit)}
-            className={`w-full bg-black text-white py-3.5 rounded-lg text-lg font-medium transition-colors shadow-md ${
-              loading || otp.some(digit => !digit) 
-                ? 'opacity-60 cursor-not-allowed' 
-                : 'hover:bg-gray-200/90'
+            disabled={loading || otp.some(digit => !digit) || isSuccess}
+            className={`w-full py-3.5 rounded-lg text-lg font-medium transition-colors shadow-md ${
+              isSuccess 
+                ? 'bg-green-500 text-white' 
+                : loading || otp.some(digit => !digit) 
+                ? 'bg-black text-white opacity-60 cursor-not-allowed' 
+                : 'bg-black text-white hover:bg-gray-800'
             }`}
           >
-            {loading ? 'VERIFYING...' : 'VERIFY'}
+            {isSuccess ? '✓ VERIFIED!' : loading ? 'VERIFYING...' : 'VERIFY'}
           </button>
         </div>
       </form>

@@ -24,6 +24,7 @@ const AdminLocations = () => {
     city: '',
     area: '',
     pincode: '',
+    deliveryCharge: 49,
     isActive: true
   });
   
@@ -338,6 +339,7 @@ const AdminLocations = () => {
       city: '',
       area: '',
       pincode: '',
+      deliveryCharge: 49,
       isActive: true
     });
   };
@@ -359,6 +361,7 @@ const AdminLocations = () => {
       city: location.city,
       area: location.area,
       pincode: location.pincode,
+      deliveryCharge: location.deliveryCharge || 49, // Default to 49 if undefined
       isActive: location.isActive
     });
   };
@@ -620,6 +623,9 @@ const AdminLocations = () => {
                 Pincode
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                Delivery Charge
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 Hostels
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
@@ -658,6 +664,15 @@ const AdminLocations = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-black font-medium">{location.pincode}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-black font-medium">
+                        {location.deliveryCharge === 0 ? (
+                          <span className="text-green-600 font-semibold">Free</span>
+                        ) : (
+                          `₹${location.deliveryCharge}`
+                        )}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
@@ -709,7 +724,7 @@ const AdminLocations = () => {
                   {/* Expanded hostels row */}
                   {expandedLocation === location._id && (
                     <tr>
-                      <td colSpan="6" className="px-6 py-4 bg-gray-100">
+                      <td colSpan="7" className="px-6 py-4 bg-gray-100">
                         <div className="space-y-2">
                           <h4 className="font-bold text-black mb-3">Hostels in {location.area}</h4>
                           {getHostelsForLocation(location._id).length === 0 ? (
@@ -822,6 +837,24 @@ const AdminLocations = () => {
                     pattern="[0-9]{6}"
                     title="Pincode must be 6 digits"
                   />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Delivery Charge (₹)
+                  </label>
+                  <input
+                    type="number"
+                    name="deliveryCharge"
+                    value={formData.deliveryCharge}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black font-medium"
+                    placeholder="e.g. 49"
+                    required
+                    min="0"
+                    step="1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Set to 0 for free delivery in this area</p>
                 </div>
                 
                 <div className="flex items-center">

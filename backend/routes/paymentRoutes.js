@@ -1,0 +1,34 @@
+import express from 'express';
+import { 
+  createOrder, 
+  verifyPayment, 
+  handleWebhook, 
+  getPaymentDetails,
+  getAllOrders,
+  getOrderDetails,
+  updateOrderStatus,
+  getUserOrders
+} from '../controllers/paymentController.js';
+import { protect } from '../middleware/authMiddleware.js';
+
+const router = express.Router();
+
+// Create order (both Razorpay and COD)
+router.post('/create-order', protect, createOrder);
+
+// Verify Razorpay payment
+router.post('/verify', verifyPayment);
+
+// Razorpay webhook (no auth required)
+router.post('/webhook', handleWebhook);
+
+// Get payment details
+router.get('/payment/:paymentId', protect, getPaymentDetails);
+
+// Order management routes
+router.get('/orders', protect, getAllOrders); // Admin: Get all orders
+router.get('/orders/user', protect, getUserOrders); // User: Get user's orders
+router.get('/orders/:orderNumber', protect, getOrderDetails); // Get specific order details
+router.patch('/orders/:orderNumber/status', protect, updateOrderStatus); // Admin: Update order status
+
+export default router;

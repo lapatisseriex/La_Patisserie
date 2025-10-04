@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaTag, FaShoppingCart, FaExclamationTriangle } from 'react-icons/fa';
 import { useCart } from '../../hooks/useCart';
@@ -70,14 +70,70 @@ const Cart = () => {
     }
   };
 
-  // Delivery charge (free above 500, else 49)
-  const deliveryCharge = cartTotal >= 500 ? 0 : 49;
+  // Calculate discounted cart total - simple 50% discount
+  const discountedCartTotal = useMemo(() => {
+    try {
+      if (!Array.isArray(cartItems)) {
+        console.warn('Cart - cartItems is not an array:', cartItems);
+        return 0;
+      }
+      
+      const result = cartItems.reduce((total, item) => {
+        if (!item || typeof item.price !== 'number' || typeof item.quantity !== 'number') {
+          console.warn('Cart - Invalid item:', item);
+          return total;
+        }
+        
+        const originalPrice = item.price; // ₹160
+        const discountedPrice = originalPrice * 0.5; // 50% discount = ₹80
+        return total + (discountedPrice * item.quantity);
+      }, 0);
+      
+      console.log('Cart - Discounted total:', result, 'from items:', cartItems);
+      return result;
+    } catch (error) {
+      console.error('Cart - Error calculating discounted total:', error);
+      return 0;
+    }
+  }, [cartItems]);
+
+  // Calculate delivery charge based on user's location
+  const deliveryCharge = useMemo(() => {
+    // If cart total is above ₹500, delivery is free regardless of location
+    if (discountedCartTotal >= 500) {
+      return 0;
+    }
+    
+    // Get user's selected location
+    const userLocationId = user?.location?._id || user?.location?.locationId || user?.locationId;
+    
+    console.log('Cart - User:', user);
+    console.log('Cart - User location:', user?.location);
+    console.log('Cart - User location ID:', userLocationId);
+    console.log('Cart - Available locations:', locations);
+    
+    // Try to get user location - first check if location object exists directly, then search in locations array
+    const userLocation = user?.location || 
+      (userLocationId && locations?.length > 0 && locations.find(loc => loc._id === userLocationId));
+    
+    console.log('Cart - Final user location:', userLocation);
+    
+    if (userLocation) {
+      const charge = userLocation.deliveryCharge ?? 49; // Use nullish coalescing to handle 0 values
+      console.log('Cart - Using delivery charge:', charge);
+      return charge;
+    }
+    
+    console.log('Cart - Using default delivery charge: 49');
+    // Default delivery charge if no location selected
+    return 49;
+  }, [discountedCartTotal, user, locations]);
   
-  // Tax calculation (5% of total)
-  const taxAmount = cartTotal * 0.05;
+  // Tax calculation (5% of discounted total)
+  const taxAmount = discountedCartTotal * 0.05;
   
-  // Grand total
-  const grandTotal = cartTotal + deliveryCharge + taxAmount - couponDiscount;
+  // Grand total using discounted cart total
+  const grandTotal = discountedCartTotal + deliveryCharge + taxAmount - couponDiscount;
 
   const handleQuantityChange = async (productId, newQuantity, maxStock) => {
     if (maxStock !== undefined && newQuantity > maxStock) {
@@ -321,8 +377,29 @@ const Cart = () => {
                         </div>
                         
                         <div className="text-right">
-                          <div className="font-medium text-black text-sm md:text-base">₹{Math.round(item.price * item.quantity)}</div>
-                          <div className="text-xs md:text-sm text-gray-500">₹{Math.round(item.price)} each</div>
+                          {(() => {
+                            // Simple discount calculation - 50% off for demonstration
+                            const originalPrice = item.price; // This is ₹160
+                            const discountedPrice = originalPrice * 0.5; // 50% discount = ₹80
+                            const discountPercentage = 50;
+                            
+                            return (
+                              <>
+                                <div className="font-medium text-black text-sm md:text-base">
+                                  ₹{Math.round(discountedPrice * item.quantity)}
+                                </div>
+                                <div className="text-xs md:text-sm">
+                                  <div className="space-y-1">
+                                    <div className="text-gray-500">
+                                      <span className="line-through">₹{Math.round(originalPrice)}</span>
+                                      <span className="text-green-600 ml-1">₹{Math.round(discountedPrice)}</span> each
+                                    </div>
+                                    <div className="text-green-600 font-medium">{discountPercentage}% OFF</div>
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
                           {maxReached && (
                             <div className="text-[10px] md:text-xs text-amber-600 mt-1">Max available stock reached</div>
                           )}
@@ -395,16 +472,53 @@ const Cart = () => {
               
               {/* Price Breakdown */}
               <div className="space-y-3 text-gray-700">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span className="font-medium">₹{cartTotal}</span>
-                </div>
+                {(() => {
+                  // Simple calculation - 50% discount
+                  const originalTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+                  const totalSavings = originalTotal * 0.5; // 50% savings
+                  const discountedTotal = originalTotal - totalSavings;
+                  
+                  return (
+                    <>
+                      <div className="flex justify-between text-sm text-gray-500">
+                        <span>Original Price</span>
+                        <span className="line-through">₹{Math.round(originalTotal)}</span>
+                      </div>
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount Savings (50% OFF)</span>
+                        <span className="font-medium">-₹{Math.round(totalSavings)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Subtotal</span>
+                        <span className="font-medium">₹{Math.round(discountedTotal)}</span>
+                      </div>
+                    </>
+                  );
+                })()}.
                 
                 <div className="flex justify-between">
-                  <span>Delivery Charge</span>
+                  <div>
+                    <span>Delivery Charge</span>
+                    {(() => {
+                      // Use the location object directly if it exists in user, otherwise search in locations array
+                      const userLocation = user?.location || 
+                        (user?.locationId && locations?.find(loc => loc._id === user.locationId));
+                      
+                      return userLocation ? (
+                        <div className="text-xs text-gray-500">to {userLocation.area}</div>
+                      ) : (
+                        <div className="text-xs text-gray-500">default rate</div>
+                      );
+                    })()}
+                  </div>
                   <span className="font-medium">
                     {deliveryCharge === 0 ? (
-                      <span className="text-green-500">Free</span>
+                      <span className="text-green-500">
+                        Free
+                        {discountedCartTotal >= 500 && (
+                          <div className="text-xs">Orders ≥ ₹500</div>
+                        )}
+                      </span>
                     ) : (
                       `₹${deliveryCharge}`
                     )}

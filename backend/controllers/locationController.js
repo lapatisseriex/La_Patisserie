@@ -21,7 +21,7 @@ export const getAllLocations = asyncHandler(async (req, res) => {
 // @route   POST /api/admin/locations
 // @access  Admin
 export const createLocation = asyncHandler(async (req, res) => {
-  const { city, area, pincode } = req.body;
+  const { city, area, pincode, deliveryCharge } = req.body;
   
   if (!city || !area || !pincode) {
     res.status(400);
@@ -32,6 +32,7 @@ export const createLocation = asyncHandler(async (req, res) => {
     city,
     area,
     pincode,
+    deliveryCharge: deliveryCharge || 49, // Default to 49 if not provided
   });
   
   res.status(201).json(location);

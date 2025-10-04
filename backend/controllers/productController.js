@@ -197,9 +197,19 @@ export const getProduct = asyncHandler(async (req, res) => {
     const isShopOpen = timeSettings ? timeSettings.isShopOpen() : true;
     const nextOpenTime = isShopOpen ? null : timeSettings?.getNextOpeningTime();
 
+    // Convert lean object back to a mongoose document to use instance methods
+    const productDoc = new Product(product);
+    
+    // Add pricing breakdown for each variant
+    const variantsWithPricing = product.variants?.map((variant, index) => ({
+      ...variant,
+      pricingBreakdown: productDoc.getVariantPricingBreakdown(index)
+    })) || [];
+
     // Add availability status to the product
     const productWithAvailability = {
       ...product,
+      variants: variantsWithPricing,
       isAvailable: isShopOpen,
       shopStatus: {
         isOpen: isShopOpen,

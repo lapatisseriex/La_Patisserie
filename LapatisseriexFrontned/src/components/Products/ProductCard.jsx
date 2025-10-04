@@ -95,13 +95,23 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const isProductAvailable = isActive && isShopOpen && (tracks ? totalStock > 0 : true);
   const isOutOfStockTracked = tracks && totalStock === 0;
 
-  const discountedPrice = variant.price && variant.discount?.value
-    ? variant.price - variant.discount.value
-    : variant.price || 0;
-
-  const discountPercentage = variant.price && variant.discount?.value
-    ? Math.round((variant.discount.value / variant.price) * 100)
-    : 0;
+  // Use dynamic pricing breakdown from backend if available, otherwise fallback to manual calculation
+  const pricingBreakdown = variant?.pricingBreakdown;
+  const discountedPrice = pricingBreakdown 
+    ? pricingBreakdown.finalCustomerPrice 
+    : (variant?.discount?.type && variant?.discount?.value)
+      ? (variant.discount.type === 'flat' 
+          ? Math.max(0, variant.price - variant.discount.value)
+          : variant.price * (1 - variant.discount.value / 100))
+      : variant?.price || 0;
+      
+  const discountPercentage = pricingBreakdown 
+    ? pricingBreakdown.actualDiscountPercentage 
+    : (variant?.discount?.type && variant?.discount?.value)
+      ? (variant.discount.type === 'percentage' 
+          ? variant.discount.value
+          : variant.price > 0 ? Math.round((variant.discount.value / variant.price) * 100) : 0)
+      : 0;
 
   // Debug logging for troubleshooting
   if (!isActive || (tracks && totalStock === 0)) {
