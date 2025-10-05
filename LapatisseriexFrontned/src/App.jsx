@@ -2,6 +2,8 @@ import React, { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import ScrollToTop from "./ScrollToTop.jsx";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Layout
 import Layout from './components/Layout/Layout';
@@ -112,6 +114,8 @@ function App() {
                     <SparkAnimationProvider>
                       <Router>
                         <ScrollToTop />
+                        {/* Global toast notifications */}
+                        <ToastContainer position="top-center" autoClose={2500} hideProgressBar theme="colored" />
                         {/* Auth Modal - available on all pages */}
                         <AuthModal />
                         <Routes>

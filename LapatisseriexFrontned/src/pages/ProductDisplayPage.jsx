@@ -333,6 +333,7 @@ const ProductDisplayPage = () => {
       await addToCart(product, 1, selectedVariantIndex);
     } catch (error) {
       console.error('Error adding to cart:', error);
+      try { const { toast } = await import('react-toastify'); toast.error(typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart'); } catch {}
     } finally {
       setIsAddingToCart(false);
     }
@@ -366,8 +367,8 @@ const ProductDisplayPage = () => {
     } else {
       // Product not in cart - add one and redirect
       try {
-        console.log('🎯 Product not in cart, adding 1 item...');
-  await addToCart(product, 1, selectedVariantIndex);
+    console.log('🎯 Product not in cart, adding 1 item...');
+    await addToCart(product, 1, selectedVariantIndex);
         
         // Double check the cart was updated
         const newQuantity = getItemQuantity(product._id);
@@ -381,7 +382,7 @@ const ProductDisplayPage = () => {
         }
       } catch (error) {
         console.error('❌ Error reserving product:', error);
-        alert('Failed to add product to cart. Please try again.');
+        try { const { toast } = await import('react-toastify'); toast.error(typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart'); } catch {}
       }
     }
   };
@@ -399,6 +400,7 @@ const ProductDisplayPage = () => {
       navigate('/cart');
     } catch (error) {
       console.error('Error in buy now:', error);
+      try { const { toast } = await import('react-toastify'); toast.error(typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart'); } catch {}
     } finally {
       setIsAddingToCart(false);
     }

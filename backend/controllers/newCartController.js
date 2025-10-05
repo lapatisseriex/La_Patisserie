@@ -230,8 +230,8 @@ export const updateNewCartItem = async (req, res) => {
         }
       }
 
-      // Update quantity
-      await cart.updateItemQuantity(productId, quantity);
+  // Update quantity (absolute)
+  await cart.updateItemQuantity(productId, quantity);
     }
 
     // Return updated cart
@@ -320,6 +320,8 @@ export const clearNewCart = async (req, res) => {
   try {
     const userId = req.user.uid;
     console.log(`🧹 Clearing cart for user: ${userId}`);
+    // Determine whether to restock items (default true for manual clears). For checkout, client will pass restock=false
+    const shouldRestock = (req.query?.restock ?? 'true') !== 'false';
 
     // Get cart
     const cart = await NewCart.findOne({ userId });
@@ -327,16 +329,20 @@ export const clearNewCart = async (req, res) => {
       return res.status(404).json({ error: 'Cart not found' });
     }
 
-    // Restock items for products that track stock
-    for (const item of cart.items) {
-      const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-      const product = await Product.findById(item.productId);
-      const variant = Array.isArray(product?.variants) ? product.variants[vi] : undefined;
-      const variantTracks = Boolean(variant?.isStockActive);
-      if (variantTracks && Array.isArray(product?.variants) && product.variants.length > vi) {
-        const path = `variants.${vi}.stock`;
-        await Product.updateOne({ _id: item.productId }, { $inc: { [path]: item.quantity } });
+    // Restock items for products that track stock (only when shouldRestock)
+    if (shouldRestock) {
+      for (const item of cart.items) {
+        const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+        const product = await Product.findById(item.productId);
+        const variant = Array.isArray(product?.variants) ? product.variants[vi] : undefined;
+        const variantTracks = Boolean(variant?.isStockActive);
+        if (variantTracks && Array.isArray(product?.variants) && product.variants.length > vi) {
+          const path = `variants.${vi}.stock`;
+          await Product.updateOne({ _id: item.productId }, { $inc: { [path]: item.quantity } });
+        }
       }
+    } else {
+      console.log('🧾 Checkout clear: skipping restock (inventory already decremented at add/update time)');
     }
 
     // Clear cart

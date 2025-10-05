@@ -1,5 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useCallback, useEffect, useMemo } from 'react';
+import { toast } from 'react-toastify';
 
 import { useAuth } from '../context/AuthContext/AuthContextRedux';
 
@@ -232,7 +233,7 @@ export const useCart = () => {
       if (user) {
   // For authenticated users: optimistic update + API call
   dispatch(addToCartOptimistic({ product, quantity, variantIndex }));
-        const result = await dispatch(addToCartAction({ product, quantity, variantIndex })).unwrap();
+  const result = await dispatch(addToCartAction({ product, quantity, variantIndex })).unwrap();
         console.log('✅ Item added to cart successfully');
         return result;
       } else {
@@ -262,6 +263,9 @@ export const useCart = () => {
       }
     } catch (error) {
       console.error('❌ Error adding to cart:', error);
+      const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add item to cart';
+      // Show immediate toast for user feedback
+      toast.error(message === 'Insufficient stock available' ? 'Insufficient stock available' : message);
       throw error;
     }
   }, [user, dispatch, getLocalCart]);
@@ -294,6 +298,8 @@ export const useCart = () => {
       }
     } catch (error) {
       console.error('❌ Error updating quantity:', error);
+      const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to update quantity';
+      toast.error(message);
       throw error;
     }
   }, [user, dispatch, getLocalCart]);
@@ -301,6 +307,11 @@ export const useCart = () => {
   const removeFromCart = useCallback(async (productId) => {
     try {
       console.log(`🗑️ Removing ${productId} from cart`);
+      // Prevent duplicate remove dispatches while one is in-flight for this item
+      if (pendingOperations && pendingOperations[productId] === 'removing') {
+        console.log('⏳ Remove already in progress for', productId);
+        return;
+      }
       
       if (user) {
         // Optimistic update first
@@ -321,16 +332,18 @@ export const useCart = () => {
       }
     } catch (error) {
       console.error('❌ Error removing from cart:', error);
+      const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to remove from cart';
+      toast.error(message);
       throw error;
     }
   }, [user, dispatch, getLocalCart]);
 
-  const clearCart = useCallback(async () => {
+  const clearCart = useCallback(async (options) => {
     try {
       console.log('🧹 Clearing cart');
       
       if (user) {
-        const result = await dispatch(clearCartAction()).unwrap();
+        const result = await dispatch(clearCartAction(options)).unwrap();
         console.log('✅ Cart cleared successfully');
         return result;
       } else {

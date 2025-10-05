@@ -256,7 +256,8 @@ const Payment = () => {
             if (verifyData.success) {
               setIsOrderComplete(true);
               setOrderNumber(verifyData.orderNumber);
-              clearCart();
+              // Clear cart without restocking since stock already decremented on add/update
+              clearCart({ restock: false });
             } else {
               alert('Payment verification failed. Please contact support.');
             }
@@ -309,12 +310,13 @@ const Payment = () => {
     setIsProcessing(true);
 
     try {
-      const orderData = await createOrder(grandTotal, 'cod');
+  const orderData = await createOrder(grandTotal, 'cod');
       
       // For COD, directly mark order as placed
-      setIsOrderComplete(true);
-      setOrderNumber(orderData.orderNumber);
-      clearCart();
+  setIsOrderComplete(true);
+  setOrderNumber(orderData.orderNumber);
+  // Clear cart without restocking since stock already decremented on add/update
+  clearCart({ restock: false });
     } catch (error) {
       console.error('COD order error:', error);
       alert('Failed to place order. Please try again.');

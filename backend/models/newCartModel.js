@@ -32,6 +32,11 @@ const newCartItemSchema = new mongoose.Schema({
     isActive: {
       type: Boolean,
       default: true
+    },
+    // Ensure we persist which variant is in the cart to adjust stock correctly
+    variantIndex: {
+      type: Number,
+      default: 0
     }
   },
   addedAt: {
@@ -72,14 +77,18 @@ newCartSchema.virtual('cartCount').get(function() {
 });
 
 // Instance method to add or update item
-newCartSchema.methods.addOrUpdateItem = async function(productId, quantity, productDetails) {
+newCartSchema.methods.addOrUpdateItem = async function(productId, quantity, productDetails, { absolute = false } = {}) {
   const existingItemIndex = this.items.findIndex(
     item => item.productId.toString() === productId.toString()
   );
 
   if (existingItemIndex >= 0) {
     // Update existing item quantity
-    this.items[existingItemIndex].quantity += quantity;
+    if (absolute) {
+      this.items[existingItemIndex].quantity = quantity;
+    } else {
+      this.items[existingItemIndex].quantity += quantity;
+    }
     this.items[existingItemIndex].productDetails = productDetails; // Update product details
   } else {
     // Add new item

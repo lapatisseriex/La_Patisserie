@@ -145,10 +145,10 @@ class CartService {
   }
 
   // Clear entire cart
-  async clearCart() {
+  async clearCart({ restock = true } = {}) {
     try {
       console.log('🧹 Clearing cart');
-      const response = await api.delete('/newcart');
+      const response = await api.delete(`/newcart${restock === false ? '?restock=false' : ''}`);
       console.log('✅ Cart cleared:', response.data);
       return response.data;
     } catch (error) {

@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import { useSparkToCart } from '../../hooks/useSparkToCart';
+import { toast } from 'react-toastify';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -142,9 +143,11 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
       // Add to cart with immediate UI update (optimistic)
       // Note: Backend will only decrement stock if this variant tracks stock
-      addToCart(product, 1, 0);
+      await addToCart(product, 1, 0);
     } catch (error) {
       console.error('Error adding to cart:', error);
+      const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
+      toast.error(message);
     }
   };
 
@@ -170,7 +173,8 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         navigate('/cart');
       } catch (error) {
         console.error('❌ Error adding product to cart:', error);
-        alert('Failed to add product to cart. Please try again.');
+        const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
+        toast.error(message);
       }
     }
   };
@@ -195,12 +199,14 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       
       if (currentQuantity === 0) {
         console.log('[BuyNow] product=', product._id, 'variantIndex=0', 'tracks=', tracks, 'stock=', totalStock);
-        addToCart(product, 1, 0);
+        await addToCart(product, 1, 0);
       }
       
       navigate('/cart');
     } catch (error) {
       console.error('Error in buy now:', error);
+      const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
+      toast.error(message);
     }
   };
 

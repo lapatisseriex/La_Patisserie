@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext/AuthContextRedux';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
+import { toast } from 'react-toastify';
 
 const Cart = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
@@ -205,6 +206,12 @@ const Cart = () => {
   // Handle checkout
   const handleCheckout = async () => {
     try {
+      // Block checkout if any item is out of stock
+      const hasUnavailable = cartItems.some((i) => getItemAvailability(i).unavailable);
+      if (hasUnavailable) {
+        toast.error('Some items are out of stock. Please remove them before checkout.');
+        return;
+      }
       // Check shop status before proceeding
       const currentStatus = await checkShopStatusNow();
       
@@ -293,6 +300,11 @@ const Cart = () => {
               
               {/* Cart item list */}
               <div className="space-y-6">
+                {cartItems.some((i) => getItemAvailability(i).unavailable) && (
+                  <div className="bg-red-50 text-red-700 border border-red-200 rounded-md p-3 text-sm">
+                    One or more items are out of stock. Remove them to proceed to checkout.
+                  </div>
+                )}
                 {stockError && (
                   <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">
                     {stockError}

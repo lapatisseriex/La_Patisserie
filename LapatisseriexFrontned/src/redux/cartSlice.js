@@ -63,20 +63,7 @@ export const updateCartQuantity = createAsyncThunk(
   'cart/updateQuantity',
   async ({ productId, quantity }, { rejectWithValue, getState }) => {
     try {
-      // Check if operation is already pending
-      const state = getState();
-      if (state.cart.pendingOperations[productId]) {
-        // Instead of rejecting (which surfaces as a cart error UI), we
-        // silently coalesce duplicate requests. If the desired quantity
-        // matches the optimistic quantity already applied, just exit early.
-        const existingItem = state.cart.items.find(i => i.productId === productId);
-        if (existingItem && existingItem.quantity === quantity) {
-          return { productId, quantity, cartTotal: state.cart.cartTotal, cartCount: state.cart.cartCount };
-        }
-        // Otherwise allow the request to proceed AFTER current finishes by short-circuiting.
-        // Returning a resolved lightweight payload keeps UI stable without flashing an error.
-        return { productId, quantity: existingItem?.quantity ?? 0, cartTotal: state.cart.cartTotal, cartCount: state.cart.cartCount };
-      }
+      // Allow latest intent to persist to backend; avoid suppressing updates
 
       if (quantity === 0) {
         const response = await cartService.removeFromCart(productId);
@@ -99,12 +86,6 @@ export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
   async (productId, { rejectWithValue, getState }) => {
     try {
-      // Check if operation is already pending to prevent duplicates
-      const state = getState();
-      if (state.cart.pendingOperations[productId] === 'removing') {
-        return rejectWithValue('Remove operation already in progress');
-      }
-
       const response = await cartService.removeFromCart(productId);
       return { productId, ...response };
     } catch (error) {
@@ -119,9 +100,9 @@ export const removeFromCart = createAsyncThunk(
 
 export const clearCart = createAsyncThunk(
   'cart/clearCart',
-  async (_, { rejectWithValue }) => {
+  async (options, { rejectWithValue }) => {
     try {
-      const response = await cartService.clearCart();
+      const response = await cartService.clearCart(options);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
