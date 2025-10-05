@@ -133,10 +133,24 @@ export const syncLocalCart = createAsyncThunk(
   'cart/syncLocalCart',
   async (localItems, { rejectWithValue }) => {
     try {
-      const response = await cartService.mergeLocalCartWithDatabase?.(localItems) 
-        || await cartService.getCart();
+      const response = await cartService.mergeGuestCart(localItems);
       return response;
     } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// New: Merge guest cart with user cart
+export const mergeGuestCart = createAsyncThunk(
+  'cart/mergeGuestCart',
+  async (guestCartItems, { rejectWithValue }) => {
+    try {
+      console.log('🔄 Redux: Merging guest cart items:', guestCartItems);
+      const response = await cartService.mergeGuestCart(guestCartItems);
+      return response;
+    } catch (error) {
+      console.error('❌ Redux: Error merging guest cart:', error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -287,6 +301,22 @@ const cartSlice = createSlice({
       }
       
       state.isOptimisticLoading = false;
+    },
+
+    // 🛠️ FIX: Reset cart state when user logs out to prevent conflicts
+    resetCartState: (state) => {
+      state.items = [];
+      state.cartTotal = 0;
+      state.cartCount = 0;
+      state.dbCartLoaded = false;
+      state.isOptimisticLoading = false;
+      state.error = null;
+      state.pendingOperations = {};
+      state.cache = {
+        data: null,
+        timestamp: null,
+        etag: null
+      };
     }
   },
   extraReducers: (builder) => {
@@ -556,7 +586,8 @@ export const {
   loadFromCache,
   loadFromLocalStorage,
   clearLocalOptimisticUpdates,
-  revertOptimisticUpdate
+  revertOptimisticUpdate,
+  resetCartState
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

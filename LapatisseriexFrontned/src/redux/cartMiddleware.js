@@ -5,8 +5,12 @@ import {
   removeFromCart,
   clearCart,
   fetchCart,
-  syncLocalCart
+  syncLocalCart,
+  resetCartState
 } from './cartSlice';
+
+// Import logout action from userSlice
+import { logout } from './userSlice';
 
 // Create listener middleware for cart persistence and synchronization
 export const cartMiddleware = createListenerMiddleware();
@@ -141,6 +145,20 @@ cartMiddleware.startListening({
     // Save guest cart to localStorage
     saveToLocalStorage(items);
     console.log('👤 Guest cart saved to localStorage');
+  }
+});
+
+// 🛠️ FIX: Listen for user logout and reset cart state
+cartMiddleware.startListening({
+  actionCreator: logout,
+  effect: (action, listenerApi) => {
+    console.log('🔄 User logged out - resetting cart state and clearing localStorage');
+    
+    // Clear all cart-related localStorage
+    clearLocalStorage();
+    
+    // Reset cart state
+    listenerApi.dispatch(resetCartState());
   }
 });
 

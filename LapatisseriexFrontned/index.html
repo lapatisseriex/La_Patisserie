@@ -7,15 +7,187 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Dancing+Script:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Reliable Google Fonts alternatives for dessert theme -->
-    <!-- Super Dessert alternative: Comfortaa -->
-    <!-- Cupcake Party alternative: Caveat -->
-    <!-- Melted alternative: Dancing Script -->
     <title>La Patisserie - Premium Cakes & Pastries</title>
     <meta name="description" content="Premium handcrafted cakes and pastries for all your special occasions. Order online for delivery." />
   </head>
   <body>
+    <!-- Simple La Patisserie Loading Screen - Logo Only -->
+    <div id="la-patisserie-loader" class="la-patisserie-loader">
+      <div class="loader-container">
+        <!-- La Patisserie Logo Only -->
+        <div class="logo-container">
+          <img 
+            src="/images/logo.png" 
+            alt="La Patisserie Logo" 
+            class="logo-image"
+            onerror="this.style.display='none'"
+          />
+        </div>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <style>
+      /* Simple La Patisserie Loading Screen - Logo Only */
+      .la-patisserie-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #FFE4E6 0%, #FDF2F8 50%, #F3E8FF 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        overflow: hidden;
+        overscroll-behavior: none;
+        min-height: 100vh;
+        min-width: 100vw;
+        transform: translateZ(0);
+        will-change: opacity;
+      }
+
+      .loader-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        will-change: opacity;
+        backface-visibility: hidden;
+        pointer-events: none;
+      }
+
+      .logo-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        animation: logoFloat 3s ease-in-out infinite;
+      }
+
+      .logo-image {
+        width: 180px;
+        height: auto;
+        max-width: 100%;
+        filter: drop-shadow(0 10px 30px rgba(255, 107, 138, 0.3));
+        transition: all 0.3s ease;
+        animation: logoGlow 3s ease-in-out infinite;
+      }
+
+      /* Simple Animations */
+      @keyframes logoFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+
+      @keyframes logoGlow {
+        0%, 100% { 
+          filter: drop-shadow(0 10px 30px rgba(255, 107, 138, 0.3));
+        }
+        50% { 
+          filter: drop-shadow(0 15px 40px rgba(255, 107, 138, 0.5));
+        }
+      }
+
+      /* Hide loader when app is ready */
+      .loader-hidden {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateZ(0);
+        transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        pointer-events: none;
+      }
+      
+      /* Prevent body scroll during loading */
+      body.loading {
+        overflow: hidden;
+        height: 100vh;
+        position: fixed;
+        width: 100%;
+      }
+
+      /* Responsive Logo Sizing */
+      @media (max-width: 768px) {
+        .logo-image {
+          width: 150px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .logo-image {
+          width: 120px;
+        }
+      }
+
+      @media (max-width: 320px) {
+        .logo-image {
+          width: 90px;
+        }
+      }
+    </style>
+
+    <script>
+      // Prevent body scroll and movement during loading
+      document.body.classList.add('loading');
+      
+      // Hide loader when React app is ready
+      document.addEventListener('DOMContentLoaded', function() {
+        // Minimum loading time for user experience
+        const minLoadTime = 2000; // 2 seconds
+        let startTime = Date.now();
+        
+        function hideLoader() {
+          const loader = document.getElementById('la-patisserie-loader');
+          if (loader) {
+            loader.classList.add('loader-hidden');
+            
+            // Re-enable body scroll after loader is hidden
+            setTimeout(() => {
+              document.body.classList.remove('loading');
+              loader.remove();
+            }, 500);
+          }
+        }
+        
+        // Check if React app is ready
+        function checkAppReady() {
+          const root = document.getElementById('root');
+          if (root && root.children.length > 0) {
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, minLoadTime - elapsedTime);
+            
+            setTimeout(hideLoader, remainingTime);
+          } else {
+            setTimeout(checkAppReady, 100);
+          }
+        }
+        
+        checkAppReady();
+        
+        // Fallback: Hide loader after maximum time even if app isn't ready
+        setTimeout(() => {
+          if (document.getElementById('la-patisserie-loader')) {
+            hideLoader();
+          }
+        }, 10000); // 10 seconds maximum
+      });
+      
+      // Prevent any layout shifts by ensuring viewport is stable
+      window.addEventListener('resize', function() {
+        const loader = document.getElementById('la-patisserie-loader');
+        if (loader && !loader.classList.contains('loader-hidden')) {
+          // Force re-center if loader is still visible
+          loader.style.height = window.innerHeight + 'px';
+          loader.style.width = window.innerWidth + 'px';
+        }
+      });
+    </script>
   </body>
 </html>

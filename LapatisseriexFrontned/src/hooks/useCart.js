@@ -10,12 +10,14 @@ import {
   removeFromCart as removeFromCartAction,
   clearCart as clearCartAction,
   syncLocalCart,
+  mergeGuestCart,
   addToCartOptimistic,
   updateQuantityOptimistic,
   removeFromCartOptimistic,
   loadFromCache,
   loadFromLocalStorage,
   clearError,
+  resetCartState,
   selectCartItems,
   selectCartTotal,
   selectCartCount,
@@ -139,42 +141,65 @@ export const useCart = () => {
     }
   }, []);
 
-  // Load cart on mount and user change
+  // 🛠️ FIX: Handle cart state reset when user logs out
+  useEffect(() => {
+    if (!user) {
+      // User logged out - reset cart state to prevent conflicts
+      console.log('🔄 User logged out - resetting cart state');
+      dispatch(resetCartState());
+    }
+  }, [user, dispatch]);
+
+  // Load cart on mount and user change with improved synchronization
   useEffect(() => {
     const loadCart = async () => {
       if (user && !dbCartLoaded) {
-        // Try cache first
-  const cachedCart = getCachedCart();
+        console.log('👤 User logged in - checking for cart data...');
+        
+        // Try cache first for faster loading
+        const cachedCart = getCachedCart();
         if (cachedCart) {
           console.log('📦 Loading cart from cache');
           dispatch(loadFromCache(cachedCart));
           return;
         }
 
-        // Check for local cart to merge
+        // Check for guest cart to merge
         const localCart = getLocalCart();
         if (localCart.length > 0) {
-          console.log('🔄 Syncing local cart with database');
-          dispatch(syncLocalCart(localCart));
-          // Clear local storage after sync
-          localStorage.removeItem(LOCAL_CART_KEY);
+          console.log(`🔄 Found guest cart with ${localCart.length} items - merging with user account`);
+          try {
+            // Use the new merge functionality
+            await dispatch(mergeGuestCart(localCart)).unwrap();
+            // Clear local storage after successful merge
+            localStorage.removeItem(LOCAL_CART_KEY);
+            console.log('✅ Guest cart merged and localStorage cleared');
+          } catch (error) {
+            console.error('❌ Failed to merge guest cart, falling back to sync:', error);
+            // Fallback to old sync method
+            dispatch(syncLocalCart(localCart));
+            localStorage.removeItem(LOCAL_CART_KEY);
+          }
         } else {
-          // Fetch from database
+          // No guest cart, fetch from database
           console.log('🌐 Fetching cart from database');
           dispatch(fetchCart());
         }
       } else if (!user) {
-        // Load from local storage for guest users
-        const localCart = getLocalCart();
-        if (localCart.length > 0) {
-          console.log('👤 Loading cart from local storage (guest)');
-          dispatch(loadFromLocalStorage(localCart));
+        // Load from local storage for guest users only if cart state is empty
+        const currentCartItems = cartItems || [];
+        if (currentCartItems.length === 0) {
+          const localCart = getLocalCart();
+          if (localCart.length > 0) {
+            console.log(`👤 Loading guest cart with ${localCart.length} items from localStorage`);
+            dispatch(loadFromLocalStorage(localCart));
+          }
         }
       }
     };
 
     loadCart();
-  }, [user, dbCartLoaded, dispatch, getCachedCart, getLocalCart]);
+  }, [user, dbCartLoaded, dispatch, getCachedCart, getLocalCart, cartItems]);
 
   // Save to localStorage for guest users
   useEffect(() => {
@@ -289,7 +314,10 @@ export const useCart = () => {
         // Guest user: update local storage
         const localCart = getLocalCart();
         const updatedCart = localCart.filter(item => item.productId !== productId);
+        // 🛠️ FIX: Save updated cart to localStorage immediately
+        localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(updatedCart));
         dispatch(loadFromLocalStorage(updatedCart));
+        console.log('✅ Guest cart item removed and saved to localStorage');
       }
     } catch (error) {
       console.error('❌ Error removing from cart:', error);
@@ -306,9 +334,12 @@ export const useCart = () => {
         console.log('✅ Cart cleared successfully');
         return result;
       } else {
-        // Guest user: clear local storage
+        // Guest user: clear local storage completely
         localStorage.removeItem(LOCAL_CART_KEY);
+        localStorage.removeItem(CART_CACHE_KEY);
+        localStorage.removeItem(CART_CACHE_TIMESTAMP_KEY);
         dispatch(loadFromLocalStorage([]));
+        console.log('✅ Guest cart cleared completely');
       }
     } catch (error) {
       console.error('❌ Error clearing cart:', error);
