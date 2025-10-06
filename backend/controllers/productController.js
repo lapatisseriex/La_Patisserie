@@ -272,12 +272,16 @@ export const createProduct = asyncHandler(async (req, res) => {
     throw new Error('Variants must be an array');
   }
 
-  // Normalize variants to ensure variant-level stock tracking only
+  // Normalize variants to ensure all fields are preserved
   const normalizedVariants = Array.isArray(variants)
     ? variants.map(v => ({
         ...v,
         isStockActive: v?.isStockActive === true,
-        stock: Math.max(0, Number(v?.stock || 0))
+        stock: Math.max(0, Number(v?.stock || 0)),
+        // Preserve pricing calculator fields
+        costPrice: Number(v?.costPrice || 0),
+        profitWanted: Number(v?.profitWanted || 0),
+        freeCashExpected: Number(v?.freeCashExpected || 0)
       }))
     : [];
 
@@ -376,11 +380,15 @@ export const updateProduct = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error('Variants must be an array');
     }
-    // Normalize incoming variants to ensure isStockActive exists only at variant level
+    // Normalize incoming variants to ensure all fields are preserved
     product.variants = variants.map(v => ({
       ...v,
       isStockActive: v?.isStockActive === true,
-      stock: Math.max(0, Number(v?.stock || 0))
+      stock: Math.max(0, Number(v?.stock || 0)),
+      // Preserve pricing calculator fields
+      costPrice: Number(v?.costPrice || 0),
+      profitWanted: Number(v?.profitWanted || 0),
+      freeCashExpected: Number(v?.freeCashExpected || 0)
     }));
   }
 

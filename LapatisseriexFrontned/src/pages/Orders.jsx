@@ -103,43 +103,57 @@ const Orders = () => {
     const currentStepIndex = steps.findIndex(step => step.key === orderStatus);
     
     return (
-      <div className="flex items-center justify-between mb-4 px-2">
-        {steps.map((step, index) => {
-          const Icon = step.icon;
-          const isCompleted = index <= currentStepIndex;
-          const isActive = index === currentStepIndex;
-          
-          return (
-            <div key={step.key} className="flex flex-col items-center flex-1">
-              <div className={`
-                w-8 h-8 rounded-full flex items-center justify-center mb-1
-                ${isCompleted 
-                  ? isActive 
-                    ? 'bg-yellow-500 text-white' 
-                    : 'bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-400'
-                }
-              `}>
-                <Icon className="text-sm" />
-              </div>
-              <span className={`text-xs text-center ${
-                isCompleted ? 'text-gray-900' : 'text-gray-400'
-              }`}>
-                {step.label}
-              </span>
-              {index < steps.length - 1 && (
+      <div className="relative px-2 py-4">
+        {/* Progress line background - Desktop vertical */}
+        <div className="absolute left-1/2 top-8 bottom-8 w-1 bg-gray-200 rounded-full transform -translate-x-1/2 hidden md:block"></div>
+        
+        {/* Progress line filled - Desktop vertical with gradient */}
+        <div 
+          className="absolute left-1/2 top-8 w-1 bg-gradient-to-b from-green-400 to-green-600 rounded-full transform -translate-x-1/2 transition-all duration-700 ease-in-out shadow-sm hidden md:block"
+          style={{ 
+            height: currentStepIndex >= 0 ? `${(currentStepIndex / (steps.length - 1)) * 100}%` : '0%' 
+          }}
+        ></div>
+
+        <div className="flex items-center justify-between md:flex-col md:space-y-8 overflow-x-auto">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            const isCompleted = index <= currentStepIndex;
+            const isActive = index === currentStepIndex;
+            
+            return (
+              <div key={step.key} className="flex flex-col items-center flex-1 md:flex-none relative">
                 <div className={`
-                  absolute h-0.5 w-full mt-4 -z-10
-                  ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}
-                `} style={{ 
-                  left: '50%', 
-                  right: '-50%',
-                  transform: 'translateY(-16px)'
-                }} />
-              )}
-            </div>
-          );
-        })}
+                  w-8 h-8 rounded-full flex items-center justify-center mb-1 relative z-10 border-2 transition-all duration-300 transform
+                  ${isCompleted 
+                    ? isActive 
+                      ? 'bg-yellow-500 border-yellow-500 text-white shadow-lg scale-110' 
+                      : 'bg-green-500 border-green-500 text-white shadow-md'
+                    : 'bg-white border-gray-300 text-gray-400 hover:border-gray-400'
+                  }
+                `}>
+                  <Icon className="text-sm" />
+                </div>
+                <span className={`text-xs text-center px-1 transition-colors duration-300 ${
+                  isCompleted ? 'text-gray-900 font-medium' : 'text-gray-400'
+                }`}>
+                  {step.label}
+                </span>
+                {isActive && (
+                  <span className="text-xs text-yellow-600 font-medium mt-1 animate-pulse">Current</span>
+                )}
+                
+                {/* Mobile horizontal progress line with enhanced styling */}
+                {index < steps.length - 1 && (
+                  <div className={`
+                    absolute top-4 left-8 right-0 h-1 md:hidden transition-all duration-500 rounded-full
+                    ${isCompleted ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gray-200'}
+                  `} style={{ width: 'calc(100vw / 6 - 2rem)' }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };

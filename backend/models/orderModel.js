@@ -46,6 +46,10 @@ const orderSummarySchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  freeCashDiscount: {
+    type: Number,
+    default: 0
+  },
   grandTotal: {
     type: Number,
     required: true

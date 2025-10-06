@@ -14,6 +14,7 @@ import ProfilePage from './pages/Profile';
 import ProductDisplayPage from './pages/ProductDisplayPage';
 import Favorites from './pages/Favorites';
 import Orders from './pages/Orders';
+import OrderDetail from './pages/OrderDetail';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import OurServices from './pages/OurServices';
 
@@ -149,6 +150,11 @@ function App() {
                             <Route path="orders" element={
                               <PrivateRoute>
                                 <Orders />
+                              </PrivateRoute>
+                            } />
+                            <Route path="orders/:orderId" element={
+                              <PrivateRoute>
+                                <OrderDetail />
                               </PrivateRoute>
                             } />
                           </Route>

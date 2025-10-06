@@ -10,7 +10,7 @@ import ShopClosureOverlay from '../common/ShopClosureOverlay';
 
 const Payment = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { cartItems, cartTotal, clearCart, refreshCart } = useCart();
   const { user } = useAuth();
   const { hasValidDeliveryLocation, getCurrentLocationName, locations } = useLocation();
   const navigate = useNavigate();
@@ -19,6 +19,15 @@ const Payment = () => {
   // Coupon discount is managed locally in this component
   const [couponDiscount, setCouponDiscount] = useState(0);
   
+    // Free cash state
+  const [useFreeCash, setUseFreeCash] = useState(false);
+
+  // Refresh cart data when component mounts to get latest product info
+  useEffect(() => {
+    console.log('🔄 Payment: Refreshing cart data to get latest product info');
+    refreshCart();
+  }, [refreshCart]);
+
   // Check for valid delivery location and handle gracefully
   useEffect(() => {
     console.log('Payment component - checking delivery location');
@@ -88,8 +97,49 @@ const Payment = () => {
   // Tax calculation (5% of discounted total)
   const taxAmount = discountedCartTotal * 0.05;
   
-  // Grand total using discounted cart total
-  const grandTotal = discountedCartTotal + deliveryCharge + taxAmount - couponDiscount;
+  // Calculate total free cash available from all cart items
+  const totalFreeCashAvailable = useMemo(() => {
+    console.log('🔍 Calculating free cash from cart items:', cartItems);
+    
+    const result = cartItems.reduce((total, item) => {
+      try {
+        // Access product details from cart item
+        const productDetails = item.productDetails || item.product || item;
+        const variantIndex = item.variantIndex || productDetails?.variantIndex || 0;
+        
+        console.log(`Free cash calculation for ${item.name}:`, {
+          productDetails,
+          variantIndex,
+          variants: productDetails?.variants,
+          selectedVariant: productDetails?.variants?.[variantIndex],
+          freeCashExpected: productDetails?.variants?.[variantIndex]?.freeCashExpected
+        });
+        
+        // Get free cash from variant
+        let freeCash = 0;
+        if (productDetails?.variants && productDetails.variants[variantIndex]) {
+          freeCash = productDetails.variants[variantIndex].freeCashExpected || 0;
+        }
+        
+        console.log(`✅ Free cash for ${item.name}: ${freeCash} × ${item.quantity} = ${freeCash * item.quantity}`);
+        
+        // Multiply by quantity
+        return total + (freeCash * item.quantity);
+      } catch (error) {
+        console.warn('❌ Error calculating free cash for item:', item, error);
+        return total;
+      }
+    }, 0);
+    
+    console.log('📊 Total free cash available:', result);
+    return result;
+  }, [cartItems]);
+  
+  // Applied free cash discount
+  const appliedFreeCash = useFreeCash ? totalFreeCashAvailable : 0;
+  
+  // Grand total using discounted cart total and free cash
+  const grandTotal = discountedCartTotal + deliveryCharge + taxAmount - couponDiscount - appliedFreeCash;
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('razorpay');
   const [cardDetails, setCardDetails] = useState({
@@ -169,6 +219,7 @@ const Payment = () => {
           deliveryCharge: deliveryCharge,
           taxAmount: taxAmount,
           couponDiscount: couponDiscount,
+          freeCashDiscount: appliedFreeCash,
           grandTotal: grandTotal
         }
       };
@@ -787,6 +838,39 @@ const Payment = () => {
                   <div className="flex justify-between text-green-600">
                     <span>Coupon Discount</span>
                     <span className="font-medium">-₹{couponDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                {/* Free Cash Section */}
+                {totalFreeCashAvailable > 0 && (
+                  <div className="border-t border-gray-200 pt-3 mt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={useFreeCash}
+                          onChange={(e) => setUseFreeCash(e.target.checked)}
+                          className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Use Free Cash
+                        </span>
+                      </label>
+                      <span className="text-sm text-gray-600">
+                        ₹{totalFreeCashAvailable.toFixed(2)} available
+                      </span>
+                    </div>
+                    
+                    {useFreeCash && (
+                      <div className="flex justify-between text-green-600 text-sm">
+                        <span>Free Cash Applied</span>
+                        <span className="font-medium">-₹{appliedFreeCash.toFixed(2)}</span>
+                      </div>
+                    )}
+                    
+                    <div className="text-xs text-gray-500 mt-1">
+                      Free cash earned from previous purchases and promotions
+                    </div>
                   </div>
                 )}
                 

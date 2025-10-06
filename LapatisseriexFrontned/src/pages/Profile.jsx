@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext/AuthContextRedux';
 // (removed duplicate import of useFavorites)
 import { useCart } from '../hooks/useCart';
@@ -25,12 +25,17 @@ import {
   MoreVertical
 } from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';
+import OrderCard from '../components/Orders/OrderCard';
 
 const ProfilePage = () => {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('main');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState(null);
   const { favorites, loading: favLoading, error: favError, fetchFavorites } = useFavorites();
   const { 
     cartItems, 
@@ -119,6 +124,54 @@ const ProfilePage = () => {
     navigate('/');
   };
 
+  // Fetch user orders
+  const fetchUserOrders = async () => {
+    if (!user) return;
+    
+    setOrdersLoading(true);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/orders/user`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+
+      const data = await response.json();
+      setOrders(data.orders || []);
+      setOrdersError(null);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrdersError(error.message);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  // Handle navigation state to set active tab
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+      // Clear the state to prevent it from persisting
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location]);
+
+  // Fetch orders when user changes or activeTab is orders
+  useEffect(() => {
+    if (user && activeTab === 'orders') {
+      fetchUserOrders();
+    }
+  }, [user, activeTab]);
+
 
 
   if (loading) {
@@ -149,7 +202,6 @@ const ProfilePage = () => {
   const tabs = [
     { id: 'profile', label: 'My Profile', icon: User },
     { id: 'orders', label: 'My Orders', icon: Package },
-    { id: 'tracking', label: 'Order Tracking', icon: Truck },
     { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart },
@@ -168,7 +220,6 @@ const ProfilePage = () => {
               {[
                 { id: 'profile', label: 'My Profile', icon: User, color: 'bg-blue-50' },
                 { id: 'orders', label: 'My Orders', icon: Package, color: 'bg-amber-50' },
-                { id: 'tracking', label: 'Order Tracking', icon: Truck, color: 'bg-green-50' },
                 { id: 'addresses', label: 'Saved Addresses', icon: MapPin, color: 'bg-purple-50' },
                 { id: 'security', label: 'Security', icon: Lock, color: 'bg-gray-50' },
                 { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart, color: 'bg-rose-50', count: cartCount },
@@ -197,7 +248,6 @@ const ProfilePage = () => {
               {[
                 { id: 'profile', label: 'My Profile', icon: User, description: 'View/Edit Profile', color: 'bg-blue-50' },
                 { id: 'orders', label: 'My Orders', icon: Package, description: 'Track Orders, Returns, Buy Again', color: 'bg-amber-50' },
-                { id: 'tracking', label: 'Order Tracking', icon: Truck, description: 'Track your active deliveries', color: 'bg-green-50' },
                 { id: 'addresses', label: 'Saved Addresses', icon: MapPin, description: 'Manage your saved addresses', color: 'bg-purple-50' },
                 { id: 'security', label: 'Security', icon: Lock, description: 'Manage security settings', color: 'bg-gray-50' },
                 { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart, description: 'View items in your cart', color: 'bg-rose-50', count: cartCount },
@@ -251,35 +301,55 @@ const ProfilePage = () => {
                 Browse Products
               </Link>
             </div>
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                <Package className="h-10 w-10 text-gray-500" />
+            
+            {ordersLoading ? (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
+                  <Package className="h-10 w-10 text-gray-500 animate-pulse" />
+                </div>
+                <h4 className="text-xl font-serif font-medium text-black mb-3">Loading Orders...</h4>
+                <p className="text-gray-600">Please wait while we fetch your order history</p>
               </div>
-              <h4 className="text-xl font-serif font-medium text-black mb-3">No Orders Yet</h4>
-              <p className="text-gray-600 mb-6">Discover our delicious cakes and pastries to place your first order</p>
-              <Link 
-                to="/products" 
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg font-medium"
-              >
-                Start Shopping
-              </Link>
-            </div>
-          </div>
-        );
-
-      case 'tracking':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">Order Tracking</h3>
-            </div>
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                <Truck className="h-10 w-10 text-gray-500" />
+            ) : ordersError ? (
+              <div className="bg-red-50 rounded-lg border border-red-200 p-6 text-center shadow-md">
+                <h4 className="text-lg font-medium text-red-800 mb-2">Error Loading Orders</h4>
+                <p className="text-red-600 mb-4">{ordersError}</p>
+                <button 
+                  onClick={fetchUserOrders}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Try Again
+                </button>
               </div>
-              <h4 className="text-xl font-serif font-medium text-black mb-3">No Active Deliveries</h4>
-              <p className="text-gray-600">Track your sweet treats in real-time once they're on the way</p>
-            </div>
+            ) : orders.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
+                  <Package className="h-10 w-10 text-gray-500" />
+                </div>
+                <h4 className="text-xl font-serif font-medium text-black mb-3">No Orders Yet</h4>
+                <p className="text-gray-600 mb-6">Discover our delicious cakes and pastries to place your first order</p>
+                <Link 
+                  to="/products" 
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg font-medium"
+                >
+                  Start Shopping
+                </Link>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-4 text-sm text-gray-600">
+                  {orders.length} order{orders.length !== 1 ? 's' : ''} found
+                </div>
+                <div className="grid gap-4">
+                  {orders.map((order) => (
+                    <OrderCard 
+                      key={order._id} 
+                      order={order}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         );
 

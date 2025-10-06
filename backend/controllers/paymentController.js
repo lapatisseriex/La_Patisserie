@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import Order from '../models/orderModel.js';
 import User from '../models/userModel.js';
+import { sendOrderStatusNotification, sendOrderConfirmationEmail } from '../utils/orderEmailService.js';
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -80,6 +81,26 @@ export const createOrder = asyncHandler(async (req, res) => {
 
     await order.save();
     console.log('Order saved to database:', order._id);
+
+    // Send order confirmation email
+    try {
+      // Get user email from the user record
+      const user = await User.findById(userId).select('email name');
+      if (user && user.email) {
+        console.log('Sending order confirmation email to:', user.email);
+        const emailResult = await sendOrderConfirmationEmail(order, user.email);
+        if (emailResult.success) {
+          console.log('Order confirmation email sent successfully:', emailResult.messageId);
+        } else {
+          console.error('Failed to send order confirmation email:', emailResult.error);
+        }
+      } else {
+        console.log('User email not found, skipping confirmation email');
+      }
+    } catch (emailError) {
+      console.error('Error sending order confirmation email:', emailError.message);
+      // Don't fail the order creation if email fails
+    }
 
     // Return response
     const response = {
@@ -362,11 +383,22 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     if (notes) updateData.notes = notes;
     if (orderStatus === 'delivered') updateData.actualDeliveryTime = new Date();
 
+    // Find the order first to get user details
+    const existingOrder = await Order.findOne({ orderNumber }).populate('userId', 'email name');
+    
+    if (!existingOrder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Update the order
     const order = await Order.findOneAndUpdate(
       { orderNumber },
       updateData,
       { new: true }
-    );
+    ).populate('userId', 'email name');
 
     if (!order) {
       return res.status(404).json({
@@ -375,10 +407,38 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
       });
     }
 
+    // Send email notification if status changed and user has email
+    let emailResult = null;
+    if (existingOrder.orderStatus !== orderStatus && order.userId?.email) {
+      console.log(`Order status changed from ${existingOrder.orderStatus} to ${orderStatus}, sending email notification`);
+      
+      try {
+        emailResult = await sendOrderStatusNotification(
+          order,
+          orderStatus,
+          order.userId.email
+        );
+        
+        if (emailResult.success) {
+          console.log('Email notification sent successfully:', emailResult.messageId);
+        } else {
+          console.error('Failed to send email notification:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError.message);
+        // Don't fail the order update if email fails
+      }
+    }
+
     res.json({
       success: true,
       message: 'Order status updated successfully',
-      order
+      order,
+      emailNotification: emailResult ? {
+        sent: emailResult.success,
+        messageId: emailResult.messageId,
+        error: emailResult.error
+      } : null
     });
   } catch (error) {
     console.error('Error updating order status:', error);

@@ -11,6 +11,48 @@ export const getNewCart = async (req, res) => {
 
     const cart = await NewCart.getOrCreateCart(userId);
     
+    // Refresh product details for all cart items to get latest data
+    const refreshedItems = [];
+    for (const item of cart.items) {
+      try {
+        const product = await Product.findById(item.productId);
+        if (product && product.isActive) {
+          const variantIndex = item.productDetails?.variantIndex || 0;
+          const variant = product.variants?.[variantIndex];
+          
+          // Update product details with latest data
+          const updatedProductDetails = {
+            ...item.productDetails,
+            name: product.name,
+            image: product.image || product.images?.[0] || item.productDetails.image,
+            category: product.category?.name || product.category,
+            isActive: product.isActive,
+            variantIndex: variantIndex,
+            variants: product.variants || [],
+            selectedVariant: variant || null
+          };
+          
+          refreshedItems.push({
+            ...item.toObject(),
+            productDetails: updatedProductDetails
+          });
+        } else {
+          // Keep inactive/deleted products but mark as inactive
+          refreshedItems.push({
+            ...item.toObject(),
+            productDetails: {
+              ...item.productDetails,
+              isActive: false
+            }
+          });
+        }
+      } catch (error) {
+        console.warn(`Error refreshing product data for ${item.productId}:`, error);
+        // Keep original item if refresh fails
+        refreshedItems.push(item.toObject());
+      }
+    }
+    
     // Generate ETag based on cart data for caching
     const eTag = `W/"cart-${userId}-${cart.updatedAt.getTime()}"`;
     
@@ -20,11 +62,11 @@ export const getNewCart = async (req, res) => {
       return res.status(304).end(); // Not Modified
     }
     
-    // Return cart with virtual totals
+    // Return cart with refreshed product details
     const cartData = {
       _id: cart._id,
       userId: cart.userId,
-      items: cart.items,
+      items: refreshedItems,
       cartTotal: cart.cartTotal,
       cartCount: cart.cartCount,
       lastUpdated: cart.lastUpdated,
@@ -105,7 +147,11 @@ export const addToNewCart = async (req, res) => {
       image: product.image || product.images?.[0] || '',
       category: product.category?.name || product.category,
       isActive: product.isActive,
-      variantIndex: vi
+      variantIndex: vi,
+      // Include full product data for free cash calculations
+      variants: product.variants || [],
+      // Quick access to selected variant for frontend
+      selectedVariant: variant || null
     };
 
     // Get or create cart

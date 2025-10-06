@@ -37,6 +37,16 @@ const newCartItemSchema = new mongoose.Schema({
     variantIndex: {
       type: Number,
       default: 0
+    },
+    // Store variants array for free cash calculation
+    variants: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: []
+    },
+    // Quick access to selected variant
+    selectedVariant: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
     }
   },
   addedAt: {
