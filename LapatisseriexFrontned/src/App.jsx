@@ -14,6 +14,8 @@ import ProfilePage from './pages/Profile';
 import ProductDisplayPage from './pages/ProductDisplayPage';
 import Favorites from './pages/Favorites';
 import Orders from './pages/Orders';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import OurServices from './pages/OurServices';
 
 // Error Boundary for Product Pages
 import ProductErrorBoundary from './components/common/ProductErrorBoundary';
@@ -124,6 +126,8 @@ function App() {
                             <Route index element={<HomePage />} />
                             <Route path="contact" element={<Newsletter />} />
                             <Route path="products" element={<Products />} />
+                            <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                            <Route path="our-services" element={<OurServices />} />
                             <Route path="product/:productId" element={
                               <ProductErrorBoundary>
                                 <ProductDisplayPage />

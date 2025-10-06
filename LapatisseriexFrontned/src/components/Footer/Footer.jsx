@@ -62,13 +62,6 @@ const Footer = () => {
                 </svg>
                 Products
               </Link>
-
-              <Link to="/contact" className="flex items-center text-black hover:text-black transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                Contact
-              </Link>
             </div>
           </div>
           
@@ -76,7 +69,7 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-black border-b border-white/30 pb-2 mb-4">Extra Links</h3>
             <div className="flex flex-col space-y-2">
-              <Link to="/account" className="flex items-center text-black hover:text-black transition-colors">
+              <Link to="/profile" className="flex items-center text-black hover:text-black transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -88,7 +81,7 @@ const Footer = () => {
                 </svg>
                 Order Items
               </Link>
-              <Link to="/privacy" className="flex items-center text-black hover:text-black transition-colors">
+              <Link to="/privacy-policy" className="flex items-center text-black hover:text-black transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -100,7 +93,7 @@ const Footer = () => {
                 </svg>
                 Payment Method
               </Link>
-              <Link to="/services" className="flex items-center text-black hover:text-black transition-colors">
+              <Link to="/our-services" className="flex items-center text-black hover:text-black transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
