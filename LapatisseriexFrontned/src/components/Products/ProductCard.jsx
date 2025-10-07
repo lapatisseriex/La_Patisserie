@@ -98,21 +98,39 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   // Use dynamic pricing breakdown from backend if available, otherwise fallback to manual calculation
   const pricingBreakdown = variant?.pricingBreakdown;
-  const discountedPrice = pricingBreakdown 
-    ? pricingBreakdown.finalCustomerPrice 
-    : (variant?.discount?.type && variant?.discount?.value)
-      ? (variant.discount.type === 'flat' 
-          ? Math.max(0, variant.price - variant.discount.value)
-          : variant.price * (1 - variant.discount.value / 100))
-      : variant?.price || 0;
-      
-  const discountPercentage = pricingBreakdown 
-    ? pricingBreakdown.actualDiscountPercentage 
-    : (variant?.discount?.type && variant?.discount?.value)
-      ? (variant.discount.type === 'percentage' 
-          ? variant.discount.value
-          : variant.price > 0 ? Math.round((variant.discount.value / variant.price) * 100) : 0)
-      : 0;
+  
+  // NEW LOGIC: variant.price is the MRP (strikethrough), selling price is cost+profit+freecash
+  const hasCalculatorPricing = (variant?.costPrice > 0 || variant?.profitWanted > 0 || variant?.freeCashExpected > 0);
+  
+  let originalPrice = variant?.price || 0; // MRP (to be shown as strikethrough)
+  let sellingPrice = 0; // Actual selling price
+  let discountPercentage = 0;
+  
+  if (hasCalculatorPricing) {
+    // Use pricing calculator logic: selling price = cost + profit + freecash
+    sellingPrice = (variant?.costPrice || 0) + (variant?.profitWanted || 0) + (variant?.freeCashExpected || 0);
+  } else if (pricingBreakdown) {
+    // Use backend pricing breakdown
+    originalPrice = variant?.price || 0;
+    sellingPrice = pricingBreakdown.finalCustomerPrice;
+  } else if (variant?.discount?.type && variant?.discount?.value) {
+    // Fallback to old discount logic
+    originalPrice = variant?.price || 0;
+    sellingPrice = variant.discount.type === 'flat' 
+      ? Math.max(0, originalPrice - variant.discount.value)
+      : originalPrice * (1 - variant.discount.value / 100);
+    
+  } else {
+    // No discount
+    originalPrice = variant?.price || 0;
+    sellingPrice = originalPrice;
+    discountPercentage = 0;
+  }
+  discountPercentage = variant.discount.type === 'percentage' 
+      ? variant.discount.value
+      : originalPrice > 0 ? Math.round((variant.discount.value / originalPrice) * 100) : 0;
+  // For backward compatibility
+  const discountedPrice = sellingPrice;
 
   // Debug logging for troubleshooting
   if (!isActive || (tracks && totalStock === 0)) {
@@ -483,9 +501,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-baseline gap-1">
-              {discountedPrice !== variant.price && (
+              {discountPercentage > 0 && (
                 <span className="text-gray-500 line-through text-xs">
-                  ₹{Math.round(variant.price)}
+                  ₹{Math.round(originalPrice)}
                 </span>
               )}
               <span
@@ -493,7 +511,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   featured || compact ? 'text-sm' : 'text-sm sm:text-base'
                 }`}
               >
-                ₹{Math.round(discountedPrice)}
+                ₹{Math.round(sellingPrice)}
               </span>
             </div>
             {discountPercentage > 0 && (

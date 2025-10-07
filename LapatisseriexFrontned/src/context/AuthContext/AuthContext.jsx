@@ -121,11 +121,15 @@ export const AuthProvider = ({ children }) => {
           // Create the user object with data from backend, preserving saved fields
           const userData = {
             uid: firebaseUser.uid,
-            phone: firebaseUser.phoneNumber,
+            // Always prefer backend phone if present, else Firebase phone
+            phone: response.data.user.phone || firebaseUser.phoneNumber || null,
             ...response.data.user,
             // Restore saved fields if they don't exist in the response
             email: response.data.user.email || savedUserData.email || null,
             anniversary: response.data.user.anniversary || savedUserData.anniversary || null,
+            // Always include phoneVerified fields
+            phoneVerified: response.data.user.phoneVerified || false,
+            phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
             // email verification removed
           };
           
@@ -168,11 +172,13 @@ export const AuthProvider = ({ children }) => {
               // Update user state with the fresh data, preserving saved fields
               const freshUserData = {
                 uid: firebaseUser.uid,
-                phone: firebaseUser.phoneNumber,
+                phone: meResponse.data.user.phone || firebaseUser.phoneNumber || null,
                 ...meResponse.data.user,
                 // Restore saved fields if they don't exist in the response
                 email: meResponse.data.user.email || savedUserData.email || null,
                 anniversary: meResponse.data.user.anniversary || savedUserData.anniversary || null,
+                phoneVerified: meResponse.data.user.phoneVerified || false,
+                phoneVerifiedAt: meResponse.data.user.phoneVerifiedAt || null,
                 // email verification removed
               };
               
@@ -330,10 +336,11 @@ export const AuthProvider = ({ children }) => {
       const userData = response.data.user;
       setUser({
         uid: firebaseUser.uid,
-        phone: firebaseUser.phoneNumber,
+        phone: userData.phone || firebaseUser.phoneNumber || null,
         ...userData,
-        // Format date if needed
         dob: userData.dob ? userData.dob : null,
+        phoneVerified: userData.phoneVerified || false,
+        phoneVerifiedAt: userData.phoneVerifiedAt || null,
       });
       
       // Get fresh user data from /api/users/me to ensure we have the latest
@@ -346,10 +353,11 @@ export const AuthProvider = ({ children }) => {
           // Update user state with the fresh data
           const freshUserData = {
             uid: firebaseUser.uid,
-            phone: firebaseUser.phoneNumber,
-            ...meResponse.data.user
+            phone: meResponse.data.user.phone || firebaseUser.phoneNumber || null,
+            ...meResponse.data.user,
+            phoneVerified: meResponse.data.user.phoneVerified || false,
+            phoneVerifiedAt: meResponse.data.user.phoneVerifiedAt || null
           };
-          
           setUser(freshUserData);
           localStorage.setItem('cachedUser', JSON.stringify(freshUserData));
         }

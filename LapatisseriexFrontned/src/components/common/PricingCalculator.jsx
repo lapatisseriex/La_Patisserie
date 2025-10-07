@@ -4,13 +4,17 @@ import { Calculator, DollarSign, TrendingUp, Wallet, ShoppingCart } from 'lucide
 /**
  * PricingCalculator Component
  * 
- * Auto-calculator that determines Safe Selling Price and shows detailed pricing logic
- * Formula: Safe Selling Price = (Cost Price + Profit Wanted + Free Cash Expected) × 2
+ * Auto-calculator that determines MRP based on desired final price and discount
+ * Formula: final_price = baseprice + profit + freecash
+ *          mrp = ((discount_percentage + 100) / 100) * final_price
  */
 const PricingCalculator = ({ 
   initialCostPrice = 0, 
   initialProfitWanted = 0, 
   initialFreeCashExpected = 0,
+  initialDiscountPercentage = 50,
+  initialDiscountType = null,
+  initialDiscountValue = 0,
   onCalculationUpdate,
   isEditable = true,
   showTitle = true,
@@ -19,30 +23,59 @@ const PricingCalculator = ({
   const [costPrice, setCostPrice] = useState(initialCostPrice || 0);
   const [profitWanted, setProfitWanted] = useState(initialProfitWanted || 0);
   const [freeCashExpected, setFreeCashExpected] = useState(initialFreeCashExpected || 0);
+  const [discountPercentage, setDiscountPercentage] = useState(initialDiscountPercentage || 50);
+  const [discountType, setDiscountType] = useState(initialDiscountType || null);
+  const [discountValue, setDiscountValue] = useState(initialDiscountValue || 0);
 
   // Pricing calculations
   const calculations = useMemo(() => {
-    const safeSellingPrice = (costPrice + profitWanted + freeCashExpected) * 2;
-    const mrp = safeSellingPrice;
-    const defaultDiscount = 50; // 50% default discount
-    const afterDiscount = mrp * (1 - defaultDiscount / 100);
+    // Step 1: Calculate final price (what admin wants to earn after everything)
+    const finalPrice = costPrice + profitWanted + freeCashExpected;
+    
+    // Step 2: Calculate MRP based on discount type
+    let mrp = 0;
+    let effectiveDiscountPercentage = discountPercentage;
+    
+    if (discountType === 'flat') {
+      // For flat discount: MRP = final_price + flat_discount_amount
+      mrp = finalPrice + discountValue;
+      // Calculate effective discount percentage for display
+      effectiveDiscountPercentage = mrp > 0 ? Math.round((discountValue / mrp) * 100) : 0;
+    } else {
+      // For percentage discount: MRP = ((discount_percentage + 100) / 100) * final_price
+      mrp = ((discountPercentage + 100) / 100) * finalPrice;
+    }
+    
+    // Step 3: Calculate what customer pays after discount
+    const afterDiscount = discountType === 'flat' 
+      ? Math.max(0, mrp - discountValue)
+      : mrp * ((100 - discountPercentage) / 100);
+    
+    // Step 4: Calculate final customer price after free cash
     const afterFreeCash = afterDiscount - freeCashExpected;
     const finalCustomerPrice = Math.max(0, afterFreeCash);
+    
+    // Step 5: Seller return (what admin actually gets)
     const sellerReturn = costPrice + profitWanted;
 
     return {
-      safeSellingPrice,
+      finalPrice,
       mrp,
-      defaultDiscount,
+      discountPercentage: effectiveDiscountPercentage,
       afterDiscount,
       afterFreeCash,
       finalCustomerPrice,
       sellerReturn,
       costPrice,
       profitWanted,
-      freeCashExpected
+      freeCashExpected,
+      discountType,
+      discountValue,
+      // Legacy field for backward compatibility
+      safeSellingPrice: mrp,
+      defaultDiscount: effectiveDiscountPercentage
     };
-  }, [costPrice, profitWanted, freeCashExpected]);
+  }, [costPrice, profitWanted, freeCashExpected, discountPercentage, discountType, discountValue]);
 
   // Notify parent component of calculation updates
   useEffect(() => {
@@ -126,12 +159,62 @@ const PricingCalculator = ({
             icon={Wallet}
           />
         </div>
+
+        {/* Compact Discount Configuration */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Discount Type</label>
+            <select
+              value={discountType || ''}
+              onChange={(e) => setDiscountType(e.target.value || null)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+              disabled={!isEditable}
+            >
+              <option value="">No Discount</option>
+              <option value="percentage">Percentage (%)</option>
+              <option value="flat">Flat Amount (₹)</option>
+            </select>
+          </div>
+
+          {discountType && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Discount Value
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500">
+                    {discountType === 'percentage' ? '%' : '₹'}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  value={discountValue}
+                  onChange={(e) => {
+                    const value = Number(e.target.value) || 0;
+                    if (discountType === 'percentage') {
+                      setDiscountValue(Math.max(0, Math.min(100, value)));
+                    } else {
+                      setDiscountValue(Math.max(0, value));
+                    }
+                  }}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder={discountType === 'percentage' ? '50' : '100'}
+                  min="0"
+                  max={discountType === 'percentage' ? '100' : undefined}
+                  step={discountType === 'percentage' ? '1' : '0.01'}
+                  disabled={!isEditable}
+                />
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <ResultDisplay
-            label="Final Customer Price"
-            value={calculations.finalCustomerPrice}
-            isCustomer={true}
+            label="MRP (Original Price)"
+            value={calculations.mrp}
+            isCustomer={false}
           />
           <ResultDisplay
             label="Your Total Return"
@@ -159,7 +242,7 @@ const PricingCalculator = ({
 
       <div className="p-6 space-y-6">
         {/* Input Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <InputField
             label="Cost Price"
             value={costPrice}
@@ -180,11 +263,100 @@ const PricingCalculator = ({
           />
         </div>
 
+        {/* Discount Configuration */}
+        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 mb-6">
+          <h4 className="font-semibold text-yellow-800 mb-4">Discount Configuration</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Discount Type */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Discount Type
+              </label>
+              <select
+                value={discountType || ''}
+                onChange={(e) => setDiscountType(e.target.value || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                disabled={!isEditable}
+              >
+                <option value="">No Discount</option>
+                <option value="percentage">Percentage (%)</option>
+                <option value="flat">Flat Amount (₹)</option>
+              </select>
+            </div>
+
+            {/* Discount Value */}
+            {discountType && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Discount Value
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500">
+                      {discountType === 'percentage' ? '%' : '₹'}
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    value={discountValue}
+                    onChange={(e) => {
+                      const value = Number(e.target.value) || 0;
+                      if (discountType === 'percentage') {
+                        setDiscountValue(Math.max(0, Math.min(100, value)));
+                      } else {
+                        setDiscountValue(Math.max(0, value));
+                      }
+                    }}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder={discountType === 'percentage' ? '50' : '100'}
+                    min="0"
+                    max={discountType === 'percentage' ? '100' : undefined}
+                    step={discountType === 'percentage' ? '1' : '0.01'}
+                    disabled={!isEditable}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Discount Percentage (only for percentage type) */}
+            {discountType === 'percentage' && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Applied Discount %
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500">%</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="50"
+                    min="0"
+                    max="100"
+                    step="1"
+                    disabled={!isEditable}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Calculation Formula Display */}
         <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
           <h4 className="font-semibold text-gray-800 mb-2">Calculation Formula:</h4>
-          <div className="font-mono text-sm text-gray-700">
-            Safe Selling Price = ({costPrice} + {profitWanted} + {freeCashExpected}) × 2 = ₹{calculations.safeSellingPrice.toFixed(2)}
+          <div className="font-mono text-sm text-gray-700 space-y-1">
+            <div>Final Price = {costPrice} + {profitWanted} + {freeCashExpected} = ₹{calculations.finalPrice.toFixed(2)}</div>
+            {discountType === 'flat' ? (
+              <div>MRP = Final Price + Flat Discount = {calculations.finalPrice.toFixed(2)} + {discountValue} = ₹{calculations.mrp.toFixed(2)}</div>
+            ) : (
+              <div>MRP = ((Discount% + 100) ÷ 100) × Final Price = (({discountValue} + 100) ÷ 100) × {calculations.finalPrice.toFixed(2)} = ₹{calculations.mrp.toFixed(2)}</div>
+            )}
+            <div>Customer Pays = MRP - Discount - Free Cash = ₹{calculations.finalCustomerPrice.toFixed(2)}</div>
           </div>
         </div>
 
@@ -197,16 +369,8 @@ const PricingCalculator = ({
           
           <div className="grid grid-cols-1 gap-3">
             <ResultDisplay
-              label="MRP (Customer sees)"
+              label="MRP (Original Price)"
               value={calculations.mrp}
-            />
-            <ResultDisplay
-              label={`After Discount (${calculations.defaultDiscount}%)`}
-              value={calculations.afterDiscount}
-            />
-            <ResultDisplay
-              label="After Applying Free Cash"
-              value={calculations.afterFreeCash}
             />
             <ResultDisplay
               label="Final Customer Price"
@@ -225,10 +389,10 @@ const PricingCalculator = ({
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
           <h4 className="font-semibold text-amber-800 mb-2">How it works:</h4>
           <div className="text-sm text-amber-700 space-y-1">
-            <p>• MRP = Safe Selling Price (what customers see initially)</p>
-            <p>• After 50% Discount = Customer pays half of MRP</p>
-            <p>• After Free Cash = Subtract the free cash amount</p>
+            <p>• MRP = What customers see as original price</p>
+            <p>• Final Customer Price = What customer actually pays after all discounts</p>
             <p>• You still get your cost price + desired profit</p>
+            {discountType && <p>• {discountType === 'flat' ? 'Flat discount amount is added to your desired final price to create MRP' : 'Percentage discount is calculated to determine MRP from your desired final price'}</p>}
           </div>
         </div>
       </div>

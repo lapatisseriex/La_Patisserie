@@ -114,7 +114,11 @@ export const signInWithGoogle = createAsyncThunk(
         email: user.email,
         name: user.displayName,
         profilePhoto: { url: user.photoURL || '', public_id: '' },
-        ...response.data.user
+        ...response.data.user,
+        // Ensure phone verification fields are included
+        phone: response.data.user.phone || '',
+        phoneVerified: response.data.user.phoneVerified || false,
+        phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
       };
       
       // Cache user data in localStorage
@@ -174,7 +178,11 @@ export const signUpWithEmail = createAsyncThunk(
       const userData = {
         uid: user.uid,
         email: user.email,
-        ...response.data.user
+        ...response.data.user,
+        // Ensure phone verification fields are included
+        phone: response.data.user.phone || '',
+        phoneVerified: response.data.user.phoneVerified || false,
+        phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
       };
       
       // Cache user data in localStorage
@@ -216,7 +224,11 @@ export const signInWithEmail = createAsyncThunk(
       const userData = {
         uid: user.uid,
         email: user.email,
-        ...response.data.user
+        ...response.data.user,
+        // Ensure phone verification fields are included
+        phone: response.data.user.phone || '',
+        phoneVerified: response.data.user.phoneVerified || false,
+        phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
       };
       
       // Cache user data in localStorage
@@ -258,6 +270,10 @@ export const getCurrentUser = createAsyncThunk(
           // Restore saved fields if they don't exist in the response
           email: response.data.user.email || savedUserData.email || null,
           anniversary: response.data.user.anniversary || savedUserData.anniversary || null,
+          // Ensure phone verification fields are included
+          phone: response.data.user.phone || '',
+          phoneVerified: response.data.user.phoneVerified || false,
+          phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
         };
         
         // Cache user data in localStorage

@@ -28,6 +28,7 @@ import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
 import timeSettingsRoutes from './routes/timeSettingsRoutes.js';
 import newCartRoutes from './routes/newCartRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import twilioRoutes from './routes/twilioRoutesNew.js';
 
 // Initialize Express app
 const app = express();
@@ -185,6 +186,7 @@ const startServer = async () => {
     app.use('/api/time-settings', timeSettingsRoutes);
     app.use('/api/newcart', cartRateLimit, newCartRoutes);
     app.use('/api/payments', paymentRoutes);
+    app.use('/api/twilio', twilioRoutes);
 
     // Health check endpoint
     app.get('/health', (req, res) => {

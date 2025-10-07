@@ -102,7 +102,8 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       isStockActive: false,
       costPrice: 0,
       profitWanted: 0,
-      freeCashExpected: 0
+      freeCashExpected: 0,
+      discountPercentage: 50
     }
   ]);
 
@@ -160,7 +161,8 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
             isStockActive: v.isStockActive !== undefined ? v.isStockActive : false,
             costPrice: v.costPrice || 0,
             profitWanted: v.profitWanted || 0,
-            freeCashExpected: v.freeCashExpected || 0
+            freeCashExpected: v.freeCashExpected || 0,
+            discountPercentage: v.discountPercentage || 50
           }))
         : [{ 
             quantity: '', 
@@ -172,7 +174,8 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
             isStockActive: false,
             costPrice: 0,
             profitWanted: 0,
-            freeCashExpected: 0
+            freeCashExpected: 0,
+            discountPercentage: 50
           }]
       );
     } else if (preSelectedCategory) {
@@ -241,6 +244,25 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
     setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
+  // Calculate MRP based on pricing calculator inputs
+  const calculateMRP = (variant) => {
+    const costPrice = variant.costPrice || 0;
+    const profitWanted = variant.profitWanted || 0;
+    const freeCashExpected = variant.freeCashExpected || 0;
+    const discountType = variant.discount?.type;
+    const discountValue = variant.discount?.value || 0;
+    
+    const finalPrice = costPrice + profitWanted + freeCashExpected;
+    
+    if (discountType === 'flat') {
+      return finalPrice + discountValue;
+    } else if (discountType === 'percentage') {
+      return ((discountValue + 100) / 100) * finalPrice;
+    } else {
+      return finalPrice; // No discount
+    }
+  };
+
   // Variants handlers
   const handleAddVariant = () => {
     setVariants(prev => [
@@ -254,7 +276,8 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         isActive: true,
         costPrice: 0,
         profitWanted: 0,
-        freeCashExpected: 0
+        freeCashExpected: 0,
+        discountPercentage: 50
       }
     ]);
   };
@@ -290,21 +313,32 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       const extraFields = {};
       extraFieldsArray.forEach(field => { extraFields[field.key] = field.value; });
 
-      // Prepare final data - handle optional stock field
+      // Prepare final data - handle optional stock field and auto-calculate MRP
       const finalData = {
         ...formData,
         extraFields,
-        variants: variants.map(v => ({
-          ...v,
-          quantity: Number(v.quantity),
-          price: Number(v.price),
-          isStockActive: !!v.isStockActive,
-          stock: v.isStockActive ? (v.stock === '' ? 0 : Number(v.stock)) : undefined,
-          discount: { type: v.discount.type || null, value: Number(v.discount.value) || 0 },
-          costPrice: Number(v.costPrice) || 0,
-          profitWanted: Number(v.profitWanted) || 0,
-          freeCashExpected: Number(v.freeCashExpected) || 0
-        }))
+        variants: variants.map(v => {
+          // Calculate MRP if pricing calculator inputs are provided
+          let finalPrice = Number(v.price);
+          const hasPricingInputs = (v.costPrice > 0 || v.profitWanted > 0 || v.freeCashExpected > 0);
+          
+          if (hasPricingInputs) {
+            finalPrice = calculateMRP(v);
+          }
+          
+          return {
+            ...v,
+            quantity: Number(v.quantity),
+            price: finalPrice,
+            isStockActive: !!v.isStockActive,
+            stock: v.isStockActive ? (v.stock === '' ? 0 : Number(v.stock)) : undefined,
+            discount: { type: v.discount.type || null, value: Number(v.discount.value) || 0 },
+            costPrice: Number(v.costPrice) || 0,
+            profitWanted: Number(v.profitWanted) || 0,
+            freeCashExpected: Number(v.freeCashExpected) || 0,
+            discountPercentage: Number(v.discountPercentage) || 50
+          };
+        })
       };
 
       if (isEditing) await updateProduct(product._id, finalData);
@@ -703,12 +737,31 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                             required
                           />
                         </div>
+                        {(() => {
+                          const hasPricingInputs = (variant.costPrice > 0 || variant.profitWanted > 0 || variant.freeCashExpected > 0);
+                          if (hasPricingInputs) {
+                            const calculatedMRP = calculateMRP(variant);
+                            return (
+                              <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                💡 Will be auto-updated to ₹{calculatedMRP.toFixed(2)} based on pricing calculator
+                              </p>
+                            );
+                          }
+                          return (
+                            <p className="text-xs text-gray-500">
+                              Manual price entry (use pricing calculator below for auto-calculation)
+                            </p>
+                          );
+                        })()}
                       </div>
                     </div>
 
                     {/* Pricing Calculator Section */}
                     <div className="mb-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
-                      <h4 className="text-sm font-semibold text-blue-800 mb-4">Pricing Calculator</h4>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-semibold text-blue-800">Pricing Calculator</h4>
+                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">Auto-updates price on save</span>
+                      </div>
                       
                       {/* Manual Input Fields */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -760,6 +813,54 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Discount Configuration */}
+                      <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200 mb-4">
+                        <h5 className="text-sm font-medium text-yellow-800 mb-3">Discount Configuration</h5>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="space-y-2">
+                            <label className="block text-xs font-medium text-gray-700">Discount Type</label>
+                            <select
+                              value={variant.discount?.type || ''}
+                              onChange={(e) => handleVariantChange(idx, 'discount.type', e.target.value || null)}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                            >
+                              <option value="">No Discount</option>
+                              <option value="percentage">Percentage (%)</option>
+                              <option value="flat">Flat Amount (₹)</option>
+                            </select>
+                          </div>
+
+                          {variant.discount?.type && (
+                            <div className="space-y-2">
+                              <label className="block text-xs font-medium text-gray-700">Discount Value</label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                                  {variant.discount.type === 'percentage' ? '%' : '₹'}
+                                </span>
+                                <input
+                                  type="number"
+                                  value={variant.discount?.value || ''}
+                                  onChange={(e) => {
+                                    const value = Number(e.target.value) || 0;
+                                    if (variant.discount.type === 'percentage') {
+                                      handleVariantChange(idx, 'discount.value', Math.max(0, Math.min(100, value)));
+                                    } else {
+                                      handleVariantChange(idx, 'discount.value', Math.max(0, value));
+                                    }
+                                  }}
+                                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder={variant.discount.type === 'percentage' ? '50' : '100'}
+                                  min="0"
+                                  max={variant.discount.type === 'percentage' ? '100' : undefined}
+                                  step={variant.discount.type === 'percentage' ? '1' : '0.01'}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       
                       {/* Display Calculator Results */}
                       <div className="mt-4 space-y-3">
@@ -768,18 +869,31 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                           const costPrice = variant.costPrice || 0;
                           const profitWanted = variant.profitWanted || 0;
                           const freeCashExpected = variant.freeCashExpected || 0;
+                          const discountType = variant.discount?.type;
+                          const discountValue = variant.discount?.value || 0;
                           
-                          const safeSellingPrice = (costPrice + profitWanted + freeCashExpected) * 2;
+                          // New calculation logic
+                          const finalPrice = costPrice + profitWanted + freeCashExpected;
+                          let mrp = 0;
+                          
+                          if (discountType === 'flat') {
+                            mrp = finalPrice + discountValue;
+                          } else if (discountType === 'percentage') {
+                            mrp = ((discountValue + 100) / 100) * finalPrice;
+                          } else {
+                            mrp = finalPrice; // No discount
+                          }
+                          
                           const yourReturn = costPrice + profitWanted;
                           
                           return (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div className="bg-green-100 rounded-lg p-3 border border-green-200">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-sm font-medium text-green-700">Safe Selling Price</span>
-                                  <span className="text-lg font-bold text-green-800">₹{safeSellingPrice.toFixed(2)}</span>
+                                  <span className="text-sm font-medium text-green-700">MRP (Original Price)</span>
+                                  <span className="text-lg font-bold text-green-800">₹{mrp.toFixed(2)}</span>
                                 </div>
-                                <div className="text-xs text-green-600 mt-1">Set this as your product price</div>
+                                <div className="text-xs text-green-600 mt-1">✓ Will be auto-applied when saved</div>
                               </div>
                               <div className="bg-purple-100 rounded-lg p-3 border border-purple-200">
                                 <div className="flex justify-between items-center">
@@ -794,26 +908,69 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                         
                         {/* Formula Display */}
                         <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-                          <div className="text-xs text-amber-700">
-                            <strong>Formula:</strong> Safe Selling Price = ({variant.costPrice || 0} + {variant.profitWanted || 0} + {variant.freeCashExpected || 0}) × 2 = ₹{((variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0)) * 2}
+                          <div className="text-xs text-amber-700 space-y-1">
+                            <div><strong>Step 1:</strong> Final Price = {variant.costPrice || 0} + {variant.profitWanted || 0} + {variant.freeCashExpected || 0} = ₹{((variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0)).toFixed(2)}</div>
+                            <div><strong>Step 2:</strong> 
+                              {(() => {
+                                const finalPrice = (variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0);
+                                const discountType = variant.discount?.type;
+                                const discountValue = variant.discount?.value || 0;
+                                
+                                if (discountType === 'flat') {
+                                  return ` MRP = Final Price + Flat Discount = ${finalPrice.toFixed(2)} + ${discountValue} = ₹${(finalPrice + discountValue).toFixed(2)}`;
+                                } else if (discountType === 'percentage') {
+                                  return ` MRP = ((Discount% + 100) ÷ 100) × Final Price = ((${discountValue} + 100) ÷ 100) × ${finalPrice.toFixed(2)} = ₹${(((discountValue + 100) / 100) * finalPrice).toFixed(2)}`;
+                                } else {
+                                  return ` MRP = Final Price (No discount) = ₹${finalPrice.toFixed(2)}`;
+                                }
+                              })()}
+                            </div>
                           </div>
                         </div>
                         
-                        {/* Auto-update main price */}
+                        {/* ProductCard-like Price Display */}
                         <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-blue-700">Auto-update main price field?</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const safeSellingPrice = ((variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0)) * 2;
-                                handleVariantChange(idx, 'price', safeSellingPrice.toFixed(2));
-                              }}
-                              className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                            >
-                              Update Price
-                            </button>
-                          </div>
+                          <h6 className="text-sm font-medium text-blue-700 mb-2">Customer View Preview:</h6>
+                          {(() => {
+                            const costPrice = variant.costPrice || 0;
+                            const profitWanted = variant.profitWanted || 0;
+                            const freeCashExpected = variant.freeCashExpected || 0;
+                            const discountType = variant.discount?.type;
+                            const discountValue = variant.discount?.value || 0;
+                            
+                            // Calculate prices
+                            const sellingPrice = costPrice + profitWanted + freeCashExpected;
+                            let originalPrice = 0;
+                            
+                            if (discountType === 'flat') {
+                              originalPrice = sellingPrice + discountValue;
+                            } else if (discountType === 'percentage') {
+                              originalPrice = ((discountValue + 100) / 100) * sellingPrice;
+                            } else {
+                              originalPrice = sellingPrice; // No discount
+                            }
+                            
+                            const discountAmount = originalPrice - sellingPrice;
+                            const discountPercentage = discountType === 'percentage' ? discountValue : (originalPrice > 0 ? (discountAmount / originalPrice) * 100 : 0);
+                            
+                            return (
+                              <div className="inline-block max-w-xs">
+                                <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-lg font-bold text-green-600">₹{Math.round(sellingPrice)}</span>
+                                      {discountPercentage > 0 && (
+                                        <span className="text-sm text-gray-500 line-through">₹{Math.round(originalPrice)}</span>
+                                      )}
+                                    </div>
+                                    {discountPercentage > 0 && (
+                                      <span className="text-xs text-green-600 font-medium">{discountPercentage}% OFF</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -853,43 +1010,6 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                             min="0"
                           />
                           <p className="text-xs text-gray-500">Set stock to 0 when sold out</p>
-                        </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">
-                          Discount Type
-                        </label>
-                        <select
-                          value={variant.discount.type || ''}
-                          onChange={(e) => handleVariantChange(idx, 'discount.type', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors bg-white"
-                        >
-                          <option value="">No Discount</option>
-                          <option value="flat">Flat Amount (₹)</option>
-                          <option value="percentage">Percentage (%)</option>
-                        </select>
-                      </div>
-
-                      {variant.discount.type && (
-                        <div className="space-y-2">
-                          <label className="block text-sm font-semibold text-gray-700">
-                            Discount Value
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-2 text-gray-500">
-                              {variant.discount.type === 'percentage' ? '%' : '₹'}
-                            </span>
-                            <input
-                              type="number"
-                              value={variant.discount.value}
-                              onChange={(e) => handleVariantChange(idx, 'discount.value', e.target.value)}
-                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-                              placeholder="0"
-                              min="0"
-                              step={variant.discount.type === 'percentage' ? '1' : '0.01'}
-                            />
-                          </div>
                         </div>
                       )}
                     </div>

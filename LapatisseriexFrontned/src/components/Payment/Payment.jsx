@@ -50,15 +50,40 @@ const Payment = () => {
     }
   }, [hasValidDeliveryLocation, navigate, user, cartItems, cartTotal]);
   
-  // Calculate discounted cart total - same logic as cart page
+  // Calculate discounted cart total using correct pricing logic
   const discountedCartTotal = useMemo(() => {
     const result = cartItems.reduce((total, item) => {
-      const originalPrice = item.price; // ₹160
-      const discountedPrice = originalPrice * 0.5; // 50% discount = ₹80
-      return total + (discountedPrice * item.quantity);
+      if (!item || typeof item.quantity !== 'number') {
+        console.warn('Payment - Invalid item:', item);
+        return total;
+      }
+      
+      // Get variant data from productDetails
+      const prod = item.productDetails;
+      if (!prod) {
+        console.warn('Payment - No product details for item:', item);
+        // Fallback to old logic if no product details
+        return total + ((item.price || 0) * item.quantity);
+      }
+      
+      const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+      const variant = prod?.variants?.[vi];
+      if (!variant) {
+        console.warn('Payment - No variant found for item:', item);
+        // Fallback to old logic if no variant
+        return total + ((item.price || 0) * item.quantity);
+      }
+      
+      // Calculate selling price: costPrice + profitWanted + freeCashExpected
+      const costPrice = parseFloat(variant.costPrice) || 0;
+      const profitWanted = parseFloat(variant.profitWanted) || 0;
+      const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
+      const sellingPrice = costPrice + profitWanted + freeCashExpected;
+      
+      return total + (sellingPrice * item.quantity);
     }, 0);
     
-    console.log('Payment - Discounted total:', result, 'from items:', cartItems);
+    console.log('Payment - Total:', result, 'from items:', cartItems);
     return result;
   }, [cartItems]);
 
@@ -196,11 +221,26 @@ const Payment = () => {
         paymentMethod,
         cartItems: cartItems.map(item => {
           console.log('Processing cart item:', item);
+          
+          // Calculate correct selling price for order
+          const prod = item.productDetails;
+          const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+          const variant = prod?.variants?.[vi];
+          
+          let sellingPrice = item.price; // Fallback to old price
+          if (variant) {
+            const costPrice = parseFloat(variant.costPrice) || 0;
+            const profitWanted = parseFloat(variant.profitWanted) || 0;
+            const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
+            sellingPrice = costPrice + profitWanted + freeCashExpected;
+          }
+          
           return {
             productId: item.productId || item._id,
             productName: item.name,
             quantity: item.quantity,
-            price: item.price,
+            price: sellingPrice, // Use correct selling price
+            originalPrice: variant?.price || item.price, // Store original MRP for reference
             variantIndex: item.variantIndex || 0
           };
         }),
@@ -754,18 +794,44 @@ const Payment = () => {
                         </p>
                         <div className="text-xs">
                           {(() => {
-                            // Apply same 50% discount as cart
-                            const originalPrice = item.price;
-                            const discountedPrice = originalPrice * 0.5;
+                            // Get variant data from productDetails
+                            const prod = item.productDetails;
+                            const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+                            const variant = prod?.variants?.[vi];
+                            
+                            if (!variant) {
+                              // Fallback to old logic if variant not found
+                              return (
+                                <div className="space-y-1">
+                                  <div>
+                                    <span className="font-medium text-green-600">₹{Math.round((item.price || 0))}</span>
+                                    <span className="text-black"> × {item.quantity}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            // Calculate correct pricing
+                            const originalPrice = parseFloat(variant.price) || 0; // MRP (strikethrough)
+                            const costPrice = parseFloat(variant.costPrice) || 0;
+                            const profitWanted = parseFloat(variant.profitWanted) || 0;
+                            const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
+                            const sellingPrice = costPrice + profitWanted + freeCashExpected; // Actual selling price
+                            
+                            // Calculate discount percentage
+                            const discountAmount = originalPrice - sellingPrice;
+                            const discountPercentage = variant.discount.type==='percentage' ? variant.discount.value : originalPrice > 0 ? Math.round((discountAmount / originalPrice) * 100) : 0;
                             
                             return (
                               <div className="space-y-1">
                                 <div>
                                   <span className="text-gray-500 line-through">₹{Math.round(originalPrice)}</span>
-                                  <span className="font-medium text-green-600 ml-2">₹{Math.round(discountedPrice)}</span>
+                                  <span className="font-medium text-green-600 ml-2">₹{Math.round(sellingPrice)}</span>
                                   <span className="text-black"> × {item.quantity}</span>
                                 </div>
-                                <div className="text-green-600 font-medium text-xs">50% OFF</div>
+                                {discountPercentage > 0 && (
+                                  <div className="text-green-600 font-medium text-xs">{discountPercentage}% OFF</div>
+                                )}
                               </div>
                             );
                           })()}
@@ -778,24 +844,50 @@ const Payment = () => {
               
               <div className="space-y-2 text-black">
                 {(() => {
-                  // Simple calculation - 50% discount
-                  const originalTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-                  const totalSavings = originalTotal * 0.5; // 50% savings
-                  const discountedTotal = originalTotal - totalSavings;
+                  // Calculate using correct pricing logic
+                  const totals = cartItems.reduce((acc, item) => {
+                    const prod = item.productDetails;
+                    const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+                    const variant = prod?.variants?.[vi];
+                    
+                    if (!variant) {
+                      // Fallback to old logic if no variant
+                      const itemPrice = (item.price || 0) * item.quantity;
+                      acc.originalTotal += itemPrice;
+                      acc.sellingTotal += itemPrice;
+                      return acc;
+                    }
+                    
+                    const originalPrice = parseFloat(variant.price) || 0; // MRP
+                    const costPrice = parseFloat(variant.costPrice) || 0;
+                    const profitWanted = parseFloat(variant.profitWanted) || 0;
+                    const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
+                    const sellingPrice = costPrice + profitWanted + freeCashExpected;
+                    
+                    acc.originalTotal += originalPrice * item.quantity;
+                    acc.sellingTotal += sellingPrice * item.quantity;
+                    
+                    return acc;
+                  }, { originalTotal: 0, sellingTotal: 0 });
+                  
+                  const totalSavings = totals.originalTotal - totals.sellingTotal;
+                  const discountPercentage = totals.originalTotal > 0 ? Math.round((totalSavings / totals.originalTotal) * 100) : 0;
                   
                   return (
                     <>
                       <div className="flex justify-between text-sm text-gray-500">
                         <span>Original Price</span>
-                        <span className="line-through">₹{Math.round(originalTotal)}</span>
+                        <span className="line-through">₹{Math.round(totals.originalTotal)}</span>
                       </div>
-                      <div className="flex justify-between text-green-600">
-                        <span>Discount Savings (50% OFF)</span>
-                        <span className="font-medium">-₹{Math.round(totalSavings)}</span>
-                      </div>
+                      {totalSavings > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Discount Savings ({discountPercentage}% OFF)</span>
+                          <span className="font-medium">-₹{Math.round(totalSavings)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-medium">₹{Math.round(discountedTotal)}</span>
+                        <span className="font-medium">₹{Math.round(totals.sellingTotal)}</span>
                       </div>
                     </>
                   );

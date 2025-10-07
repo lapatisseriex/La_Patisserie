@@ -33,6 +33,13 @@ const variantSchema = new mongoose.Schema({
     default: 0, 
     min: 0 
   },
+  // Discount percentage for calculation
+  discountPercentage: {
+    type: Number,
+    default: 50,
+    min: 0,
+    max: 100
+  },
   discount: {
     type: { type: String, enum: ['flat', 'percentage', null], default: null },
     value: { type: Number, default: 0, min: 0 }
@@ -80,13 +87,29 @@ productSchema.virtual('stock').get(function() {
   return this.variants.reduce((total, variant) => total + (variant.stock || 0), 0);
 });
 
-// Method to calculate safe selling price for a variant
-productSchema.methods.calculateSafeSellingPrice = function(variantIndex = 0) {
+// Method to calculate MRP for a variant using new pricing logic
+productSchema.methods.calculateMRP = function(variantIndex = 0) {
   const variant = this.variants[variantIndex];
   if (!variant) return 0;
 
-  const { costPrice = 0, profitWanted = 0, freeCashExpected = 0 } = variant;
-  return (costPrice + profitWanted + freeCashExpected) * 2;
+  const { costPrice = 0, profitWanted = 0, freeCashExpected = 0, discount = {} } = variant;
+  const finalPrice = costPrice + profitWanted + freeCashExpected;
+  
+  // Calculate MRP based on discount type
+  if (discount.type === 'flat') {
+    return finalPrice + (discount.value || 0);
+  } else if (discount.type === 'percentage') {
+    const discountPercentage = discount.value || 0;
+    return ((discountPercentage + 100) / 100) * finalPrice;
+  } else {
+    return finalPrice; // No discount
+  }
+};
+
+// Method to calculate safe selling price for a variant (legacy support)
+productSchema.methods.calculateSafeSellingPrice = function(variantIndex = 0) {
+  // For backward compatibility, return MRP
+  return this.calculateMRP(variantIndex);
 };
 
 // Method to get complete pricing breakdown for a variant
@@ -94,8 +117,30 @@ productSchema.methods.getVariantPricingBreakdown = function(variantIndex = 0) {
   const variant = this.variants[variantIndex];
   if (!variant) return null;
 
-  const { costPrice = 0, profitWanted = 0, freeCashExpected = 0, price = 0, discount = {} } = variant;
-  const safeSellingPrice = this.calculateSafeSellingPrice(variantIndex);
+  const { 
+    costPrice = 0, 
+    profitWanted = 0, 
+    freeCashExpected = 0, 
+    price = 0, 
+    discount = {} 
+  } = variant;
+  
+  // Calculate using new pricing logic
+  const finalPrice = costPrice + profitWanted + freeCashExpected;
+  let mrp = 0;
+  let effectiveDiscountPercentage = 0;
+  
+  if (discount.type === 'flat') {
+    mrp = finalPrice + (discount.value || 0);
+    effectiveDiscountPercentage = mrp > 0 ? Math.round(((discount.value || 0) / mrp) * 100) : 0;
+  } else if (discount.type === 'percentage') {
+    const discountPercentage = discount.value || 0;
+    mrp = ((discountPercentage + 100) / 100) * finalPrice;
+    effectiveDiscountPercentage = discountPercentage;
+  } else {
+    mrp = finalPrice;
+    effectiveDiscountPercentage = 0;
+  }
   
   // Use actual discount from variant settings, not hardcoded value
   let actualDiscount = 0;
@@ -118,10 +163,13 @@ productSchema.methods.getVariantPricingBreakdown = function(variantIndex = 0) {
     costPrice,
     profitWanted,
     freeCashExpected,
-    safeSellingPrice,
-    originalPrice: price,
     discountType: discount.type || null,
     discountValue: discount.value || 0,
+    effectiveDiscountPercentage,
+    finalPrice,
+    mrp,
+    safeSellingPrice: mrp, // Legacy field
+    originalPrice: price,
     actualDiscountPercentage: actualDiscount,
     finalCustomerPrice: discountedPrice,
     sellerReturn,

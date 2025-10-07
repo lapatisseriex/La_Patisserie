@@ -63,6 +63,18 @@ const userSchema = new mongoose.Schema(
       enum: ['male', 'female', 'other', ''],
       default: ''
     },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    // Phone verification flags
+    phoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+    phoneVerifiedAt: {
+      type: Date,
+    },
     profilePhoto: {
       url: { type: String, default: '' },
       public_id: { type: String, default: '' }

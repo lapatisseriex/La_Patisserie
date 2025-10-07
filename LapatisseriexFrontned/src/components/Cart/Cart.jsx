@@ -71,7 +71,7 @@ const Cart = () => {
     }
   };
 
-  // Calculate discounted cart total - simple 50% discount
+  // Calculate discounted cart total using correct pricing logic
   const discountedCartTotal = useMemo(() => {
     try {
       if (!Array.isArray(cartItems)) {
@@ -80,20 +80,38 @@ const Cart = () => {
       }
       
       const result = cartItems.reduce((total, item) => {
-        if (!item || typeof item.price !== 'number' || typeof item.quantity !== 'number') {
+        if (!item || typeof item.quantity !== 'number') {
           console.warn('Cart - Invalid item:', item);
           return total;
         }
         
-        const originalPrice = item.price; // ₹160
-        const discountedPrice = originalPrice * 0.5; // 50% discount = ₹80
-        return total + (discountedPrice * item.quantity);
+        // Get variant data from productDetails
+        const prod = item.productDetails;
+        if (!prod) {
+          console.warn('Cart - No product details for item:', item);
+          return total;
+        }
+        
+        const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+        const variant = prod?.variants?.[vi];
+        if (!variant) {
+          console.warn('Cart - No variant found for item:', item);
+          return total;
+        }
+        
+        // Calculate selling price: costPrice + profitWanted + freeCashExpected
+        const costPrice = parseFloat(variant.costPrice) || 0;
+        const profitWanted = parseFloat(variant.profitWanted) || 0;
+        const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
+        const sellingPrice = costPrice + profitWanted + freeCashExpected;
+        
+        return total + (sellingPrice * item.quantity);
       }, 0);
       
-      console.log('Cart - Discounted total:', result, 'from items:', cartItems);
+      console.log('Cart - Total:', result, 'from items:', cartItems);
       return result;
     } catch (error) {
-      console.error('Cart - Error calculating discounted total:', error);
+      console.error('Cart - Error calculating total:', error);
       return 0;
     }
   }, [cartItems]);
@@ -390,23 +408,47 @@ const Cart = () => {
                         
                         <div className="text-right">
                           {(() => {
-                            // Simple discount calculation - 50% off for demonstration
-                            const originalPrice = item.price; // This is ₹160
-                            const discountedPrice = originalPrice * 0.5; // 50% discount = ₹80
-                            const discountPercentage = 50;
+                            // Get variant data from productDetails
+                            const prod = item.productDetails;
+                            const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+                            const variant = prod?.variants?.[vi];
+                            
+                            if (!variant) {
+                              // Fallback to old logic if variant not found
+                              return (
+                                <div className="font-medium text-black text-sm md:text-base">
+                                  ₹{Math.round((item.price || 0) * item.quantity)}
+                                </div>
+                              );
+                            }
+                            
+                            // Calculate correct pricing
+                            const originalPrice = parseFloat(variant.price) || 0; // MRP (strikethrough)
+                            const costPrice = parseFloat(variant.costPrice) || 0;
+                            const profitWanted = parseFloat(variant.profitWanted) || 0;
+                            const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
+                            const sellingPrice = costPrice + profitWanted + freeCashExpected; // Actual selling price
+                            
+                            // Calculate discount percentage
+                            const discountAmount = originalPrice - sellingPrice;
+                            const discountPercentage = variant.discount.type === 'percentage'
+                              ? variant.discount.value
+                              : originalPrice > 0 ? Math.round((discountAmount / originalPrice) * 100) : 0;
                             
                             return (
                               <>
                                 <div className="font-medium text-black text-sm md:text-base">
-                                  ₹{Math.round(discountedPrice * item.quantity)}
+                                  ₹{Math.round(sellingPrice * item.quantity)}
                                 </div>
                                 <div className="text-xs md:text-sm">
                                   <div className="space-y-1">
                                     <div className="text-gray-500">
                                       <span className="line-through">₹{Math.round(originalPrice)}</span>
-                                      <span className="text-green-600 ml-1">₹{Math.round(discountedPrice)}</span> each
+                                      <span className="text-green-600 ml-1">₹{Math.round(sellingPrice)}</span> each
                                     </div>
-                                    <div className="text-green-600 font-medium">{discountPercentage}% OFF</div>
+                                    {discountPercentage > 0 && (
+                                      <div className="text-green-600 font-medium">{discountPercentage}% OFF</div>
+                                    )}
                                   </div>
                                 </div>
                               </>

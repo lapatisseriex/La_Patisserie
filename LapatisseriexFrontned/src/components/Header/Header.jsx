@@ -728,7 +728,6 @@ const Header = ({ isAdminView = false }) => {
           
           {/* Navigation Links - Desktop (user/cart section) - Premium Design */}
           <div className="hidden md:flex items-center space-x-4">
-
             {user && (
               <>
                 {/* Admin Dashboard Button - Show only for admins - Positioned first */}

@@ -44,7 +44,10 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       createdAt: user.createdAt,
       email: user.email || '',
       emailVerified: user.emailVerified || false,
-      emailVerifiedAt: user.emailVerifiedAt || null
+      emailVerifiedAt: user.emailVerifiedAt || null,
+      phone: user.phone || '',
+      phoneVerified: user.phoneVerified || false,
+      phoneVerifiedAt: user.phoneVerifiedAt || null
     }
   });
 });
@@ -81,7 +84,8 @@ export const updateUser = asyncHandler(async (req, res) => {
     location, 
     hostel, 
     role,
-    email
+    email,
+    phone
   } = req.body;
   
   if (name) user.name = name;
@@ -116,6 +120,11 @@ export const updateUser = asyncHandler(async (req, res) => {
   // Handle email updates
   if (email !== undefined) {
     user.email = email;
+  }
+  
+  // Handle phone updates
+  if (phone !== undefined) {
+    user.phone = phone;
   }
   
   // Email verification status removed

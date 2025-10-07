@@ -18,6 +18,7 @@ import {
   Building
 } from 'lucide-react';
 import EmailVerification from './EmailVerification';
+import PhoneVerification from './PhoneVerification';
 
 const Profile = () => {
   const { user, updateProfile, authError, loading, isNewUser, updateUser } = useAuth();
@@ -748,40 +749,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Mobile Field */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Mobile <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <div className="flex">
-                <div className="relative">
-                  <select className="pl-10 pr-8 py-3 border border-gray-300 rounded-none rounded-r-none bg-gray-50 text-gray-600 appearance-none transition-all duration-300">
-                    <option value="+91">🇮🇳</option>
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                </div>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Enter mobile number"
-                  disabled={true}
-                  className="flex-1 px-4 py-3 border border-l-0 border-gray-300 rounded-none rounded-r-none bg-gray-50 text-gray-600 transition-all duration-300"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Email verification section */}
-          <div className="md:col-span-2">
-            <EmailVerification />
-          </div>
-
-
-
           {/* Gender Field */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
@@ -805,6 +772,16 @@ const Profile = () => {
               </select>
               <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
+          </div>
+          
+          {/* Email verification section */}
+          <div className="md:col-span-2">
+            <EmailVerification />
+          </div>
+          
+          {/* Phone verification section */}
+          <div className="md:col-span-2">
+            <PhoneVerification />
           </div>
           
           {/* Date of Birth Field */}
@@ -1015,8 +992,6 @@ const Profile = () => {
         )}
       </form>
 
-      {/* Email verification block */}
-      <EmailVerification />
       </div>
     </>
   );
