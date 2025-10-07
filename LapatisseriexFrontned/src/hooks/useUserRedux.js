@@ -6,7 +6,7 @@ import {
   setLoading,
   setError,
   setAuthType,
-  setTempPhoneNumber,
+
   setConfirmationResult,
   setIsAuthPanelOpen,
   setIsNewUser,
@@ -70,9 +70,7 @@ export const useUserRedux = () => {
     dispatch(setAuthType(type));
   }, [dispatch]);
 
-  const setTempPhone = useCallback((phoneNumber) => {
-    dispatch(setTempPhoneNumber(phoneNumber));
-  }, [dispatch]);
+
 
   const setConfirmResult = useCallback((result) => {
     dispatch(setConfirmationResult(result));

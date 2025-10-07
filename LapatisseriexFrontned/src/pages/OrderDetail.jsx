@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useAuth } from '../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../hooks/useAuth';
 import OrderTrackingContent from '../components/Orders/OrderTrackingContent';
 
 const OrderDetail = () => {

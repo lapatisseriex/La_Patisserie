@@ -8,7 +8,7 @@ import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import FavoriteButton from '../components/Favorites/FavoriteButton';
 
 import { useRecentlyViewed } from '../context/RecentlyViewedContext/RecentlyViewedContext';
-import { useAuth } from '../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../hooks/useAuth';
 import MediaDisplay from '../components/common/MediaDisplay';
 import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';

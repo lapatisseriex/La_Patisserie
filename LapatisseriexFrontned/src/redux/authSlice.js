@@ -2,9 +2,13 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
-  signInWithPhoneNumber, 
-  RecaptchaVerifier,
-  signOut
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  onAuthStateChanged
 } from 'firebase/auth';
 import axios from 'axios';
 import api from '../services/apiService';
@@ -26,101 +30,91 @@ const auth = getAuth(app);
 // Backend API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL;
 
-// Store confirmation result temporarily (not in Redux state to avoid persistence issues)
-let temporaryConfirmationResult = null;
+// Initialize Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
-// Helper function to check if confirmation result is available
-export const hasConfirmationResult = () => !!temporaryConfirmationResult;
+// Add popup handling configuration
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
 
-// Helper function to clear confirmation result (for cleanup)
-export const clearConfirmationResult = () => {
-  temporaryConfirmationResult = null;
-};
-
-// Async thunks for authentication actions
-export const sendOTP = createAsyncThunk(
-  'auth/sendOTP',
-  async ({ phoneNumber, recaptchaContainerId }, { rejectWithValue }) => {
-    try {
-      // Clear any existing recaptcha
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
-
-      // Create new RecaptchaVerifier
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
-        size: 'invisible',
-        callback: () => {
-          // Recaptcha resolved
-        },
-        'expired-callback': () => {
-          // Recaptcha expired
+// Initialize auth listener
+export const initializeAuthListener = createAsyncThunk(
+  'auth/initializeAuthListener',
+  async (_, { dispatch }) => {
+    return new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+          try {
+            // Get ID token and verify with backend
+            const idToken = await firebaseUser.getIdToken();
+            
+            // Store token in localStorage
+            localStorage.setItem('authToken', idToken);
+            
+            // Create user data
+            const userData = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName,
+              profilePhoto: { url: firebaseUser.photoURL || '', public_id: '' },
+            };
+            
+            dispatch({
+              type: 'auth/setUser',
+              payload: {
+                user: userData,
+                token: idToken,
+                isAuthenticated: true
+              }
+            });
+          } catch (error) {
+            console.error('Error processing auth state change:', error);
+          }
+        } else {
+          // User is signed out
+          localStorage.removeItem('authToken');
+          dispatch({ type: 'auth/clearUser' });
         }
       });
-
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
       
-      // Store confirmation result temporarily outside Redux state
-      temporaryConfirmationResult = confirmationResult;
-      
-      return {
-        phoneNumber
-      };
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      return rejectWithValue(error.message);
-    }
+      resolve(unsubscribe);
+    });
   }
 );
 
-export const verifyOTP = createAsyncThunk(
-  'auth/verifyOTP',
-  async ({ otp, locationId }, { rejectWithValue }) => {
+// Async thunks for authentication actions
+
+// Google Sign-In
+export const signInWithGoogle = createAsyncThunk(
+  'auth/signInWithGoogle',
+  async ({ locationId = null }, { rejectWithValue }) => {
     try {
-      // Use the temporarily stored confirmation result
-      if (!temporaryConfirmationResult) {
-        throw new Error('No confirmation result found. Please resend OTP.');
-      }
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
       
-      // Verify OTP with Firebase
-      const result = await temporaryConfirmationResult.confirm(otp);
-      const firebaseUser = result.user;
-
-      // Clear the temporary confirmation result after use
-      temporaryConfirmationResult = null;
-
       // Get ID token
-      const idToken = await firebaseUser.getIdToken();
+      const idToken = await user.getIdToken();
       
       // Store token in localStorage for API requests
       localStorage.setItem('authToken', idToken);
       
-      // Verify with backend
-      const response = await axios.post(`${API_URL}/auth/verify`, { 
+      // Send to backend for verification and user creation/update
+      const response = await axios.post(`${API_URL}/auth/verify`, {
         idToken,
-        locationId 
+        locationId,
+        authMethod: 'google'
       });
       
-      // Get saved user data (if any) to restore fields like email and anniversary
-      let savedUserData = {};
-      try {
-        const savedDataString = localStorage.getItem('savedUserData');
-        if (savedDataString) {
-          savedUserData = JSON.parse(savedDataString);
-        }
-      } catch (error) {
-        console.error('Error parsing saved user data:', error);
-      }
-      
-      // Create the user object with data from backend, preserving saved fields
+      // Create the user object with data from backend
       const userData = {
-        uid: firebaseUser.uid,
-        phone: firebaseUser.phoneNumber,
-        ...response.data.user,
-        // Restore saved fields if they don't exist in the response
-        email: response.data.user.email || savedUserData.email || null,
-        anniversary: response.data.user.anniversary || savedUserData.anniversary || null,
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        profilePhoto: { url: user.photoURL || '', public_id: '' },
+        ...response.data.user
       };
       
       // Cache user data in localStorage
@@ -129,11 +123,113 @@ export const verifyOTP = createAsyncThunk(
       return {
         user: userData,
         token: idToken,
-        isNewUser: response.data.isNewUser || false
+        isNewUser: response.data.isNewUser
       };
     } catch (error) {
-      console.error('Error verifying OTP:', error);
-      return rejectWithValue(error.message);
+      console.error('Error signing in with Google:', error);
+      
+      let errorMessage = 'Failed to sign in with Google';
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        errorMessage = 'Sign-in cancelled by user';
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Popup blocked. Please allow popups for this site.';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many attempts. Please try again later.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// Email Sign Up
+export const signUpWithEmail = createAsyncThunk(
+  'auth/signUpWithEmail',
+  async ({ email, password, locationId = null }, { rejectWithValue }) => {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const user = result.user;
+      
+      // Send email verification
+      await sendEmailVerification(user);
+      
+      // Get ID token
+      const idToken = await user.getIdToken();
+      
+      // Store token in localStorage for API requests
+      localStorage.setItem('authToken', idToken);
+      
+      // Send to backend for user creation
+      const response = await axios.post(`${API_URL}/auth/verify`, {
+        idToken,
+        locationId,
+        authMethod: 'email'
+      });
+      
+      // Create the user object with data from backend
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        ...response.data.user
+      };
+      
+      // Cache user data in localStorage
+      localStorage.setItem('cachedUser', JSON.stringify(userData));
+      
+      return {
+        user: userData,
+        token: idToken,
+        isNewUser: response.data.isNewUser
+      };
+    } catch (error) {
+      console.error('Error signing up with email:', error);
+      return rejectWithValue(error.message || 'Failed to sign up with email');
+    }
+  }
+);
+
+// Email Sign In
+export const signInWithEmail = createAsyncThunk(
+  'auth/signInWithEmail',
+  async ({ email, password }, { rejectWithValue }) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const user = result.user;
+      
+      // Get ID token
+      const idToken = await user.getIdToken();
+      
+      // Store token in localStorage for API requests
+      localStorage.setItem('authToken', idToken);
+      
+      // Send to backend for verification
+      const response = await axios.post(`${API_URL}/auth/verify`, {
+        idToken,
+        authMethod: 'email'
+      });
+      
+      // Create the user object with data from backend
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        ...response.data.user
+      };
+      
+      // Cache user data in localStorage
+      localStorage.setItem('cachedUser', JSON.stringify(userData));
+      
+      return {
+        user: userData,
+        token: idToken,
+        isNewUser: response.data.isNewUser
+      };
+    } catch (error) {
+      console.error('Error signing in with email:', error);
+      return rejectWithValue(error.message || 'Failed to sign in with email');
     }
   }
 );
@@ -233,12 +329,10 @@ const initialState = {
   isAuthenticated: false,
   loading: true,
   error: null,
-  authType: 'login', // login, signup, otp, profile
-  tempPhoneNumber: '',
+  authType: 'login', // login, signup, profile
   isAuthPanelOpen: false,
   isNewUser: false,
-  otpSending: false,
-  otpVerifying: false,
+  authenticating: false,
   profileUpdating: false,
 };
 
@@ -249,9 +343,6 @@ const authSlice = createSlice({
   reducers: {
     setAuthType: (state, action) => {
       state.authType = action.payload;
-    },
-    setTempPhoneNumber: (state, action) => {
-      state.tempPhoneNumber = action.payload;
     },
     setIsAuthPanelOpen: (state, action) => {
       state.isAuthPanelOpen = action.payload;
@@ -267,6 +358,18 @@ const authSlice = createSlice({
       state.user = { ...state.user, ...action.payload };
       // Update localStorage cache
       localStorage.setItem('cachedUser', JSON.stringify(state.user));
+    },
+    setUser: (state, action) => {
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.isAuthenticated = action.payload.isAuthenticated;
+      state.loading = false;
+    },
+    clearUser: (state) => {
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      state.loading = false;
     },
     initializeAuth: (state) => {
       // Initialize token from localStorage
@@ -300,33 +403,17 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Send OTP
-      .addCase(sendOTP.pending, (state) => {
-        state.otpSending = true;
+      // Google Sign In
+      .addCase(signInWithGoogle.pending, (state) => {
+        state.authenticating = true;
         state.error = null;
       })
-      .addCase(sendOTP.fulfilled, (state, action) => {
-        state.otpSending = false;
-        state.tempPhoneNumber = action.payload.phoneNumber;
-        state.authType = 'otp';
-      })
-      .addCase(sendOTP.rejected, (state, action) => {
-        state.otpSending = false;
-        state.error = action.payload;
-      })
-      
-      // Verify OTP
-      .addCase(verifyOTP.pending, (state) => {
-        state.otpVerifying = true;
-        state.error = null;
-      })
-      .addCase(verifyOTP.fulfilled, (state, action) => {
-        state.otpVerifying = false;
+      .addCase(signInWithGoogle.fulfilled, (state, action) => {
+        state.authenticating = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isAuthenticated = true;
         state.isNewUser = action.payload.isNewUser;
-        state.tempPhoneNumber = '';
         
         if (action.payload.isNewUser) {
           state.authType = 'profile';
@@ -334,8 +421,54 @@ const authSlice = createSlice({
           state.isAuthPanelOpen = false;
         }
       })
-      .addCase(verifyOTP.rejected, (state, action) => {
-        state.otpVerifying = false;
+      .addCase(signInWithGoogle.rejected, (state, action) => {
+        state.authenticating = false;
+        state.error = action.payload;
+      })
+      
+      // Email Sign Up
+      .addCase(signUpWithEmail.pending, (state) => {
+        state.authenticating = true;
+        state.error = null;
+      })
+      .addCase(signUpWithEmail.fulfilled, (state, action) => {
+        state.authenticating = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.isNewUser = action.payload.isNewUser;
+        
+        if (action.payload.isNewUser) {
+          state.authType = 'profile';
+        } else {
+          state.isAuthPanelOpen = false;
+        }
+      })
+      .addCase(signUpWithEmail.rejected, (state, action) => {
+        state.authenticating = false;
+        state.error = action.payload;
+      })
+      
+      // Email Sign In
+      .addCase(signInWithEmail.pending, (state) => {
+        state.authenticating = true;
+        state.error = null;
+      })
+      .addCase(signInWithEmail.fulfilled, (state, action) => {
+        state.authenticating = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.isNewUser = action.payload.isNewUser;
+        
+        if (action.payload.isNewUser) {
+          state.authType = 'profile';
+        } else {
+          state.isAuthPanelOpen = false;
+        }
+      })
+      .addCase(signInWithEmail.rejected, (state, action) => {
+        state.authenticating = false;
         state.error = action.payload;
       })
       
@@ -376,14 +509,25 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.authType = 'login';
         state.isNewUser = false;
-        state.tempPhoneNumber = '';
         state.isAuthPanelOpen = false;
         state.error = null;
         
-        // Clear temporary confirmation result on logout
-        temporaryConfirmationResult = null;
+
       })
       .addCase(logoutUser.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+      
+      // Initialize Auth Listener
+      .addCase(initializeAuthListener.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(initializeAuthListener.fulfilled, (state, action) => {
+        state.loading = false;
+        // Auth state will be handled by the listener itself through setUser/clearUser
+      })
+      .addCase(initializeAuthListener.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload;
       });
   },
@@ -391,13 +535,14 @@ const authSlice = createSlice({
 
 export const {
   setAuthType,
-  setTempPhoneNumber,
   setIsAuthPanelOpen,
   setIsNewUser,
   clearError,
   updateUser,
   initializeAuth,
   authExpired,
+  setUser,
+  clearUser
 } = authSlice.actions;
 
 export default authSlice.reducer;

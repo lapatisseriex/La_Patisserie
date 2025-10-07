@@ -29,18 +29,22 @@ class DatabaseConnection {
         maxPoolSize: Number(process.env.MONGO_MAX_POOL_SIZE || 10),        // Increased pool for high traffic
         minPoolSize: Number(process.env.MONGO_MIN_POOL_SIZE || 2),         // Minimum connections
         maxIdleTimeMS: Number(process.env.MONGO_MAX_IDLE_MS || 300000),    // 5 minutes idle time
-        waitQueueTimeoutMS: Number(process.env.MONGO_WAIT_QUEUE_MS || 30000), // 30s wait time
-        serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_MS || 10000), // 10s selection timeout
-        socketTimeoutMS: Number(process.env.MONGO_SOCKET_TIMEOUT_MS || 60000), // 60s socket timeout
+        waitQueueTimeoutMS: Number(process.env.MONGO_WAIT_QUEUE_MS || 45000), // 45s wait time
+        serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_MS || 30000), // 30s selection timeout
+        socketTimeoutMS: Number(process.env.MONGO_SOCKET_TIMEOUT_MS || 90000), // 90s socket timeout
         heartbeatFrequencyMS: Number(process.env.MONGO_HEARTBEAT_MS || 10000), // 10s heartbeat
-        connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS || 10000), // 10s connection timeout
+        connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS || 30000), // 30s connection timeout
         maxConnecting: Number(process.env.MONGO_MAX_CONNECTING || 3),       // Allow 3 concurrent connections
         family: 4,
         retryWrites: true,
         w: 'majority',
         // Additional resilience options
         compressors: ['zlib'],
-        zlibCompressionLevel: 6
+        zlibCompressionLevel: 6,
+        // Additional connection resilience
+        directConnection: false,
+        readPreference: 'primary',
+        readConcern: { level: 'majority' }
       };
 
       await mongoose.connect(process.env.MONGODB_URI, options);
@@ -66,9 +70,15 @@ class DatabaseConnection {
       if (error.name === 'MongoParseError' || 
           error.message.includes('Authentication failed') ||
           error.message.includes('bad auth') ||
-          error.message.includes('ENOTFOUND')) {
+          error.message.includes('ENOTFOUND') ||
+          error.message.includes('getaddrinfo')) {
         console.error('💥 Unrecoverable MongoDB error. Not retrying.');
         throw error;
+      }
+      
+      // Log specific error details for timeout issues
+      if (error.name === 'MongoNetworkTimeoutError') {
+        console.error('🌐 Network timeout - check your internet connection and MongoDB Atlas network access');
       }
       
       if (this.retryAttempts < this.maxRetries) {

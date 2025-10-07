@@ -1,7 +1,7 @@
 import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import axiosInstance from '../../utils/axiosConfig';
-import { useAuth } from '../AuthContext/AuthContextRedux';
+import { useAuth } from '../../hooks/useAuth';
 import CacheManager from '../../utils/cacheManager';
 
 const ProductContext = createContext();

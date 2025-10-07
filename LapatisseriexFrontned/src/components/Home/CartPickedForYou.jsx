@@ -4,7 +4,7 @@ import { useCart } from '../../hooks/useCart';
 
 import { fetchProducts } from '../../redux/productsSlice';
 import { useProduct } from '../../context/ProductContext/ProductContext';
-import { useAuth } from '../../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../../hooks/useAuth';
 
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import ProductCard from '../Products/ProductCard';

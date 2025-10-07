@@ -170,7 +170,7 @@ newCartSchema.statics.getOrCreateCart = async function(userId) {
 };
 
 // Ensure indexes for better performance
-newCartSchema.index({ userId: 1 });
+// Note: userId already has unique: true which creates an index automatically
 newCartSchema.index({ 'items.productId': 1 });
 
 const NewCart = mongoose.model('NewCart', newCartSchema);

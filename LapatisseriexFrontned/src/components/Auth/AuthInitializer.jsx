@@ -1,8 +1,19 @@
-// Legacy AuthInitializer no longer required: AuthContextRedux now owns
-// Firebase auth state subscription and local storage initialization.
-// We keep this component as a harmless passthrough to avoid refactoring
-// import sites immediately. Safe to delete once usages are removed.
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { initializeAuthListener, initializeAuth } from '../../redux/authSlice';
 
-const AuthInitializer = ({ children }) => children || null;
+const AuthInitializer = () => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Initialize auth from localStorage first
+    dispatch(initializeAuth());
+    
+    // Then set up Firebase auth listener
+    dispatch(initializeAuthListener());
+  }, [dispatch]);
+
+  return null;
+};
 
 export default AuthInitializer;

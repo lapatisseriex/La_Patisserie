@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../../../hooks/useAuth';
 
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
@@ -520,7 +520,7 @@ const Profile = () => {
       setTimeout(() => {
         console.log('🛑 Setting isSaving to FALSE'); // Debug log
         setIsSaving(false);
-      }, 2000); // Minimum 2 seconds to show loading animation
+      }, 1000); // Minimum 1 second to show loading animation
     }
   };
 
@@ -627,17 +627,19 @@ const Profile = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 relative">
+    <>
       {/* Global loading overlay - shown when saving */}
       {isSaving && (
         <>
           {console.log('🎬 Rendering GlobalLoadingOverlay')}
           <GlobalLoadingOverlay 
-            message="Saving your profile..." 
+            message="Saving Profile..." 
             key={`loading-${Date.now()}`} // Force a fresh instance
           />
         </>
       )}
+      
+      <div className="max-w-4xl mx-auto p-6 relative">
       
       <div className="mb-6 flex flex-col md:flex-row items-center gap-6">
         <div className="mb-4 md:mb-0">
@@ -995,11 +997,16 @@ const Profile = () => {
               {isSaving && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span className="text-sm font-medium">SAVING...</span>
+                    <img 
+                      src="/images/logo.png" 
+                      alt="Loading" 
+                      className="h-5 w-5 animate-spin"
+                      style={{
+                        filter: 'brightness(0) invert(1)', // Makes logo white
+                        animation: 'spin 1s linear infinite'
+                      }}
+                    />
+                    <span className="text-sm font-medium">SAVING PROFILE...</span>
                   </div>
                 </div>
               )}
@@ -1010,7 +1017,8 @@ const Profile = () => {
 
       {/* Email verification block */}
       <EmailVerification />
-    </div>
+      </div>
+    </>
   );
 };
 

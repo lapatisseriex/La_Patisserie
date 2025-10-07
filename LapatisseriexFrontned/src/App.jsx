@@ -42,12 +42,12 @@ import Payment from './components/Payment/Payment';
 import Newsletter from './components/Newsletter/Newsletter';
 
 // Auth Components
-import AuthModal from './components/Auth/AuthModal/AuthModal';
+import NewAuthModal from './components/Auth/NewAuthModal/NewAuthModal';
 
 
 
 // Context Providers
-import { AuthProvider, useAuth } from './context/AuthContext/AuthContextRedux';
+import { useAuth } from './hooks/useAuth';
 import { LocationProvider } from './context/LocationContext/LocationContext';
 import { HostelProvider } from './context/HostelContext/HostelContext';
 import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
@@ -107,7 +107,6 @@ function App() {
   return (
     <ReduxProvider>
       <AuthInitializer />
-      <AuthProvider>
         <ShopStatusProvider>
           <LocationProvider>
             <HostelProvider>
@@ -120,7 +119,7 @@ function App() {
                         {/* Global toast notifications */}
                         <ToastContainer position="top-center" autoClose={2500} hideProgressBar theme="colored" />
                         {/* Auth Modal - available on all pages */}
-                        <AuthModal />
+                        <NewAuthModal />
                         <Routes>
                           {/* Home with regular Layout */}
                           <Route path="/" element={<Layout />}>
@@ -189,7 +188,6 @@ function App() {
             </HostelProvider>
           </LocationProvider>
         </ShopStatusProvider>
-      </AuthProvider>
     </ReduxProvider>
   );
 }

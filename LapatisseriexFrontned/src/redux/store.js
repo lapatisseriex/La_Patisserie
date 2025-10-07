@@ -4,29 +4,29 @@ import storage from 'redux-persist/lib/storage';
 import favoritesReducer from './favoritesSlice';
 import cartReducer from './cartSlice';
 import productsReducer from './productsSlice';
-import userReducer from './userSlice';
+import authReducer from './authSlice';
 import cartMiddleware from './cartMiddleware';
 
 // Root persist config
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['cart', 'favorites', 'user'],
+  whitelist: ['cart', 'favorites', 'auth'],
   blacklist: ['products'],
 };
 
 // Slice-level persist configs
 const cartPersistConfig = { key: 'cart', storage, whitelist: ['items', 'deliveryInfo'] };
 const favoritesPersistConfig = { key: 'favorites', storage, whitelist: ['items'] };
-const userPersistConfig = { key: 'user', storage, whitelist: ['user', 'token', 'isAuthenticated'] };
+const authPersistConfig = { key: 'auth', storage, whitelist: ['user', 'token', 'isAuthenticated'] };
 
 // Persisted reducers
 const persistedCartReducer = persistReducer(cartPersistConfig, cartReducer);
 const persistedFavoritesReducer = persistReducer(favoritesPersistConfig, favoritesReducer);
-const persistedUserReducer = persistReducer(userPersistConfig, userReducer);
+const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 
 const rootReducer = combineReducers({
-  user: persistedUserReducer,
+  auth: persistedAuthReducer,
   favorites: persistedFavoritesReducer,
   cart: persistedCartReducer,
   products: productsReducer,

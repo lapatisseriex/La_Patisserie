@@ -13,7 +13,7 @@ import {
   Package,
 } from 'lucide-react';
 
-import { useAuth } from '../../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../../hooks/useAuth';
 
 
 const Checkout = () => {

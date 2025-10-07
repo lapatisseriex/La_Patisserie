@@ -38,7 +38,7 @@ export const AuthCompatibilityProvider = ({ children }) => {
 
     // Loading states
     otpSending: reduxAuth.otpSending,
-    otpVerifying: reduxAuth.otpVerifying,
+
     profileUpdating: reduxAuth.profileUpdating,
 
     // Action methods (keeping the same interface)

@@ -128,28 +128,9 @@ export const AuthProvider = ({ children }) => {
     };
   }, [dispatch]);
 
-  // Helper: Normalize & validate phone number to E.164 (assumes +91 default if none provided)
-  const normalizePhoneNumber = (raw, defaultCountryCode = '+91') => {
-    if (!raw) return null;
-    let phone = String(raw).trim();
-    // Remove spaces, hyphens, parentheses
-    phone = phone.replace(/[\s()-]/g, '');
-    // Prepend default country code if missing '+' and all digits
-    if (!phone.startsWith('+')) {
-      if (/^\d{6,15}$/.test(phone)) {
-        phone = defaultCountryCode + phone;
-      } else {
-        return null;
-      }
-    }
-    // Basic E.164 validation (7-15 digits after +, cannot start with 0)
-    if (!/^\+[1-9]\d{6,14}$/.test(phone)) {
-      return null;
-    }
-    return phone;
-  };
+  // Phone normalization removed - no longer needed
 
-  // Send OTP function with improved validation / reCAPTCHA lifecycle
+  // Legacy function - deprecated
   const sendOTP = useCallback(async (rawPhoneNumber) => {
     // Throttle duplicate rapid requests (5s window)
     const now = Date.now();

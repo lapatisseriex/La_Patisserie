@@ -3,51 +3,70 @@ import firebaseAdmin from '../config/firebase.js';
 import User from '../models/userModel.js';
 
 // Helper function to handle user conflicts
-const resolveUserConflict = async (uid, phone_number, locationId) => {
-  console.log(`Resolving user conflict for UID: ${uid}, Phone: ${phone_number}`);
+const resolveUserConflict = async (uid, email, locationId) => {
+  console.log(`Resolving user conflict for UID: ${uid}, Email: ${email}`);
   
   // First check if there's a user with this UID
   let user = await User.findOne({ uid });
   
   if (user) {
-    // If phone number doesn't match, update it
-    if (user.phone !== phone_number) {
-      console.log(`Phone number mismatch: updating from ${user.phone} to ${phone_number}`);
+    // If email doesn't match, update it
+    if (user.email !== email) {
+      console.log(`Email mismatch: updating from ${user.email} to ${email}`);
       
-      // Also check if there's another user with this phone number
-      const existingPhoneUser = await User.findOne({ phone: phone_number });
-      if (existingPhoneUser && existingPhoneUser._id.toString() !== user._id.toString()) {
-        console.log(`Found another user with phone ${phone_number}, merging accounts`);
+      // Also check if there's another user with this email
+      const existingEmailUser = await User.findOne({ email: email });
+      if (existingEmailUser && existingEmailUser._id.toString() !== user._id.toString()) {
+        console.log(`Found another user with email ${email}, merging accounts`);
         
         // Merge the accounts - copy important data to keep
-        if (existingPhoneUser.name && !user.name) user.name = existingPhoneUser.name;
-        if (existingPhoneUser.email && !user.email) user.email = existingPhoneUser.email;
-        if (existingPhoneUser.dob && !user.dob) user.dob = existingPhoneUser.dob;
-        if (existingPhoneUser.gender && !user.gender) user.gender = existingPhoneUser.gender;
-        if (existingPhoneUser.location && !user.location) user.location = existingPhoneUser.location;
+        if (existingEmailUser.name && !user.name) user.name = existingEmailUser.name;
+        if (existingEmailUser.dob && !user.dob) user.dob = existingEmailUser.dob;
+        if (existingEmailUser.gender && !user.gender) user.gender = existingEmailUser.gender;
+        if (existingEmailUser.location && !user.location) user.location = existingEmailUser.location;
         
         // Mark the duplicate account for cleanup
         await User.updateOne(
-          { _id: existingPhoneUser._id },
+          { _id: existingEmailUser._id },
           { $set: { isActive: false, notes: `Merged with user ${user._id} on ${new Date().toISOString()}` }}
         );
       }
       
-      user.phone = phone_number;
-      await user.save();
+      user.email = email;
+      try {
+        await user.save();
+      } catch (saveError) {
+        if (saveError.code === 11000 && saveError.keyPattern && saveError.keyPattern.phone) {
+          console.log('Phone field conflict during save, removing phone field');
+          user.phone = undefined;
+          await user.save();
+        } else {
+          throw saveError;
+        }
+      }
     }
     return user;
   }
   
-  // Then check if there's a user with this phone number
-  user = await User.findOne({ phone: phone_number, isActive: { $ne: false } });
+  // Then check if there's a user with this email
+  user = await User.findOne({ email: email, isActive: { $ne: false } });
   
   if (user) {
     // If UID doesn't match, update it
     if (user.uid !== uid) {
       console.log(`UID mismatch: updating from ${user.uid} to ${uid}`);
       user.uid = uid;
-      await user.save();
+      try {
+        await user.save();
+      } catch (saveError) {
+        if (saveError.code === 11000 && saveError.keyPattern && saveError.keyPattern.phone) {
+          console.log('Phone field conflict during UID update, removing phone field');
+          user.phone = undefined;
+          await user.save();
+        } else {
+          throw saveError;
+        }
+      }
     }
     return user;
   }
@@ -60,7 +79,7 @@ const resolveUserConflict = async (uid, phone_number, locationId) => {
 // @route   POST /api/auth/verify
 // @access  Public
 export const verifyToken = asyncHandler(async (req, res) => {
-  const { idToken, locationId, phone } = req.body;
+  const { idToken, locationId, authMethod } = req.body;
 
   if (!idToken) {
     res.status(400);
@@ -86,11 +105,8 @@ export const verifyToken = asyncHandler(async (req, res) => {
     
     console.log(`Token successfully verified for UID: ${decodedToken.uid}`);
     
-    // Get phone number from token
-    const { uid, phone_number } = decodedToken;
-    
-    // Use provided phone number as fallback if token doesn't have it (rare Firebase issue)
-    const userPhoneNumber = phone_number || phone;
+    // Get email and other info from token
+    const { uid, email, name, picture } = decodedToken;
     
     // Check if this user exists but is inactive
     const inactiveUser = await User.findOne({ uid, isActive: false });
@@ -103,32 +119,34 @@ export const verifyToken = asyncHandler(async (req, res) => {
       );
     }
 
-    if (!userPhoneNumber) {
-      console.error('No phone number available from token or request');
+    if (!email) {
+      console.error('No email available from token');
       res.status(400);
-      throw new Error('Phone number is required for authentication');
+      throw new Error('Email is required for authentication');
     }
     
     // First check for potential user conflicts and resolve them
-    let user = await resolveUserConflict(uid, userPhoneNumber, locationId);
+    let user = await resolveUserConflict(uid, email, locationId);
     let isNewUser = false;
 
     // If no user found, create a new one
     if (!user) {
-      console.log(`No existing user found for ${userPhoneNumber}, creating new user`);
+      console.log(`No existing user found for ${email}, creating new user`);
       isNewUser = true;
       
-      // Determine role based on phone number
+      // Determine role based on email (you can customize this logic)
       let role = 'user';
-      if (userPhoneNumber === '+919500643892') {
+      if (email === 'admin@lapatisserie.com') { // Replace with your admin email
         role = 'admin';
       }
       
       try {
-        // Create user with location if provided
+        // Create user with location if provided (no phone field to avoid conflicts)
         user = await User.create({
           uid,
-          phone: userPhoneNumber,
+          email,
+          name: name || null,
+          profilePhoto: picture ? { url: picture, public_id: '' } : { url: '', public_id: '' },
           role,
           location: locationId || null,
           lastLogin: new Date(),
@@ -136,21 +154,47 @@ export const verifyToken = asyncHandler(async (req, res) => {
           isActive: true
         });
         
-        console.log(`New user created: ${user._id} (${userPhoneNumber})`);
+        console.log(`New user created successfully: ${user._id} (${email})`);
       } catch (err) {
-        // If there's a duplicate key error, it means we have a race condition
-        // Try to resolve the conflict again
+        console.error('User creation failed:', err);
+        
+        // If there's a duplicate key error, try to find existing user
         if (err.code === 11000) {
-          console.log('Duplicate key error during creation, attempting to resolve conflict again:', err.keyPattern);
-          user = await resolveUserConflict(uid, userPhoneNumber, locationId);
+          console.log('Duplicate key error during creation, looking for existing user:', err.keyPattern);
           
-          if (!user) {
-            throw new Error('Failed to resolve user conflict after multiple attempts');
+          // Try to find user by UID or email
+          user = await User.findOne({ 
+            $or: [
+              { uid: uid },
+              { email: email }
+            ]
+          });
+          
+          if (user) {
+            console.log(`Found existing user during duplicate error handling: ${user._id}`);
+            // Update user with current token info
+            user.uid = uid;
+            user.email = email;
+            user.lastLogin = new Date();
+            user.lastActive = new Date();
+            user.isActive = true;
+            
+            try {
+              await user.save();
+              console.log(`Updated existing user: ${user._id}`);
+            } catch (saveErr) {
+              console.error('Failed to update existing user:', saveErr);
+              // Continue anyway with the found user
+            }
+            
+            isNewUser = false;
+          } else {
+            console.error('No existing user found even after duplicate key error');
+            throw new Error('Failed to create or find user');
           }
-          
-          isNewUser = false;
         } else {
           // If it's another error, throw it
+          console.error('User creation failed with non-duplicate key error:', err);
           throw err;
         }
       }
@@ -611,10 +655,12 @@ export const verifyToken = asyncHandler(async (req, res) => {
         updateData.location = locationId;
       }
       
-      // If phone number from token doesn't match stored phone, update it
-      if (userPhoneNumber && user.phone !== userPhoneNumber) {
-        console.log(`Updating phone number from ${user.phone} to ${userPhoneNumber}`);
-        updateData.phone = userPhoneNumber;
+      // Update user info from Firebase token if needed
+      if (name && !user.name) {
+        updateData.name = name;
+      }
+      if (picture && !user.profilePhoto?.url) {
+        updateData.profilePhoto = { url: picture, public_id: '' };
       }
       
       // Update the user record
@@ -646,7 +692,7 @@ export const verifyToken = asyncHandler(async (req, res) => {
       isNewUser: isNewUser || isProfileIncomplete, // Mark as new user if profile is incomplete
       user: {
         uid: user.uid,
-        phone: user.phone,
+        email: user.email,
         name: user.name,
         role: user.role,
         dob: formattedDob, // Use formatted date
@@ -654,6 +700,8 @@ export const verifyToken = asyncHandler(async (req, res) => {
         location: user.location || null,
         hostel: user.hostel || null,
         profilePhoto: user.profilePhoto || { url: '', public_id: '' }, // Include profile photo
+        emailVerified: user.emailVerified || false,
+        emailVerifiedAt: user.emailVerifiedAt || null,
         isProfileIncomplete // Add flag for profile completion status
       }
     });

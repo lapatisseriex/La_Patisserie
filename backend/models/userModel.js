@@ -7,16 +7,12 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    phone: {
+    email: {
       type: String,
       required: true,
       unique: true,
-    },
-    email: {
-      type: String,
       trim: true,
       lowercase: true,
-      sparse: true,  // This allows null/undefined values to not trigger unique constraint
     },
     // Email verification flags
     emailVerified: {
@@ -100,20 +96,21 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// Remove any duplicate indexes that might be causing warnings
+// Only use field-level index definitions (unique: true) instead of schema.index()
+
 // Method to check if user is admin
 userSchema.methods.isAdmin = function() {
   return this.role === 'admin';
 };
 
-// Add pre-save middleware to assign admin role for specific phone numbers
+// Add pre-save middleware to assign admin role for specific emails
 userSchema.pre('save', function(next) {
-  // If this is a new user or role is being modified
-  if (this.isNew || this.isModified('phone')) {
-    // Check for admin phone number
-    if (this.phone === '+919500643892') {
+  // If this is a new user or email is being modified
+  if (this.isNew || this.isModified('email')) {
+    // Check for admin email (update this to your actual admin email)
+    if (this.email === 'admin@lapatisserie.com') {
       this.role = 'admin';
-    } else if (this.phone === '+919361620860') {
-      this.role = 'user';
     }
   }
   next();

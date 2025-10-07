@@ -11,8 +11,7 @@ const initialState = {
   error: null,
   isAuthenticated: false,
   isNewUser: false,
-  authType: 'login', // login, signup, otp, profile
-  tempPhoneNumber: '',
+  authType: 'login', // login, signup, profile
   confirmationResult: null,
   isAuthPanelOpen: false,
   profileUpdateLoading: false,
@@ -134,9 +133,7 @@ const userSlice = createSlice({
     setAuthType: (state, action) => {
       state.authType = action.payload;
     },
-    setTempPhoneNumber: (state, action) => {
-      state.tempPhoneNumber = action.payload;
-    },
+
     setConfirmationResult: (state, action) => {
       state.confirmationResult = action.payload;
     },
@@ -173,7 +170,6 @@ const userSlice = createSlice({
       state.error = null;
       state.isNewUser = false;
       state.authType = 'login';
-      state.tempPhoneNumber = '';
       state.confirmationResult = null;
       state.isAuthPanelOpen = false;
       state.profileUpdateLoading = false;

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
-import { useAuth } from '../../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../../hooks/useAuth';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ProductCard from '../Products/ProductCard';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';

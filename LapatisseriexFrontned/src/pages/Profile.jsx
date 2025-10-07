@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../hooks/useAuth';
 // (removed duplicate import of useFavorites)
 import { useCart } from '../hooks/useCart';
 import Profile from '../components/Auth/Profile/Profile';
@@ -15,7 +15,6 @@ import {
   Settings,
   MapPin,
   Lock,
-  Phone,
   Truck,
   Heart,
   CreditCard,
@@ -403,22 +402,21 @@ const ProfilePage = () => {
             </div>
             
             <div className="space-y-4">
-              {/* Change Phone Number */}
+              {/* Phone Number Input */}
               <div className="border-2 border-gray-200 rounded-none p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-gray-900 flex items-center gap-2">
-                      <Phone className="h-5 w-5 text-gray-600" />
-                      Phone Number
-                    </h4>
-                    <p className="text-gray-600 text-sm mt-1">
-                      Current: {user.phone || 'Not set'}
-                    </p>
-                  </div>
-                  <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-none hover:bg-gray-50 transition-colors">
-                    Change Number
-                  </button>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="Enter your phone number"
+                  value={user.phone || ''}
+                  onChange={(e) => {
+                    // Handle phone number update
+                    console.log('Phone number:', e.target.value);
+                  }}
+                />
               </div>
 
               {/* Change Password */}
@@ -952,7 +950,7 @@ const ProfilePage = () => {
                     My Account
                   </h1>
                   <p className="text-gray-700 text-xs md:text-base mt-0 md:mt-1 font-light">
-                    Welcome, <span className="font-medium">{user?.name || user?.phone || 'User'}</span>
+                    Welcome, <span className="font-medium">{user?.name || user?.email || 'User'}</span>
                   </p>
                 </div>
               </div>

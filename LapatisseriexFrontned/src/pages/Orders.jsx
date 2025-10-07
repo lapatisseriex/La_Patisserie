@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowLeft, FaBoxOpen, FaClock, FaTruck, FaCheckCircle, FaTimesCircle, FaReceipt } from 'react-icons/fa';
-import { useAuth } from '../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../hooks/useAuth';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);

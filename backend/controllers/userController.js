@@ -30,7 +30,6 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
     success: true,
     user: {
       uid: user.uid,
-      phone: user.phone,
       name: user.name,
       role: user.role,
       dob: formattedDob,
@@ -140,7 +139,6 @@ export const updateUser = asyncHandler(async (req, res) => {
     isAdminUpdate,
     user: {
       uid: updatedUser.uid,
-      phone: updatedUser.phone,
       name: updatedUser.name,
       role: updatedUser.role,
       dob: formattedDob,
@@ -197,7 +195,6 @@ export const getUsers = asyncHandler(async (req, res) => {
     filter.$or = [
       { name: regex },
       { email: regex },
-      { phone: regex },
     ];
   }
 

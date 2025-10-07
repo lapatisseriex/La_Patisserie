@@ -17,7 +17,7 @@ import {
   removeFromCart, 
   clearCart 
 } from '../../redux/cartSlice';
-import { useAuth } from '../../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../../hooks/useAuth';
 
 const CartComponent = ({ showHeader = true, showActions = true, isProfileTab = false }) => {
   const dispatch = useDispatch();

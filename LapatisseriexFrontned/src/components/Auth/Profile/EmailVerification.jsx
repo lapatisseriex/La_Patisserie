@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Send, ShieldCheck, Mail, Timer, CheckCircle2, XCircle, RefreshCcw } from 'lucide-react';
 import { emailService } from '../../../services/apiService';
-import { useAuth } from '../../../context/AuthContext/AuthContextRedux';
+import { useAuth } from '../../../hooks/useAuth';
 
 const formatTime = (ms) => {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -18,6 +18,13 @@ const EmailVerification = () => {
   const [message, setMessage] = useState('');
   const [expiresAt, setExpiresAt] = useState(null); // timestamp
   const timerRef = useRef(null);
+
+  // Auto-populate email when user data changes
+  useEffect(() => {
+    if (user?.email && email !== user.email) {
+      setEmail(user.email);
+    }
+  }, [user?.email, email]);
 
   const remaining = useMemo(() => (expiresAt ? expiresAt - Date.now() : 0), [expiresAt]);
 

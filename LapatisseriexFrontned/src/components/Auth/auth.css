@@ -1,0 +1,638 @@
+/* Google Sign In Button Styles */
+.google-signin-container {
+  width: 100%;
+}
+
+.google-signin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  background-color: white;
+  color: #3c4043;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.google-signin-btn:hover:not(:disabled) {
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  border-color: #dadce0;
+}
+
+.google-signin-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Error Message Styles */
+.error-message {
+  color: #dc2626;
+  font-size: 14px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+}
+
+/* Email Auth Form Styles */
+.email-auth-container {
+  width: 100%;
+}
+
+.email-auth-container input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.email-auth-container input:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+/* Auth Modal Styles */
+.auth-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+.auth-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.auth-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.auth-modal-body {
+  padding: 24px;
+}
+
+.auth-tabs {
+  display: flex;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: none;
+}
+
+.auth-tab.active {
+  background: white;
+  color: #111827;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.auth-tab:not(.active) {
+  color: #6b7280;
+}
+
+.auth-tab:not(.active):hover {
+  color: #111827;
+}
+
+.auth-divider {
+  position: relative;
+  margin: 24px 0;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #d1d5db;
+}
+
+.auth-divider-text {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  font-size: 14px;
+  color: #6b7280;
+  background: white;
+  padding: 0 8px;
+}
+
+.auth-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.auth-footer button {
+  color: #ec4899;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.auth-footer button:hover {
+  color: #be185d;
+  text-decoration: underline;
+}
+
+/* Success Message Styles */
+.success-message {
+  color: #059669;
+  font-size: 14px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+}
+
+/* Loading States */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #ec4899;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .auth-modal-content {
+    margin: 16px;
+    max-width: none;
+  }
+  
+  .auth-modal-header,
+  .auth-modal-body {
+    padding: 20px;
+  }
+  
+  .google-signin-btn {
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+  
+  /* Right slide modal responsive */
+  .auth-modal-backdrop-right {
+    padding-top: 0; /* Remove padding on mobile too */
+  }
+  
+  .auth-modal-content-right {
+    max-width: 100%;
+    width: 100%;
+    height: 100vh; /* Full height on mobile */
+  }
+  
+  /* Left slide modal responsive */
+  .auth-modal-backdrop-left {
+    padding: 1rem;
+    justify-content: center;
+  }
+  
+  .auth-modal-content-left {
+    max-width: none;
+    width: 100%;
+    border-radius: 1.5rem;
+    max-height: 90vh;
+  }
+  
+  @keyframes modalSlideInLeft {
+    0% {
+      opacity: 0;
+      transform: translateY(100%) scale(0.9);
+    }
+    60% {
+      opacity: 1;
+      transform: translateY(-5%) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes modalSlideOutLeft {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(100%) scale(0.9);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-modal-content-left {
+    border-radius: 1.25rem;
+    margin: 0.5rem;
+  }
+}
+
+/* Auth Modal Animations - Professional Right Slide */
+.auth-modal-backdrop-right {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  z-index: 9999; /* High z-index to appear above header */
+  padding-top: 0; /* Remove header offset */
+  padding-right: 0;
+  animation: backdropFadeInRight 0.3s ease-out forwards;
+}
+
+.auth-modal-backdrop-right.closing {
+  animation: backdropFadeOutRight 0.25s ease-in forwards;
+}
+
+.auth-modal-content-right {
+  background: #ffffff;
+  width: 100%;
+  max-width: 400px;
+  height: 100vh; /* Full viewport height */
+  overflow-y: auto;
+  position: relative;
+  transform: translateX(100%);
+  opacity: 0;
+  animation: modalSlideInRight 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  border-left: 1px solid #e5e7eb;
+  z-index: 10000; /* Ensure modal content is above backdrop */
+}
+
+.auth-modal-content-right.closing {
+  animation: modalSlideOutRight 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Legacy left slide (keeping for backward compatibility) */
+.auth-modal-backdrop-left {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 50;
+  padding: 2rem;
+  animation: backdropFadeInLeft 0.4s ease-out forwards;
+  backdrop-filter: blur(8px);
+}
+
+.auth-modal-backdrop-left.closing {
+  animation: backdropFadeOutLeft 0.3s ease-in forwards;
+}
+
+.auth-modal-content-left {
+  background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+  border-radius: 2rem;
+  width: 100%;
+  max-width: 28rem;
+  max-height: 95vh;
+  overflow-y: auto;
+  position: relative;
+  transform: translateX(-100%);
+  opacity: 0;
+  animation: modalSlideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: 
+    0 32px 64px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.auth-modal-content-left.closing {
+  animation: modalSlideOutLeft 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Original animations kept for backward compatibility */
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+  animation: backdropFadeIn 0.3s ease-out forwards;
+}
+
+.auth-modal-backdrop.closing {
+  animation: backdropFadeOut 0.3s ease-in forwards;
+}
+
+.auth-modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  max-width: 28rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(-50px);
+  opacity: 0;
+  animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.auth-modal-content.closing {
+  animation: modalSlideOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Keyframes for smooth animations */
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdropFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+}
+
+/* Professional Right Slide Animations */
+@keyframes backdropFadeInRight {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdropFadeOutRight {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes modalSlideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* Legacy Left Slide Animations */
+@keyframes backdropFadeInLeft {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes backdropFadeOutLeft {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+}
+
+@keyframes modalSlideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-10%) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes modalSlideOutLeft {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-100%) scale(0.9);
+  }
+}
+
+/* Enhanced smooth transitions for all interactive elements */
+.auth-modal-content *,
+.auth-modal-content-left *,
+.auth-modal-content-right * {
+  transition: all 0.2s ease;
+}
+
+/* Smooth hover effects for buttons */
+.auth-modal-content button:hover,
+.auth-modal-content-left button:hover,
+.auth-modal-content-right button:hover {
+  transform: translateY(-1px);
+}
+
+.auth-modal-content button:active,
+.auth-modal-content-left button:active,
+.auth-modal-content-right button:active {
+  transform: translateY(0);
+}
+
+/* Smooth focus states */
+.auth-modal-content input:focus,
+.auth-modal-content button:focus,
+.auth-modal-content-left input:focus,
+.auth-modal-content-left button:focus,
+.auth-modal-content-right input:focus,
+.auth-modal-content-right button:focus {
+  outline: 2px solid rgba(236, 72, 153, 0.5);
+  outline-offset: 2px;
+}
+
+/* Tab switching animation */
+.auth-modal-content .tab-content,
+.auth-modal-content-left .tab-content,
+.auth-modal-content-right .tab-content {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Professional styling for right modal */
+.auth-modal-content-right {
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(229, 231, 235, 0.8) transparent;
+}
+
+.auth-modal-content-right::-webkit-scrollbar {
+  width: 4px;
+}
+
+.auth-modal-content-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-modal-content-right::-webkit-scrollbar-thumb {
+  background-color: rgba(229, 231, 235, 0.8);
+  border-radius: 2px;
+}
+
+.auth-modal-content-right::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* Professional close button */
+.auth-modal-content-right .absolute {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+}
+
+/* Enhanced styling for left modal */
+.auth-modal-content-left {
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(251, 113, 133, 0.3) transparent;
+}
+
+.auth-modal-content-left::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-modal-content-left::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-modal-content-left::-webkit-scrollbar-thumb {
+  background-color: rgba(251, 113, 133, 0.3);
+  border-radius: 3px;
+}
+
+.auth-modal-content-left::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(251, 113, 133, 0.5);
+}
+
+/* Floating close button enhancements */
+.auth-modal-content-left .absolute {
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Enhanced gradient tab background */
+.auth-modal-content-left .bg-gradient-to-r {
+  background: linear-gradient(135deg, 
+    rgba(251, 113, 133, 0.08) 0%, 
+    rgba(244, 63, 94, 0.08) 50%, 
+    rgba(251, 113, 133, 0.08) 100%);
+}

@@ -9,8 +9,8 @@ import {
   resetCartState
 } from './cartSlice';
 
-// Import logout action from userSlice
-import { logout } from './userSlice';
+// Import logout action from authSlice
+import { logoutUser } from './authSlice';
 
 // Create listener middleware for cart persistence and synchronization
 export const cartMiddleware = createListenerMiddleware();
@@ -150,7 +150,7 @@ cartMiddleware.startListening({
 
 // 🛠️ FIX: Listen for user logout and reset cart state
 cartMiddleware.startListening({
-  actionCreator: logout,
+  actionCreator: logoutUser.fulfilled,
   effect: (action, listenerApi) => {
     console.log('🔄 User logged out - resetting cart state and clearing localStorage');
     

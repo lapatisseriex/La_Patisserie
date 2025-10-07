@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
-  const [authType, setAuthType] = useState('login'); // login, signup, otp, profile
+  const [authType, setAuthType] = useState('login'); // login, signup, profile
   const [tempPhoneNumber, setTempPhoneNumber] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [isAuthPanelOpen, setIsAuthPanelOpen] = useState(false);
@@ -233,7 +233,7 @@ export const AuthProvider = ({ children }) => {
     return window.recaptchaVerifier;
   };
 
-  // Send OTP via Firebase
+  // Legacy function - deprecated
   const sendOTP = async (phoneNumber, locationId = null) => {
     try {
       setAuthError(null);
@@ -551,8 +551,7 @@ export const AuthProvider = ({ children }) => {
     authType,
     isAuthPanelOpen,
     isNewUser,
-    sendOTP,
-    verifyOTP,
+
     updateProfile,
     updateUser,
     logout,

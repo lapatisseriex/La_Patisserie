@@ -1,66 +1,56 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useCallback } from 'react';
 import { 
-  sendOTP, 
-  verifyOTP, 
+  signInWithGoogle,
+  signUpWithEmail,
+  signInWithEmail,
   getCurrentUser, 
   updateUserProfile, 
   logoutUser,
   setAuthType,
-  setTempPhoneNumber,
   setIsAuthPanelOpen,
   setIsNewUser,
   clearError,
   updateUser,
   initializeAuth,
-  authExpired
+  authExpired,
+  initializeAuthListener
 } from '../redux/authSlice';
 
 // Custom hook for authentication - Compatible with existing modal interface
 export const useAuth = () => {
   const dispatch = useDispatch();
-  const auth = useSelector(state => state.auth);
+  const auth = useSelector(state => state.auth) || {};
 
-  // Send OTP function - matches existing modal interface
-  const sendOTPAction = useCallback(async (phoneNumber, locationId) => {
+  // Google Sign In function
+  const signInWithGoogleAction = useCallback(async (options = {}) => {
     try {
-      // Format phone number
-      const formattedPhone = phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`;
-      
-      // Store locationId if provided (for signup)
-      if (locationId) {
-        localStorage.setItem('temp_location_id', locationId);
-      }
-      
-      const resultAction = await dispatch(sendOTP({ 
-        phoneNumber: formattedPhone, 
-        recaptchaContainerId: 'recaptcha-container' 
-      }));
-      
-      return sendOTP.fulfilled.match(resultAction);
+      const resultAction = await dispatch(signInWithGoogle(options));
+      return signInWithGoogle.fulfilled.match(resultAction);
     } catch (error) {
-      console.error('Error in sendOTP:', error);
+      console.error('Error in signInWithGoogle:', error);
       return false;
     }
   }, [dispatch]);
 
-  // Verify OTP function - matches existing modal interface
-  const verifyOTPAction = useCallback(async (otp) => {
+  // Email Sign Up function
+  const signUpWithEmailAction = useCallback(async (credentials) => {
     try {
-      // Get saved locationId
-      const locationId = localStorage.getItem('temp_location_id');
-      
-      const resultAction = await dispatch(verifyOTP({ 
-        otp, 
-        locationId 
-      }));
-      
-      // Clean up temp locationId
-      localStorage.removeItem('temp_location_id');
-      
-      return verifyOTP.fulfilled.match(resultAction);
+      const resultAction = await dispatch(signUpWithEmail(credentials));
+      return signUpWithEmail.fulfilled.match(resultAction);
     } catch (error) {
-      console.error('Error in verifyOTP:', error);
+      console.error('Error in signUpWithEmail:', error);
+      return false;
+    }
+  }, [dispatch]);
+
+  // Email Sign In function
+  const signInWithEmailAction = useCallback(async (credentials) => {
+    try {
+      const resultAction = await dispatch(signInWithEmail(credentials));
+      return signInWithEmail.fulfilled.match(resultAction);
+    } catch (error) {
+      console.error('Error in signInWithEmail:', error);
       return false;
     }
   }, [dispatch]);
@@ -78,7 +68,7 @@ export const useAuth = () => {
 
   // Toggle auth panel function
   const toggleAuthPanel = useCallback(() => {
-    dispatch(setIsAuthPanelOpen(!auth.isAuthPanelOpen));
+    dispatch(setIsAuthPanelOpen(!(auth.isAuthPanelOpen || false)));
   }, [dispatch, auth.isAuthPanelOpen]);
 
   // Change auth type function
@@ -92,20 +82,20 @@ export const useAuth = () => {
   }, [dispatch]);
 
   return {
-    // State - same interface as Context version
-    user: auth.user,
-    token: auth.token,
-    isAuthenticated: auth.isAuthenticated,
-    loading: auth.loading || auth.otpSending || auth.otpVerifying || auth.profileUpdating,
-    authError: auth.error,
-    authType: auth.authType,
-    tempPhoneNumber: auth.tempPhoneNumber,
-    isAuthPanelOpen: auth.isAuthPanelOpen,
-    isNewUser: auth.isNewUser,
+    // State - updated for new auth system with defaults
+    user: auth.user || null,
+    token: auth.token || null,
+    isAuthenticated: auth.isAuthenticated || false,
+    loading: auth.loading || auth.authenticating || auth.profileUpdating || false,
+    authError: auth.error || null,
+    authType: auth.authType || 'login',
+    isAuthPanelOpen: auth.isAuthPanelOpen || false,
+    isNewUser: auth.isNewUser || false,
 
-    // Actions - same interface as Context version
-    sendOTP: sendOTPAction,
-    verifyOTP: verifyOTPAction,
+    // New authentication actions
+    signInWithGoogle: signInWithGoogleAction,
+    signUpWithEmail: signUpWithEmailAction,
+    signInWithEmail: signInWithEmailAction,
     updateProfile: updateProfileAction,
     updateUser: updateUserAction,
     logout: () => dispatch(logoutUser()),
@@ -116,11 +106,15 @@ export const useAuth = () => {
     // Additional Redux actions (for advanced usage)
     getCurrentUser: () => dispatch(getCurrentUser()),
     initializeAuth: () => dispatch(initializeAuth()),
+    initializeAuthListener: () => dispatch(initializeAuthListener()),
     authExpired: () => dispatch(authExpired()),
+    
+    // Legacy phone/OTP methods removed for cleaner codebase
+
     
     // Helper functions (for compatibility)
     isProfileIncomplete: () => auth.user && (!auth.user.name || !auth.user.dob || !auth.user.location),
-    getUserDisplayName: () => auth.user?.name || auth.user?.phone || 'User',
+    getUserDisplayName: () => auth.user?.name || auth.user?.email || 'User',
     getUserAvatarUrl: () => auth.user?.profilePhoto?.url || '/images/default-avatar.svg',
   };
 };
