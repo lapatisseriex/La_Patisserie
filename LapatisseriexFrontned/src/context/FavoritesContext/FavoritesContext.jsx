@@ -38,16 +38,56 @@ export const FavoritesProvider = ({ children }) => {
   
   const isLoading = status === 'loading';
   
-  // Load favorites when component mounts
+  // Load favorites when component mounts and user is properly authenticated
   useEffect(() => {
     if (user) {
-      // User is logged in, fetch favorites from server
-      dispatch(fetchFavorites());
+      // Only proceed if we have a valid token - no immediate fetchFavorites call
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        console.log('FavoritesContext - User authenticated with token, fetching favorites...');
+        dispatch(fetchFavorites());
+      } else {
+        console.log('FavoritesContext - User exists but no token yet, will wait for token availability...');
+        // Don't make any API calls until token is available
+      }
     } else {
       // Guest user, load favorites from localStorage
       dispatch(loadLocalFavorites());
     }
   }, [dispatch, user]);
+  
+  // Additional effect to handle token availability
+  useEffect(() => {
+    if (user && status === 'idle') {
+      const checkAndFetchFavorites = () => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          console.log('FavoritesContext - Token now available, fetching favorites...');
+          dispatch(fetchFavorites());
+        }
+      };
+      
+      // Check immediately
+      checkAndFetchFavorites();
+      
+      // Only set up interval if token wasn't found immediately
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.log('FavoritesContext - No token yet, setting up retry interval...');
+        // Check periodically for the first 10 seconds after user login
+        const intervalId = setInterval(checkAndFetchFavorites, 1000);
+        const timeoutId = setTimeout(() => {
+          clearInterval(intervalId);
+          console.log('FavoritesContext - Token retry timeout reached, stopping checks');
+        }, 10000);
+        
+        return () => {
+          clearInterval(intervalId);
+          clearTimeout(timeoutId);
+        };
+      }
+    }
+  }, [dispatch, user, status]);
   
   // For guest users, try to fetch product details for favoriteIds
   useEffect(() => {

@@ -44,7 +44,8 @@ import Newsletter from './components/Newsletter/Newsletter';
 // Auth Components
 import NewAuthModal from './components/Auth/NewAuthModal/NewAuthModal';
 
-
+// Common Components
+import DataSyncHandler from './components/common/DataSyncHandler';
 
 // Context Providers
 import { useAuth } from './hooks/useAuth';
@@ -118,6 +119,8 @@ function App() {
                         <ScrollToTop />
                         {/* Global toast notifications */}
                         <ToastContainer position="top-center" autoClose={2500} hideProgressBar theme="colored" />
+                        {/* Data Sync Handler - ensures user state stays synchronized */}
+                        <DataSyncHandler />
                         {/* Auth Modal - available on all pages */}
                         <NewAuthModal />
                         <Routes>

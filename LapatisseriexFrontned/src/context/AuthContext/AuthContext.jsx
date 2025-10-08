@@ -56,8 +56,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const handleAuthExpired = (event) => {
       console.log('Auth expired event received');
-      // Clear user data
+      
+      // Clear all auth data
       setUser(null);
+      setToken(null);
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('cachedUser');
+      
       // Show login modal
       setAuthType('login');
       setIsAuthPanelOpen(true);
@@ -76,22 +81,79 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Load cached user data from localStorage first
+  // Load cached user data from localStorage first and fetch fresh data if needed
   useEffect(() => {
     // Check for cached user data first
     const cachedUser = localStorage.getItem('cachedUser');
-    if (cachedUser) {
+    const cachedToken = localStorage.getItem('authToken');
+    
+    if (cachedUser && cachedToken) {
       try {
         const userData = JSON.parse(cachedUser);
         setUser(userData);
+        setToken(cachedToken);
         setLoading(false);
+        
+        // Check if we have populated location/hostel data
+        const hasPopulatedLocation = userData.location && typeof userData.location === 'object' && userData.location.area;
+        const hasPopulatedHostel = !userData.hostel || (typeof userData.hostel === 'object' && userData.hostel.name);
+        
+        console.log('AuthContext - Cached user data check:', {
+          hasLocation: !!userData.location,
+          locationIsObject: typeof userData.location === 'object',
+          locationHasArea: userData.location?.area,
+          hasPopulatedLocation,
+          hasHostel: !!userData.hostel,
+          hostelIsObject: typeof userData.hostel === 'object',
+          hostelHasName: userData.hostel?.name,
+          hasPopulatedHostel
+        });
+        
+        // If location/hostel data is missing or incomplete, fetch fresh data
+        if (!hasPopulatedLocation || !hasPopulatedHostel) {
+          console.log('AuthContext - Cached user data incomplete, fetching fresh user data...');
+          setTimeout(() => fetchFreshUserData(cachedToken), 100); // Small delay to avoid race conditions
+        }
       } catch (error) {
         console.error("Error parsing cached user data:", error);
+        // Clear corrupted cache
+        localStorage.removeItem('cachedUser');
+        localStorage.removeItem('authToken');
       }
     }
     
     // Clear any potentially corrupted profile form data
     localStorage.removeItem('profileFormData');
+    
+    // Periodic check to ensure user location data is properly loaded after page refresh
+    let locationCheckInterval;
+    
+    const startLocationCheck = () => {
+      if (locationCheckInterval) clearInterval(locationCheckInterval);
+      
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      locationCheckInterval = setInterval(() => {
+        attempts++;
+        
+        const currentUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
+        const needsLocationRefresh = currentUser.uid && currentUser.location && typeof currentUser.location === 'string';
+        
+        if (needsLocationRefresh && attempts < maxAttempts) {
+          console.log(`AuthContext - Location check attempt ${attempts}: Refreshing user data for populated location...`);
+          const token = localStorage.getItem('authToken');
+          if (token) {
+            fetchFreshUserData(token);
+          }
+        } else {
+          clearInterval(locationCheckInterval);
+        }
+      }, 1500); // Check every 1.5 seconds
+    };
+    
+    // Start checking after a short delay
+    setTimeout(startLocationCheck, 500);
     
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
@@ -104,6 +166,7 @@ export const AuthProvider = ({ children }) => {
           setToken(idToken);
           
           // Verify with backend
+          console.log('AuthContext - Firebase user authenticated, verifying with backend...');
           const response = await axios.post(`${API_URL}/auth/verify`, { idToken });
           
           // Get saved user data (if any) to restore fields like email and anniversary
@@ -151,7 +214,7 @@ export const AuthProvider = ({ children }) => {
             setAuthType('profile');
           }
           
-          // Get fresh user data from /api/users/me to ensure we have the latest
+          // Get fresh user data from /api/users/me to ensure we have the latest with populated fields
           try {
             // Use shared api instance so the interceptor attaches token and handles 401 refresh
             const meResponse = await api.get(`/users/me`);
@@ -182,6 +245,12 @@ export const AuthProvider = ({ children }) => {
                 // email verification removed
               };
               
+              console.log('Fresh user data with populated location/hostel:', {
+                uid: freshUserData.uid,
+                location: freshUserData.location,
+                hostel: freshUserData.hostel
+              });
+              
               setUser(freshUserData);
               localStorage.setItem('cachedUser', JSON.stringify(freshUserData));
             }
@@ -210,7 +279,12 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (locationCheckInterval) {
+        clearInterval(locationCheckInterval);
+      }
+    };
   }, []);
 
   // Reset reCAPTCHA when needed
@@ -384,6 +458,29 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       // Clear confirmation result
       setConfirmationResult(null);
+    }
+  };
+
+  // Fetch fresh user data from backend
+  const fetchFreshUserData = async (idToken) => {
+    try {
+      console.log('Fetching fresh user data for header display...');
+      const response = await api.get('/users/me', {
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      
+      if (response.data.success) {
+        const freshUserData = response.data.user;
+        console.log('Fresh user data received:', {
+          location: freshUserData.location,
+          hostel: freshUserData.hostel
+        });
+        
+        setUser(freshUserData);
+        localStorage.setItem('cachedUser', JSON.stringify(freshUserData));
+      }
+    } catch (error) {
+      console.error('Error fetching fresh user data:', error);
     }
   };
 
@@ -565,7 +662,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     toggleAuthPanel,
     changeAuthType,
-    tempPhoneNumber
+    tempPhoneNumber,
+    fetchFreshUserData
   };
 
   return (

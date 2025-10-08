@@ -15,6 +15,13 @@ export const fetchFavorites = createAsyncThunk(
   'favorites/fetchFavorites',
   async (_, { rejectWithValue }) => {
     try {
+      // Double-check token availability at Redux level before API call
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.warn('fetchFavorites: No auth token available, skipping API call');
+        return rejectWithValue('No authentication token available. Please log in.');
+      }
+      
       const response = await favoriteService.getFavorites();
       return response;
     } catch (error) {
@@ -100,28 +107,38 @@ const favoritesSlice = createSlice({
       })
       .addCase(fetchFavorites.fulfilled, (state, action) => {
         state.status = 'succeeded';
+        state.error = null;
         
-        // Handle different response structures
+        console.log('fetchFavorites.fulfilled payload:', action.payload);
+        
+        // Handle different response structures - now backend returns array of products directly
         const responseData = action.payload;
         
-        if (responseData && responseData.items) {
+        if (Array.isArray(responseData)) {
+          // New format: array of products directly
+          state.favorites = responseData;
+          state.favoriteIds = responseData.map(product => product._id);
+          state.count = responseData.length;
+        } else if (responseData && responseData.items) {
+          // Legacy format: wrapped in items
           state.favorites = responseData.items;
           state.favoriteIds = responseData.items.map(item => item._id || item.productId || item.id);
           state.count = responseData.count || responseData.items.length;
-        } else if (Array.isArray(responseData)) {
-          state.favorites = responseData;
-          state.favoriteIds = responseData.map(item => item._id || item.productId || item.id);
-          state.count = responseData.length;
         } else {
           // Fallback for unexpected response structure
+          console.warn('Unexpected favorites response structure:', responseData);
           state.favorites = [];
           state.favoriteIds = [];
           state.count = 0;
         }
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('lapatisserie_favorites', JSON.stringify(state.favoriteIds));
       })
       .addCase(fetchFavorites.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload;
+        state.error = action.payload || 'Failed to fetch favorites';
+        console.error('fetchFavorites rejected:', action.payload, action.error);
       })
       // Add to favorites
       .addCase(addToFavorites.fulfilled, (state, action) => {

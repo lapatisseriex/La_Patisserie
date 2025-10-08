@@ -3,12 +3,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
+import { useHostel } from '../../context/HostelContext/HostelContext';
 import { useCart } from '../../hooks/useCart';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import SparkAnimation from '../common/SparkAnimation/SparkAnimation';
 import { useSparkAnimationContext } from '../../context/SparkAnimationContext/SparkAnimationContext';
 import FavoritesIcon from '../Favorites/FavoritesIcon';
+import DebugUserState from '../common/DebugUserState';
 import './Header.css';
 import './remove-focus.css';
 import './hide-search.css';
@@ -44,7 +46,8 @@ const Header = ({ isAdminView = false }) => {
   const { 
     user,
     toggleAuthPanel,
-    logout
+    logout,
+    fetchFreshUserData
   } = useAuth();
   
   const { sparks } = useSparkAnimationContext();
@@ -64,6 +67,12 @@ const Header = ({ isAdminView = false }) => {
     getCurrentLocationName,
     hasValidDeliveryLocation
   } = locationContext || {};
+  
+  const hostelContext = useHostel();
+  const {
+    hostels = [],
+    fetchHostelsByLocation
+  } = hostelContext || {};
   
   const { cartCount = 0 } = useCart();
   
@@ -128,6 +137,7 @@ const Header = ({ isAdminView = false }) => {
   
   // Get user's location display name
   const [userLocationDisplay, setUserLocationDisplay] = useState('Select Location');
+  const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
   
   // Memoize location display to prevent unnecessary re-calculations
   const memoizedUserLocationDisplay = useMemo(() => {
@@ -138,20 +148,122 @@ const Header = ({ isAdminView = false }) => {
   const locationDisplayInitialized = useRef(false);
   const prevLocationIdRef = useRef(user?.location?._id);
   
+  // Helper function to find location by ID in locations array
+  const findLocationById = useCallback((locationId) => {
+    if (!locationId || !locations || locations.length === 0) return null;
+    return locations.find(loc => loc._id === locationId);
+  }, [locations]);
+  
+  // Helper function to find hostel by ID in hostels array
+  const findHostelById = useCallback((hostelId) => {
+    if (!hostelId || !hostels || hostels.length === 0) return null;
+    return hostels.find(h => h._id === hostelId);
+  }, [hostels]);
+  
   useEffect(() => {
-    if (user?.location && user.location.area && user.location.city) {
-      if (user.hostel && user.hostel.name) {
-        setUserLocationDisplay(`${user.hostel.name}, ${user.location.area}`);
-      } else {
-        setUserLocationDisplay(`${user.location.area}, ${user.location.city}`);
+    console.log('Header - User state update:', {
+      user: user ? {
+        uid: user.uid,
+        name: user.name,
+        email: user.email,
+        location: user.location ? (
+          typeof user.location === 'object' ? {
+            _id: user.location._id,
+            area: user.location.area,
+            city: user.location.city
+          } : { _id: user.location, type: 'string-id' }
+        ) : null,
+        hostel: user.hostel ? (
+          typeof user.hostel === 'object' ? {
+            _id: user.hostel._id,
+            name: user.hostel.name
+          } : { _id: user.hostel, type: 'string-id' }
+        ) : null
+      } : null,
+      locationsAvailable: locations ? locations.length : 0
+    });
+    
+    if (user?.location) {
+      let locationObj = null;
+      let hostelObj = null;
+      
+      // Handle populated location object
+      if (typeof user.location === 'object' && user.location.area && user.location.city) {
+        locationObj = user.location;
+      } 
+      // Handle location as string ID - look it up in locations array
+      else if (typeof user.location === 'string') {
+        locationObj = findLocationById(user.location);
+        console.log('Header - Looking up location by ID:', user.location, 'found:', locationObj);
       }
-      prevLocationIdRef.current = user.location._id;
+      
+      // Handle populated hostel object
+      if (user.hostel) {
+        if (typeof user.hostel === 'object' && user.hostel.name) {
+          hostelObj = user.hostel;
+        } 
+        // Handle hostel as string ID - look it up in hostels array
+        else if (typeof user.hostel === 'string') {
+          hostelObj = findHostelById(user.hostel);
+          console.log('Header - Looking up hostel by ID:', user.hostel, 'found:', hostelObj);
+        }
+      }
+      
+      // Set display based on what we found
+      if (locationObj && locationObj.area && locationObj.city) {
+        const displayText = hostelObj && hostelObj.name 
+          ? `${hostelObj.name}, ${locationObj.area}` 
+          : `${locationObj.area}, ${locationObj.city}`;
+        
+        // console.log('Header - Setting location display:', displayText); // Uncomment for debugging
+        
+        setUserLocationDisplay(displayText);
+        prevLocationIdRef.current = locationObj._id;
+      } else if (typeof user.location === 'string') {
+        // Location ID exists but we couldn't find the location details
+        console.warn('Header - User has location ID but location not found in locations array, refreshing...');
+        if (!isRefreshingLocation && fetchFreshUserData && localStorage.getItem('authToken')) {
+          setIsRefreshingLocation(true);
+          setUserLocationDisplay('Loading location...');
+          prevLocationIdRef.current = null;
+          
+          const token = localStorage.getItem('authToken');
+          fetchFreshUserData(token).then(() => {
+            setIsRefreshingLocation(false);
+          }).catch(() => {
+            setIsRefreshingLocation(false);
+            setUserLocationDisplay('Select Location');
+          });
+        } else if (!fetchFreshUserData) {
+          // Fallback: show a generic message if we can't refresh
+          setUserLocationDisplay('Location set');
+        }
+      } else {
+        setUserLocationDisplay('Select Location');
+        prevLocationIdRef.current = null;
+      }
     } else {
       setUserLocationDisplay('Select Location');
       prevLocationIdRef.current = null;
     }
     locationDisplayInitialized.current = true;
-  }, [user?.uid, user?.location?._id]);
+  }, [user?.uid, user?.location, user?.hostel, locations, findLocationById, findHostelById, fetchFreshUserData, isRefreshingLocation]);
+  
+  // Effect to fetch hostels when user has location but hostel lookup failed
+  useEffect(() => {
+    if (user?.location && user?.hostel && typeof user.hostel === 'string') {
+      const locationId = typeof user.location === 'object' ? user.location._id : user.location;
+      
+      // Only fetch if we don't already have hostels for this location
+      const hostelExists = findHostelById(user.hostel);
+      if (!hostelExists && fetchHostelsByLocation && locationId) {
+        console.log('Header - Fetching hostels for location to resolve hostel lookup:', locationId);
+        fetchHostelsByLocation(locationId).catch(error => {
+          console.error('Header - Error fetching hostels:', error);
+        });
+      }
+    }
+  }, [user?.location, user?.hostel, findHostelById, fetchHostelsByLocation]);
 
   // Handle scroll event to change header styling and detect scroll direction
   useEffect(() => {

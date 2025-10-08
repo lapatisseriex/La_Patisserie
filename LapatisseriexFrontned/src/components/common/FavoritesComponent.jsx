@@ -30,7 +30,14 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
 
   useEffect(() => {
     if (user && status === 'idle') {
-      dispatch(fetchFavorites());
+      // Only fetch if user has a valid token
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        console.log('FavoritesComponent - Fetching favorites with valid token...');
+        dispatch(fetchFavorites());
+      } else {
+        console.log('FavoritesComponent - User exists but no token, letting context handle...');
+      }
     }
   }, [dispatch, user, status]);
 

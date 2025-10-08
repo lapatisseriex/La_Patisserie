@@ -46,12 +46,66 @@ export const protect = asyncHandler(async (req, res, next) => {
       }
       
       // Find user in database
-      const user = await User.findOne({ uid: decodedToken.uid });
+      let user = await User.findOne({ uid: decodedToken.uid });
       
       if (!user) {
-        console.log(`User not found in database for uid: ${decodedToken.uid}`);
-        res.status(404);
-        throw new Error('User not found');
+        console.log(`User not found in database for uid: ${decodedToken.uid}, attempting to create...`);
+        
+        // Try to create user from Firebase token
+        try {
+          // Determine role based on email
+          const role = decodedToken.email === 'admin@lapatisserie.com' ? 'admin' : 'user';
+          
+          const userData = {
+            uid: decodedToken.uid,
+            email: decodedToken.email,
+            name: decodedToken.name || null,
+            profilePhoto: decodedToken.picture ? { url: decodedToken.picture, public_id: '' } : { url: '', public_id: '' },
+            role,
+            lastLogin: new Date(),
+            lastActive: new Date(),
+            isActive: true,
+            emailVerified: decodedToken.email_verified || false,
+            phoneVerified: false,
+            // Add default values for other required fields
+            dob: null,
+            anniversary: null,
+            gender: null,
+            city: null,
+            pincode: null,
+            country: 'India',
+            location: null,
+            hostel: null
+          };
+          
+          user = await User.create(userData);
+          console.log(`User created successfully in auth middleware: ${user._id} (${decodedToken.uid}) - Role: ${role}`);
+        } catch (createError) {
+          console.error('Failed to create user in auth middleware:', createError);
+          
+          // If creation fails due to duplicate, try to find user again
+          if (createError.code === 11000) {
+            user = await User.findOne({ 
+              $or: [
+                { uid: decodedToken.uid },
+                { email: decodedToken.email }
+              ]
+            });
+            
+            if (user) {
+              // Update UID if email matches but UID is different
+              if (user.uid !== decodedToken.uid) {
+                user.uid = decodedToken.uid;
+                await user.save();
+              }
+            }
+          }
+          
+          if (!user) {
+            res.status(404);
+            throw new Error('User not found and could not be created');
+          }
+        }
       }
       
       // Check if user is active - if not, reactivate instead of blocking
@@ -80,19 +134,40 @@ export const protect = asyncHandler(async (req, res, next) => {
       console.error('Error code:', error.code);
       console.error('Full error:', error);
       
+      // Clear token cache on error
+      tokenCache.delete(token);
+      
       // Provide more specific error messages based on Firebase error codes
       if (error.code === 'auth/id-token-expired') {
-        res.status(401);
-        throw new Error('Session expired. Please login again.');
+        res.status(401).json({ 
+          error: 'Session expired. Please login again.',
+          code: 'TOKEN_EXPIRED'
+        });
+        return;
       } else if (error.code === 'auth/id-token-revoked') {
-        res.status(401);
-        throw new Error('Session was revoked. Please login again.');
+        res.status(401).json({ 
+          error: 'Session was revoked. Please login again.',
+          code: 'TOKEN_REVOKED'
+        });
+        return;
       } else if (error.code === 'auth/argument-error' || error.message.includes('kid')) {
-        res.status(401);
-        throw new Error('Invalid token format. Please login again.');
+        res.status(401).json({ 
+          error: 'Invalid token format. Please login again.',
+          code: 'TOKEN_INVALID'
+        });
+        return;
+      } else if (error.message.includes('User not found')) {
+        res.status(401).json({ 
+          error: 'User account not found. Please register first.',
+          code: 'USER_NOT_FOUND'
+        });
+        return;
       } else {
-        res.status(401);
-        throw new Error('Authentication failed');
+        res.status(401).json({ 
+          error: 'Authentication failed',
+          code: 'AUTH_FAILED'
+        });
+        return;
       }
     }
   } else {

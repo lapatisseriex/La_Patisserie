@@ -34,12 +34,14 @@ export const getFavorites = asyncHandler(async (req, res) => {
         return acc;
       }, {});
       
-      // Add product details to favorites
-      const favoritesWithDetails = favorites.productIds.map(id => {
+      // Add product details to favorites and return products directly for frontend compatibility
+      const validProducts = [];
+      
+      favorites.productIds.forEach(id => {
         const idStr = id.toString();
         const product = productsMap[idStr];
         
-        if (product) {
+        if (product && product.isActive !== false) {
           // Ensure compatibility with ProductCard component
           // Convert images array to image object if needed
           if (product.images && product.images.length > 0 && !product.image) {
@@ -53,34 +55,23 @@ export const getFavorites = asyncHandler(async (req, res) => {
           if (product.variants && product.variants.length > 0 && !product.price) {
             product.price = product.variants[0].price;
           }
+          
+          // Add the product itself (not wrapped in productDetails)
+          validProducts.push(product);
         }
-        
-        return {
-          productId: id,
-          productDetails: product || { 
-            _id: id,
-            name: 'Product not found',
-            price: 0,
-            isActive: false 
-          }
-        };
-      }).filter(item => item.productDetails.isActive !== false); // Filter out inactive products
+      });
       
       return res.status(200).json({
         success: true,
-        data: {
-          items: favoritesWithDetails,
-          count: favoritesWithDetails.length
-        }
+        data: validProducts, // Return array of products directly
+        count: validProducts.length
       });
     }
     
     return res.status(200).json({
       success: true,
-      data: {
-        items: [],
-        count: 0
-      }
+      data: [], // Return empty array directly
+      count: 0
     });
   } catch (error) {
     console.error('Get favorites error:', error);

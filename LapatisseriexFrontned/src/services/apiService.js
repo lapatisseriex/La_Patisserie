@@ -40,45 +40,78 @@ const buildKey = (method, url, paramsOrData) => {
 
 // Token refresh throttling
 let lastTokenRefresh = 0;
-const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes (reduced from 10)
+
+// Function to check if token is close to expiring
+const isTokenExpiring = (token) => {
+  try {
+    if (!token) return true;
+    
+    // Decode JWT without verification to check expiry
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const expirationTime = payload.exp * 1000; // Convert to milliseconds
+    const currentTime = Date.now();
+    
+    // Check if token expires within next 5 minutes
+    return (expirationTime - currentTime) < (5 * 60 * 1000);
+  } catch (error) {
+    console.error('Error checking token expiration:', error);
+    return true;
+  }
+};
 
 // Function to get a fresh token
 const getFreshToken = async (forceRefresh = false) => {
   try {
     const currentUser = getAuthSafe()?.currentUser;
+    const cachedToken = localStorage.getItem('authToken');
+
+    // If we have a Firebase user, try to get/refresh the ID token
     if (currentUser) {
       const now = Date.now();
-      
-      // Only force refresh if explicitly requested or if token is likely old
-      const shouldForceRefresh = forceRefresh || (now - lastTokenRefresh > TOKEN_REFRESH_INTERVAL);
-      
+      const currentToken = cachedToken;
+
+      // Force refresh if explicitly requested, token is expiring, or it's been too long
+      const shouldForceRefresh = forceRefresh ||
+        isTokenExpiring(currentToken) ||
+        (now - lastTokenRefresh > TOKEN_REFRESH_INTERVAL);
+
       // Get token with appropriate refresh strategy
       const token = await currentUser.getIdToken(shouldForceRefresh);
-      
+
       if (shouldForceRefresh) {
         // Update last refresh timestamp
         lastTokenRefresh = now;
-        console.log('Token forcibly refreshed');
+        console.log('Token refreshed proactively');
       }
-      
+
       localStorage.setItem('authToken', token);
       return token;
     }
+
+    // No current user yet (e.g., during initial app bootstrap), but we might
+    // already have a valid token in localStorage from a previous session.
+    // Fall back to returning the cached token to avoid unauthenticated calls.
+    if (cachedToken) {
+      return cachedToken;
+    }
+
     return null;
   } catch (error) {
     console.error('Error refreshing token:', error);
-    
+
     // If there's an auth error, we should clear the token
-    if (error.code && error.code.includes('auth/')) {
+    if (error.code && String(error.code).includes('auth/')) {
       localStorage.removeItem('authToken');
-      
+      localStorage.removeItem('cachedUser');
+
       // Dispatch an auth expired event
-      const authExpiredEvent = new CustomEvent('auth:expired', { 
-        detail: { error: error } 
+      const authExpiredEvent = new CustomEvent('auth:expired', {
+        detail: { error: error }
       });
       window.dispatchEvent(authExpiredEvent);
     }
-    
+
     return null;
   }
 };
@@ -86,14 +119,14 @@ const getFreshToken = async (forceRefresh = false) => {
 // Add a request interceptor to include auth token
 api.interceptors.request.use(
   async (config) => {
-    // First check for token in localStorage (faster than getting from Firebase)
-    let token = localStorage.getItem('authToken');
-    
-    // If no token in localStorage, try to get a fresh one
+    // Get token - this will refresh if needed, otherwise returns cached token
+    let token = await getFreshToken();
+
+    // As an extra safety, fall back to localStorage token if not returned
     if (!token) {
-      token = await getFreshToken();
+      token = localStorage.getItem('authToken');
     }
-    
+
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -103,6 +136,47 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Set up automatic token refresh interval
+let tokenRefreshInterval;
+
+const startTokenRefreshInterval = () => {
+  // Clear existing interval if any
+  if (tokenRefreshInterval) {
+    clearInterval(tokenRefreshInterval);
+  }
+  
+  // Refresh token every 30 minutes proactively
+  tokenRefreshInterval = setInterval(async () => {
+    const currentUser = getAuthSafe()?.currentUser;
+    if (currentUser) {
+      try {
+        await getFreshToken(true); // Force refresh
+      } catch (error) {
+        console.error('Background token refresh failed:', error);
+      }
+    } else {
+      // No user, clear interval
+      clearInterval(tokenRefreshInterval);
+      tokenRefreshInterval = null;
+    }
+  }, 30 * 60 * 1000); // 30 minutes
+};
+
+// Start token refresh when user is authenticated
+const auth = getAuthSafe();
+if (auth) {
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      startTokenRefreshInterval();
+    } else {
+      if (tokenRefreshInterval) {
+        clearInterval(tokenRefreshInterval);
+        tokenRefreshInterval = null;
+      }
+    }
+  });
+}
 
 // Add a response interceptor to handle token expiration
 api.interceptors.response.use(
@@ -115,6 +189,22 @@ api.interceptors.response.use(
     // If error is due to token expiration and the request hasn't been retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+      
+      const errorData = error.response?.data;
+      const errorCode = errorData?.code;
+      
+      // Handle different types of auth errors
+      if (errorCode === 'USER_NOT_FOUND') {
+        console.log('User not found in database, need to re-register');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('cachedUser');
+        
+        const authExpiredEvent = new CustomEvent('auth:expired', {
+          detail: { error: new Error('User account not found. Please register again.') }
+        });
+        window.dispatchEvent(authExpiredEvent);
+        return Promise.reject(error);
+      }
       
       try {
         // Get the current user from Firebase
@@ -133,8 +223,11 @@ api.interceptors.response.use(
             // Update the header with the new token
             originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
             
+            // Reset retry flag for the retry
+            originalRequest._retry = false;
+            
             // Retry the original request
-            return axios(originalRequest);
+            return api(originalRequest);
           }
         } else {
           console.log('No current user found, authentication required');
@@ -153,6 +246,7 @@ api.interceptors.response.use(
         
         // Clear invalid tokens
         localStorage.removeItem('authToken');
+        localStorage.removeItem('cachedUser');
         
         // Dispatch auth expired event
         const authExpiredEvent = new CustomEvent('auth:expired', { 

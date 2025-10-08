@@ -16,16 +16,21 @@ const Favorites = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     if (user) {
-      dispatch(fetchFavorites());
+      // Only fetch if user has a valid token to avoid 500 errors
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        dispatch(fetchFavorites());
+      }
     }
   }, [dispatch, user]);
 
   useEffect(() => {
+    // Lightweight debug log
     console.log('Favorites state:', { favorites, count, loading, error });
   }, [favorites, count, loading, error]);
 
   // Empty state
-  if (!loading && count === 0) {
+  if (!loading && (!favorites || favorites.length === 0)) {
     return (
       <div className="min-h-screen flex items-center justify-center ">
         <div className="max-w-lg w-full p-8 bg-white ">
@@ -69,22 +74,35 @@ const Favorites = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {favorites && favorites.length > 0 ? (
-              favorites.map((item) => (
-                <div key={item.productId} className="bg-white">
-                  {item.productDetails && (
-                    <ProductCard
-                      product={{
-                        _id: item.productId,
-                        ...item.productDetails,
-                        images: item.productDetails.images || [],
-                        name: item.productDetails.name || 'Product',
-                        description: item.productDetails.description || '',
-                        variants: item.productDetails.variants || []
-                      }}
-                    />
-                  )}
-                </div>
-              ))
+              favorites.map((item) => {
+                // Support both shapes: { productId, productDetails } and direct product objects
+                const productData = item?.productDetails || item;
+                const productId = item?.productId || productData?._id || productData?.productId;
+
+                if (!productData || !productId) return null;
+
+                // Normalize images field
+                const normalizedImages = (() => {
+                  if (Array.isArray(productData.images) && productData.images.length) return productData.images;
+                  const img = productData.image?.url || productData.image;
+                  return img ? [img] : [];
+                })();
+
+                const normalizedProduct = {
+                  _id: productId,
+                  ...productData,
+                  images: normalizedImages,
+                  name: productData.name || 'Product',
+                  description: productData.description || '',
+                  variants: productData.variants || []
+                };
+
+                return (
+                  <div key={productId} className="bg-white">
+                    <ProductCard product={normalizedProduct} />
+                  </div>
+                );
+              })
             ) : (
               <div className="col-span-3 text-center py-8">
                 <p className="text-gray-600">No favorite products found.</p>

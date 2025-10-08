@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
 // (removed duplicate import of useFavorites)
 import { useCart } from '../hooks/useCart';
 import Profile from '../components/Auth/Profile/Profile';
 import './ProfileStyles.css';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
+import { fetchFavorites } from '../redux/favoritesSlice';
 import { 
   User, 
   Package, 
@@ -35,7 +37,20 @@ const ProfilePage = () => {
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState(null);
-  const { favorites, loading: favLoading, error: favError, fetchFavorites } = useFavorites();
+  const { favorites, loading: favLoading, error: favError } = useFavorites();
+  
+  // Add dispatch for manual favorites refresh
+  const dispatch = useDispatch();
+  const [favoritesRetryCount, setFavoritesRetryCount] = useState(0);
+  
+  // Force refresh favorites function
+  const refreshFavorites = useCallback(() => {
+    if (user) {
+      console.log('Manually refreshing favorites...');
+      dispatch(fetchFavorites());
+      setFavoritesRetryCount(prev => prev + 1);
+    }
+  }, [dispatch, user]);
   const { 
     cartItems, 
     cartTotal, 
@@ -810,12 +825,21 @@ const ProfilePage = () => {
                   <p className="text-red-600 font-medium">Error loading favorites</p>
                 </div>
                 <p className="text-red-600 text-sm mb-3">{favError}</p>
-                <button 
-                  onClick={() => window.location.reload()} 
-                  className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-sm"
-                >
-                  Retry Loading
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={refreshFavorites} 
+                    disabled={favLoading}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-sm disabled:opacity-50"
+                  >
+                    {favLoading ? 'Loading...' : 'Retry Loading'}
+                  </button>
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm"
+                  >
+                    Reload Page
+                  </button>
+                </div>
               </div>
             ) : !favorites || favorites.length === 0 ? (
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
