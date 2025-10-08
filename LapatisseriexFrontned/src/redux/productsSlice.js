@@ -32,6 +32,26 @@ export const fetchProductById = createAsyncThunk(
   }
 );
 
+// Async thunk for fetching best sellers using the proper API endpoint
+export const fetchBestSellers = createAsyncThunk(
+  'products/fetchBestSellers',
+  async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    // Add all params to query string
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value);
+      }
+    });
+
+    const queryString = queryParams.toString();
+    const response = await axiosInstance.get(`${API_URL}/products/bestsellers${queryString ? `?${queryString}` : ''}`);
+    
+    return response.data;
+  }
+);
+
 const initialState = {
   products: [],
   productsByCategory: {},
@@ -45,6 +65,7 @@ const initialState = {
   listsByKey: {}, // key -> products[]
   loadingByKey: {}, // key -> boolean
   errorByKey: {}, // key -> string|null
+  hasBestSellers: false, // Track if there are any best sellers
 };
 
 const productsSlice = createSlice({
@@ -106,6 +127,22 @@ const productsSlice = createSlice({
           state.error = action.error.message;
         }
       })
+      // Fetch best sellers cases
+      .addCase(fetchBestSellers.pending, (state, action) => {
+        state.loadingByKey['bestSellers'] = true;
+        state.errorByKey['bestSellers'] = null;
+      })
+      .addCase(fetchBestSellers.fulfilled, (state, action) => {
+        state.loadingByKey['bestSellers'] = false;
+        state.listsByKey['bestSellers'] = action.payload?.products || [];
+        // Store the hasBestSellers flag for conditional rendering
+        state.hasBestSellers = action.payload?.meta?.hasBestSellers || false;
+      })
+      .addCase(fetchBestSellers.rejected, (state, action) => {
+        state.loadingByKey['bestSellers'] = false;
+        state.errorByKey['bestSellers'] = action.error.message;
+        state.hasBestSellers = false;
+      })
       // Fetch single product cases
       .addCase(fetchProductById.pending, (state) => {
         state.loading = true;
@@ -154,6 +191,11 @@ export const selectProducts = createSelector(
 export const selectProductsLoading = createSelector(
   [selectProductsState],
   (productsState) => productsState.loading
+);
+
+export const selectHasBestSellers = createSelector(
+  [selectProductsState],
+  (productsState) => productsState.hasBestSellers
 );
 
 export const makeSelectTopRated = (limit = 3) =>

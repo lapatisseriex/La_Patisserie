@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useAuth } from '../../hooks/useAuth';
-import { fetchProducts, makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
+import { fetchProducts, fetchBestSellers, makeSelectListByKey, makeSelectLoadingByKey, selectHasBestSellers } from '../../redux/productsSlice';
 
 
 import BestSellers from './BestSellers';
@@ -39,6 +39,7 @@ const Home = () => {
   const newlyLaunchedProducts = useSelector(selectNewlyLaunched);
   const bestSellersLoading = useSelector(selectBestSellersLoading);
   const newlyLaunchedLoading = useSelector(selectNewlyLaunchedLoading);
+  const hasBestSellers = useSelector(selectHasBestSellers);
   
   const [specialImages, setSpecialImages] = React.useState({ bestSeller: null, newlyLaunched: null });
   const pageLoading = categoriesLoading || bestSellersLoading || newlyLaunchedLoading;
@@ -56,7 +57,7 @@ const Home = () => {
 
   // Load products for homepage sections using keys so they don't overwrite each other
   useEffect(() => {
-    dispatch(fetchProducts({ key: 'bestSellers', limit: 3, sort: 'rating:-1' }));
+    dispatch(fetchBestSellers({ limit: 3 }));
     dispatch(fetchProducts({ key: 'newlyLaunched', limit: 3, sort: 'createdAt:-1' }));
   }, [dispatch]);
 
@@ -189,7 +190,7 @@ const Home = () => {
       </section>
 
       <section ref={bestSellersRef} className="w-full">
-        <BestSellers />
+        {hasBestSellers && <BestSellers />}
       </section>
 
       <section ref={handpickedRef} className="w-full">

@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import Order from '../models/orderModel.js';
 import User from '../models/userModel.js';
+import Product from '../models/productModel.js';
 import { sendOrderStatusNotification, sendOrderConfirmationEmail } from '../utils/orderEmailService.js';
 
 // Initialize Razorpay
@@ -10,6 +11,31 @@ const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
+
+// Helper function to update product order counts
+const updateProductOrderCounts = async (cartItems) => {
+  try {
+    console.log('Updating product order counts for cart items:', cartItems);
+    
+    const updatePromises = cartItems.map(async (item) => {
+      try {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          await product.incrementOrderCount(item.quantity);
+          console.log(`Updated order count for product ${product.name} by ${item.quantity}`);
+        }
+      } catch (error) {
+        console.error(`Error updating order count for product ${item.productId}:`, error.message);
+      }
+    });
+
+    await Promise.all(updatePromises);
+    console.log('Product order counts updated successfully');
+  } catch (error) {
+    console.error('Error updating product order counts:', error);
+    // Don't throw error as this shouldn't break the order process
+  }
+};
 
 // Create Razorpay Order
 export const createOrder = asyncHandler(async (req, res) => {
@@ -167,6 +193,11 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       }
       
       console.log('Payment verified successfully for order:', order.orderNumber);
+      
+      // Update product order counts after successful payment
+      if (order.cartItems && order.cartItems.length > 0) {
+        await updateProductOrderCounts(order.cartItems);
+      }
       
       res.json({
         success: true,
@@ -350,9 +381,37 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
       });
     }
 
+    // Populate product details for cart items
+    const enrichedCartItems = await Promise.all(order.cartItems.map(async (item) => {
+      try {
+        const Product = (await import('../models/productModel.js')).default;
+        const product = await Product.findById(item.productId).select('name images category description');
+        
+        return {
+          ...item.toObject(),
+          productImage: product?.images?.[0] || null,
+          productCategory: product?.category || null,
+          productDescription: product?.description || null
+        };
+      } catch (error) {
+        console.error(`Error fetching product details for ${item.productId}:`, error);
+        return {
+          ...item.toObject(),
+          productImage: null,
+          productCategory: null,
+          productDescription: null
+        };
+      }
+    }));
+
+    const enrichedOrder = {
+      ...order.toObject(),
+      cartItems: enrichedCartItems
+    };
+
     res.json({
       success: true,
-      order
+      order: enrichedOrder
     });
   } catch (error) {
     console.error('Error fetching order details:', error);
@@ -405,6 +464,12 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
         success: false,
         message: 'Order not found'
       });
+    }
+
+    // Update product order counts if status is being confirmed for the first time
+    if (existingOrder.orderStatus !== 'confirmed' && orderStatus === 'confirmed' && order.cartItems && order.cartItems.length > 0) {
+      console.log('Order confirmed - updating product order counts');
+      await updateProductOrderCounts(order.cartItems);
     }
 
     // Send email notification if status changed and user has email
@@ -472,11 +537,39 @@ export const getUserOrders = asyncHandler(async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
+    // Populate product details for cart items
+    const enrichedOrders = await Promise.all(orders.map(async (order) => {
+      const enrichedCartItems = await Promise.all(order.cartItems.map(async (item) => {
+        try {
+          const Product = (await import('../models/productModel.js')).default;
+          const product = await Product.findById(item.productId).select('name images category');
+          
+          return {
+            ...item.toObject(),
+            productImage: product?.images?.[0] || null,
+            productCategory: product?.category || null
+          };
+        } catch (error) {
+          console.error(`Error fetching product details for ${item.productId}:`, error);
+          return {
+            ...item.toObject(),
+            productImage: null,
+            productCategory: null
+          };
+        }
+      }));
+
+      return {
+        ...order.toObject(),
+        cartItems: enrichedCartItems
+      };
+    }));
+
     const total = await Order.countDocuments({ userId });
 
     res.json({
       success: true,
-      orders,
+      orders: enrichedOrders,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

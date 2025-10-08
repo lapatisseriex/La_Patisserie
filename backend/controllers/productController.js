@@ -19,6 +19,7 @@ export const getProducts = asyncHandler(async (req, res) => {
     hasDiscount,
     tags,
     search,
+    bestSeller,
     limit = 20,
     page = 1
   } = req.query;
@@ -71,6 +72,11 @@ export const getProducts = asyncHandler(async (req, res) => {
     filter.tags = { $in: tagArray };
   }
   
+  // Best seller filter
+  if (bestSeller === 'true') {
+    filter.totalOrderCount = { $gte: 4 };
+  }
+  
   // Search by name, description, product id, and optionally Mongo _id if valid
   if (search) {
     const orConditions = [
@@ -121,7 +127,7 @@ export const getProducts = asyncHandler(async (req, res) => {
         match: req.user?.role === 'admin' ? {} : { isActive: true }
       })
     // Return only fields needed for list views
-  .select('name id price variants featuredImage images category isActive hasEgg isVeg badge createdAt updatedAt')
+  .select('name id price variants featuredImage images category isActive hasEgg isVeg badge totalOrderCount createdAt updatedAt')
       .sort('-createdAt')
       .skip(skip)
       .limit(Number(limit))
@@ -510,4 +516,304 @@ export const updateProductDiscount = asyncHandler(async (req, res) => {
   const updatedProduct = await product.save();
   
   res.status(200).json(updatedProduct);
+});
+
+// @desc    Get product order statistics
+// @route   GET /api/products/stats/orders
+// @access  Admin
+export const getProductOrderStats = asyncHandler(async (req, res) => {
+  const { 
+    sortBy = 'totalOrderCount', 
+    order = 'desc', 
+    limit = 50, 
+    page = 1,
+    category,
+    minOrders = 0
+  } = req.query;
+
+  // Build filter
+  const filter = { isActive: true };
+  if (category) filter.category = category;
+  if (minOrders > 0) filter.totalOrderCount = { $gte: parseInt(minOrders) };
+
+  // Build sort object
+  const sortObject = {};
+  sortObject[sortBy] = order === 'desc' ? -1 : 1;
+
+  // Calculate pagination
+  const skip = (page - 1) * limit;
+
+  try {
+    const products = await Product.find(filter)
+      .populate('category', 'name')
+      .sort(sortObject)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .select('name id totalOrderCount lastOrderCountUpdate category images')
+      .lean();
+
+    const total = await Product.countDocuments(filter);
+
+    // Add best seller status to each product
+    const enrichedProducts = products.map(product => ({
+      ...product,
+      bestSeller: product.totalOrderCount >= 4,
+      featuredImage: product.images && product.images.length > 0 ? product.images[0] : null
+    }));
+
+    res.json({
+      products: enrichedProducts,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalProducts: total,
+        hasNextPage: (page * limit) < total,
+        hasPrevPage: page > 1
+      },
+      stats: {
+        totalProductsWithOrders: await Product.countDocuments({ totalOrderCount: { $gt: 0 } }),
+        bestSellersCount: await Product.countDocuments({ totalOrderCount: { $gte: 4 } }),
+        averageOrderCount: await Product.aggregate([
+          { $group: { _id: null, avg: { $avg: "$totalOrderCount" } } }
+        ]).then(result => result[0]?.avg || 0)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching product order stats:', error);
+    res.status(500).json({ message: 'Server error while fetching product order statistics' });
+  }
+});
+
+// @desc    Get best selling products
+// @route   GET /api/products/bestsellers
+// @access  Public
+export const getBestSellingProducts = asyncHandler(async (req, res) => {
+  const { 
+    limit = 20, 
+    page = 1, 
+    category,
+    minOrders = 4 
+  } = req.query;
+
+  // Build filter for best sellers
+  const filter = { 
+    isActive: true, 
+    totalOrderCount: { $gte: parseInt(minOrders) } 
+  };
+  
+  if (category) filter.category = category;
+
+  // Calculate pagination
+  const skip = (page - 1) * limit;
+
+  try {
+    // First check if there are any best sellers at all
+    const totalBestSellers = await Product.countDocuments(filter);
+    
+    // If no best sellers exist, return empty response with flag
+    if (totalBestSellers === 0) {
+      return res.json({
+        products: [],
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: 0,
+          totalProducts: 0,
+          hasNextPage: false,
+          hasPrevPage: false
+        },
+        meta: {
+          minOrdersThreshold: parseInt(minOrders),
+          resultCount: 0,
+          hasBestSellers: false,
+          message: 'No best sellers found. Products need at least ' + minOrders + ' orders to qualify.'
+        }
+      });
+    }
+
+    const products = await Product.find(filter)
+      .populate('category', 'name')
+      .sort({ totalOrderCount: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Add best seller status and process variants
+    const enrichedProducts = products.map(product => {
+      const processedProduct = {
+        ...product,
+        bestSeller: true, // All products in this query are best sellers
+        featuredImage: product.images && product.images.length > 0 ? product.images[0] : null
+      };
+
+      // Process variants to include pricing information
+      if (product.variants && product.variants.length > 0) {
+        processedProduct.variants = product.variants.map(variant => ({
+          ...variant,
+          hasDiscount: variant.discount && variant.discount.type && !product.cancelOffer
+        }));
+      }
+
+      return processedProduct;
+    });
+
+    res.json({
+      products: enrichedProducts,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalBestSellers / limit),
+        totalProducts: totalBestSellers,
+        hasNextPage: (page * limit) < totalBestSellers,
+        hasPrevPage: page > 1
+      },
+      meta: {
+        minOrdersThreshold: parseInt(minOrders),
+        resultCount: enrichedProducts.length,
+        hasBestSellers: true
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching best selling products:', error);
+    res.status(500).json({ message: 'Server error while fetching best selling products' });
+  }
+});
+
+// @desc    Check if there are any best sellers
+// @route   GET /api/products/bestsellers/check
+// @access  Public
+export const checkBestSellers = asyncHandler(async (req, res) => {
+  const { minOrders = 4, category } = req.query;
+
+  try {
+    // Build filter for best sellers
+    const filter = { 
+      isActive: true, 
+      totalOrderCount: { $gte: parseInt(minOrders) } 
+    };
+    
+    if (category) filter.category = category;
+
+    // Count best sellers
+    const bestSellersCount = await Product.countDocuments(filter);
+    
+    res.json({
+      hasBestSellers: bestSellersCount > 0,
+      bestSellersCount,
+      minOrdersThreshold: parseInt(minOrders),
+      message: bestSellersCount > 0 
+        ? `Found ${bestSellersCount} best selling products`
+        : `No best sellers found. Products need at least ${minOrders} orders to qualify.`
+    });
+  } catch (error) {
+    console.error('Error checking best sellers:', error);
+    res.status(500).json({ message: 'Server error while checking best sellers' });
+  }
+});
+
+// @desc    Update product order count (internal use)
+// @route   PUT /api/products/:id/order-count
+// @access  Admin
+export const updateProductOrderCount = asyncHandler(async (req, res) => {
+  const { increment = 1, reset = false } = req.body;
+
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  if (reset) {
+    product.totalOrderCount = 0;
+  } else {
+    product.totalOrderCount = (product.totalOrderCount || 0) + parseInt(increment);
+  }
+  
+  product.lastOrderCountUpdate = new Date();
+  
+  const updatedProduct = await product.save();
+
+  res.json({
+    _id: updatedProduct._id,
+    name: updatedProduct.name,
+    totalOrderCount: updatedProduct.totalOrderCount,
+    bestSeller: updatedProduct.isBestSeller(),
+    lastOrderCountUpdate: updatedProduct.lastOrderCountUpdate
+  });
+});
+
+// @desc    Bulk update product order counts from order data
+// @route   POST /api/products/bulk-update-order-counts
+// @access  Admin
+export const bulkUpdateOrderCounts = asyncHandler(async (req, res) => {
+  try {
+    // Import Order model
+    const Order = (await import('../models/orderModel.js')).default;
+    
+    console.log('Starting bulk update of product order counts...');
+    
+    // Get all completed orders
+    const orders = await Order.find({ 
+      orderStatus: { $in: ['delivered', 'confirmed', 'preparing', 'ready', 'out_for_delivery'] } 
+    }).select('cartItems orderStatus');
+
+    console.log(`Found ${orders.length} completed orders`);
+
+    // Count orders per product
+    const productOrderCounts = {};
+    
+    orders.forEach(order => {
+      order.cartItems.forEach(item => {
+        const productId = item.productId.toString();
+        productOrderCounts[productId] = (productOrderCounts[productId] || 0) + item.quantity;
+      });
+    });
+
+    console.log(`Updating order counts for ${Object.keys(productOrderCounts).length} products`);
+
+    // Update each product's order count
+    const updatePromises = Object.entries(productOrderCounts).map(async ([productId, count]) => {
+      try {
+        return await Product.findByIdAndUpdate(
+          productId,
+          { 
+            totalOrderCount: count,
+            lastOrderCountUpdate: new Date()
+          },
+          { new: true }
+        );
+      } catch (error) {
+        console.error(`Error updating product ${productId}:`, error.message);
+        return null;
+      }
+    });
+
+    const updatedProducts = await Promise.all(updatePromises);
+    const successfulUpdates = updatedProducts.filter(p => p !== null);
+
+    // Get summary statistics
+    const totalProducts = await Product.countDocuments();
+    const bestSellers = await Product.countDocuments({ totalOrderCount: { $gte: 4 } });
+
+    res.json({
+      message: 'Bulk update completed successfully',
+      stats: {
+        totalOrdersProcessed: orders.length,
+        productsUpdated: successfulUpdates.length,
+        productOrderCounts: Object.keys(productOrderCounts).length,
+        totalProducts,
+        bestSellers,
+        bestSellerThreshold: 4
+      },
+      summary: successfulUpdates.slice(0, 10).map(product => ({
+        id: product._id,
+        name: product.name,
+        totalOrderCount: product.totalOrderCount,
+        bestSeller: product.totalOrderCount >= 4
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error in bulk update:', error);
+    res.status(500).json({ message: 'Server error during bulk update', error: error.message });
+  }
 });

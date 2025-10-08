@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux';
-import { makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
+import { makeSelectListByKey, makeSelectLoadingByKey, selectHasBestSellers } from '../../redux/productsSlice';
 import ProductCard from "../Products/ProductCard";
 import DessertLoader from "../common/DessertLoader";
 
@@ -9,7 +9,10 @@ const BestSellers = () => {
   const selectLoading = makeSelectLoadingByKey('bestSellers');
   const products = useSelector(selectProducts);
   const loading = useSelector(selectLoading);
-  if (loading || !products || products.length === 0) {
+  const hasBestSellers = useSelector(selectHasBestSellers);
+
+  // Show loading state
+  if (loading) {
     return (
       <section className="w-full py-0 md:py-6">
         <div className="max-w-screen-xl mx-auto pt-6 pb-6 md:pt-0 md:pb-0">
@@ -20,6 +23,11 @@ const BestSellers = () => {
         </div>
       </section>
     );
+  }
+
+  // Don't render anything if there are no best sellers
+  if (!hasBestSellers || !products || products.length === 0) {
+    return null;
   }
 
   return (

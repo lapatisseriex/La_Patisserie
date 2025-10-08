@@ -354,7 +354,7 @@ const ProfilePage = () => {
                 <div className="mb-4 text-sm text-gray-600">
                   {orders.length} order{orders.length !== 1 ? 's' : ''} found
                 </div>
-                <div className="grid gap-4">
+                <div className="grid gap-6 pt-4" style={{ paddingTop: '20px' }}>
                   {orders.map((order) => (
                     <OrderCard 
                       key={order._id} 
@@ -932,8 +932,8 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-4 sm:py-8 pt-4 sm:pt-8 px-3 sm:px-6 profile-page-container no-scrollbar">
-      <div className="bg-white shadow-xl rounded-2xl border border-gray-100 transition-all duration-300 hover:shadow-2xl no-scrollbar">
+    <div className="max-w-6xl mx-auto py-4 sm:py-8 pt-8 sm:pt-12 px-3 sm:px-6 profile-page-container no-scrollbar" style={{ paddingTop: '80px' }}>
+      <div className="bg-white shadow-xl rounded-2xl border border-gray-100 transition-all duration-300 hover:shadow-2xl no-scrollbar" style={{ position: 'relative', zIndex: 1 }}>
         {/* Header Section - Light Black and White Design */}
   <div className="bg-gradient-to-r from-gray-50 to-gray-100 relative overflow-visible">
           {/* Decorative Elements */}

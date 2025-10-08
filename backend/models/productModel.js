@@ -69,7 +69,11 @@ const productSchema = new mongoose.Schema(
     },
     extraFields: { type: Map, of: String, default: {} },
     isActive: { type: Boolean, default: true },
-    badge: { type: String, trim: true }
+    badge: { type: String, trim: true },
+    // Track total number of times this product has been ordered
+    totalOrderCount: { type: Number, default: 0, min: 0 },
+    // Track when the count was last updated
+    lastOrderCountUpdate: { type: Date, default: Date.now }
   },
   { timestamps: true }
 );
@@ -202,6 +206,23 @@ productSchema.methods.getVariantDiscountPercentage = function(variantIndex = 0) 
   return 0;
 };
 
+// Method to check if this product is a best seller
+productSchema.methods.isBestSeller = function() {
+  return this.totalOrderCount >= 4;
+};
+
+// Method to increment order count
+productSchema.methods.incrementOrderCount = function(quantity = 1) {
+  this.totalOrderCount = (this.totalOrderCount || 0) + quantity;
+  this.lastOrderCountUpdate = new Date();
+  return this.save();
+};
+
+// Virtual to get best seller status
+productSchema.virtual('bestSeller').get(function() {
+  return this.isBestSeller();
+});
+
 // Middleware to auto-generate product ID
 productSchema.pre('save', async function(next) {
   if (this.isNew && !this.id) {
@@ -225,6 +246,8 @@ productSchema.index({ category: 1, isActive: 1 }); // Compound index for common 
 productSchema.index({ isActive: 1, createdAt: -1 }); // For active products sorted by date
 productSchema.index({ 'variants.price': 1 }); // For price range queries
 productSchema.index({ tags: 1 }); // For tag-based queries
+productSchema.index({ totalOrderCount: -1 }); // For best seller queries and sorting
+productSchema.index({ totalOrderCount: -1, isActive: 1 }); // For best seller + active products
 
 // Include virtuals in JSON
 productSchema.set('toJSON', { virtuals: true });
