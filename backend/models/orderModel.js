@@ -38,14 +38,6 @@ const orderSummarySchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  taxAmount: {
-    type: Number,
-    required: true
-  },
-  couponDiscount: {
-    type: Number,
-    default: 0
-  },
   freeCashDiscount: {
     type: Number,
     default: 0

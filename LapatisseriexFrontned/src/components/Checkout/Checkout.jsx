@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { useCart } from '../../hooks/useCart';
+import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 import {
   Mail,
   Phone,
@@ -43,7 +44,7 @@ const Checkout = () => {
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
   };
-
+  console.log(user);
   return (
     <div className="max-w-6xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">Checkout</h1>
@@ -55,7 +56,7 @@ const Checkout = () => {
             <ShoppingBag className="text-blue-500 mr-2" size={20} />
             <p className="text-blue-800">
               <strong>{cartCount}</strong> items in your cart - Total:{' '}
-              <strong>₹{cartTotal}</strong>
+              <strong>₹{isNaN(cartTotal) ? '0.00' : cartTotal.toFixed(2)}</strong>
             </p>
           </div>
         </div>
@@ -298,7 +299,22 @@ const Checkout = () => {
                       </p>
                     </div>
                     <p className="text-sm font-medium text-gray-900">
-                      ₹{(item.price * item.quantity).toFixed(2)}
+                      {(() => {
+                        // Use centralized pricing calculation for consistency
+                        const prod = item.productDetails || item.product || item;
+                        const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
+                        const variant = prod?.variants?.[vi];
+                        
+                        if (variant) {
+                          const pricing = calculatePricing(variant);
+                          const itemTotal = pricing.finalPrice * item.quantity;
+                          return `₹${itemTotal.toFixed(2)}`;
+                        } else {
+                          // Fallback to simple multiplication if variant not found
+                          const itemTotal = item.price * item.quantity;
+                          return isNaN(itemTotal) ? '₹0.00' : `₹${itemTotal.toFixed(2)}`;
+                        }
+                      })()}
                     </p>
                   </div>
                 ))}
@@ -306,14 +322,43 @@ const Checkout = () => {
 
               {/* Order Total */}
               <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">Total:</span>
-                  <span className="text-lg font-bold text-black">₹{cartTotal}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm text-gray-600 mt-1">
-                  <span>{cartCount} items</span>
-                  <span>Delivery charges may apply</span>
-                </div>
+                {(() => {
+                  // Calculate cart totals for discount information
+                  const totals = calculateCartTotals(cartItems);
+                  
+                  return (
+                    <>
+                      {/* Show discount savings if any */}
+                      {totals.totalSavings > 0 && (
+                        <>
+                          <div className="flex justify-between items-center text-sm text-gray-500 mb-1">
+                            <span>Original Price:</span>
+                            <span className="line-through">{formatCurrency(totals.originalTotal)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-green-600 text-sm mb-2">
+                            <span>Discount Savings {totals.averageDiscountPercentage > 0 && `(${totals.averageDiscountPercentage}% OFF)`}:</span>
+                            <span className="font-medium">-{formatCurrency(totals.totalSavings)}</span>
+                          </div>
+                          {/* Show average discount percentage prominently for multiple products */}
+                          {cartItems.length > 1 && totals.averageDiscountPercentage > 0 && (
+                            <div className="flex justify-between bg-green-50 p-2 rounded-md border border-green-100 mb-2">
+                              <span className="text-green-700 font-medium text-sm">Average Discount:</span>
+                              <span className="text-green-700 font-bold text-sm">{totals.averageDiscountPercentage}% OFF</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold">Total:</span>
+                        <span className="text-lg font-bold text-black">{formatCurrency(totals.finalTotal)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm text-gray-600 mt-1">
+                        <span>{cartItems.length} items</span>
+                        <span>Delivery charges may apply</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>

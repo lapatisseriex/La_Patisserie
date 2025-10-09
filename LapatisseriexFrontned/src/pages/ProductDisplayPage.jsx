@@ -14,8 +14,8 @@ import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
 import ProductDebugPanel from '../components/common/ProductDebugPanel';
-import PricingCalculator from '../components/common/PricingCalculator';
 import ScrollManager from '../utils/scrollManager';
+import { calculatePricing } from '../utils/pricingUtils';
 import '../styles/ProductDisplayPage-mobile.css';
 import '../styles/premiumButtons.css';
 
@@ -351,7 +351,6 @@ const ProductDisplayPage = () => {
     const currentQuantity = getItemQuantity(product._id);
     console.log('🔍 Reserve button clicked!');
     console.log('🔍 Current quantity in cart:', currentQuantity);
-    console.log('🔍 Product details:', { id: product._id, name: product.name, price: product.price });
     console.log('🔍 Cart items:', cartItems);
     console.log('🔍 User status:', user ? 'logged in' : 'guest');
     
@@ -424,6 +423,16 @@ const ProductDisplayPage = () => {
       console.error('Error updating quantity:', error);
     });
   }, [updateQuantity, product?._id, lastQuantityChangeTime]);
+
+  // Calculate derived properties that may be needed in early returns
+  // Use centralized pricing utility for consistency across all components
+  const pricingDetails = useMemo(() => {
+    return calculatePricing(selectedVariant);
+  }, [selectedVariant]);
+  
+  // Set default values for derived properties from the selected variant
+  const tracks = !!selectedVariant?.isStockActive;
+  const totalStock = tracks ? (selectedVariant?.stock || 0) : Number.POSITIVE_INFINITY;
 
 
 
@@ -534,35 +543,6 @@ const ProductDisplayPage = () => {
     return <ProductDisplaySkeleton />;
   }
 
-  // Set default values for derived properties from the selected variant
-  const tracks = !!selectedVariant?.isStockActive;
-  
-  // Debug: Log the variant data to see what's happening
-  console.log('Selected variant data:', selectedVariant);
-  console.log('Pricing breakdown:', selectedVariant?.pricingBreakdown);
-  console.log('Discount info:', selectedVariant?.discount);
-  
-  // Use dynamic pricing breakdown from backend if available, otherwise fallback to manual calculation
-  const pricingBreakdown = selectedVariant?.pricingBreakdown;
-  
-  // For now, use the same calculation as ProductCard to ensure consistency
-  const discountedPrice = (selectedVariant?.discount?.type && selectedVariant?.discount?.value)
-    ? (selectedVariant.discount.type === 'flat' 
-        ? Math.max(0, selectedVariant.price - selectedVariant.discount.value)
-        : selectedVariant.price * (1 - selectedVariant.discount.value / 100))
-    : selectedVariant?.price || 0;
-      
-  // Use the same discount calculation as ProductCard for consistency
-  const discountPercentage = (selectedVariant?.discount?.type && selectedVariant?.discount?.value)
-    ? (selectedVariant.discount.type === 'percentage' 
-        ? selectedVariant.discount.value
-        : selectedVariant.price > 0 ? Math.round((selectedVariant.discount.value / selectedVariant.price) * 100) : 0)
-    : 0;
-      
-  console.log('Calculated discountedPrice:', discountedPrice);
-  console.log('Calculated discountPercentage:', discountPercentage);
-  const totalStock = tracks ? (selectedVariant?.stock || 0) : Number.POSITIVE_INFINITY;
-
   return (
     <div 
       className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 relative overflow-hidden"
@@ -608,15 +588,15 @@ const ProductDisplayPage = () => {
                   </h3>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-sm sm:text-base font-bold text-black">
-                      ₹{Math.round(discountedPrice)}
+                      ₹{Math.round(pricingDetails.finalPrice)}
                     </span>
-                    {discountPercentage > 0 && (
+                    {pricingDetails.discountPercentage > 0 && (
                       <>
                         <span className="text-xs text-gray-500 line-through">
-                          ₹{selectedVariant.price}
+                          ₹{pricingDetails.mrp}
                         </span>
                         <span className="bg-green-500 text-white px-1.5 py-0.5 text-xs font-bold leading-none rounded">
-                          {discountPercentage}% OFF
+                          {pricingDetails.discountPercentage}% OFF
                         </span>
                       </>
                     )}
@@ -797,15 +777,15 @@ const ProductDisplayPage = () => {
             {/* Price Row - mobile matches reference */}
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl font-bold text-gray-900">
-                ₹{Math.round(discountedPrice)}
+                ₹{Math.round(pricingDetails.finalPrice)}
               </span>
-              {discountPercentage > 0 && (
+              {pricingDetails.discountPercentage > 0 && (
                 <>
                   <span className="text-base text-gray-500 line-through">
-                    ₹{selectedVariant.price}
+                    ₹{pricingDetails.mrp}
                   </span>
                   <span className="text-green-600 text-lg font-semibold">
-                    {discountPercentage}% Off
+                    {pricingDetails.discountPercentage}% Off
                   </span>
                   <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-gray-500 text-[10px]" title="Offer details">
                     i
@@ -992,16 +972,16 @@ const ProductDisplayPage = () => {
                       <div className="text-lg font-bold text-green-800">₹{selectedVariant?.price || 0}</div>
                     </div>
                     
-                    {discountPercentage > 0 && (
+                    {pricingDetails.discountPercentage > 0 && (
                       <div className="bg-red-50 rounded-lg p-3 border border-red-200">
                         <div className="text-xs text-red-600 mb-1">Discount Applied</div>
-                        <div className="text-lg font-bold text-red-800">{discountPercentage}% OFF</div>
+                        <div className="text-lg font-bold text-red-800">{pricingDetails.discountPercentage}% OFF</div>
                       </div>
                     )}
                     
                     <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                       <div className="text-xs text-blue-600 mb-1">Final Price</div>
-                      <div className="text-lg font-bold text-blue-800">₹{Math.round(discountedPrice)}</div>
+                      <div className="text-lg font-bold text-blue-800">₹{Math.round(pricingDetails.finalPrice)}</div>
                     </div>
                     
                     {selectedVariant?.pricingBreakdown?.sellerReturn && (
@@ -1131,7 +1111,7 @@ const ProductDisplayPage = () => {
             {isDeliveryInfoOpen && (
               <div className="px-4 pb-4 border-t border-gray-100">
                 <div className="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                  <p className="text-xs text-gray-700">We offer fast and reliable delivery services to ensure your orders reach you fresh and on time. Our delivery options include same-day delivery for orders placed before 2 PM and free delivery on orders above ₹500.</p>
+                  <p className="text-xs text-gray-700">We offer fast and reliable delivery services to ensure your orders reach you fresh and on time. Our delivery options include same-day delivery for orders placed before 2 PM and free delivery on qualifying orders.</p>
                 </div>
               </div>
             )}
@@ -1249,11 +1229,11 @@ const ProductDisplayPage = () => {
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xs font-semibold text-yellow-600 truncate leading-tight">{product.name}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-sm font-bold text-black">₹{Math.round(discountedPrice)}</span>
-                    {discountPercentage > 0 && (
+                    <span className="text-sm font-bold text-black">₹{Math.round(pricingDetails.finalPrice)}</span>
+                    {pricingDetails.discountPercentage > 0 && (
                       <>
-                        <span className="text-[11px] text-gray-500 line-through">₹{selectedVariant.price}</span>
-                        <span className=" text-green-500 px-1 py-0.5 text-[10px] font-bold leading-none rounded">{discountPercentage}% OFF</span>
+                        <span className="text-[11px] text-gray-500 line-through">₹{pricingDetails.mrp}</span>
+                        <span className=" text-green-500 px-1 py-0.5 text-[10px] font-bold leading-none rounded">{pricingDetails.discountPercentage}% OFF</span>
                       </>
                     )}
                   </div>
@@ -1486,16 +1466,16 @@ const ProductDisplayPage = () => {
                           <div className="text-xl font-bold text-green-800">₹{selectedVariant?.price || 0}</div>
                         </div>
                         
-                        {discountPercentage > 0 && (
+                        {pricingDetails.discountPercentage > 0 && (
                           <div className="bg-red-50 rounded-lg p-4 border border-red-200">
                             <div className="text-sm text-red-600 mb-2">Discount Applied</div>
-                            <div className="text-xl font-bold text-red-800">{discountPercentage}% OFF</div>
+                            <div className="text-xl font-bold text-red-800">{pricingDetails.discountPercentage}% OFF</div>
                           </div>
                         )}
                         
                         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                           <div className="text-sm text-blue-600 mb-2">Final Price</div>
-                          <div className="text-xl font-bold text-blue-800">₹{Math.round(discountedPrice)}</div>
+                          <div className="text-xl font-bold text-blue-800">₹{Math.round(pricingDetails.finalPrice)}</div>
                         </div>
                         
                         {selectedVariant?.pricingBreakdown?.sellerReturn && (
@@ -1625,7 +1605,7 @@ const ProductDisplayPage = () => {
                 {isDeliveryInfoOpen && (
                   <div className="px-6 pb-6 border-t border-gray-100">
                     <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-100">
-                      <p className="text-sm text-gray-700 leading-relaxed">We offer fast and reliable delivery services to ensure your orders reach you fresh and on time. Our delivery options include same-day delivery for orders placed before 2 PM and free delivery on orders above ₹500.</p>
+                      <p className="text-sm text-gray-700 leading-relaxed">We offer fast and reliable delivery services to ensure your orders reach you fresh and on time. Our delivery options include same-day delivery for orders placed before 2 PM and free delivery on qualifying orders.</p>
                     </div>
                   </div>
                 )}
@@ -1662,15 +1642,15 @@ const ProductDisplayPage = () => {
                 {/* Price Row (matches reference) */}
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-3xl font-bold text-gray-900">
-                    ₹{Math.round(discountedPrice)}
+                    ₹{Math.round(pricingDetails.finalPrice)}
                   </span>
-                  {discountPercentage > 0 && (
+                  {pricingDetails.discountPercentage > 0 && (
                     <>
                       <span className="text-lg text-gray-500 line-through">
-                        ₹{selectedVariant.price}
+                        ₹{pricingDetails.mrp}
                       </span>
                       <span className="text-green-600 text-xl font-semibold">
-                        {discountPercentage}% Off
+                        {pricingDetails.discountPercentage}% Off
                       </span>
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-300 text-gray-500" title="Offer details">
                         i

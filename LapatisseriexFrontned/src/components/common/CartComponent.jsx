@@ -18,6 +18,7 @@ import {
   clearCart 
 } from '../../redux/cartSlice';
 import { useAuth } from '../../hooks/useAuth';
+import { calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 
 const CartComponent = ({ showHeader = true, showActions = true, isProfileTab = false }) => {
   const dispatch = useDispatch();
@@ -211,7 +212,21 @@ const CartComponent = ({ showHeader = true, showActions = true, isProfileTab = f
 
                 {/* Item Total */}
                 <div className="text-right">
-                  <p className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</p>
+                  {(() => {
+                    // Use centralized pricing calculation for consistency
+                    const prod = item.productDetails || item.product || item;
+                    const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
+                    const variant = prod?.variants?.[vi];
+                    
+                    if (variant) {
+                      const pricing = calculatePricing(variant);
+                      const itemTotal = pricing.finalPrice * item.quantity;
+                      return <p className="font-semibold">{formatCurrency(itemTotal)}</p>;
+                    } else {
+                      // Fallback to simple multiplication if variant not found
+                      return <p className="font-semibold">{formatCurrency(item.price * item.quantity)}</p>;
+                    }
+                  })()}
                 </div>
 
                 {/* Remove Button */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useSelector } from 'react-redux';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
+import { useLocation as useRouterLocation } from 'react-router-dom';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
 import ProfileImageUpload from './ProfileImageUpload';
 import GlobalLoadingOverlay from '../../common/GlobalLoadingOverlay';
@@ -24,6 +25,7 @@ const Profile = () => {
   const { user, updateProfile, authError, loading, isNewUser, updateUser, getCurrentUser } = useAuth();
   const { locations, loading: locationsLoading, fetchLocations } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
+  const routerLocation = useRouterLocation();
   const currentUser = useSelector(state => state.auth.user);
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -307,6 +309,31 @@ const Profile = () => {
       console.error('Error checking localStorage:', err);
     }
   }, [formData, isEditMode]);
+
+  // Cleanup effect to reset edit mode when component unmounts
+  useEffect(() => {
+    return () => {
+      // Reset edit mode in localStorage when component unmounts
+      localStorage.removeItem('profileEditMode');
+      localStorage.removeItem('profileFormData');
+      console.log('Profile component cleanup: Reset edit mode and cleared form data');
+    };
+  }, []);
+
+  // Effect to reset edit mode when navigating away from profile section
+  useEffect(() => {
+    const currentPath = routerLocation.pathname;
+    
+    // Check if user navigated away from profile-related pages
+    if (!currentPath.includes('/profile')) {
+      if (isEditMode) {
+        console.log('User navigated away from profile, resetting edit mode');
+        setIsEditMode(false);
+        localStorage.removeItem('profileEditMode');
+        localStorage.removeItem('profileFormData');
+      }
+    }
+  }, [routerLocation.pathname, isEditMode]);
   
   // useEffect to handle user state changes (like phone verification)
   useEffect(() => {

@@ -14,7 +14,6 @@ const PremiumCarousel = () => {
       title: 'Elegant Wedding Cakes',
       subtitle: 'Handcrafted for Your Special Day',
       description: 'Exquisite multi-tier wedding cakes designed to make your celebration unforgettable',
-      price: 'Starting from $299',
       badge: 'Most Popular'
     },
     {
@@ -23,7 +22,6 @@ const PremiumCarousel = () => {
       title: 'Birthday Celebrations',
       subtitle: 'Sweet Memories in Every Bite',
       description: 'Custom birthday cakes that bring joy and sweetness to your special moments',
-      price: 'Starting from $89',
       badge: 'Best Seller'
     },
     {
@@ -32,7 +30,6 @@ const PremiumCarousel = () => {
       title: 'Artisan Pastries',
       subtitle: 'French Patisserie Excellence',
       description: 'Delicate pastries crafted with traditional French techniques and premium ingredients',
-      price: 'Starting from $45',
       badge: 'Chef\'s Choice'
     },
     {
@@ -41,7 +38,6 @@ const PremiumCarousel = () => {
       title: 'Seasonal Specials',
       subtitle: 'Limited Edition Creations',
       description: 'Unique seasonal flavors and designs available for a limited time only',
-      price: 'Starting from $65',
       badge: 'New Arrival'
     }
   ];

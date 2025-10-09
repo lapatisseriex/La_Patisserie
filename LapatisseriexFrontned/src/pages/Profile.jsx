@@ -8,6 +8,7 @@ import Profile from '../components/Auth/Profile/Profile';
 import './ProfileStyles.css';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import { fetchFavorites } from '../redux/favoritesSlice';
+import { calculatePricing, normalizeCartItem } from '../utils/pricingUtils';
 import { 
   User, 
   Package, 
@@ -46,7 +47,6 @@ const ProfilePage = () => {
   // Force refresh favorites function
   const refreshFavorites = useCallback(() => {
     if (user) {
-      console.log('Manually refreshing favorites...');
       dispatch(fetchFavorites());
       setFavoritesRetryCount(prev => prev + 1);
     }
@@ -62,29 +62,10 @@ const ProfilePage = () => {
     addToCart
   } = useCart();
   
-  // Debug logs for favorites and cart
-  console.log('Profile Page - Favorites Debug:', {
-    favorites,
-    favLoading,
-    favError,
-    favoritesLength: favorites?.length,
-    favoritesStructure: favorites?.slice(0, 1) // Show first item structure
-  });
-  
-  console.log('Profile Page - Cart Debug:', {
-    cartItems,
-    cartLoading,
-    cartError,
-    cartCount,
-    cartTotal,
-    cartItemsStructure: cartItems?.slice(0, 1) // Show first item structure
-  });
-
   // Cart quantity update handlers
   const handleQuantityIncrease = async (productId, currentQuantity, product) => {
     try {
       await updateQuantity(productId, currentQuantity + 1);
-      console.log(`✅ Quantity increased for ${product.name || 'product'}`);
     } catch (error) {
       console.error('Error increasing quantity:', error);
       alert('Failed to update quantity. Please try again.');
@@ -99,7 +80,6 @@ const ProfilePage = () => {
     }
     try {
       await updateQuantity(productId, currentQuantity - 1);
-      console.log(`✅ Quantity decreased for ${product.name || 'product'}`);
     } catch (error) {
       console.error('Error decreasing quantity:', error);
       alert('Failed to update quantity. Please try again.');
@@ -112,26 +92,11 @@ const ProfilePage = () => {
     }
     try {
       await removeFromCart(productId);
-      console.log('✅ Item removed from cart');
     } catch (error) {
       console.error('Error removing from cart:', error);
       alert('Failed to remove item. Please try again.');
     }
   };
-
-  console.log('Profile Page - Cart Debug (final state):', {
-    cartItems,
-    cartLoading,
-    cartError,
-    cartCount,
-    cartTotal,
-    cartItemsLength: cartItems?.length,
-    cartStructure: cartItems?.slice(0, 1)
-  });
-  
-  // Log user data to check profile photo
-  console.log('Profile Page - User data:', user);
-  console.log('Profile Photo data:', user?.profilePhoto);
 
   const handleLogout = async () => {
     await logout();
@@ -434,7 +399,6 @@ const ProfilePage = () => {
                   value={user.phone || ''}
                   onChange={(e) => {
                     // Handle phone number update
-                    console.log('Phone number:', e.target.value);
                   }}
                 />
               </div>
@@ -608,9 +572,6 @@ const ProfilePage = () => {
                           <span className="ml-2 font-semibold text-rose-600">₹{(parseFloat(cartTotal) || 0).toFixed(2)}</span>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        *Taxes and delivery charges will be calculated at checkout
-                      </div>
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -641,13 +602,26 @@ const ProfilePage = () => {
                   
                   <div className="divide-y divide-gray-100">
                     {cartItems.map((item) => {
-                      // Handle different data structures from cart
-                      const product = item.productDetails || item.product || item;
-                      const productId = item.productId || item.id || product._id;
-                      const productName = product.name || item.name || 'Product';
-                      const productPrice = parseFloat(product.price || item.price || 0) || 0;
-                      const productImage = product.image?.url || product.image || item.image || product.images?.[0] || '/placeholder-image.jpg';
-                      const quantity = parseInt(item.quantity) || 1;
+                      // Normalize cart item structure
+                      const normalizedItem = normalizeCartItem(item);
+                      if (!normalizedItem) return null;
+                      
+                      const product = normalizedItem.productDetails;
+                      const productId = normalizedItem.productId;
+                      const productName = product.name || normalizedItem.name || 'Product';
+                      const productImage = product.image?.url || product.image || normalizedItem.image || product.images?.[0] || '/placeholder-image.jpg';
+                      const quantity = normalizedItem.quantity;
+                      
+                      // Calculate pricing using centralized utility
+                      let pricing = { finalPrice: 0, mrp: 0 };
+                      const variant = product?.variants?.[normalizedItem.variantIndex];
+                      if (variant) {
+                        pricing = calculatePricing(variant);
+                      } else {
+                        // Fallback for items without variant data
+                        const fallbackPrice = parseFloat(product.price || normalizedItem.price || 0) || 0;
+                        pricing = { finalPrice: fallbackPrice, mrp: fallbackPrice };
+                      }
                       
                       return (
                         <div key={productId} className="p-6 hover:bg-gray-50 transition-colors">
@@ -722,8 +696,8 @@ const ProfilePage = () => {
                                 {/* Price Information */}
                                 <div className="flex items-center justify-between md:justify-end gap-6">
                                   <div className="text-right">
-                                    <div className="text-sm text-gray-600">₹{productPrice > 0 ? productPrice.toFixed(2) : '0.00'} each</div>
-                                    <div className="font-semibold text-lg text-gray-900">₹{((productPrice * quantity) || 0).toFixed(2)}</div>
+                                    <div className="text-sm text-gray-600">₹{Math.round(pricing.finalPrice)} each</div>
+                                    <div className="font-semibold text-lg text-gray-900">₹{Math.round(pricing.finalPrice * quantity)}</div>
                                   </div>
                                 </div>
                               </div>
@@ -961,7 +935,6 @@ const ProfilePage = () => {
                         alt="Profile" 
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          console.log('Image failed to load:', e);
                           e.target.onerror = null;
                           e.target.src = '/images/default-avatar.svg';
                         }}

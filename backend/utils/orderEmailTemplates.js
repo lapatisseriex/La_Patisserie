@@ -211,12 +211,6 @@ export const getOrderStatusEmailTemplate = (orderDetails, newStatus) => {
                     <span style="color: #6B7280;">Subtotal:</span>
                     <span style="font-weight: 600; color: #374151;">₹${orderSummary.cartTotal.toFixed(2)}</span>
                   </div>
-                  ${orderSummary.couponDiscount > 0 ? `
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span style="color: #6B7280;">Discount:</span>
-                    <span style="color: #059669; font-weight: 600;">-₹${orderSummary.couponDiscount.toFixed(2)}</span>
-                  </div>
-                  ` : ''}
                   <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <span style="color: #6B7280;">Delivery:</span>
                     <span style="font-weight: 600; color: #374151;">₹${orderSummary.deliveryCharge.toFixed(2)}</span>

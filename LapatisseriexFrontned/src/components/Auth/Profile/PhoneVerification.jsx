@@ -17,6 +17,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   const [status, setStatus] = useState('idle'); // idle|sending|sent|verifying|verified|error
   const [message, setMessage] = useState('');
   const [expiresAt, setExpiresAt] = useState(null); // timestamp
+  const [isEditingNumber, setIsEditingNumber] = useState(false); // New state for editing mode
   const timerRef = useRef(null);
 
   // Auto-populate phone when user data changes and reset status if verified
@@ -25,22 +26,24 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       userPhone: user?.phone,
       phoneVerified: user?.phoneVerified,
       currentPhone: phone,
-      currentStatus: status
+      currentStatus: status,
+      isEditingNumber
     });
     
     // Update phone state whenever user.phone changes (including when it becomes available)
-    if (user?.phone !== phone) {
+    // But only if we're not currently editing a new number
+    if (user?.phone !== phone && !isEditingNumber) {
       setPhone(user?.phone || '');
     }
     
     // Reset verification status to idle if phone is verified to show verified state
-    if (user?.phoneVerified && status !== 'idle') {
+    if (user?.phoneVerified && status !== 'idle' && !isEditingNumber) {
       setStatus('idle');
       setMessage('');
       setOtp('');
       setExpiresAt(null);
     }
-  }, [user?.phone, user?.phoneVerified, user?.phoneVerifiedAt]);
+  }, [user?.phone, user?.phoneVerified, user?.phoneVerifiedAt, isEditingNumber]);
 
   const remaining = useMemo(() => (expiresAt ? expiresAt - Date.now() : 0), [expiresAt]);
 
@@ -85,8 +88,8 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   };
 
   const onVerify = async () => {
-    // Check if already verified to prevent duplicate calls
-    if (user?.phoneVerified && user?.phone === phone.trim()) {
+    // Check if already verified to prevent duplicate calls (only if same number)
+    if (user?.phoneVerified && user?.phone === phone.trim() && !isEditingNumber) {
       setStatus('verified');
       setMessage('Phone number already verified');
       return;
@@ -114,15 +117,32 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       
       console.log('Phone verification completed successfully - triggering edit mode');
       
+      // Update the user's phone number in the database
+      try {
+        await updateProfile({ 
+          phone: phone.trim(),
+          phoneVerified: true,
+          phoneVerifiedAt: new Date().toISOString()
+        });
+        
+        // Refresh user data to get the latest information
+        await getCurrentUser();
+        
+        // Reset editing state
+        setIsEditingNumber(false);
+        
+        console.log('Phone number updated in database successfully');
+      } catch (updateError) {
+        console.error('Failed to update phone number in database:', updateError);
+        setMessage('Phone verified but failed to update in database. Please try refreshing the page.');
+      }
+      
       // IMPORTANT: Don't update user state here to avoid conflicts
       // The phone is already verified in the database
       // Trigger edit mode so user can save their profile
       if (onVerificationSuccess) {
         onVerificationSuccess();
       }
-      
-      // When user clicks "Save Profile", the latest data will be fetched and saved
-      // This keeps the user in edit mode until they explicitly save
       
       setExpiresAt(null);
     } catch (err) {
@@ -134,17 +154,27 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   const phoneValid = useMemo(() => /^\+?[0-9]{10,15}$/.test(phone || ''), [phone]);
   const otpValid = useMemo(() => /^(\d){6}$/.test(otp || ''), [otp]);
   
+  // Function to handle changing the phone number
+  const handleChangeNumber = () => {
+    setIsEditingNumber(true);
+    setStatus('idle');
+    setMessage('');
+    setOtp('');
+    setExpiresAt(null);
+    setPhone(''); // Clear the current phone number to allow entering a new one
+  };
+  
   // Effect to sync component state with user state changes
   useEffect(() => {
-    if (user?.phoneVerified && status !== 'verified') {
+    if (user?.phoneVerified && status !== 'verified' && !isEditingNumber) {
       console.log('PhoneVerification - User is verified, updating component status');
       setStatus('verified');
       setPhone(user.phone || '');
-    } else if (!user?.phoneVerified && status === 'verified') {
+    } else if (!user?.phoneVerified && status === 'verified' && !isEditingNumber) {
       console.log('PhoneVerification - User verification revoked, resetting component');
       setStatus('idle');
     }
-  }, [user?.phoneVerified, user?.phone]);
+  }, [user?.phoneVerified, user?.phone, isEditingNumber]);
 
   // Debug log for render
   console.log('PhoneVerification render - Current state:', {
@@ -153,6 +183,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
     userPhoneVerifiedAt: user?.phoneVerifiedAt,
     componentPhone: phone,
     componentStatus: status,
+    isEditingNumber,
     renderTimestamp: new Date().toISOString()
   });
   
@@ -177,11 +208,11 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Enter phone number"
-                disabled={status === 'sending' || status === 'verifying' || user?.phoneVerified}
-                className={`w-full pl-10 pr-3 py-3 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent ${user?.phoneVerified ? 'bg-gray-50 text-gray-700' : ''}`}
+                disabled={status === 'sending' || status === 'verifying' || (user?.phoneVerified && !isEditingNumber)}
+                className={`w-full pl-10 pr-3 py-3 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent ${(user?.phoneVerified && !isEditingNumber) ? 'bg-gray-50 text-gray-700' : ''}`}
               />
             </div>
-            {(user?.phoneVerified || status === 'verified') && (
+            {((user?.phoneVerified && !isEditingNumber) || status === 'verified') && (
               <div className="mt-2 flex items-start gap-1 flex-col">
                 <div className="inline-flex items-center text-green-600 text-sm">
                   <CheckCircle2 size={16} className="mr-1"/> 
@@ -196,9 +227,14 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
                 </div>
               </div>
             )}
+            {isEditingNumber && (
+              <div className="mt-2 text-sm text-blue-600">
+                Enter your new phone number and click "Send OTP" to verify it.
+              </div>
+            )}
           </div>
           <div className="flex sm:justify-end items-end">
-            {(!user?.phoneVerified && status !== 'verified') && (
+            {((!user?.phoneVerified && status !== 'verified') || isEditingNumber) && (
               <button
                 type="button"
                 onClick={onSend}
@@ -216,7 +252,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
                 <div className="text-xs text-orange-600 font-medium">Profile is now in edit mode - scroll down to "Save Profile"</div>
               </div>
             )}
-            {user?.phoneVerified && (
+            {user?.phoneVerified && !isEditingNumber && (
               <div className="px-4 py-3 bg-gray-100 border border-gray-200 text-gray-700 rounded-md flex items-center">
                 <CheckCircle2 size={16} className="mr-2 text-green-600"/> Verified
               </div>
@@ -268,14 +304,33 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
           </div>
         )}
 
-        {status === 'verified' && (
+        {user?.phoneVerified && !isEditingNumber && (
           <div className="flex items-center gap-2 mt-2">
             <button
               type="button"
-              onClick={() => { setStatus('idle'); setMessage(''); setOtp(''); setExpiresAt(null); }}
+              onClick={handleChangeNumber}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50"
             >
-              <RefreshCcw size={16}/> Verify another number
+              <RefreshCcw size={16}/> Change Number
+            </button>
+          </div>
+        )}
+
+        {isEditingNumber && (
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditingNumber(false);
+                setPhone(user?.phone || '');
+                setStatus('idle');
+                setMessage('');
+                setOtp('');
+                setExpiresAt(null);
+              }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-50 text-gray-700"
+            >
+              Cancel
             </button>
           </div>
         )}

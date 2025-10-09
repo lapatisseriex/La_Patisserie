@@ -5,6 +5,7 @@ import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import MediaUploader from '../../common/MediaUpload/MediaUploader';
 import MediaPreview from '../../common/MediaUpload/MediaPreview';
 import PricingCalculator from '../../common/PricingCalculator';
+import { calculatePricing } from '../../../utils/pricingUtils';
 
 // Custom hook to detect admin sidebar state
 const useAdminSidebar = () => {
@@ -244,23 +245,10 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
     setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
-  // Calculate MRP based on pricing calculator inputs
+  // Calculate MRP using centralized pricing utility
   const calculateMRP = (variant) => {
-    const costPrice = variant.costPrice || 0;
-    const profitWanted = variant.profitWanted || 0;
-    const freeCashExpected = variant.freeCashExpected || 0;
-    const discountType = variant.discount?.type;
-    const discountValue = variant.discount?.value || 0;
-    
-    const finalPrice = costPrice + profitWanted + freeCashExpected;
-    
-    if (discountType === 'flat') {
-      return finalPrice + discountValue;
-    } else if (discountType === 'percentage') {
-      return ((discountValue + 100) / 100) * finalPrice;
-    } else {
-      return finalPrice; // No discount
-    }
+    const pricing = calculatePricing(variant);
+    return pricing.mrp;
   };
 
   // Variants handlers
@@ -869,21 +857,9 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                           const costPrice = variant.costPrice || 0;
                           const profitWanted = variant.profitWanted || 0;
                           const freeCashExpected = variant.freeCashExpected || 0;
-                          const discountType = variant.discount?.type;
-                          const discountValue = variant.discount?.value || 0;
                           
-                          // New calculation logic
-                          const finalPrice = costPrice + profitWanted + freeCashExpected;
-                          let mrp = 0;
-                          
-                          if (discountType === 'flat') {
-                            mrp = finalPrice + discountValue;
-                          } else if (discountType === 'percentage') {
-                            mrp = ((discountValue + 100) / 100) * finalPrice;
-                          } else {
-                            mrp = finalPrice; // No discount
-                          }
-                          
+                          // Use centralized pricing calculation for consistency
+                          const pricing = calculatePricing(variant);
                           const yourReturn = costPrice + profitWanted;
                           
                           return (
@@ -891,7 +867,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                               <div className="bg-green-100 rounded-lg p-3 border border-green-200">
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm font-medium text-green-700">MRP (Original Price)</span>
-                                  <span className="text-lg font-bold text-green-800">₹{mrp.toFixed(2)}</span>
+                                  <span className="text-lg font-bold text-green-800">₹{pricing.mrp.toFixed(2)}</span>
                                 </div>
                                 <div className="text-xs text-green-600 mt-1">✓ Will be auto-applied when saved</div>
                               </div>
@@ -912,16 +888,16 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                             <div><strong>Step 1:</strong> Final Price = {variant.costPrice || 0} + {variant.profitWanted || 0} + {variant.freeCashExpected || 0} = ₹{((variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0)).toFixed(2)}</div>
                             <div><strong>Step 2:</strong> 
                               {(() => {
-                                const finalPrice = (variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0);
+                                const pricing = calculatePricing(variant);
                                 const discountType = variant.discount?.type;
                                 const discountValue = variant.discount?.value || 0;
                                 
                                 if (discountType === 'flat') {
-                                  return ` MRP = Final Price + Flat Discount = ${finalPrice.toFixed(2)} + ${discountValue} = ₹${(finalPrice + discountValue).toFixed(2)}`;
+                                  return ` MRP = Final Price + Flat Discount = ${pricing.finalPrice.toFixed(2)} + ${discountValue} = ₹${pricing.mrp.toFixed(2)}`;
                                 } else if (discountType === 'percentage') {
-                                  return ` MRP = ((Discount% + 100) ÷ 100) × Final Price = ((${discountValue} + 100) ÷ 100) × ${finalPrice.toFixed(2)} = ₹${(((discountValue + 100) / 100) * finalPrice).toFixed(2)}`;
+                                  return ` MRP = ((Discount% + 100) ÷ 100) × Final Price = ((${discountValue} + 100) ÷ 100) × ${pricing.finalPrice.toFixed(2)} = ₹${pricing.mrp.toFixed(2)}`;
                                 } else {
-                                  return ` MRP = Final Price (No discount) = ₹${finalPrice.toFixed(2)}`;
+                                  return ` MRP = Final Price (No discount) = ₹${pricing.mrp.toFixed(2)}`;
                                 }
                               })()}
                             </div>
@@ -938,33 +914,21 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                             const discountType = variant.discount?.type;
                             const discountValue = variant.discount?.value || 0;
                             
-                            // Calculate prices
-                            const sellingPrice = costPrice + profitWanted + freeCashExpected;
-                            let originalPrice = 0;
-                            
-                            if (discountType === 'flat') {
-                              originalPrice = sellingPrice + discountValue;
-                            } else if (discountType === 'percentage') {
-                              originalPrice = ((discountValue + 100) / 100) * sellingPrice;
-                            } else {
-                              originalPrice = sellingPrice; // No discount
-                            }
-                            
-                            const discountAmount = originalPrice - sellingPrice;
-                            const discountPercentage = discountType === 'percentage' ? discountValue : (originalPrice > 0 ? (discountAmount / originalPrice) * 100 : 0);
+                            // Use centralized pricing calculation for consistency
+                            const pricing = calculatePricing(variant);
                             
                             return (
                               <div className="inline-block max-w-xs">
                                 <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-lg font-bold text-green-600">₹{Math.round(sellingPrice)}</span>
-                                      {discountPercentage > 0 && (
-                                        <span className="text-sm text-gray-500 line-through">₹{Math.round(originalPrice)}</span>
+                                      <span className="text-lg font-bold text-green-600">₹{Math.round(pricing.finalPrice)}</span>
+                                      {pricing.discountPercentage > 0 && (
+                                        <span className="text-sm text-gray-500 line-through">₹{Math.round(pricing.mrp)}</span>
                                       )}
                                     </div>
-                                    {discountPercentage > 0 && (
-                                      <span className="text-xs text-green-600 font-medium">{discountPercentage}% OFF</span>
+                                    {pricing.discountPercentage > 0 && (
+                                      <span className="text-xs text-green-600 font-medium">{pricing.discountPercentage}% OFF</span>
                                     )}
                                   </div>
                                 </div>

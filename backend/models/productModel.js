@@ -91,20 +91,30 @@ productSchema.virtual('stock').get(function() {
   return this.variants.reduce((total, variant) => total + (variant.stock || 0), 0);
 });
 
-// Method to calculate MRP for a variant using new pricing logic
+// Method to calculate MRP for a variant using correct admin pricing logic
 productSchema.methods.calculateMRP = function(variantIndex = 0) {
   const variant = this.variants[variantIndex];
   if (!variant) return 0;
 
   const { costPrice = 0, profitWanted = 0, freeCashExpected = 0, discount = {} } = variant;
-  const finalPrice = costPrice + profitWanted + freeCashExpected;
+  
+  // Calculate base selling price (what seller gets)
+  const baseSelling = costPrice + profitWanted;
+  
+  // Calculate final price (what customer pays before discount)
+  const finalPrice = baseSelling + freeCashExpected;
   
   // Calculate MRP based on discount type
   if (discount.type === 'flat') {
     return finalPrice + (discount.value || 0);
   } else if (discount.type === 'percentage') {
     const discountPercentage = discount.value || 0;
-    return ((discountPercentage + 100) / 100) * finalPrice;
+    // Prevent division by zero and cap at 99%
+    const safeDiscountPercentage = Math.min(Math.max(0, discountPercentage), 99);
+    if (safeDiscountPercentage > 0) {
+      return finalPrice / (1 - safeDiscountPercentage / 100);
+    }
+    return finalPrice;
   } else {
     return finalPrice; // No discount
   }
@@ -129,24 +139,25 @@ productSchema.methods.getVariantPricingBreakdown = function(variantIndex = 0) {
     discount = {} 
   } = variant;
   
-  // Calculate using new pricing logic
-  const finalPrice = costPrice + profitWanted + freeCashExpected;
-  let mrp = 0;
+  // Calculate using corrected pricing logic
+  const baseSelling = costPrice + profitWanted; // What seller gets
+  const finalPrice = baseSelling + freeCashExpected; // What customer pays before discount
+  let mrp = finalPrice;
   let effectiveDiscountPercentage = 0;
   
   if (discount.type === 'flat') {
-    mrp = finalPrice + (discount.value || 0);
-    effectiveDiscountPercentage = mrp > 0 ? Math.round(((discount.value || 0) / mrp) * 100) : 0;
+    const discountValue = Math.max(0, discount.value || 0);
+    mrp = finalPrice + discountValue;
+    effectiveDiscountPercentage = mrp > 0 ? Math.round((discountValue / mrp) * 100) : 0;
   } else if (discount.type === 'percentage') {
-    const discountPercentage = discount.value || 0;
-    mrp = ((discountPercentage + 100) / 100) * finalPrice;
+    const discountPercentage = Math.min(Math.max(0, discount.value || 0), 99); // Cap at 99%
+    if (discountPercentage > 0) {
+      mrp = finalPrice / (1 - discountPercentage / 100);
+    }
     effectiveDiscountPercentage = discountPercentage;
-  } else {
-    mrp = finalPrice;
-    effectiveDiscountPercentage = 0;
   }
   
-  // Use actual discount from variant settings, not hardcoded value
+  // Legacy discount calculation for backward compatibility (using variant.price)
   let actualDiscount = 0;
   let discountedPrice = price;
   
@@ -160,8 +171,6 @@ productSchema.methods.getVariantPricingBreakdown = function(variantIndex = 0) {
       actualDiscount = price > 0 ? Math.round((flatDiscount / price) * 100) : 0;
     }
   }
-  
-  const sellerReturn = costPrice + profitWanted;
 
   return {
     costPrice,
@@ -170,13 +179,14 @@ productSchema.methods.getVariantPricingBreakdown = function(variantIndex = 0) {
     discountType: discount.type || null,
     discountValue: discount.value || 0,
     effectiveDiscountPercentage,
-    finalPrice,
+    baseSelling, // What seller gets
+    finalPrice, // What customer pays (base selling + free cash)
     mrp,
     safeSellingPrice: mrp, // Legacy field
     originalPrice: price,
     actualDiscountPercentage: actualDiscount,
     finalCustomerPrice: discountedPrice,
-    sellerReturn,
+    sellerReturn: baseSelling, // Renamed for clarity
     // Add a flag to indicate if this product has the new pricing system
     hasPricingCalculator: (costPrice > 0 || profitWanted > 0 || freeCashExpected > 0)
   };

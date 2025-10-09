@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaTag, FaShoppingCart, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaShoppingCart, FaExclamationTriangle } from 'react-icons/fa';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
 import { toast } from 'react-toastify';
+import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 
 const Cart = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
-  const { cartItems, cartTotal, cartCount, updateQuantity, removeFromCart, clearCart, error: cartError } = useCart();
+  const { cartItems, cartCount, updateQuantity, removeFromCart, clearCart, error: cartError } = useCart();
   
   // Use our hooks
   const { user } = useAuth();
@@ -22,14 +23,9 @@ const Cart = () => {
     hasValidDeliveryLocation
   } = useLocation();
   
-  const [couponCode, setCouponCode] = useState('');
-  const [couponMessage, setCouponMessage] = useState('');
-  const [couponError, setCouponError] = useState(false);
   const [stockError, setStockError] = useState('');
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [couponDiscount, setCouponDiscount] = useState(0);
   
   const navigate = useNavigate();
 
@@ -39,30 +35,18 @@ const Cart = () => {
       // Use productDetails from the cart item instead of global products array
       const prod = item.productDetails;
       if (!prod) {
-        console.log('Product details not found in cart item:', item);
         return { unavailable: false, tracks: false, stock: Infinity, variantIndex: 0 };
       }
       
       const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
       const variant = prod?.variants?.[vi];
       if (!variant) {
-        console.log('Variant not found:', { productId: item.productId, vi, variants: prod?.variants?.length });
         return { unavailable: false, tracks: false, stock: Infinity, variantIndex: vi };
       }
       
       const tracks = !!variant?.isStockActive;
       const stock = tracks ? (variant?.stock ?? 0) : Infinity;
       const unavailable = tracks && stock <= 0;
-      
-      console.log('Stock check:', { 
-        productId: item.productId, 
-        name: prod.name,
-        vi, 
-        tracks, 
-        stock,
-        currentQty: item.quantity,
-        maxReached: tracks && item.quantity >= stock
-      });
       
       return { unavailable, tracks, stock, variantIndex: vi };
     } catch (error) {
@@ -71,88 +55,52 @@ const Cart = () => {
     }
   };
 
-  // Calculate discounted cart total using correct pricing logic
-  const discountedCartTotal = useMemo(() => {
-    try {
-      if (!Array.isArray(cartItems)) {
-        console.warn('Cart - cartItems is not an array:', cartItems);
-        return 0;
-      }
-      
-      const result = cartItems.reduce((total, item) => {
-        if (!item || typeof item.quantity !== 'number') {
-          console.warn('Cart - Invalid item:', item);
-          return total;
-        }
-        
-        // Get variant data from productDetails
-        const prod = item.productDetails;
-        if (!prod) {
-          console.warn('Cart - No product details for item:', item);
-          return total;
-        }
-        
-        const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-        const variant = prod?.variants?.[vi];
-        if (!variant) {
-          console.warn('Cart - No variant found for item:', item);
-          return total;
-        }
-        
-        // Calculate selling price: costPrice + profitWanted + freeCashExpected
-        const costPrice = parseFloat(variant.costPrice) || 0;
-        const profitWanted = parseFloat(variant.profitWanted) || 0;
-        const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
-        const sellingPrice = costPrice + profitWanted + freeCashExpected;
-        
-        return total + (sellingPrice * item.quantity);
-      }, 0);
-      
-      console.log('Cart - Total:', result, 'from items:', cartItems);
-      return result;
-    } catch (error) {
-      console.error('Cart - Error calculating total:', error);
-      return 0;
-    }
+  // Helper function to calculate cart totals using admin pricing logic
+  const cartTotals = useMemo(() => {
+    const totals = calculateCartTotals(cartItems);
+    // Ensure all totals are valid numbers
+    return {
+      finalTotal: isNaN(totals.finalTotal) ? 0 : totals.finalTotal,
+      originalTotal: isNaN(totals.originalTotal) ? 0 : totals.originalTotal,
+      totalSavings: isNaN(totals.totalSavings) ? 0 : totals.totalSavings,
+      averageDiscountPercentage: isNaN(totals.averageDiscountPercentage) ? 0 : totals.averageDiscountPercentage
+    };
   }, [cartItems]);
+
+  // Extract individual totals for easier use
+  const { finalTotal: discountedCartTotal, originalTotal, totalSavings, averageDiscountPercentage } = cartTotals;
+
+  // Configuration constants - should ideally come from admin settings
+  const FREE_DELIVERY_THRESHOLD = 500; // Free delivery above ₹500
+  const DEFAULT_DELIVERY_CHARGE = 49; // Default delivery charge
 
   // Calculate delivery charge based on user's location
   const deliveryCharge = useMemo(() => {
-    // If cart total is above ₹500, delivery is free regardless of location
-    if (discountedCartTotal >= 500) {
+    // If cart total is above threshold, delivery is free regardless of location
+    if (discountedCartTotal >= FREE_DELIVERY_THRESHOLD) {
       return 0;
     }
     
     // Get user's selected location
     const userLocationId = user?.location?._id || user?.location?.locationId || user?.locationId;
     
-    console.log('Cart - User:', user);
-    console.log('Cart - User location:', user?.location);
-    console.log('Cart - User location ID:', userLocationId);
-    console.log('Cart - Available locations:', locations);
-    
     // Try to get user location - first check if location object exists directly, then search in locations array
     const userLocation = user?.location || 
       (userLocationId && locations?.length > 0 && locations.find(loc => loc._id === userLocationId));
     
-    console.log('Cart - Final user location:', userLocation);
-    
     if (userLocation) {
-      const charge = userLocation.deliveryCharge ?? 49; // Use nullish coalescing to handle 0 values
-      console.log('Cart - Using delivery charge:', charge);
-      return charge;
+      const charge = userLocation.deliveryCharge ?? DEFAULT_DELIVERY_CHARGE; // Use nullish coalescing to handle 0 values
+      return isNaN(charge) ? DEFAULT_DELIVERY_CHARGE : charge;
     }
-    
-    console.log('Cart - Using default delivery charge: 49');
     // Default delivery charge if no location selected
-    return 49;
+    return DEFAULT_DELIVERY_CHARGE;
   }, [discountedCartTotal, user, locations]);
   
-  // Tax calculation (5% of discounted total)
-  const taxAmount = discountedCartTotal * 0.05;
-  
   // Grand total using discounted cart total
-  const grandTotal = discountedCartTotal + deliveryCharge + taxAmount - couponDiscount;
+  const grandTotal = useMemo(() => {
+    const total = discountedCartTotal + deliveryCharge;
+    return isNaN(total) ? 0 : Math.max(0, total);
+  }, [discountedCartTotal, deliveryCharge]);
 
   const handleQuantityChange = async (productId, newQuantity, maxStock) => {
     if (maxStock !== undefined && newQuantity > maxStock) {
@@ -170,49 +118,6 @@ const Cart = () => {
     }
   };
 
-  // Simple coupon system (you can enhance this later)
-  const availableCoupons = {
-    'WELCOME10': { discount: 50, minOrder: 200 },
-    'SAVE20': { discount: 100, minOrder: 500 },
-    'FIRST50': { discount: 150, minOrder: 800 }
-  };
-
-  // Handle coupon application
-  const applyCoupon = (code) => {
-    const coupon = availableCoupons[code.toUpperCase()];
-    if (!coupon) {
-      return { success: false, message: 'Invalid coupon code' };
-    }
-    if (cartTotal < coupon.minOrder) {
-      return { success: false, message: `Minimum order of ₹${coupon.minOrder} required` };
-    }
-    setAppliedCoupon(code.toUpperCase());
-    setCouponDiscount(coupon.discount);
-    return { success: true, message: `Coupon applied! You saved ₹${coupon.discount}` };
-  };
-
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponDiscount(0);
-  };
-  
-  const handleApplyCoupon = () => {
-    if (!couponCode.trim()) {
-      setCouponMessage('Please enter a coupon code');
-      setCouponError(true);
-      return;
-    }
-    
-    const result = applyCoupon(couponCode);
-    setCouponMessage(result.message);
-    setCouponError(!result.success);
-    
-    // Clear message after 3 seconds
-    setTimeout(() => {
-      setCouponMessage('');
-    }, 3000);
-  };
-  
   // Handle location change
   const handleChangeLocation = async () => {
     if (selectedLocationId) {
@@ -349,7 +254,6 @@ const Cart = () => {
                         <h3 className="font-medium text-black text-sm md:text-base pr-2">{item.name || 'Product'}</h3>
                         <button 
                           onClick={() => {
-                            console.log('🗑️ Deleting cart item:', item.productId);
                             removeFromCart(item.productId);
                           }}
                           className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
@@ -370,7 +274,6 @@ const Cart = () => {
                         <div className="flex items-center">
                           <button 
                             onClick={() => {
-                              console.log('➖ Decreasing quantity for:', item.productId, 'from', item.quantity, 'to', item.quantity - 1);
                               handleQuantityChange(item.productId, item.quantity - 1, stock);
                             }}
                             className={`w-7 h-7 md:w-8 md:h-8 rounded-l-md flex items-center justify-center border text-sm bg-gray-100 border-gray-200`}
@@ -386,7 +289,6 @@ const Cart = () => {
                           <button
                             onClick={() => {
                               if (!canIncrease) return;
-                              console.log('➕ Increasing quantity for:', item.productId, 'from', item.quantity, 'to', item.quantity + 1);
                               const nextQty = item.quantity + 1;
                               if (tracks && nextQty > stock) {
                                 setStockError(`Cannot add more items. Only ${stock} available in stock.`);
@@ -414,40 +316,33 @@ const Cart = () => {
                             const variant = prod?.variants?.[vi];
                             
                             if (!variant) {
-                              // Fallback to old logic if variant not found
+                              // Skip item if no variant found - invalid cart item
+                              console.warn('Cart item missing variant data:', item);
                               return (
-                                <div className="font-medium text-black text-sm md:text-base">
-                                  ₹{Math.round((item.price || 0) * item.quantity)}
+                                <div className="font-medium text-red-500 text-sm md:text-base">
+                                  Invalid item
                                 </div>
                               );
                             }
                             
-                            // Calculate correct pricing
-                            const originalPrice = parseFloat(variant.price) || 0; // MRP (strikethrough)
-                            const costPrice = parseFloat(variant.costPrice) || 0;
-                            const profitWanted = parseFloat(variant.profitWanted) || 0;
-                            const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
-                            const sellingPrice = costPrice + profitWanted + freeCashExpected; // Actual selling price
-                            
-                            // Calculate discount percentage
-                            const discountAmount = originalPrice - sellingPrice;
-                            const discountPercentage = variant.discount.type === 'percentage'
-                              ? variant.discount.value
-                              : originalPrice > 0 ? Math.round((discountAmount / originalPrice) * 100) : 0;
+                            // Use centralized pricing calculation
+                            const pricing = calculatePricing(variant);
                             
                             return (
                               <>
                                 <div className="font-medium text-black text-sm md:text-base">
-                                  ₹{Math.round(sellingPrice * item.quantity)}
+                                  {formatCurrency(pricing.finalPrice * item.quantity)}
                                 </div>
                                 <div className="text-xs md:text-sm">
                                   <div className="space-y-1">
-                                    <div className="text-gray-500">
-                                      <span className="line-through">₹{Math.round(originalPrice)}</span>
-                                      <span className="text-green-600 ml-1">₹{Math.round(sellingPrice)}</span> each
-                                    </div>
-                                    {discountPercentage > 0 && (
-                                      <div className="text-green-600 font-medium">{discountPercentage}% OFF</div>
+                                    {pricing.mrp > pricing.finalPrice && (
+                                      <div className="text-gray-500">
+                                        <span className="line-through">{formatCurrency(pricing.mrp)}</span>
+                                        <span className="text-green-600 ml-1">{formatCurrency(pricing.finalPrice)}</span> each
+                                      </div>
+                                    )}
+                                    {pricing.discountPercentage > 0 && (
+                                      <div className="text-green-600 font-medium">{pricing.discountPercentage}% OFF</div>
                                     )}
                                   </div>
                                 </div>
@@ -473,82 +368,31 @@ const Cart = () => {
                 Order Summary
               </h2>
               
-              {/* Coupon Code */}
-              <div className="mb-6">
-                <div className="flex items-center mb-2">
-                  <FaTag className="text-gray-600 mr-2" />
-                  <h3 className="font-medium">Have a coupon?</h3>
-                </div>
-                
-                {appliedCoupon ? (
-                  <div className="flex items-center justify-between bg-green-50 p-3 rounded-md">
-                    <div>
-                      <span className="font-medium text-green-700">{appliedCoupon}</span>
-                      <p className="text-xs text-green-600">
-                        Coupon applied successfully!
-                      </p>
-                    </div>
-                    <button 
-                      onClick={removeCoupon}
-                      className="text-sm text-red-500 hover:text-red-700"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex">
-                      <input
-                        type="text"
-                        placeholder="Enter coupon code"
-                        className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-pink-400 focus:border-pink-400"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                      />
-                      <button
-                        onClick={handleApplyCoupon}
-                        className="bg-gradient-to-r from-rose-400 to-pink-500 text-white px-4 py-2 rounded-r-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300"
-                      >
-                        Apply
-                      </button>
-                    </div>
-                    {couponMessage && (
-                      <p className={`text-xs mt-1 ${couponError ? 'text-red-500' : 'text-green-500'}`}>
-                        {couponMessage}
-                      </p>
-                    )}
-                    <div className="text-xs text-gray-500 mt-2">
-                      Try: WELCOME10, SAVE20, FIRST50
-                    </div>
-                  </div>
-                )}
-              </div>
-              
               {/* Price Breakdown */}
               <div className="space-y-3 text-gray-700">
                 {(() => {
-                  // Simple calculation - 50% discount
-                  const originalTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-                  const totalSavings = originalTotal * 0.5; // 50% savings
-                  const discountedTotal = originalTotal - totalSavings;
-                  
+                  // Use pre-calculated averageDiscountPercentage from admin pricing logic
                   return (
                     <>
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>Original Price</span>
-                        <span className="line-through">₹{Math.round(originalTotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-green-600">
-                        <span>Discount Savings (50% OFF)</span>
-                        <span className="font-medium">-₹{Math.round(totalSavings)}</span>
-                      </div>
+                      {originalTotal > discountedCartTotal && (
+                        <>
+                          <div className="flex justify-between text-sm text-gray-500">
+                            <span>Original Price</span>
+                            <span className="line-through">{formatCurrency(originalTotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-green-600">
+                            <span>Discount Savings {averageDiscountPercentage > 0 && `(${averageDiscountPercentage}% OFF)`}</span>
+                            <span className="font-medium">-{formatCurrency(totalSavings)}</span>
+                          </div>
+                        </>
+                      )}
                       <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-medium">₹{Math.round(discountedTotal)}</span>
+                        <span className="font-medium">{formatCurrency(discountedCartTotal)}</span>
                       </div>
                     </>
                   );
-                })()}.
+                })()}
                 
                 <div className="flex justify-between">
                   <div>
@@ -569,8 +413,8 @@ const Cart = () => {
                     {deliveryCharge === 0 ? (
                       <span className="text-green-500">
                         Free
-                        {discountedCartTotal >= 500 && (
-                          <div className="text-xs">Orders ≥ ₹500</div>
+                        {discountedCartTotal >= FREE_DELIVERY_THRESHOLD && (
+                          <div className="text-xs">Orders ≥ ₹{FREE_DELIVERY_THRESHOLD}</div>
                         )}
                       </span>
                     ) : (
@@ -579,26 +423,11 @@ const Cart = () => {
                   </span>
                 </div>
                 
-                <div className="flex justify-between">
-                  <span>Tax (5%)</span>
-                  <span className="font-medium">₹{taxAmount.toFixed(2)}</span>
-                </div>
-                
-                {couponDiscount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Coupon Discount</span>
-                    <span className="font-medium">-₹{couponDiscount.toFixed(2)}</span>
-                  </div>
-                )}
-                
                 <div className="border-t border-gray-200 pt-3 mt-3">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span>₹{grandTotal.toFixed(2)}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    (Including all taxes)
-                  </p>
                 </div>
               </div>
               

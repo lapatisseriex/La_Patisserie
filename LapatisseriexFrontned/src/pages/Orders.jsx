@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowLeft, FaBoxOpen, FaClock, FaTruck, FaCheckCircle, FaTimesCircle, FaReceipt } from 'react-icons/fa';
 import { useAuth } from '../hooks/useAuth';
+import { calculatePricing } from '../utils/pricingUtils';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -272,8 +273,27 @@ const Orders = () => {
                           <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-gray-900">₹{item.price * item.quantity}</p>
-                          <p className="text-sm text-gray-500">₹{item.price} each</p>
+                          {(() => {
+                            // Use centralized pricing calculation if variant data is available
+                            if (item.variant) {
+                              const pricing = calculatePricing(item.variant);
+                              const itemTotal = pricing.finalPrice * item.quantity;
+                              return (
+                                <>
+                                  <p className="font-medium text-gray-900">₹{Math.round(itemTotal)}</p>
+                                  <p className="text-sm text-gray-500">₹{Math.round(pricing.finalPrice)} each</p>
+                                </>
+                              );
+                            } else {
+                              // Fallback to stored price for older orders without variant data
+                              return (
+                                <>
+                                  <p className="font-medium text-gray-900">₹{Math.round(item.price * item.quantity)}</p>
+                                  <p className="text-sm text-gray-500">₹{Math.round(item.price)} each</p>
+                                </>
+                              );
+                            }
+                          })()}
                         </div>
                       </div>
                     ))}

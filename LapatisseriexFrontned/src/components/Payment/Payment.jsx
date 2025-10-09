@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
+import { calculateCartTotals, calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 
 const Payment = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
@@ -17,27 +18,16 @@ const Payment = () => {
   const [showLocationError, setShowLocationError] = useState(false);
   const [userDataLoaded, setUserDataLoaded] = useState(false);
   
-  // Coupon discount is managed locally in this component
-  const [couponDiscount, setCouponDiscount] = useState(0);
-  
     // Free cash state
   const [useFreeCash, setUseFreeCash] = useState(false);
 
   // Refresh cart data when component mounts to get latest product info
   useEffect(() => {
-    console.log('🔄 Payment: Refreshing cart data to get latest product info');
     refreshCart();
   }, [refreshCart]);
 
   // Track user data loading
   useEffect(() => {
-    console.log('Payment component - User data check:');
-    console.log('- isAuthenticated:', isAuthenticated);
-    console.log('- authLoading:', authLoading);
-    console.log('- user:', user);
-    console.log('- user type:', typeof user);
-    console.log('- user keys:', user ? Object.keys(user) : 'No user');
-    
     // Mark user data as loaded when we have authentication result
     if (!authLoading) {
       setUserDataLoaded(true);
@@ -46,18 +36,10 @@ const Payment = () => {
 
   // Check for valid delivery location and handle gracefully
   useEffect(() => {
-    console.log('Payment component - checking delivery location');
-    console.log('User:', user);
-    console.log('Cart Items:', cartItems);
-    console.log('Cart Total:', cartTotal);
-    console.log('Has valid delivery location:', hasValidDeliveryLocation());
-    console.log('Current location name:', getCurrentLocationName());
-    
     // For testing, let's temporarily bypass location validation when no user is logged in
     const bypassLocationCheck = !user; // If no user is logged in, bypass location check
     
     if (!bypassLocationCheck && !hasValidDeliveryLocation()) {
-      console.log('No valid delivery location found');
       setShowLocationError(true);
       // Don't redirect immediately, show error message instead
       // navigate('/cart');
@@ -66,42 +48,17 @@ const Payment = () => {
     }
   }, [hasValidDeliveryLocation, navigate, user, cartItems, cartTotal]);
   
-  // Calculate discounted cart total using correct pricing logic
-  const discountedCartTotal = useMemo(() => {
-    const result = cartItems.reduce((total, item) => {
-      if (!item || typeof item.quantity !== 'number') {
-        console.warn('Payment - Invalid item:', item);
-        return total;
-      }
-      
-      // Get variant data from productDetails
-      const prod = item.productDetails;
-      if (!prod) {
-        console.warn('Payment - No product details for item:', item);
-        // Fallback to old logic if no product details
-        return total + ((item.price || 0) * item.quantity);
-      }
-      
-      const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-      const variant = prod?.variants?.[vi];
-      if (!variant) {
-        console.warn('Payment - No variant found for item:', item);
-        // Fallback to old logic if no variant
-        return total + ((item.price || 0) * item.quantity);
-      }
-      
-      // Calculate selling price: costPrice + profitWanted + freeCashExpected
-      const costPrice = parseFloat(variant.costPrice) || 0;
-      const profitWanted = parseFloat(variant.profitWanted) || 0;
-      const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
-      const sellingPrice = costPrice + profitWanted + freeCashExpected;
-      
-      return total + (sellingPrice * item.quantity);
-    }, 0);
-    
-    console.log('Payment - Total:', result, 'from items:', cartItems);
-    return result;
+  // Calculate cart total using centralized pricing logic for consistency
+  const cartTotalsData = useMemo(() => {
+    // Use the same centralized cart total calculation as other components
+    const totals = calculateCartTotals(cartItems);
+    return totals;
   }, [cartItems]);
+
+  const discountedCartTotal = useMemo(() => {
+    const finalTotal = cartTotalsData.finalTotal || 0;
+    return isNaN(finalTotal) ? 0 : finalTotal;
+  }, [cartTotalsData]);
 
   // Calculate delivery charge based on user's location
   const deliveryCharge = useMemo(() => {
@@ -113,74 +70,53 @@ const Payment = () => {
     // Get user's selected location
     const userLocationId = user?.location?._id || user?.location?.locationId || user?.locationId;
     
-    console.log('Payment - User:', user);
-    console.log('Payment - User location:', user?.location);
-    console.log('Payment - User location ID:', userLocationId);
-    console.log('Payment - Available locations:', locations);
-    
     // Try to get user location - first check if location object exists directly, then search in locations array
     const userLocation = user?.location || 
       (userLocationId && locations?.length > 0 && locations.find(loc => loc._id === userLocationId));
     
-    console.log('Payment - Final user location:', userLocation);
-    
     if (userLocation) {
       const charge = userLocation.deliveryCharge ?? 49; // Use nullish coalescing to handle 0 values
-      console.log('Payment - Using delivery charge:', charge);
-      return charge;
+      return isNaN(charge) ? 49 : charge;
     }
     
-    console.log('Payment - Using default delivery charge: 49');
     // Default delivery charge if no location selected
     return 49;
   }, [discountedCartTotal, user, locations]);
   
-  // Tax calculation (5% of discounted total)
-  const taxAmount = discountedCartTotal * 0.05;
-  
   // Calculate total free cash available from all cart items
   const totalFreeCashAvailable = useMemo(() => {
-    console.log('🔍 Calculating free cash from cart items:', cartItems);
-    
     const result = cartItems.reduce((total, item) => {
       try {
         // Access product details from cart item
         const productDetails = item.productDetails || item.product || item;
         const variantIndex = item.variantIndex || productDetails?.variantIndex || 0;
         
-        console.log(`Free cash calculation for ${item.name}:`, {
-          productDetails,
-          variantIndex,
-          variants: productDetails?.variants,
-          selectedVariant: productDetails?.variants?.[variantIndex],
-          freeCashExpected: productDetails?.variants?.[variantIndex]?.freeCashExpected
-        });
-        
         // Get free cash from variant
         let freeCash = 0;
         if (productDetails?.variants && productDetails.variants[variantIndex]) {
-          freeCash = productDetails.variants[variantIndex].freeCashExpected || 0;
+          freeCash = parseFloat(productDetails.variants[variantIndex].freeCashExpected) || 0;
         }
         
-        console.log(`✅ Free cash for ${item.name}: ${freeCash} × ${item.quantity} = ${freeCash * item.quantity}`);
-        
-        // Multiply by quantity
-        return total + (freeCash * item.quantity);
+        // Multiply by quantity and ensure it's a valid number
+        const itemFreeCash = isNaN(freeCash) ? 0 : freeCash * item.quantity;
+        return total + itemFreeCash;
       } catch (error) {
         console.warn('❌ Error calculating free cash for item:', item, error);
         return total;
       }
     }, 0);
     
-    console.log('📊 Total free cash available:', result);
-    return result;
+    return isNaN(result) ? 0 : result;
   }, [cartItems]);
   
   // Applied free cash discount
   const appliedFreeCash = useFreeCash ? totalFreeCashAvailable : 0;
   
   // Grand total using discounted cart total and free cash
-  const grandTotal = discountedCartTotal + deliveryCharge + taxAmount - couponDiscount - appliedFreeCash;
+  const grandTotal = useMemo(() => {
+    const total = discountedCartTotal + deliveryCharge - appliedFreeCash;
+    return isNaN(total) ? 0 : Math.max(0, total); // Ensure total is never negative or NaN
+  }, [discountedCartTotal, deliveryCharge, appliedFreeCash]);
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('razorpay');
   const [cardDetails, setCardDetails] = useState({
@@ -228,35 +164,26 @@ const Payment = () => {
   // Create order on backend
   const createOrder = async (amount, paymentMethod = 'razorpay') => {
     try {
-      console.log('Cart items structure for debugging:', cartItems);
-      
       const orderData = {
         amount: Math.round(amount * 100), // Convert to paise
         currency: 'INR',
         receipt: `order_${Date.now()}`,
         paymentMethod,
         cartItems: cartItems.map(item => {
-          console.log('Processing cart item:', item);
-          
-          // Calculate correct selling price for order
+          // Use centralized pricing calculation for consistency
           const prod = item.productDetails;
           const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
           const variant = prod?.variants?.[vi];
           
-          let sellingPrice = item.price; // Fallback to old price
-          if (variant) {
-            const costPrice = parseFloat(variant.costPrice) || 0;
-            const profitWanted = parseFloat(variant.profitWanted) || 0;
-            const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
-            sellingPrice = costPrice + profitWanted + freeCashExpected;
-          }
+          // Get pricing using centralized utility
+          const pricing = calculatePricing(variant);
           
           return {
             productId: item.productId || item._id,
             productName: item.name,
             quantity: item.quantity,
-            price: sellingPrice, // Use correct selling price
-            originalPrice: variant?.price || item.price, // Store original MRP for reference
+            price: pricing.finalPrice, // Use centralized pricing calculation
+            originalPrice: pricing.mrp, // Use centralized MRP calculation
             variantIndex: item.variantIndex || 0
           };
         }),
@@ -270,11 +197,9 @@ const Payment = () => {
         },
         deliveryLocation: user?.location?.fullAddress || getCurrentLocationName(),
         orderSummary: {
-          cartTotal: cartTotal,
+          cartTotal: discountedCartTotal,
           discountedTotal: discountedCartTotal,
           deliveryCharge: deliveryCharge,
-          taxAmount: taxAmount,
-          couponDiscount: couponDiscount,
           freeCashDiscount: appliedFreeCash,
           grandTotal: grandTotal
         }
@@ -374,7 +299,6 @@ const Payment = () => {
               // Clear cart without restocking since stock already decremented on add/update
               try {
                 await clearCart({ restock: false });
-                console.log('✅ Cart cleared successfully after payment');
               } catch (cartError) {
                 console.error('❌ Failed to clear cart after payment:', cartError);
                 // Don't fail the order, just log the error
@@ -439,7 +363,6 @@ const Payment = () => {
   // Clear cart without restocking since stock already decremented on add/update
   try {
     await clearCart({ restock: false });
-    console.log('✅ Cart cleared successfully after COD order');
   } catch (cartError) {
     console.error('❌ Failed to clear cart after COD order:', cartError);
     // Don't fail the order, just log the error
@@ -681,7 +604,6 @@ const Payment = () => {
                   <button 
                     onClick={() => {
                       // You can implement opening the auth modal here
-                      console.log('Open auth modal');
                       navigate('/auth'); // Redirect to auth page
                     }}
                     className="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
@@ -887,22 +809,21 @@ const Payment = () => {
                         </p>
                         <div className="text-xs">
                           {(() => {
-                            // Simplified price calculation - use item price directly from cart
-                            const itemPrice = item.productDetails?.price || item.price || 0;
-                            const hasDiscount = item.productDetails?.discount?.value > 0;
+                            // Use centralized pricing calculation for consistency
+                            const prod = item.productDetails;
+                            const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
+                            const variant = prod?.variants?.[vi];
+                            const pricing = calculatePricing(variant);
                             
                             return (
                               <div className="space-y-1">
                                 <div>
-                                  <span className="font-medium text-green-600">₹{Math.round(itemPrice)}</span>
+                                  <span className="font-medium text-green-600">₹{Math.round(pricing.finalPrice)}</span>
                                   <span className="text-black"> × {item.quantity}</span>
                                 </div>
-                                {hasDiscount && (
+                                {pricing.discountPercentage > 0 && (
                                   <div className="text-green-600 font-medium text-xs">
-                                    {item.productDetails?.discount?.type === 'percentage' 
-                                      ? `${item.productDetails.discount.value}% OFF`
-                                      : `₹${item.productDetails.discount.value} OFF`
-                                    }
+                                    {pricing.discountPercentage}% OFF
                                   </div>
                                 )}
                               </div>
@@ -917,23 +838,26 @@ const Payment = () => {
               
               <div className="space-y-2 text-black">
                 {(() => {
-                  // Simplified pricing calculation using discountedCartTotal
-                  const originalTotal = cartItems.reduce((total, item) => {
-                    return total + (item.productDetails?.price || item.price || 0) * item.quantity;
-                  }, 0);
-                  
-                  const totalSavings = originalTotal - discountedCartTotal;
+                  // Use the centralized cart totals data
+                  const totals = cartTotalsData;
                   
                   return (
                     <>
                       <div className="flex justify-between text-sm text-gray-500">
                         <span>Original Price</span>
-                        <span className="line-through">₹{Math.round(originalTotal)}</span>
+                        <span className="line-through">₹{Math.round(totals.originalTotal)}</span>
                       </div>
-                      {totalSavings > 0 && (
+                      {totals.totalSavings > 0 && (
                         <div className="flex justify-between text-green-600">
-                          <span>Discount Savings</span>
-                          <span className="font-medium">-₹{Math.round(totalSavings)}</span>
+                          <span>Discount Savings {totals.averageDiscountPercentage > 0 && `(${totals.averageDiscountPercentage}% OFF)`}</span>
+                          <span className="font-medium">-₹{Math.round(totals.totalSavings)}</span>
+                        </div>
+                      )}
+                      {/* Show average discount percentage prominently for multiple products */}
+                      {cartItems.length > 1 && totals.averageDiscountPercentage > 0 && (
+                        <div className="flex justify-between bg-green-50 p-2 rounded-md border border-green-100">
+                          <span className="text-green-700 font-medium text-sm">Average Discount</span>
+                          <span className="text-green-700 font-bold">{totals.averageDiscountPercentage}% OFF</span>
                         </div>
                       )}
                       <div className="flex justify-between">
@@ -948,13 +872,6 @@ const Payment = () => {
                   <div className="flex justify-between text-blue-600">
                     <span>Free Cash Applied</span>
                     <span className="font-medium">-₹{Math.round(appliedFreeCash)}</span>
-                  </div>
-                )}
-                
-                {couponDiscount > 0 && (
-                  <div className="flex justify-between text-purple-600">
-                    <span>Coupon Discount</span>
-                    <span className="font-medium">-₹{couponDiscount}</span>
                   </div>
                 )}
                 
@@ -985,18 +902,6 @@ const Payment = () => {
                     )}
                   </span>
                 </div>
-                
-                <div className="flex justify-between">
-                  <span>Tax (5%)</span>
-                  <span className="font-medium">₹{taxAmount.toFixed(2)}</span>
-                </div>
-                
-                {couponDiscount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Coupon Discount</span>
-                    <span className="font-medium">-₹{couponDiscount.toFixed(2)}</span>
-                  </div>
-                )}
                 
                 {/* Free Cash Section */}
                 {totalFreeCashAvailable > 0 && (
@@ -1036,9 +941,6 @@ const Payment = () => {
                     <span>Total</span>
                     <span>₹{grandTotal.toFixed(2)}</span>
                   </div>
-                  <p className="text-xs text-black mt-1">
-                    (Including all taxes)
-                  </p>
                 </div>
               </div>
             </div>

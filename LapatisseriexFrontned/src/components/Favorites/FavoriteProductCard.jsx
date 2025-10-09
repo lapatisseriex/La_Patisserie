@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
+import { calculatePricing } from '../../utils/pricingUtils';
 
 const FavoriteProductCard = ({ product }) => {
   const { toggleFavorite } = useFavorites();
@@ -9,6 +10,10 @@ const FavoriteProductCard = ({ product }) => {
   if (!product) {
     return null;
   }
+
+  // Use centralized pricing calculation for consistency
+  const variant = product.variants?.[0] || { price: 0, discount: { value: 0 }, stock: 0 };
+  const pricing = calculatePricing(variant);
 
   const handleRemove = (e) => {
     e.preventDefault();
@@ -64,9 +69,12 @@ const FavoriteProductCard = ({ product }) => {
           {/* Price */}
           <div className="mt-2 flex justify-between items-center">
             <div className="text-lg font-bold text-rose-600">
-              ₹{(product.variants && product.variants.length > 0 && product.variants[0]?.price) 
-                ? product.variants[0].price 
-                : (product.price || 0)}
+              ₹{Math.round(pricing.finalPrice)}
+              {pricing.mrp > pricing.finalPrice && (
+                <span className="text-sm text-gray-500 line-through ml-2">
+                  ₹{Math.round(pricing.mrp)}
+                </span>
+              )}
             </div>
             
             {/* Veg/Non-veg Indicator */}

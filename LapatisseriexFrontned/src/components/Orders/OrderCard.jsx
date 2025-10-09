@@ -17,6 +17,7 @@ import {
   Eye
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { calculatePricing } from '../../utils/pricingUtils';
 import './OrderCard.css';
 
 const OrderCard = ({ order }) => {
@@ -196,14 +197,45 @@ const OrderCard = ({ order }) => {
                       <h5 className="font-medium text-gray-900 truncate">
                         {item.productName}
                       </h5>
-                      <p className="text-sm text-gray-500">
-                        Qty: {item.quantity} × ₹{item.price}
-                      </p>
+                      {(() => {
+                        // Use centralized pricing calculation if variant data is available
+                        if (item.variant) {
+                          const pricing = calculatePricing(item.variant);
+                          return (
+                            <p className="text-sm text-gray-500">
+                              Qty: {item.quantity} × ₹{Math.round(pricing.finalPrice)}
+                            </p>
+                          );
+                        } else {
+                          // Fallback to stored price for older orders
+                          return (
+                            <p className="text-sm text-gray-500">
+                              Qty: {item.quantity} × ₹{Math.round(item.price)}
+                            </p>
+                          );
+                        }
+                      })()}
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">
-                        ₹{(item.quantity * item.price).toFixed(2)}
-                      </p>
+                      {(() => {
+                        // Use centralized pricing calculation if variant data is available
+                        if (item.variant) {
+                          const pricing = calculatePricing(item.variant);
+                          const itemTotal = pricing.finalPrice * item.quantity;
+                          return (
+                            <p className="font-semibold text-gray-900">
+                              ₹{Math.round(itemTotal)}
+                            </p>
+                          );
+                        } else {
+                          // Fallback to stored price for older orders
+                          return (
+                            <p className="font-semibold text-gray-900">
+                              ₹{Math.round(item.quantity * item.price)}
+                            </p>
+                          );
+                        }
+                      })()}
                     </div>
                   </div>
                 ))}

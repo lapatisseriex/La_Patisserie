@@ -4,6 +4,7 @@ import { useCart } from '../../hooks/useCart';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaDisplay from '../common/MediaDisplay';
+import { calculatePricing } from '../../utils/pricingUtils';
 
 const CartSection = () => {
   const { cartItems, cartCount, updateQuantity, removeFromCart } = useCart();
@@ -40,13 +41,16 @@ const CartSection = () => {
   const CartItemCard = ({ item }) => {
     const isRemoving = removingItems.has(item._id);
     
-    // Prioritize productSnapshot, then fallback to populated product variants
-    const price = item.productSnapshot?.price || 
-      (item.product?.variants?.[0]?.price) || 0;
+    // Get product details and calculate pricing using centralized utility
+    const product = item.productDetails || item.product;
+    const variantIndex = item.variantIndex || 0;
+    const variant = product?.variants?.[variantIndex];
+    
+    // Use centralized pricing calculation for consistency
+    const pricing = calculatePricing(variant);
+    
     const name = item.productSnapshot?.name || item.product?.name || 'Unknown Product';
     const image = item.productSnapshot?.image || (item.product?.images && item.product.images[0]) || null;
-    
-    console.log('Extracted data:', { price, name, image });
     
     return (
       <motion.div
@@ -102,10 +106,12 @@ const CartSection = () => {
             {/* Price Section */}
             <div className="mb-2">
               <div className="flex items-center">
-                <span className="text-lg font-bold text-gray-900">₹{price}</span>
-                <span className="text-gray-400 text-sm ml-2 line-through">₹{Math.round(price * 1.4)}</span>
+                <span className="text-lg font-bold text-gray-900">₹{Math.round(pricing.finalPrice)}</span>
+                {pricing.discountPercentage > 0 && (
+                  <span className="text-gray-400 text-sm ml-2 line-through">₹{Math.round(pricing.mrp)}</span>
+                )}
               </div>
-              <p className="text-sm text-gray-600">Total: ₹{(price * item.quantity).toFixed(0)}</p>
+              <p className="text-sm text-gray-600">Total: ₹{(pricing.finalPrice * item.quantity).toFixed(0)}</p>
             </div>
 
             {/* Bottom Section - Quantity Controls */}

@@ -10,6 +10,7 @@ import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyV
 import { useShopStatus } from '../../context/ShopStatusContext';
 import { useSparkToCart } from '../../hooks/useSparkToCart';
 import { toast } from 'react-toastify';
+import { calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -96,41 +97,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const isProductAvailable = isActive && isShopOpen && (tracks ? totalStock > 0 : true);
   const isOutOfStockTracked = tracks && totalStock === 0;
 
-  // Use dynamic pricing breakdown from backend if available, otherwise fallback to manual calculation
-  const pricingBreakdown = variant?.pricingBreakdown;
+  // Use centralized pricing calculation for consistency
+  const pricing = calculatePricing(variant);
   
-  // NEW LOGIC: variant.price is the MRP (strikethrough), selling price is cost+profit+freecash
-  const hasCalculatorPricing = (variant?.costPrice > 0 || variant?.profitWanted > 0 || variant?.freeCashExpected > 0);
-  
-  let originalPrice = variant?.price || 0; // MRP (to be shown as strikethrough)
-  let sellingPrice = 0; // Actual selling price
-  let discountPercentage = 0;
-  
-  if (hasCalculatorPricing) {
-    // Use pricing calculator logic: selling price = cost + profit + freecash
-    sellingPrice = (variant?.costPrice || 0) + (variant?.profitWanted || 0) + (variant?.freeCashExpected || 0);
-  } else if (pricingBreakdown) {
-    // Use backend pricing breakdown
-    originalPrice = variant?.price || 0;
-    sellingPrice = pricingBreakdown.finalCustomerPrice;
-  } else if (variant?.discount?.type && variant?.discount?.value) {
-    // Fallback to old discount logic
-    originalPrice = variant?.price || 0;
-    sellingPrice = variant.discount.type === 'flat' 
-      ? Math.max(0, originalPrice - variant.discount.value)
-      : originalPrice * (1 - variant.discount.value / 100);
-    
-  } else {
-    // No discount
-    originalPrice = variant?.price || 0;
-    sellingPrice = originalPrice;
-    discountPercentage = 0;
-  }
-  discountPercentage = variant.discount.type === 'percentage' 
-      ? variant.discount.value
-      : originalPrice > 0 ? Math.round((variant.discount.value / originalPrice) * 100) : 0;
-  // For backward compatibility
-  const discountedPrice = sellingPrice;
+  // Extract values for easier use
+  const originalPrice = pricing.mrp; // MRP (to be shown as strikethrough)
+  const sellingPrice = pricing.finalPrice; // Actual selling price
+  const discountPercentage = pricing.discountPercentage;
 
   // Debug logging for troubleshooting
   if (!isActive || (tracks && totalStock === 0)) {
@@ -463,15 +436,6 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             {product.name}
           </h3>
 
-          {/* Product Quantity and Unit */}
-          {variant.quantity && variant.measuringUnit && (
-            <div className="mb-1">
-              <span className="text-xs text-gray-600 font-medium bg-gray-50 px-2 py-0.5 rounded-full">
-                {variant.quantity}{variant.measuringUnit}
-              </span>
-            </div>
-          )}
-
           {/* Rating and Welcome Offer */}
           <div className="flex items-center justify-between mb-2 gap-1 flex-wrap">
             {/* Rating chip */}
@@ -503,7 +467,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             <div className="flex items-baseline gap-1">
               {discountPercentage > 0 && (
                 <span className="text-gray-500 line-through text-xs">
-                  ₹{Math.round(originalPrice)}
+                  {formatCurrency(originalPrice)}
                 </span>
               )}
               <span
@@ -511,7 +475,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   featured || compact ? 'text-sm' : 'text-sm sm:text-base'
                 }`}
               >
-                ₹{Math.round(sellingPrice)}
+                {formatCurrency(sellingPrice)}
               </span>
             </div>
             {discountPercentage > 0 && (

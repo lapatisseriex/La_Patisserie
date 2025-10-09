@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import cartService from '../services/cartService';
+import { calculateCartTotals } from '../utils/pricingUtils';
 
 // Async thunks for cart operations
 export const fetchCart = createAsyncThunk(
@@ -170,9 +171,6 @@ const cartSlice = createSlice({
         // Update existing item
         state.items[existingItemIndex].quantity += quantity;
         state.items[existingItemIndex].isOptimistic = true;
-        // Update totals using the existing item's price
-        state.cartCount += quantity;
-        state.cartTotal += (state.items[existingItemIndex].price * quantity);
       } else {
         // Add new item
         const optimisticItem = {
@@ -187,11 +185,13 @@ const cartSlice = createSlice({
           isOptimistic: true
         };
         state.items.push(optimisticItem);
-        // Update totals for new item
-        state.cartCount += quantity;
-        state.cartTotal += (optimisticPrice * quantity);
       }
-      // NOTE: Removed duplicate total updates from conflicting branch.
+      
+      // Recalculate totals using centralized utility for consistency
+      const totals = calculateCartTotals(state.items);
+      state.cartCount = totals.cartCount;
+      state.cartTotal = totals.cartTotal;
+      
       state.isOptimisticLoading = true;
     },
 
@@ -200,22 +200,19 @@ const cartSlice = createSlice({
       const itemIndex = state.items.findIndex(item => item.productId === productId);
       
       if (itemIndex >= 0) {
-        const oldQuantity = state.items[itemIndex].quantity;
-        const itemPrice = parseFloat(state.items[itemIndex].productDetails?.price || state.items[itemIndex].price) || 0;
-        const priceDiff = (quantity - oldQuantity) * itemPrice;
-        
         if (quantity === 0) {
           // Remove item
-          state.cartTotal -= (itemPrice * oldQuantity);
-          state.cartCount -= oldQuantity;
           state.items.splice(itemIndex, 1);
         } else {
           // Update quantity
           state.items[itemIndex].quantity = quantity;
           state.items[itemIndex].isOptimistic = true;
-          state.cartTotal += priceDiff;
-          state.cartCount += (quantity - oldQuantity);
         }
+        
+        // Recalculate totals using centralized utility for consistency
+        const totals = calculateCartTotals(state.items);
+        state.cartCount = totals.cartCount;
+        state.cartTotal = totals.cartTotal;
       }
       state.isOptimisticLoading = true;
     },
@@ -225,11 +222,12 @@ const cartSlice = createSlice({
       const itemIndex = state.items.findIndex(item => item.productId === productId);
       
       if (itemIndex >= 0) {
-        const item = state.items[itemIndex];
-        const itemPrice = parseFloat(item.productDetails?.price || item.price) || 0;
-        state.cartTotal -= (itemPrice * item.quantity);
-        state.cartCount -= item.quantity;
         state.items.splice(itemIndex, 1);
+        
+        // Recalculate totals using centralized utility for consistency
+        const totals = calculateCartTotals(state.items);
+        state.cartCount = totals.cartCount;
+        state.cartTotal = totals.cartTotal;
       }
       state.isOptimisticLoading = true;
     },
@@ -255,11 +253,11 @@ const cartSlice = createSlice({
     loadFromLocalStorage: (state, action) => {
       const localItems = action.payload;
       state.items = localItems;
-      state.cartCount = localItems.reduce((total, item) => total + item.quantity, 0);
-      state.cartTotal = localItems.reduce((total, item) => {
-        const price = parseFloat(item.productDetails?.price || item.price) || 0;
-        return total + (price * item.quantity);
-      }, 0);
+      
+      // Use centralized cart totals calculation for consistency
+      const totals = calculateCartTotals(localItems);
+      state.cartCount = totals.cartCount;
+      state.cartTotal = totals.cartTotal;
     },
 
     clearLocalOptimisticUpdates: (state) => {
@@ -412,8 +410,8 @@ const cartSlice = createSlice({
         }
 
         // Update totals with server values
-        state.cartTotal = cartTotal;
-        state.cartCount = cartCount;
+        state.cartTotal = isNaN(cartTotal) ? 0 : cartTotal;
+        state.cartCount = isNaN(cartCount) ? 0 : cartCount;
         state.isOptimisticLoading = false;
         state.lastUpdated = Date.now();
       })
@@ -463,8 +461,8 @@ const cartSlice = createSlice({
           }
         }
         
-        state.cartTotal = cartTotal || 0;
-        state.cartCount = cartCount || 0;
+        state.cartTotal = isNaN(cartTotal) ? 0 : (cartTotal || 0);
+        state.cartCount = isNaN(cartCount) ? 0 : (cartCount || 0);
         state.isOptimisticLoading = false;
         state.lastUpdated = Date.now();
       })
@@ -493,8 +491,8 @@ const cartSlice = createSlice({
           state.items.splice(itemIndex, 1);
         }
         
-        state.cartTotal = cartTotal;
-        state.cartCount = cartCount;
+        state.cartTotal = isNaN(cartTotal) ? 0 : cartTotal;
+        state.cartCount = isNaN(cartCount) ? 0 : cartCount;
         state.lastUpdated = Date.now();
       })
       .addCase(removeFromCart.rejected, (state, action) => {

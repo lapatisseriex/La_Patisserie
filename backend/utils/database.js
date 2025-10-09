@@ -21,20 +21,20 @@ class DatabaseConnection {
     try {
       // Global mongoose settings for better stability
       mongoose.set('strictQuery', true);
-      mongoose.set('bufferCommands', true);        // Enable buffering for better resilience
+      mongoose.set('bufferCommands', false);       // Disable buffering to prevent hanging commands
       mongoose.set('autoIndex', false);            // Don't build indexes on every connection
       mongoose.set('autoCreate', false);           // Don't auto-create collections
 
       const options = {
-        maxPoolSize: Number(process.env.MONGO_MAX_POOL_SIZE || 10),        // Increased pool for high traffic
-        minPoolSize: Number(process.env.MONGO_MIN_POOL_SIZE || 2),         // Minimum connections
-        maxIdleTimeMS: Number(process.env.MONGO_MAX_IDLE_MS || 300000),    // 5 minutes idle time
-        waitQueueTimeoutMS: Number(process.env.MONGO_WAIT_QUEUE_MS || 45000), // 45s wait time
-        serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_MS || 30000), // 30s selection timeout
-        socketTimeoutMS: Number(process.env.MONGO_SOCKET_TIMEOUT_MS || 90000), // 90s socket timeout
-        heartbeatFrequencyMS: Number(process.env.MONGO_HEARTBEAT_MS || 10000), // 10s heartbeat
-        connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS || 30000), // 30s connection timeout
-        maxConnecting: Number(process.env.MONGO_MAX_CONNECTING || 3),       // Allow 3 concurrent connections
+        maxPoolSize: Number(process.env.MONGO_MAX_POOL_SIZE || 5),         // Reduced pool size for stability
+        minPoolSize: Number(process.env.MONGO_MIN_POOL_SIZE || 1),         // Minimum connections
+        maxIdleTimeMS: Number(process.env.MONGO_MAX_IDLE_MS || 600000),    // 10 minutes idle time (increased)
+        waitQueueTimeoutMS: Number(process.env.MONGO_WAIT_QUEUE_MS || 60000), // 60s wait time
+        serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_MS || 45000), // 45s selection timeout
+        socketTimeoutMS: Number(process.env.MONGO_SOCKET_TIMEOUT_MS || 120000), // 2 minutes socket timeout
+        heartbeatFrequencyMS: Number(process.env.MONGO_HEARTBEAT_MS || 30000), // 30s heartbeat (increased)
+        connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS || 45000), // 45s connection timeout
+        maxConnecting: Number(process.env.MONGO_MAX_CONNECTING || 2),       // Reduced concurrent connections
         family: 4,
         retryWrites: true,
         w: 'majority',
@@ -55,6 +55,9 @@ class DatabaseConnection {
       
       // Set up connection event listeners
       this.setupEventListeners();
+      
+      // Start health check monitoring
+      this.startHealthCheck();
       
       return true;
     } catch (error) {
@@ -142,7 +145,7 @@ class DatabaseConnection {
       this.isConnected = false;
     });
 
-    // Monitor connection pool events
+    // Monitor connection pool events (reduced logging)
     mongoose.connection.on('connectionPoolCreated', () => {
       console.log('🏊 MongoDB connection pool created');
     });
@@ -151,13 +154,7 @@ class DatabaseConnection {
       console.log('🏊 MongoDB connection pool closed');
     });
 
-    mongoose.connection.on('connectionCheckedOut', () => {
-      console.log('🔗 Connection checked out from pool');
-    });
-
-    mongoose.connection.on('connectionCheckedIn', () => {
-      console.log('↩️ Connection checked back into pool');
-    });
+    // Removed verbose connection check-out/in logging to reduce noise
 
     // Handle app termination
     process.on('SIGINT', this.gracefulShutdown.bind(this));
@@ -168,6 +165,9 @@ class DatabaseConnection {
   async gracefulShutdown() {
     console.log('🔄 Closing MongoDB connection...');
     try {
+      // Stop health check monitoring
+      this.stopHealthCheck();
+      
       await mongoose.connection.close();
       console.log('✅ MongoDB connection closed.');
       process.exit(0);
@@ -227,7 +227,7 @@ class DatabaseConnection {
         console.error('Health check failed:', error.message);
         this.recordFailure();
       }
-    }, 30000); // Check every 30 seconds
+    }, 60000); // Check every 60 seconds (reduced frequency)
   }
 
   stopHealthCheck() {

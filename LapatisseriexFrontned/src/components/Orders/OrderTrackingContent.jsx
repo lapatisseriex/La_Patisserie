@@ -1,5 +1,6 @@
 import React from 'react';
 import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard } from 'lucide-react';
+import { calculatePricing } from '../../utils/pricingUtils';
 
 const OrderTrackingContent = ({ order }) => {
   if (!order) return null;
@@ -160,8 +161,27 @@ const OrderTrackingContent = ({ order }) => {
                 )}
               </div>
               <div className="text-right">
-                <p className="font-medium text-gray-900">₹{item.price * item.quantity}</p>
-                <p className="text-sm text-gray-500">₹{item.price} each</p>
+                {(() => {
+                  // Use centralized pricing calculation if variant data is available
+                  if (item.variant) {
+                    const pricing = calculatePricing(item.variant);
+                    const itemTotal = pricing.finalPrice * item.quantity;
+                    return (
+                      <>
+                        <p className="font-medium text-gray-900">₹{Math.round(itemTotal)}</p>
+                        <p className="text-sm text-gray-500">₹{Math.round(pricing.finalPrice)} each</p>
+                      </>
+                    );
+                  } else {
+                    // Fallback to stored price for older orders
+                    return (
+                      <>
+                        <p className="font-medium text-gray-900">₹{Math.round(item.price * item.quantity)}</p>
+                        <p className="text-sm text-gray-500">₹{Math.round(item.price)} each</p>
+                      </>
+                    );
+                  }
+                })()}
               </div>
             </div>
           ))}

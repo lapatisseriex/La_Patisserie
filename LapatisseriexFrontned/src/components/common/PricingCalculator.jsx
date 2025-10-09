@@ -29,11 +29,14 @@ const PricingCalculator = ({
 
   // Pricing calculations
   const calculations = useMemo(() => {
-    // Step 1: Calculate final price (what admin wants to earn after everything)
-    const finalPrice = costPrice + profitWanted + freeCashExpected;
+    // Step 1: Calculate base selling price (what seller gets)
+    const baseSelling = costPrice + profitWanted;
     
-    // Step 2: Calculate MRP based on discount type
-    let mrp = 0;
+    // Step 2: Calculate final price (what customer pays before discount)
+    const finalPrice = baseSelling + freeCashExpected;
+    
+    // Step 3: Calculate MRP based on discount type
+    let mrp = finalPrice;
     let effectiveDiscountPercentage = discountPercentage;
     
     if (discountType === 'flat') {
@@ -41,29 +44,26 @@ const PricingCalculator = ({
       mrp = finalPrice + discountValue;
       // Calculate effective discount percentage for display
       effectiveDiscountPercentage = mrp > 0 ? Math.round((discountValue / mrp) * 100) : 0;
-    } else {
-      // For percentage discount: MRP = ((discount_percentage + 100) / 100) * final_price
-      mrp = ((discountPercentage + 100) / 100) * finalPrice;
+    } else if (discountType === 'percentage') {
+      // For percentage discount: MRP = final_price / (1 - discount_percentage/100)
+      const safeDiscountPercentage = Math.min(Math.max(0, discountPercentage), 99);
+      if (safeDiscountPercentage > 0) {
+        mrp = finalPrice / (1 - safeDiscountPercentage / 100);
+      }
+      effectiveDiscountPercentage = safeDiscountPercentage;
     }
     
-    // Step 3: Calculate what customer pays after discount
-    const afterDiscount = discountType === 'flat' 
-      ? Math.max(0, mrp - discountValue)
-      : mrp * ((100 - discountPercentage) / 100);
-    
-    // Step 4: Calculate final customer price after free cash
-    const afterFreeCash = afterDiscount - freeCashExpected;
-    const finalCustomerPrice = Math.max(0, afterFreeCash);
+    // Step 4: Customer pays the final price (already includes free cash benefit)
+    const finalCustomerPrice = finalPrice;
     
     // Step 5: Seller return (what admin actually gets)
-    const sellerReturn = costPrice + profitWanted;
+    const sellerReturn = baseSelling; // What seller gets (cost + profit)
 
     return {
+      baseSelling,
       finalPrice,
       mrp,
       discountPercentage: effectiveDiscountPercentage,
-      afterDiscount,
-      afterFreeCash,
       finalCustomerPrice,
       sellerReturn,
       costPrice,
@@ -350,13 +350,16 @@ const PricingCalculator = ({
         <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
           <h4 className="font-semibold text-gray-800 mb-2">Calculation Formula:</h4>
           <div className="font-mono text-sm text-gray-700 space-y-1">
-            <div>Final Price = {costPrice} + {profitWanted} + {freeCashExpected} = ₹{calculations.finalPrice.toFixed(2)}</div>
+            <div>Base Selling = {costPrice} + {profitWanted} = ₹{calculations.baseSelling.toFixed(2)}</div>
+            <div>Final Price = Base Selling + Free Cash = {calculations.baseSelling.toFixed(2)} + {freeCashExpected} = ₹{calculations.finalPrice.toFixed(2)}</div>
             {discountType === 'flat' ? (
               <div>MRP = Final Price + Flat Discount = {calculations.finalPrice.toFixed(2)} + {discountValue} = ₹{calculations.mrp.toFixed(2)}</div>
+            ) : discountType === 'percentage' ? (
+              <div>MRP = Final Price ÷ (1 - Discount%/100) = {calculations.finalPrice.toFixed(2)} ÷ (1 - {discountValue}/100) = ₹{calculations.mrp.toFixed(2)}</div>
             ) : (
-              <div>MRP = ((Discount% + 100) ÷ 100) × Final Price = (({discountValue} + 100) ÷ 100) × {calculations.finalPrice.toFixed(2)} = ₹{calculations.mrp.toFixed(2)}</div>
+              <div>MRP = Final Price (No discount) = ₹{calculations.mrp.toFixed(2)}</div>
             )}
-            <div>Customer Pays = MRP - Discount - Free Cash = ₹{calculations.finalCustomerPrice.toFixed(2)}</div>
+            <div>Customer Pays = Final Price = ₹{calculations.finalCustomerPrice.toFixed(2)}</div>
           </div>
         </div>
 
