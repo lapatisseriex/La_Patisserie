@@ -16,6 +16,101 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// Helper function to restore product stock when orders are cancelled
+const restoreProductStock = async (cartItems) => {
+  try {
+    console.log('🔄 Restoring product stock for', cartItems.length, 'items');
+    
+    const updatePromises = cartItems.map(async (item) => {
+      try {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
+          const variant = Array.isArray(product.variants) && product.variants.length > vi ? product.variants[vi] : undefined;
+          const variantTracks = Boolean(variant?.isStockActive);
+          
+          if (variantTracks) {
+            const result = await Product.updateOne(
+              { _id: item.productId },
+              { $inc: { [`variants.${vi}.stock`]: item.quantity } }
+            );
+            
+            if (result.modifiedCount > 0) {
+              console.log(`✅ Stock restored: "${product.name}" variant ${vi} +${item.quantity}`);
+            } else {
+              console.warn(`⚠️ Could not restore stock for "${product.name}" variant ${vi}`);
+            }
+          } else {
+            console.log(`ℹ️ Product "${product.name}" variant ${vi} does not track stock - no restoration needed`);
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Error restoring stock for product ${item.productId}:`, error.message);
+      }
+    });
+
+    await Promise.all(updatePromises);
+    console.log('✅ Product stock restoration completed');
+  } catch (error) {
+    console.error('❌ Error restoring product stock:', error);
+  }
+};
+
+// Helper function to decrement product stock after successful payment/order
+const decrementProductStock = async (cartItems) => {
+  try {
+    console.log('🔻 Decrementing product stock for', cartItems.length, 'items');
+    
+    const updatePromises = cartItems.map(async (item) => {
+      try {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          // Get variant index from item (from order schema) 
+          const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
+          const variant = Array.isArray(product.variants) && product.variants.length > vi ? product.variants[vi] : undefined;
+          const variantTracks = Boolean(variant?.isStockActive);
+          
+          if (variantTracks) {
+            const path = `variants.${vi}.stock`;
+            const currentStock = variant.stock || 0;
+            
+            console.log(`📊 Stock check: Product "${product.name}" variant ${vi} - Current: ${currentStock}, Ordered: ${item.quantity}`);
+            
+            const result = await Product.updateOne(
+              { 
+                _id: item.productId, 
+                [`variants.${vi}.stock`]: { $gte: item.quantity } 
+              },
+              { 
+                $inc: { [`variants.${vi}.stock`]: -item.quantity } 
+              }
+            );
+            
+            if (result.modifiedCount > 0) {
+              const newStock = currentStock - item.quantity;
+              console.log(`✅ Stock decremented: "${product.name}" variant ${vi} | ${currentStock} → ${newStock} (sold: ${item.quantity})`);
+            } else {
+              console.warn(`⚠️ Stock decrement failed for "${product.name}" variant ${vi} - insufficient stock (need: ${item.quantity}, have: ${currentStock})`);
+            }
+          } else {
+            console.log(`ℹ️ Product "${product.name}" variant ${vi} does not track stock - no decrement needed`);
+          }
+        } else {
+          console.error(`❌ Product not found: ${item.productId}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error decrementing stock for product ${item.productId}:`, error.message);
+      }
+    });
+
+    await Promise.all(updatePromises);
+    console.log('✅ Product stock decrements completed');
+  } catch (error) {
+    console.error('❌ Error decrementing product stock:', error);
+    // Don't throw error as this shouldn't break the order process
+  }
+};
+
 // Helper function to update product order counts
 const updateProductOrderCounts = async (cartItems) => {
   try {
@@ -112,6 +207,12 @@ export const createOrder = asyncHandler(async (req, res) => {
     await order.save();
     console.log('Order saved to database:', order._id);
 
+    // For COD orders, decrement stock immediately since payment is guaranteed
+    if (paymentMethod === 'cod' && cartItems && cartItems.length > 0) {
+      console.log('📦 COD Order - decrementing product stock immediately');
+      await decrementProductStock(cartItems);
+    }
+
     // Send order confirmation email
     try {
       // Get user email from the user record
@@ -197,6 +298,12 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       }
       
       console.log('Payment verified successfully for order:', order.orderNumber);
+      
+      // IMPORTANT: Decrement actual stock now that payment is confirmed
+      if (order.cartItems && order.cartItems.length > 0) {
+        console.log('💳 Payment confirmed - decrementing product stock');
+        await decrementProductStock(order.cartItems);
+      }
       
       // Update product order counts after successful payment
       if (order.cartItems && order.cartItems.length > 0) {
@@ -446,7 +553,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     if (notes) updateData.notes = notes;
     if (orderStatus === 'delivered') updateData.actualDeliveryTime = new Date();
 
-    // Find the order first to get user details
+    // Get the existing order to check previous status
     const existingOrder = await Order.findOne({ orderNumber }).populate('userId', 'email name');
     
     if (!existingOrder) {
@@ -454,6 +561,12 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
         success: false,
         message: 'Order not found'
       });
+    }
+
+    // Handle order cancellation - restore stock
+    if (orderStatus === 'cancelled' && existingOrder.orderStatus !== 'cancelled') {
+      console.log('🔄 Order cancelled - restoring product stock');
+      await restoreProductStock(existingOrder.cartItems);
     }
 
     // Update the order
@@ -466,7 +579,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: 'Order not found'
+        message: 'Order not found after update'
       });
     }
 

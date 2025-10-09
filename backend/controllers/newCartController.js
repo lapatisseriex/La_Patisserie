@@ -174,33 +174,16 @@ export const addToNewCart = async (req, res) => {
     }
 
     // Add or update item in cart
-    // If tracking, atomically decrement stock on the selected variant index
-  let decremented = false;
-  if (variantTracks && Array.isArray(product.variants) && product.variants.length > vi) {
-      const path = `variants.${vi}.stock`;
-      const dec = await Product.updateOne(
-        { _id: productId, [path]: { $gte: quantity } },
-        { $inc: { [path]: -quantity } }
-      );
-      console.log(`📉 Stock decrement attempt on ${path}: matched=${dec.matchedCount}, modified=${dec.modifiedCount}`);
-      if (dec.modifiedCount === 0) {
-        return res.status(400).json({ error: 'Insufficient stock available' });
-      }
-      decremented = true;
+    // NOTE: We DO NOT decrement stock here - only validate availability
+    // Stock will be decremented only when order is actually completed/paid
+    if (variantTracks && Array.isArray(product.variants) && product.variants.length > vi) {
+      console.log(`✅ Stock validation passed for variant ${vi}: ${quantity} <= ${productStock}`);
     } else {
-      console.log('⏭️ Skipping stock decrement (variant does not track or invalid index)');
+      console.log('⏭️ Variant does not track stock - no validation needed');
     }
 
-    try {
-      await cart.addOrUpdateItem(productId, quantity, productDetails);
-    } catch (err) {
-      if (decremented) {
-        const path = `variants.${vi}.stock`;
-        console.log(`↩️ Rolling back stock decrement on failure for ${path} by +${quantity}`);
-        await Product.updateOne({ _id: productId }, { $inc: { [path]: quantity } });
-      }
-      throw err;
-    }
+    // Add to cart without stock decrement
+    await cart.addOrUpdateItem(productId, quantity, productDetails);
 
     // Return updated cart
     const updatedCartData = {
@@ -261,20 +244,13 @@ export const updateNewCartItem = async (req, res) => {
 
   const variantTracks = Boolean(variant?.isStockActive);
   if (variantTracks && Array.isArray(product.variants) && product.variants.length > vi) {
-        const path = `variants.${vi}.stock`;
-        if (delta > 0) {
-          const dec = await Product.updateOne(
-            { _id: productId, [path]: { $gte: delta } },
-            { $inc: { [path]: -delta } }
-          );
-          if (dec.modifiedCount === 0) {
-            const currentStock = product.variants?.[vi]?.stock || 0;
-            return res.status(400).json({ error: `Only ${currentStock} items available in stock` });
-          }
-        } else if (delta < 0) {
-          await Product.updateOne({ _id: productId }, { $inc: { [path]: Math.abs(delta) } });
-        }
-      }
+    // Only validate stock availability - don't decrement until order completion
+    const currentStock = variant.stock || 0;
+    if (quantity > currentStock) {
+      return res.status(400).json({ error: `Only ${currentStock} items available in stock` });
+    }
+    console.log(`✅ Stock validation passed: quantity ${quantity} <= stock ${currentStock}`);
+  }
 
   // Update quantity (absolute)
   await cart.updateItemQuantity(productId, quantity);
@@ -326,15 +302,10 @@ export const removeFromNewCart = async (req, res) => {
     // Remove item
     await cart.removeItem(productId);
 
-    // Restock if tracking
+    // NOTE: No stock restoration needed since we don't decrement stock on add to cart
+    // Stock will only be decremented on actual order completion
     if (qtyToReturn > 0) {
-      const product = await Product.findById(productId);
-      const variant = Array.isArray(product?.variants) ? product.variants[vi] : undefined;
-      const variantTracks = Boolean(variant?.isStockActive);
-      if (variantTracks && Array.isArray(product?.variants) && product.variants.length > vi) {
-        const path = `variants.${vi}.stock`;
-        await Product.updateOne({ _id: productId }, { $inc: { [path]: qtyToReturn } });
-      }
+      console.log(`🗑️ Removed ${qtyToReturn} items from cart - no stock restoration needed`);
     }
 
     // Return updated cart
@@ -375,21 +346,9 @@ export const clearNewCart = async (req, res) => {
       return res.status(404).json({ error: 'Cart not found' });
     }
 
-    // Restock items for products that track stock (only when shouldRestock)
-    if (shouldRestock) {
-      for (const item of cart.items) {
-        const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-        const product = await Product.findById(item.productId);
-        const variant = Array.isArray(product?.variants) ? product.variants[vi] : undefined;
-        const variantTracks = Boolean(variant?.isStockActive);
-        if (variantTracks && Array.isArray(product?.variants) && product.variants.length > vi) {
-          const path = `variants.${vi}.stock`;
-          await Product.updateOne({ _id: item.productId }, { $inc: { [path]: item.quantity } });
-        }
-      }
-    } else {
-      console.log('🧾 Checkout clear: skipping restock (inventory already decremented at add/update time)');
-    }
+    // NOTE: No stock restoration needed since we don't decrement stock on add to cart
+    // Stock is only decremented when orders are actually completed
+    console.log('� Clearing cart - no stock changes needed (stock decrements only on order completion)');
 
     // Clear cart
     await cart.clearCart();

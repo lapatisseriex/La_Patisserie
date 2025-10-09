@@ -16,6 +16,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const [lastQuantityChangeTime, setLastQuantityChangeTime] = useState(0);
+  const [refreshedProduct, setRefreshedProduct] = useState(product);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
   const { addToCart, getItemQuantity, updateQuantity, cartItems } = useCart();
@@ -25,10 +28,47 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const { buttonRef: addToCartButtonRef } = useSparkToCart();
   const navigate = useNavigate();
 
+  // Refresh product data to get latest stock information
+  const refreshProductData = useCallback(async () => {
+    try {
+      setIsRefreshing(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/products/${product._id}`);
+      if (response.ok) {
+        const freshProduct = await response.json();
+        setRefreshedProduct(freshProduct);
+        setLastRefresh(Date.now());
+        console.log(`🔄 Refreshed stock data for ${freshProduct.name}:`, {
+          variants: freshProduct.variants?.map(v => ({
+            stock: v.stock,
+            isStockActive: v.isStockActive
+          }))
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to refresh product data:', error);
+      // Fallback to original product data
+      setRefreshedProduct(product);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [product._id]);
+
+  // Initial refresh on mount and auto-refresh every 5 seconds to get latest stock
+  useEffect(() => {
+    // Initial refresh immediately
+    refreshProductData();
+    
+    const interval = setInterval(refreshProductData, 5000);
+    return () => clearInterval(interval);
+  }, [refreshProductData]);
+
+  // Use refreshed product data
+  const currentProduct = refreshedProduct || product;
+
   // Get current quantity from cart (will re-run when cartItems changes)
   const currentQuantity = useMemo(() => {
-    return getItemQuantity(product._id);
-  }, [product._id, getItemQuantity, cartItems]);
+    return getItemQuantity(currentProduct._id);
+  }, [currentProduct._id, getItemQuantity, cartItems]);
   
   // Memoize button state to prevent unnecessary re-renders
   const buttonState = useMemo(() => ({
@@ -58,7 +98,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     };
   };
 
-  const productRating = getProductRating(product._id);
+  const productRating = getProductRating(currentProduct._id);
 
   // Deterministic rating count like "3.9K" for display purposes (consistent per product)
   const getRatingCount = (productId) => {
@@ -72,25 +112,38 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     const k = (base / 1000).toFixed(1);
     return `${k.replace(/\.0$/, '')}K`;
   };
-  const ratingCountDisplay = getRatingCount(product._id);
+  const ratingCountDisplay = getRatingCount(currentProduct._id);
 
   // Auto-slide functionality for multiple images - very slow and smooth
   useEffect(() => {
-    if (product.images && product.images.length > 1 && !isHoveringImage) {
+    if (currentProduct.images && currentProduct.images.length > 1 && !isHoveringImage) {
       const interval = setInterval(() => {
         setCurrentImageIndex((prevIndex) => 
-          (prevIndex + 1) % product.images.length
+          (prevIndex + 1) % currentProduct.images.length
         );
       }, 4500); // Change image every 4.5 seconds for very slow, smooth experience
 
       return () => clearInterval(interval);
     }
-  }, [product.images, isHoveringImage]);
+  }, [currentProduct.images, isHoveringImage]);
 
   // Ensure we have variants and handle missing data
-  const variant = product.variants?.[0] || { price: 0, discount: { value: 0 }, stock: 0 };
+  // Use the first active variant or fallback to first variant
+  const variant = useMemo(() => {
+    if (!currentProduct.variants || currentProduct.variants.length === 0) {
+      return { price: 0, discount: { value: 0 }, stock: 0, isStockActive: false };
+    }
+    
+    // Find first active variant with stock (if tracking) or just first variant
+    const activeVariant = currentProduct.variants.find(v => 
+      v.isActive !== false && (!v.isStockActive || (v.stock > 0))
+    ) || currentProduct.variants[0];
+    
+    return activeVariant;
+  }, [currentProduct.variants]);
+
   const tracks = !!variant?.isStockActive;
-  const isActive = product.isActive !== false; // Default to true if undefined
+  const isActive = currentProduct.isActive !== false; // Default to true if undefined
   // If stock tracking is disabled, treat stock as unlimited
   const totalStock = tracks ? (variant.stock || 0) : Number.POSITIVE_INFINITY;
   // Use global shop status; if not tracking stock, skip stock-based unavailability
@@ -108,11 +161,11 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   // Debug logging for troubleshooting
   if (!isActive || (tracks && totalStock === 0)) {
     console.log('Product availability issue:', {
-      productId: product._id,
-      name: product.name,
-      isActive: product.isActive,
+      productId: currentProduct._id,
+      name: currentProduct.name,
+      isActive: currentProduct.isActive,
       totalStock,
-      variants: product.variants
+      variants: currentProduct.variants
     });
   }
 
@@ -129,12 +182,17 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         return;
       }
 
+      // Find the correct variant index
+      const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
+      
       // Debug: log variant tracking behavior
-      console.log('[AddToCart from Card] product=', product._id, 'variantIndex=0', 'tracks=', tracks, 'stock=', totalStock);
+      console.log('[AddToCart from Card] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
 
-      // Add to cart with immediate UI update (optimistic)
-      // Note: Backend will only decrement stock if this variant tracks stock
-      await addToCart(product, 1, 0);
+      // Add to cart with correct variant index
+      await addToCart(currentProduct, 1, variantIndex);
+      
+      // Immediately refresh stock data after adding to cart
+      setTimeout(refreshProductData, 500);
     } catch (error) {
       console.error('Error adding to cart:', error);
       const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
@@ -151,7 +209,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     
     console.log('🎯 Reserve button clicked on Home page');
     
-    const currentQuantity = getItemQuantity(product._id);
+    const currentQuantity = getItemQuantity(currentProduct._id);
     
     if (currentQuantity > 0) {
       // Product already in cart - just redirect
@@ -159,8 +217,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     } else {
       // Product not in cart - add one and redirect
       try {
-        console.log('[Reserve] product=', product._id, 'variantIndex=0', 'tracks=', tracks, 'stock=', totalStock);
-        await addToCart(product, 1, 0);
+        const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
+        console.log('[Reserve] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
+        await addToCart(currentProduct, 1, variantIndex);
+        
+        // Immediately refresh stock data after adding to cart
+        setTimeout(refreshProductData, 500);
+        
         navigate('/cart');
       } catch (error) {
         console.error('❌ Error adding product to cart:', error);
@@ -189,8 +252,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       }
       
       if (currentQuantity === 0) {
-        console.log('[BuyNow] product=', product._id, 'variantIndex=0', 'tracks=', tracks, 'stock=', totalStock);
-        await addToCart(product, 1, 0);
+        const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
+        console.log('[BuyNow] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
+        await addToCart(currentProduct, 1, variantIndex);
+        
+        // Immediately refresh stock data after adding to cart
+        setTimeout(refreshProductData, 500);
       }
       
       navigate('/cart');
@@ -215,21 +282,24 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     setLastQuantityChangeTime(now);
     
     // Fire and forget - no loading states for smooth experience
-    updateQuantity(product._id, newQuantity).catch(error => {
+    updateQuantity(currentProduct._id, newQuantity).then(() => {
+      // Immediately refresh stock data after quantity change
+      setTimeout(refreshProductData, 500);
+    }).catch(error => {
       console.error('Error updating quantity:', error);
     });
-  }, [updateQuantity, product._id, lastQuantityChangeTime]);
+  }, [updateQuantity, currentProduct._id, lastQuantityChangeTime, refreshProductData]);
 
 
 
   const handleCardClick = useCallback(() => {
     // Validate product data before navigation
-    if (!product || !product._id) {
-      console.error('Invalid product data for navigation:', product);
+    if (!currentProduct || !currentProduct._id) {
+      console.error('Invalid product data for navigation:', currentProduct);
       return;
     }
     
-    console.log(`🎯 Navigating to product: ${product.name} (${product._id})`);
+    console.log(`🎯 Navigating to product: ${currentProduct.name} (${currentProduct._id})`);
     
     try {
       // Prepare for immediate navigation - disable any interfering smooth scroll
@@ -237,20 +307,20 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       document.body.style.scrollBehavior = 'auto';
       
       // Navigate immediately for better UX
-      navigate(`/product/${product._id}`);
+      navigate(`/product/${currentProduct._id}`);
       
       // Track the product view in background (don't await)
-      if (user && product._id) {
-        trackProductView(product._id, product).catch(error => {
+      if (user && currentProduct._id) {
+        trackProductView(currentProduct._id, currentProduct).catch(error => {
           console.error('Error tracking product view:', error);
         });
       }
     } catch (error) {
       console.error('Navigation error:', error);
       // Fallback navigation method
-      window.location.href = `/product/${product._id}`;
+      window.location.href = `/product/${currentProduct._id}`;
     }
-  }, [product, navigate, user, trackProductView]);
+  }, [currentProduct, navigate, user, trackProductView]);
 
   return (
     <div
@@ -281,15 +351,15 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             {/* Favorite Button */}
             <div className="absolute top-2 right-2 z-20">
               <FavoriteButton 
-                productId={product._id} 
+                productId={currentProduct._id} 
                 size={featured ? 'lg' : 'md'} 
                 className="drop-shadow-md hover:scale-110 transition-transform duration-300"
               />
             </div>
             
             <MediaDisplay
-          src={product.images?.[currentImageIndex] || null}
-          alt={product.name}
+          src={currentProduct.images?.[currentImageIndex] || null}
+          alt={currentProduct.name}
           className="w-full h-full transition-all duration-1000 ease-in-out"
           style={{
             transition: 'opacity 1.2s ease-in-out, transform 1.2s ease-in-out',
@@ -319,7 +389,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           <div className="absolute bottom-2 left-2">
             <span
               className={`inline-flex items-center ${
-                product.hasEgg
+                currentProduct.hasEgg
                   ? 'text-red-600'
                   : 'text-green-600'
               }`}
@@ -337,12 +407,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                     y="1"
                     width="18"
                     height="18"
-                    stroke={product.hasEgg ? '#FF0000' : '#22C55E'} 
+                    stroke={currentProduct.hasEgg ? '#FF0000' : '#22C55E'} 
                     strokeWidth="2"
                     fill="none"
                   />
 
-                  {product.hasEgg ? (
+                  {currentProduct.hasEgg ? (
                     // Triangle for WITH EGG
                     <polygon points="10,4 16,16 4,16" fill="#FF0000" />
                   ) : (
@@ -433,7 +503,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             } cursor-pointer mb-1 hover:text-gray-700 transition-colors`}
             onClick={handleCardClick}
           >
-            {product.name}
+            {currentProduct.name}
           </h3>
 
           {/* Rating and Welcome Offer */}
@@ -460,7 +530,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
           {/* One-line product description */}
           <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-            {product.description || 'Delicious handcrafted treat made with premium ingredients.'}
+            {currentProduct.description || 'Delicious handcrafted treat made with premium ingredients.'}
           </p>
 
           <div className="flex items-center justify-between mb-2">
@@ -486,14 +556,20 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           </div>
 
           {tracks && totalStock > 0 && totalStock < 15 && (
-            <span className="text-red-600 font-medium text-sm">
-              Only {totalStock} left
+            <span className="text-orange-600 font-medium text-sm bg-orange-50 px-2 py-1 rounded">
+              Only {totalStock} left in stock
             </span>
           )}
 
           {tracks && totalStock === 0 && (
-            <span className="text-gray-500 font-medium text-sm">
-              Out of Stock
+            <span className="text-red-600 font-medium text-sm bg-red-50 px-2 py-1 rounded">
+              Currently Out of Stock
+            </span>
+          )}
+          
+          {tracks && totalStock >= 15 && (
+            <span className="text-green-600 font-medium text-sm bg-green-50 px-2 py-1 rounded">
+              ✓ In Stock ({totalStock} available)
             </span>
           )}
         </div>

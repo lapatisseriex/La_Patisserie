@@ -296,9 +296,9 @@ const Payment = () => {
             if (verifyData.success) {
               setIsOrderComplete(true);
               setOrderNumber(verifyData.orderNumber);
-              // Clear cart without restocking since stock already decremented on add/update
+              // Clear cart - no stock restoration needed since stock is decremented on payment success
               try {
-                await clearCart({ restock: false });
+                await clearCart();
               } catch (cartError) {
                 console.error('❌ Failed to clear cart after payment:', cartError);
                 // Don't fail the order, just log the error
@@ -360,9 +360,9 @@ const Payment = () => {
       // For COD, directly mark order as placed
   setIsOrderComplete(true);
   setOrderNumber(orderData.orderNumber);
-  // Clear cart without restocking since stock already decremented on add/update
+  // Clear cart - no stock restoration needed since stock is decremented on order placement for COD
   try {
-    await clearCart({ restock: false });
+    await clearCart();
   } catch (cartError) {
     console.error('❌ Failed to clear cart after COD order:', cartError);
     // Don't fail the order, just log the error
