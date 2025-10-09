@@ -697,11 +697,18 @@ export const verifyToken = asyncHandler(async (req, res) => {
         role: user.role,
         dob: formattedDob, // Use formatted date
         gender: user.gender || '',
+        phone: user.phone || '',
+        city: user.city || '',
+        pincode: user.pincode || '',
+        country: user.country || 'India',
+        anniversary: user.anniversary || null,
         location: user.location || null,
         hostel: user.hostel || null,
         profilePhoto: user.profilePhoto || { url: '', public_id: '' }, // Include profile photo
         emailVerified: user.emailVerified || false,
         emailVerifiedAt: user.emailVerifiedAt || null,
+        phoneVerified: user.phoneVerified || false,
+        phoneVerifiedAt: user.phoneVerifiedAt || null,
         isProfileIncomplete // Add flag for profile completion status
       }
     });

@@ -6,7 +6,11 @@ import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
 import { sendOrderStatusNotification, sendOrderConfirmationEmail } from '../utils/orderEmailService.js';
 
-// Initialize Razorpay
+// Initialize Razorpay with validation
+if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  console.error('❌ Razorpay configuration missing. Please check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables.');
+}
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,

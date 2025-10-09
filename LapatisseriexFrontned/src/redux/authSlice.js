@@ -54,12 +54,22 @@ export const initializeAuthListener = createAsyncThunk(
             // Store token in localStorage
             localStorage.setItem('authToken', idToken);
             
-            // Create user data
+            // Create user data - this is just basic Firebase data
+            // Full user data will be loaded via getCurrentUser or auth verification
             const userData = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               name: firebaseUser.displayName,
               profilePhoto: { url: firebaseUser.photoURL || '', public_id: '' },
+              // Add default fields to avoid undefined errors
+              phone: '',
+              phoneVerified: false,
+              city: '',
+              pincode: '',
+              country: 'India',
+              gender: '',
+              dob: null,
+              anniversary: null,
             };
             
             dispatch({
@@ -108,17 +118,25 @@ export const signInWithGoogle = createAsyncThunk(
         authMethod: 'google'
       });
       
-      // Create the user object with data from backend
+      // Create the user object with data from backend (backend data takes precedence)
       const userData = {
+        // Firebase user data as fallback
         uid: user.uid,
         email: user.email,
         name: user.displayName,
         profilePhoto: { url: user.photoURL || '', public_id: '' },
+        // Backend user data (overwrites Firebase data)
         ...response.data.user,
-        // Ensure phone verification fields are included
+        // Ensure all required fields are present with defaults
         phone: response.data.user.phone || '',
         phoneVerified: response.data.user.phoneVerified || false,
         phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
+        city: response.data.user.city || '',
+        pincode: response.data.user.pincode || '',
+        country: response.data.user.country || 'India',
+        gender: response.data.user.gender || '',
+        dob: response.data.user.dob || null,
+        anniversary: response.data.user.anniversary || null,
       };
       
       // Note: User data now cached via redux-persist, not manual localStorage
@@ -178,10 +196,16 @@ export const signUpWithEmail = createAsyncThunk(
         uid: user.uid,
         email: user.email,
         ...response.data.user,
-        // Ensure phone verification fields are included
+        // Ensure all required fields are present with defaults
         phone: response.data.user.phone || '',
         phoneVerified: response.data.user.phoneVerified || false,
         phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
+        city: response.data.user.city || '',
+        pincode: response.data.user.pincode || '',
+        country: response.data.user.country || 'India',
+        gender: response.data.user.gender || '',
+        dob: response.data.user.dob || null,
+        anniversary: response.data.user.anniversary || null,
       };
       
       // Note: User data now cached via redux-persist, not manual localStorage
@@ -223,10 +247,16 @@ export const signInWithEmail = createAsyncThunk(
         uid: user.uid,
         email: user.email,
         ...response.data.user,
-        // Ensure phone verification fields are included
+        // Ensure all required fields are present with defaults
         phone: response.data.user.phone || '',
         phoneVerified: response.data.user.phoneVerified || false,
         phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
+        city: response.data.user.city || '',
+        pincode: response.data.user.pincode || '',
+        country: response.data.user.country || 'India',
+        gender: response.data.user.gender || '',
+        dob: response.data.user.dob || null,
+        anniversary: response.data.user.anniversary || null,
       };
       
       // Note: User data now cached via redux-persist, not manual localStorage

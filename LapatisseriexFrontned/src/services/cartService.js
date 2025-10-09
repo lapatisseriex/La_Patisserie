@@ -147,12 +147,15 @@ class CartService {
   // Clear entire cart
   async clearCart({ restock = true } = {}) {
     try {
-      console.log('🧹 Clearing cart');
-      const response = await api.delete(`/newcart${restock === false ? '?restock=false' : ''}`);
-      console.log('✅ Cart cleared:', response.data);
+      console.log('🧹 Clearing cart with restock =', restock);
+      const url = `/newcart${restock === false ? '?restock=false' : ''}`;
+      console.log('🌐 Making DELETE request to:', url);
+      const response = await api.delete(url);
+      console.log('✅ Cart cleared successfully:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ Error clearing cart:', error);
+      console.error('❌ Error details:', error.response?.data);
       if (error.response?.status === 401) {
         throw new Error('Please login to clear cart');
       }

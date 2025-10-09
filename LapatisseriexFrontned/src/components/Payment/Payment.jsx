@@ -11,10 +11,11 @@ import ShopClosureOverlay from '../common/ShopClosureOverlay';
 const Payment = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
   const { cartItems, cartTotal, clearCart, refreshCart } = useCart();
-  const { user } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const { hasValidDeliveryLocation, getCurrentLocationName, locations } = useLocation();
   const navigate = useNavigate();
   const [showLocationError, setShowLocationError] = useState(false);
+  const [userDataLoaded, setUserDataLoaded] = useState(false);
   
   // Coupon discount is managed locally in this component
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -27,6 +28,21 @@ const Payment = () => {
     console.log('🔄 Payment: Refreshing cart data to get latest product info');
     refreshCart();
   }, [refreshCart]);
+
+  // Track user data loading
+  useEffect(() => {
+    console.log('Payment component - User data check:');
+    console.log('- isAuthenticated:', isAuthenticated);
+    console.log('- authLoading:', authLoading);
+    console.log('- user:', user);
+    console.log('- user type:', typeof user);
+    console.log('- user keys:', user ? Object.keys(user) : 'No user');
+    
+    // Mark user data as loaded when we have authentication result
+    if (!authLoading) {
+      setUserDataLoaded(true);
+    }
+  }, [user, authLoading, isAuthenticated]);
 
   // Check for valid delivery location and handle gracefully
   useEffect(() => {
@@ -248,11 +264,11 @@ const Payment = () => {
           name: user?.name || user?.displayName,
           email: user?.email,
           phone: user?.phone,
-          city: user?.city,
-          pincode: user?.pincode,
+          city: user?.location?.city || user?.city,
+          pincode: user?.location?.pincode || user?.pincode,
           country: user?.country || 'India'
         },
-        deliveryLocation: getCurrentLocationName(),
+        deliveryLocation: user?.location?.fullAddress || getCurrentLocationName(),
         orderSummary: {
           cartTotal: cartTotal,
           discountedTotal: discountedCartTotal,
@@ -320,8 +336,16 @@ const Payment = () => {
       // Create order on backend
       const orderData = await createOrder(grandTotal, 'razorpay');
 
+      // Check if Razorpay key is configured
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      if (!razorpayKey) {
+        alert('Payment gateway not configured. Please contact support.');
+        setIsProcessing(false);
+        return;
+      }
+
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: razorpayKey,
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'La Patisserie',
@@ -348,7 +372,13 @@ const Payment = () => {
               setIsOrderComplete(true);
               setOrderNumber(verifyData.orderNumber);
               // Clear cart without restocking since stock already decremented on add/update
-              clearCart({ restock: false });
+              try {
+                await clearCart({ restock: false });
+                console.log('✅ Cart cleared successfully after payment');
+              } catch (cartError) {
+                console.error('❌ Failed to clear cart after payment:', cartError);
+                // Don't fail the order, just log the error
+              }
             } else {
               alert('Payment verification failed. Please contact support.');
             }
@@ -407,7 +437,13 @@ const Payment = () => {
   setIsOrderComplete(true);
   setOrderNumber(orderData.orderNumber);
   // Clear cart without restocking since stock already decremented on add/update
-  clearCart({ restock: false });
+  try {
+    await clearCart({ restock: false });
+    console.log('✅ Cart cleared successfully after COD order');
+  } catch (cartError) {
+    console.error('❌ Failed to clear cart after COD order:', cartError);
+    // Don't fail the order, just log the error
+  }
     } catch (error) {
       console.error('COD order error:', error);
       alert('Failed to place order. Please try again.');
@@ -429,7 +465,15 @@ const Payment = () => {
             <p className="text-black text-sm mb-6">Your order has been placed successfully</p>
             
             <div className="bg-gray-100 rounded-lg p-4 mb-6">
-              <p className="text-black font-medium">Order Number:</p>
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-gray-600 text-sm">Order Number:</p>
+                <button 
+                  onClick={() => refreshCart()}
+                  className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                >
+                  Refresh Cart
+                </button>
+              </div>  <p className="text-black font-medium">Order Number:</p>
               <p className="text-2xl font-bold text-black tracking-wide">{orderNumber}</p>
             </div>
             
@@ -531,17 +575,24 @@ const Payment = () => {
                 Delivery Address
               </h2>
               
-              {user ? (
+              {!userDataLoaded ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading user information...</p>
+                </div>
+              ) : user ? (
                 <div className="space-y-4">
+
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">Name</p>
-                      <p className="text-black font-medium">{user.name || user.displayName || 'Not provided'}</p>
+                      <p className="text-black font-medium">{user.name || user.displayName || user.firstName || 'Not provided'}</p>
                     </div>
                     
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">Phone</p>
-                      <p className="text-black font-medium">{user.phone || 'Not provided'}</p>
+                      <p className="text-black font-medium">{user.phone || user.phoneNumber || 'Not provided'}</p>
                     </div>
                     
                     <div>
@@ -551,25 +602,54 @@ const Payment = () => {
                     
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">City</p>
-                      <p className="text-black font-medium">{user.city || 'Not provided'}</p>
+                      <p className="text-black font-medium">
+                        {user.location?.city || user.city || user.address?.city || 'Not provided'}
+                      </p>
                     </div>
                     
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">Postal Code</p>
-                      <p className="text-black font-medium">{user.pincode || 'Not provided'}</p>
+                      <p className="text-black font-medium">
+                        {user.location?.pincode || user.pincode || user.postalCode || user.address?.postalCode || 'Not provided'}
+                      </p>
                     </div>
                     
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">Country</p>
-                      <p className="text-black font-medium">{user.country || 'India'}</p>
+                      <p className="text-black font-medium">{user.country || user.address?.country || 'India'}</p>
                     </div>
                   </div>
                   
+                  {/* Hostel information if available */}
+                  {user.hostel && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm font-medium text-blue-800 mb-1">Hostel Information</p>
+                      <p className="text-blue-700 font-medium">{user.hostel.name}</p>
+                      {user.hostel.address && (
+                        <p className="text-blue-600 text-sm">{user.hostel.address}</p>
+                      )}
+                    </div>
+                  )}
+                  
                   {/* Current location display */}
-                  {hasValidDeliveryLocation() && (
+                  {(hasValidDeliveryLocation() || user.location) && (
                     <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                       <p className="text-sm font-medium text-green-800 mb-1">Delivery Location</p>
-                      <p className="text-green-700">{getCurrentLocationName()}</p>
+                      <div className="text-green-700">
+                        {user.location ? (
+                          <div>
+                            <p className="font-medium">{user.location.fullAddress || `${user.location.area}, ${user.location.city} - ${user.location.pincode}`}</p>
+                            {user.location.deliveryCharge && (
+                              <p className="text-xs mt-1">Delivery Charge: ₹{user.location.deliveryCharge}</p>
+                            )}
+                            {user.hostel && (
+                              <p className="text-xs mt-1">Hostel: {user.hostel.name}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p>{getCurrentLocationName()}</p>
+                        )}
+                      </div>
                     </div>
                   )}
                   
@@ -583,6 +663,18 @@ const Payment = () => {
                     </Link>
                   </div>
                 </div>
+              ) : isAuthenticated ? (
+                <div className="text-center py-8">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-amber-800 mb-4">Your profile information is incomplete</p>
+                    <Link 
+                      to="/profile" 
+                      className="inline-flex items-center bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+                    >
+                      Complete Profile
+                    </Link>
+                  </div>
+                </div>
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-600 mb-4">Please login to see your delivery address</p>
@@ -590,6 +682,7 @@ const Payment = () => {
                     onClick={() => {
                       // You can implement opening the auth modal here
                       console.log('Open auth modal');
+                      navigate('/auth'); // Redirect to auth page
                     }}
                     className="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
                   >
@@ -794,43 +887,23 @@ const Payment = () => {
                         </p>
                         <div className="text-xs">
                           {(() => {
-                            // Get variant data from productDetails
-                            const prod = item.productDetails;
-                            const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-                            const variant = prod?.variants?.[vi];
-                            
-                            if (!variant) {
-                              // Fallback to old logic if variant not found
-                              return (
-                                <div className="space-y-1">
-                                  <div>
-                                    <span className="font-medium text-green-600">₹{Math.round((item.price || 0))}</span>
-                                    <span className="text-black"> × {item.quantity}</span>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            
-                            // Calculate correct pricing
-                            const originalPrice = parseFloat(variant.price) || 0; // MRP (strikethrough)
-                            const costPrice = parseFloat(variant.costPrice) || 0;
-                            const profitWanted = parseFloat(variant.profitWanted) || 0;
-                            const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
-                            const sellingPrice = costPrice + profitWanted + freeCashExpected; // Actual selling price
-                            
-                            // Calculate discount percentage
-                            const discountAmount = originalPrice - sellingPrice;
-                            const discountPercentage = variant.discount.type==='percentage' ? variant.discount.value : originalPrice > 0 ? Math.round((discountAmount / originalPrice) * 100) : 0;
+                            // Simplified price calculation - use item price directly from cart
+                            const itemPrice = item.productDetails?.price || item.price || 0;
+                            const hasDiscount = item.productDetails?.discount?.value > 0;
                             
                             return (
                               <div className="space-y-1">
                                 <div>
-                                  <span className="text-gray-500 line-through">₹{Math.round(originalPrice)}</span>
-                                  <span className="font-medium text-green-600 ml-2">₹{Math.round(sellingPrice)}</span>
+                                  <span className="font-medium text-green-600">₹{Math.round(itemPrice)}</span>
                                   <span className="text-black"> × {item.quantity}</span>
                                 </div>
-                                {discountPercentage > 0 && (
-                                  <div className="text-green-600 font-medium text-xs">{discountPercentage}% OFF</div>
+                                {hasDiscount && (
+                                  <div className="text-green-600 font-medium text-xs">
+                                    {item.productDetails?.discount?.type === 'percentage' 
+                                      ? `${item.productDetails.discount.value}% OFF`
+                                      : `₹${item.productDetails.discount.value} OFF`
+                                    }
+                                  </div>
                                 )}
                               </div>
                             );
@@ -844,54 +917,46 @@ const Payment = () => {
               
               <div className="space-y-2 text-black">
                 {(() => {
-                  // Calculate using correct pricing logic
-                  const totals = cartItems.reduce((acc, item) => {
-                    const prod = item.productDetails;
-                    const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-                    const variant = prod?.variants?.[vi];
-                    
-                    if (!variant) {
-                      // Fallback to old logic if no variant
-                      const itemPrice = (item.price || 0) * item.quantity;
-                      acc.originalTotal += itemPrice;
-                      acc.sellingTotal += itemPrice;
-                      return acc;
-                    }
-                    
-                    const originalPrice = parseFloat(variant.price) || 0; // MRP
-                    const costPrice = parseFloat(variant.costPrice) || 0;
-                    const profitWanted = parseFloat(variant.profitWanted) || 0;
-                    const freeCashExpected = parseFloat(variant.freeCashExpected) || 0;
-                    const sellingPrice = costPrice + profitWanted + freeCashExpected;
-                    
-                    acc.originalTotal += originalPrice * item.quantity;
-                    acc.sellingTotal += sellingPrice * item.quantity;
-                    
-                    return acc;
-                  }, { originalTotal: 0, sellingTotal: 0 });
+                  // Simplified pricing calculation using discountedCartTotal
+                  const originalTotal = cartItems.reduce((total, item) => {
+                    return total + (item.productDetails?.price || item.price || 0) * item.quantity;
+                  }, 0);
                   
-                  const totalSavings = totals.originalTotal - totals.sellingTotal;
-                  const discountPercentage = totals.originalTotal > 0 ? Math.round((totalSavings / totals.originalTotal) * 100) : 0;
+                  const totalSavings = originalTotal - discountedCartTotal;
                   
                   return (
                     <>
                       <div className="flex justify-between text-sm text-gray-500">
                         <span>Original Price</span>
-                        <span className="line-through">₹{Math.round(totals.originalTotal)}</span>
+                        <span className="line-through">₹{Math.round(originalTotal)}</span>
                       </div>
                       {totalSavings > 0 && (
                         <div className="flex justify-between text-green-600">
-                          <span>Discount Savings ({discountPercentage}% OFF)</span>
+                          <span>Discount Savings</span>
                           <span className="font-medium">-₹{Math.round(totalSavings)}</span>
                         </div>
                       )}
                       <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-medium">₹{Math.round(totals.sellingTotal)}</span>
+                        <span className="font-medium">₹{Math.round(discountedCartTotal)}</span>
                       </div>
                     </>
                   );
                 })()}
+                
+                {appliedFreeCash > 0 && (
+                  <div className="flex justify-between text-blue-600">
+                    <span>Free Cash Applied</span>
+                    <span className="font-medium">-₹{Math.round(appliedFreeCash)}</span>
+                  </div>
+                )}
+                
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-purple-600">
+                    <span>Coupon Discount</span>
+                    <span className="font-medium">-₹{couponDiscount}</span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between">
                   <div>
