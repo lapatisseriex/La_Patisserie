@@ -10,8 +10,8 @@ const formatTime = (ms) => {
   return `${m}:${s}`;
 };
 
-const PhoneVerification = () => {
-  const { user, updateUser } = useAuth();
+const PhoneVerification = ({ onVerificationSuccess }) => {
+  const { user, updateUser, updateProfile, getCurrentUser } = useAuth();
   const [phone, setPhone] = useState(user?.phone || '');
   const [otp, setOtp] = useState('');
   const [status, setStatus] = useState('idle'); // idle|sending|sent|verifying|verified|error
@@ -19,13 +19,28 @@ const PhoneVerification = () => {
   const [expiresAt, setExpiresAt] = useState(null); // timestamp
   const timerRef = useRef(null);
 
-  // Auto-populate phone when user data changes
+  // Auto-populate phone when user data changes and reset status if verified
   useEffect(() => {
+    console.log('PhoneVerification - User data changed:', {
+      userPhone: user?.phone,
+      phoneVerified: user?.phoneVerified,
+      currentPhone: phone,
+      currentStatus: status
+    });
+    
     // Update phone state whenever user.phone changes (including when it becomes available)
     if (user?.phone !== phone) {
       setPhone(user?.phone || '');
     }
-  }, [user?.phone, user]);
+    
+    // Reset verification status to idle if phone is verified to show verified state
+    if (user?.phoneVerified && status !== 'idle') {
+      setStatus('idle');
+      setMessage('');
+      setOtp('');
+      setExpiresAt(null);
+    }
+  }, [user?.phone, user?.phoneVerified, user?.phoneVerifiedAt]);
 
   const remaining = useMemo(() => (expiresAt ? expiresAt - Date.now() : 0), [expiresAt]);
 
@@ -70,6 +85,13 @@ const PhoneVerification = () => {
   };
 
   const onVerify = async () => {
+    // Check if already verified to prevent duplicate calls
+    if (user?.phoneVerified && user?.phone === phone.trim()) {
+      setStatus('verified');
+      setMessage('Phone number already verified');
+      return;
+    }
+    
     try {
       setStatus('verifying');
       setMessage('');
@@ -90,12 +112,17 @@ const PhoneVerification = () => {
       setStatus('verified');
       setMessage(response?.data?.message || 'Phone number verified successfully');
       
-      // Update user in context with verified phone
-      updateUser({
-        phone: phone.trim(),
-        phoneVerified: true,
-        phoneVerifiedAt: new Date().toISOString(),
-      });
+      console.log('Phone verification completed successfully - triggering edit mode');
+      
+      // IMPORTANT: Don't update user state here to avoid conflicts
+      // The phone is already verified in the database
+      // Trigger edit mode so user can save their profile
+      if (onVerificationSuccess) {
+        onVerificationSuccess();
+      }
+      
+      // When user clicks "Save Profile", the latest data will be fetched and saved
+      // This keeps the user in edit mode until they explicitly save
       
       setExpiresAt(null);
     } catch (err) {
@@ -106,6 +133,29 @@ const PhoneVerification = () => {
 
   const phoneValid = useMemo(() => /^\+?[0-9]{10,15}$/.test(phone || ''), [phone]);
   const otpValid = useMemo(() => /^(\d){6}$/.test(otp || ''), [otp]);
+  
+  // Effect to sync component state with user state changes
+  useEffect(() => {
+    if (user?.phoneVerified && status !== 'verified') {
+      console.log('PhoneVerification - User is verified, updating component status');
+      setStatus('verified');
+      setPhone(user.phone || '');
+    } else if (!user?.phoneVerified && status === 'verified') {
+      console.log('PhoneVerification - User verification revoked, resetting component');
+      setStatus('idle');
+    }
+  }, [user?.phoneVerified, user?.phone]);
+
+  // Debug log for render
+  console.log('PhoneVerification render - Current state:', {
+    userPhoneVerified: user?.phoneVerified,
+    userPhone: user?.phone,
+    userPhoneVerifiedAt: user?.phoneVerifiedAt,
+    componentPhone: phone,
+    componentStatus: status,
+    renderTimestamp: new Date().toISOString()
+  });
+  
   return (
     <div className="mt-8 rounded-xl border border-gray-200 overflow-hidden">
       <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 flex items-center gap-3">
@@ -131,19 +181,24 @@ const PhoneVerification = () => {
                 className={`w-full pl-10 pr-3 py-3 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent ${user?.phoneVerified ? 'bg-gray-50 text-gray-700' : ''}`}
               />
             </div>
-            {user?.phoneVerified && (
+            {(user?.phoneVerified || status === 'verified') && (
               <div className="mt-2 flex items-start gap-1 flex-col">
                 <div className="inline-flex items-center text-green-600 text-sm">
-                  <CheckCircle2 size={16} className="mr-1"/> Verified on {user?.phoneVerifiedAt ? new Date(user.phoneVerifiedAt).toLocaleDateString() : '—'}
+                  <CheckCircle2 size={16} className="mr-1"/> 
+                  {status === 'verified' && !user?.phoneVerified 
+                    ? 'Verified - Click "Save Profile" to complete' 
+                    : `Verified on ${user?.phoneVerifiedAt ? new Date(user.phoneVerifiedAt).toLocaleDateString() : '—'}`}
                 </div>
                 <div className="text-sm text-gray-700">
-                  Your verified phone number: <span className="font-medium">{user.phone}</span>
+                  {status === 'verified' && !user?.phoneVerified 
+                    ? <span>Phone number <span className="font-medium">{phone}</span> is verified. Save your profile to complete the process.</span>
+                    : <span>Your verified phone number: <span className="font-medium">{user.phone}</span></span>}
                 </div>
               </div>
             )}
           </div>
           <div className="flex sm:justify-end items-end">
-            {!user?.phoneVerified && (
+            {(!user?.phoneVerified && status !== 'verified') && (
               <button
                 type="button"
                 onClick={onSend}
@@ -152,6 +207,14 @@ const PhoneVerification = () => {
               >
                 <Send size={16}/> {status === 'sending' ? 'Sending…' : canResend ? 'Send OTP' : 'Resend in ' + formatTime(remaining)}
               </button>
+            )}
+            {(status === 'verified' && !user?.phoneVerified) && (
+              <div className="text-center">
+                <div className="inline-flex items-center text-green-600 text-sm font-medium mb-1">
+                  <CheckCircle2 size={16} className="mr-1"/> Phone Verified!
+                </div>
+                <div className="text-xs text-orange-600 font-medium">Profile is now in edit mode - scroll down to "Save Profile"</div>
+              </div>
             )}
             {user?.phoneVerified && (
               <div className="px-4 py-3 bg-gray-100 border border-gray-200 text-gray-700 rounded-md flex items-center">

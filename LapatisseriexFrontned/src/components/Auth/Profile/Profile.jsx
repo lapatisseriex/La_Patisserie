@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-
+import { useSelector } from 'react-redux';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
 import ProfileImageUpload from './ProfileImageUpload';
@@ -21,9 +21,10 @@ import EmailVerification from './EmailVerification';
 import PhoneVerification from './PhoneVerification';
 
 const Profile = () => {
-  const { user, updateProfile, authError, loading, isNewUser, updateUser } = useAuth();
+  const { user, updateProfile, authError, loading, isNewUser, updateUser, getCurrentUser } = useAuth();
   const { locations, loading: locationsLoading, fetchLocations } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
+  const currentUser = useSelector(state => state.auth.user);
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
@@ -100,6 +101,29 @@ const Profile = () => {
   
   // Fetch locations only once on mount
   const hasRunLocationsFetch = useRef(false);
+
+  // Effect to react to user state changes (especially phone verification)
+  useEffect(() => {
+    if (user) {
+      console.log('Profile - User state change detected:', {
+        phoneVerified: user.phoneVerified,
+        phoneVerifiedAt: user.phoneVerifiedAt,
+        phone: user.phone,
+        userUid: user.uid
+      });
+      
+      // Update form data with latest user state to reflect any changes
+      // This is particularly important for phone verification status
+      const updatedFormData = createInitialFormData(user, savedUserData);
+      setFormData(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(updatedFormData)) {
+          console.log('Profile - Updating form data due to user state change');
+          return updatedFormData;
+        }
+        return prev;
+      });
+    }
+  }, [user?.phoneVerified, user?.phoneVerifiedAt, user?.phone, user?.uid, user?.name, user?.email]);
   
   useEffect(() => {
     if (!hasRunLocationsFetch.current) {
@@ -284,6 +308,25 @@ const Profile = () => {
     }
   }, [formData, isEditMode]);
   
+  // useEffect to handle user state changes (like phone verification)
+  useEffect(() => {
+    console.log('Profile - User state changed, updating form data:', {
+      uid: user?.uid,
+      phoneVerified: user?.phoneVerified,
+      phone: user?.phone,
+      phoneVerifiedAt: user?.phoneVerifiedAt
+    });
+    
+    // Update form data when user verification status changes
+    if (user) {
+      setFormData(prevFormData => ({
+        ...prevFormData,
+        phone: user.phone || prevFormData.phone,
+        // Keep other fields as they were
+      }));
+    }
+  }, [user?.phoneVerified, user?.phone, user?.phoneVerifiedAt]);
+
   // useEffect to sync form data with user data
   const userDataInitialized = useRef(false);
   
@@ -440,7 +483,13 @@ const Profile = () => {
       ...formData,
       // Ensure date fields are properly formatted
       dob: typeof formData.dob === 'string' ? formData.dob : formatDate(formData.dob),
-      anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary)
+      anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary),
+      // Include phone verification data if user has verified phone
+      ...(user?.phoneVerified && {
+        phone: user.phone,
+        phoneVerified: user.phoneVerified,
+        phoneVerifiedAt: user.phoneVerifiedAt
+      })
     };
     
     // Save complete form data to localStorage for refresh protection
@@ -461,8 +510,22 @@ const Profile = () => {
       const isAdmin = user?.role === 'admin';
       console.log('Is admin user:', isAdmin);
       
+      // Fetch latest user data to ensure we have current phone verification status
+      console.log('Fetching latest user data before save to include phone verification...');
+      await getCurrentUser();
+      
+      // Merge form data with any verified phone data from backend
+      const finalProfileData = {
+        ...profileData,
+        ...(currentUser?.phoneVerified && {
+          phone: currentUser.phone,
+          phoneVerified: currentUser.phoneVerified,
+          phoneVerifiedAt: currentUser.phoneVerifiedAt
+        })
+      };
+      
       // Omit email from update payload
-      const { email, ...profileDataWithoutEmail } = profileData;
+      const { email, ...profileDataWithoutEmail } = finalProfileData;
       const success = await updateProfile(profileDataWithoutEmail);
 
       if (success) {
@@ -781,7 +844,16 @@ const Profile = () => {
           
           {/* Phone verification section */}
           <div className="md:col-span-2">
-            <PhoneVerification />
+            <PhoneVerification 
+              key={`phone-${user?.phoneVerified}-${user?.phoneVerifiedAt}`}
+              onVerificationSuccess={() => {
+                console.log('Phone verified - entering edit mode');
+                setIsEditMode(true);
+                localStorage.setItem('profileEditMode', 'true');
+                setLocalError('');
+                setSuccessMessage('');
+              }}
+            />
           </div>
           
           {/* Date of Birth Field */}

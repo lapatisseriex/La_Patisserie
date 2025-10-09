@@ -47,7 +47,7 @@ const Header = ({ isAdminView = false }) => {
     user,
     toggleAuthPanel,
     logout,
-    fetchFreshUserData
+    getCurrentUser: fetchFreshUserData
   } = useAuth();
   
   const { sparks } = useSparkAnimationContext();
@@ -71,7 +71,8 @@ const Header = ({ isAdminView = false }) => {
   const hostelContext = useHostel();
   const {
     hostels = [],
-    fetchHostelsByLocation
+    fetchHostelsByLocation,
+    fetchHostelById
   } = hostelContext || {};
   
   const { cartCount = 0 } = useCart();
@@ -139,10 +140,19 @@ const Header = ({ isAdminView = false }) => {
   const [userLocationDisplay, setUserLocationDisplay] = useState('Select Location');
   const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
   
-  // Memoize location display to prevent unnecessary re-calculations
+  // Memoize location display to prevent unnecessary re-calculations and ensure it updates properly
   const memoizedUserLocationDisplay = useMemo(() => {
+    // If we have a valid user location object, display it immediately
+    if (user?.location && typeof user.location === 'object' && user.location.area && user.location.city) {
+      const hostelName = user.hostel && typeof user.hostel === 'object' ? user.hostel.name : '';
+      return hostelName 
+        ? `${hostelName}, ${user.location.area}` 
+        : `${user.location.area}, ${user.location.city}`;
+    }
+    
+    // Otherwise use the computed display text
     return userLocationDisplay;
-  }, [userLocationDisplay]);
+  }, [userLocationDisplay, user?.location, user?.hostel]);
   
   // Update location display once when user changes
   const locationDisplayInitialized = useRef(false);
@@ -160,7 +170,34 @@ const Header = ({ isAdminView = false }) => {
     return hostels.find(h => h._id === hostelId);
   }, [hostels]);
   
+  // Effect to fetch hostel data when user has hostel ID but we don't have the hostel details
   useEffect(() => {
+    const needsHostelFetch = user?.hostel && 
+                           typeof user.hostel === 'string' && 
+                           !findHostelById(user.hostel) && 
+                           fetchHostelById;
+                           
+    if (needsHostelFetch) {
+      console.log('Header - Fetching hostel by ID for display:', user.hostel);
+      fetchHostelById(user.hostel).catch(err => {
+        console.warn('Header - Failed to fetch hostel by ID:', err);
+      });
+    }
+  }, [user?.hostel, hostels, fetchHostelById, findHostelById]);
+  
+  useEffect(() => {
+    // If user location is already a populated object, use it directly
+    if (user?.location && typeof user.location === 'object' && user.location.area && user.location.city) {
+      const hostelName = user.hostel && typeof user.hostel === 'object' ? user.hostel.name : '';
+      const displayText = hostelName 
+        ? `${hostelName}, ${user.location.area}` 
+        : `${user.location.area}, ${user.location.city}`;
+      
+      setUserLocationDisplay(displayText);
+      locationDisplayInitialized.current = true;
+      return;
+    }
+
     console.log('Header - User state update:', {
       user: user ? {
         uid: user.uid,
@@ -180,7 +217,8 @@ const Header = ({ isAdminView = false }) => {
           } : { _id: user.hostel, type: 'string-id' }
         ) : null
       } : null,
-      locationsAvailable: locations ? locations.length : 0
+      locationsAvailable: locations ? locations.length : 0,
+      hostelsAvailable: hostels ? hostels.length : 0
     });
     
     if (user?.location) {
@@ -227,8 +265,7 @@ const Header = ({ isAdminView = false }) => {
           setUserLocationDisplay('Loading location...');
           prevLocationIdRef.current = null;
           
-          const token = localStorage.getItem('authToken');
-          fetchFreshUserData(token).then(() => {
+          fetchFreshUserData().then(() => {
             setIsRefreshingLocation(false);
           }).catch(() => {
             setIsRefreshingLocation(false);
@@ -247,7 +284,7 @@ const Header = ({ isAdminView = false }) => {
       prevLocationIdRef.current = null;
     }
     locationDisplayInitialized.current = true;
-  }, [user?.uid, user?.location, user?.hostel, locations, findLocationById, findHostelById, fetchFreshUserData, isRefreshingLocation]);
+  }, [user?.uid, user?.location, user?.hostel, locations, hostels, findLocationById, findHostelById, fetchFreshUserData, isRefreshingLocation]);
   
   // Effect to fetch hostels when user has location but hostel lookup failed
   useEffect(() => {

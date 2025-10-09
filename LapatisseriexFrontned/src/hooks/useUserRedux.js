@@ -1,25 +1,18 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useCallback, useEffect } from 'react';
 import {
-  setUser,
-  setToken,
-  setLoading,
-  setError,
   setAuthType,
-
-  setConfirmationResult,
   setIsAuthPanelOpen,
   setIsNewUser,
   clearError,
-  logout,
-  updateUserField,
-  initializeFromStorage,
-  verifyToken,
-  fetchUserProfile,
+  updateUser,
+  initializeAuth,
+  setUser,
+  clearUser,
+  getCurrentUser,
   updateUserProfile,
-  uploadProfileImage,
-  deleteProfileImage,
-} from '../redux/userSlice';
+  logoutUser,
+} from '../redux/authSlice';
 
 /**
  * Custom hook to manage user state with Redux
@@ -28,7 +21,7 @@ import {
 export const useUserRedux = () => {
   const dispatch = useDispatch();
   
-  // Get state from Redux store
+  // Get state from Redux store - using canonical auth slice
   const {
     user,
     token,
@@ -37,33 +30,18 @@ export const useUserRedux = () => {
     isAuthenticated,
     isNewUser,
     authType,
-    tempPhoneNumber,
-    confirmationResult,
     isAuthPanelOpen,
-    profileUpdateLoading,
-    profileUpdateError,
-  } = useSelector(state => state.user);
+    profileUpdating: profileUpdateLoading,
+  } = useSelector(state => state.auth);
 
-  // Initialize from localStorage on mount
+  // Initialize auth on mount
   useEffect(() => {
-    dispatch(initializeFromStorage());
+    dispatch(initializeAuth());
   }, [dispatch]);
 
   // Actions
-  const updateUser = useCallback((userData) => {
-    dispatch(setUser(userData));
-  }, [dispatch]);
-
-  const updateToken = useCallback((newToken) => {
-    dispatch(setToken(newToken));
-  }, [dispatch]);
-
-  const setLoadingState = useCallback((isLoading) => {
-    dispatch(setLoading(isLoading));
-  }, [dispatch]);
-
-  const setErrorState = useCallback((errorMessage) => {
-    dispatch(setError(errorMessage));
+  const updateUserData = useCallback((userData) => {
+    dispatch(updateUser(userData));
   }, [dispatch]);
 
   const changeAuthType = useCallback((type) => {
@@ -131,7 +109,7 @@ export const useUserRedux = () => {
   }, [user]);
 
   return {
-    // State
+    // State from auth slice
     user,
     token,
     loading,
@@ -139,42 +117,27 @@ export const useUserRedux = () => {
     isAuthenticated,
     isNewUser,
     authType,
-    tempPhoneNumber,
-    confirmationResult,
     isAuthPanelOpen,
     profileUpdateLoading,
-    profileUpdateError,
     
     // Actions
-    updateUser,
-    updateToken,
-    setLoadingState,
-    setErrorState,
+    updateUser: updateUserData,
     changeAuthType,
-    setTempPhone,
-    setConfirmResult,
     toggleAuthPanel,
-    setNewUserStatus,
-    clearAuthError,
-    logoutUser,
-    updateUserFields,
+    clearAuthError: clearError,
+    logout: logoutUser,
     
     // Async actions
-    verifyUserToken,
-    fetchUser,
-    updateProfile,
-    uploadAvatar,
-    deleteAvatar,
+    fetchUser: getCurrentUser,
+    updateProfile: updateUserProfile,
     
     // Helper functions
-    isProfileIncomplete,
-    getUserDisplayName,
-    getUserAvatarUrl,
+    isProfileIncomplete: () => user && (!user.name || !user.dob || !user.location),
+    getUserDisplayName: () => user?.name || user?.phone || 'User',
+    getUserAvatarUrl: () => user?.profilePhoto?.url || '/images/default-avatar.svg',
     
-    // Legacy compatibility (for existing components)
+    // Legacy compatibility
     authError: error,
-    logout: logoutUser,
-    updateUser: updateUserFields,
   };
 };
 

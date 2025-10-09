@@ -9,23 +9,22 @@ import {
 } from 'firebase/auth';
 import axios from 'axios';
 import {
-  setUser,
-  setToken,
-  setLoading,
-  setError,
   setAuthType,
-  setTempPhoneNumber,
-  setConfirmationResult,
   setIsAuthPanelOpen,
   setIsNewUser,
   clearError,
-  logout,
-  updateUserField,
-  initializeFromStorage,
-  verifyToken,
-  fetchUserProfile,
-  updateUserProfile,
-} from '../../redux/userSlice';
+  updateUser,
+  initializeAuth,
+  authExpired,
+  setUser,
+  clearUser,
+  signInWithGoogle,
+  signUpWithEmail,
+  signInWithEmail,
+  getCurrentUser,
+  updateUserProfile as authUpdateUserProfile,
+  logoutUser,
+} from '../../redux/authSlice';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -55,7 +54,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   
-  // Get state from Redux store
+  // Get state from Redux store - using canonical auth slice
   const {
     user,
     token,
@@ -64,18 +63,16 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     isNewUser,
     authType,
-    tempPhoneNumber,
-    confirmationResult,
     isAuthPanelOpen,
-    profileUpdateLoading,
-    profileUpdateError,
-  } = useSelector(state => state.user);
+    authenticating,
+    profileUpdating: profileUpdateLoading,
+  } = useSelector(state => state.auth);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Initialize from localStorage on mount
+  // Initialize auth on mount
   useEffect(() => {
-    dispatch(initializeFromStorage());
+    dispatch(initializeAuth());
   }, [dispatch]);
 
   // Handle authentication expiration events
@@ -238,20 +235,13 @@ export const AuthProvider = ({ children }) => {
   }, [confirmationResult, dispatch]);  // Update profile function
   const updateProfile = useCallback(async (profileData) => {
     if (!user) {
-      dispatch(setError("You must be logged in to update profile"));
       return false;
     }
 
     try {
-      dispatch(clearError());
+      const resultAction = await dispatch(authUpdateUserProfile(profileData));
       
-      // Get fresh ID token
-      const idToken = await auth.currentUser.getIdToken(true);
-      dispatch(setToken(idToken));
-      
-      const resultAction = await dispatch(updateUserProfile(profileData));
-      
-      if (updateUserProfile.fulfilled.match(resultAction)) {
+      if (authUpdateUserProfile.fulfilled.match(resultAction)) {
         // Check if we're in the auth panel or on the profile page
         const isInProfilePage = window.location.pathname === "/profile";
         
@@ -262,29 +252,25 @@ export const AuthProvider = ({ children }) => {
         
         return true;
       } else {
-        dispatch(setError(resultAction.payload));
         return false;
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      dispatch(setError(error.message || "Failed to update profile"));
       return false;
     }
   }, [user, dispatch]);
 
   // Update user function (for compatibility)
-  const updateUser = useCallback((userData) => {
-    dispatch(updateUserField(userData));
+  const updateUserData = useCallback((userData) => {
+    dispatch(updateUser(userData));
   }, [dispatch]);
 
   // Logout function
-  const logoutUser = useCallback(async () => {
+  const logoutUserLocal = useCallback(async () => {
     try {
-      await signOut(auth);
-      dispatch(logout());
+      await dispatch(logoutUser());
     } catch (error) {
       console.error("Error during logout:", error);
-      dispatch(logout()); // Force logout even if Firebase signOut fails
     }
   }, [dispatch]);
 
@@ -308,18 +294,15 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     isNewUser,
     authType,
-    tempPhoneNumber,
-    confirmationResult,
     isAuthPanelOpen,
     profileUpdateLoading,
-    profileUpdateError,
     
     // Actions
     sendOTP,
     verifyOTP,
     updateProfile,
-    updateUser,
-    logout: logoutUser,
+    updateUser: updateUserData,
+    logout: logoutUserLocal,
     toggleAuthPanel,
     changeAuthType,
     

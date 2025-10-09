@@ -33,6 +33,21 @@ export const LocationProvider = ({ children }) => {
     }
   };
 
+  // Populate user location with full object if it's just an ID
+  const populateUserLocation = async () => {
+    if (user?.location && typeof user.location === 'string' && locations.length > 0) {
+      const locationObj = locations.find(loc => loc._id === user.location);
+      if (locationObj && updateUser) {
+        console.log("LocationContext - Populating user location object:", locationObj);
+        const updatedUser = {
+          ...user,
+          location: locationObj
+        };
+        updateUser(updatedUser);
+      }
+    }
+  };
+
   // Update user's selected location
   const updateUserLocation = async (locationId) => {
     if (!user) return false;
@@ -95,12 +110,37 @@ export const LocationProvider = ({ children }) => {
     if (!user || !user.location) return "Select Location";
     
     const userLocation = user.location;
-    return `${userLocation.area}, ${userLocation.city}`;
+    
+    // Handle both object and ID cases
+    if (typeof userLocation === 'object' && userLocation.area && userLocation.city) {
+      return `${userLocation.area}, ${userLocation.city}`;
+    } else if (typeof userLocation === 'string' && locations.length > 0) {
+      // If location is stored as ID, find it in locations array
+      const locationData = locations.find(loc => loc._id === userLocation);
+      if (locationData) {
+        return `${locationData.area}, ${locationData.city}`;
+      }
+    }
+    
+    return "Location Loading...";
   };
   
   // Check if user has a valid delivery location
   const hasValidDeliveryLocation = () => {
-    return !!(user && user.location && user.location.isActive);
+    if (!user || !user.location) return false;
+    
+    // Handle object location (populated)
+    if (typeof user.location === 'object') {
+      return !!(user.location.isActive);
+    }
+    
+    // Handle string location (ID only) - need to check against locations array
+    if (typeof user.location === 'string' && locations.length > 0) {
+      const locationData = locations.find(loc => loc._id === user.location);
+      return !!(locationData && locationData.isActive);
+    }
+    
+    return false;
   };
 
   // Fetch locations on component mount
@@ -108,12 +148,30 @@ export const LocationProvider = ({ children }) => {
     fetchLocations();
   }, []);
 
+  // If user has location as ID but we need populated data, refresh user data
+  useEffect(() => {
+    if (user && typeof user.location === 'string' && locations.length > 0 && updateUser) {
+      console.log('LocationContext: User has location ID, checking if population needed...');
+      
+      const locationData = locations.find(loc => loc._id === user.location);
+      if (locationData) {
+        console.log('LocationContext: Populating user location data');
+        // Update user with populated location data
+        updateUser({
+          ...user,
+          location: locationData
+        });
+      }
+    }
+  }, [user?.location, locations.length, updateUser]);
+
   const value = {
     locations,
     loading,
     error,
     fetchLocations,
     updateUserLocation,
+    populateUserLocation,
     getCurrentLocationName,
     hasValidDeliveryLocation
   };

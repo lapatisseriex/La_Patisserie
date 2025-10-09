@@ -1,89 +1,32 @@
-import React, { createContext, useContext } from 'react';
-// Deprecated compatibility layer: update to use new AuthContext directly
-import { useAuth } from './AuthContextRedux';
+import React from 'react';
 
 /**
- * Compatibility AuthContext that bridges the old context API with Redux
- * This allows existing components to continue working without changes
- * while they are gradually migrated to use Redux directly
+ * DEPRECATED: AuthCompatibility layer removed
+ * 
+ * This file is now a no-op because manual sync complexity has been eliminated.
+ * 
+ * Previous Issues Fixed:
+ * 1. ✅ Manual sync logic removed - no more complex mapping between Redux and context
+ * 2. ✅ Store-level synchronization handles auth/user slice consistency automatically
+ * 3. ✅ No more potential sync loops or race conditions
+ * 4. ✅ Reduced complexity - components use useAuth() directly
+ * 
+ * Migration Path:
+ * - Replace AuthCompatibilityProvider with AuthProvider from AuthContextRedux.jsx
+ * - Import useAuth from hooks/useAuth.js or context/AuthContext/AuthContextRedux.jsx
  */
-const CompatibilityAuthContext = createContext();
 
-export const useAuth = () => {
-  const context = useContext(CompatibilityAuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+// No-op compatibility provider for gradual migration
+export const AuthCompatibilityProvider = ({ children }) => {
+
+  console.warn('AuthCompatibilityProvider is deprecated. Use AuthProvider from AuthContextRedux.jsx directly.');
+  return children;
 };
 
-export const AuthCompatibilityProvider = ({ children }) => {
-  const reduxAuth = useAuth();
-
-  // Map Redux auth state to the old context API structure
-  const contextValue = {
-    // User and authentication state
-    user: reduxAuth.user,
-    token: reduxAuth.token,
-    isAuthenticated: reduxAuth.isAuthenticated,
-    loading: reduxAuth.loading,
-    authError: reduxAuth.error,
-
-    // Auth panel state
-    authType: reduxAuth.authType,
-    tempPhoneNumber: reduxAuth.tempPhoneNumber,
-    confirmationResult: reduxAuth.confirmationResult,
-    isAuthPanelOpen: reduxAuth.isAuthPanelOpen,
-    isNewUser: reduxAuth.isNewUser,
-
-    // Loading states
-    otpSending: reduxAuth.otpSending,
-
-    profileUpdating: reduxAuth.profileUpdating,
-
-    // Action methods (keeping the same interface)
-    sendOTP: async (phoneNumber, recaptchaContainerId) => {
-      return await reduxAuth.sendOTP(phoneNumber, recaptchaContainerId);
-    },
-
-    verifyOTP: async (otp, locationId = null) => {
-      if (!reduxAuth.confirmationResult) {
-        throw new Error('No confirmation result available');
-      }
-      return await reduxAuth.verifyOTP(reduxAuth.confirmationResult, otp, locationId);
-    },
-
-    updateUserProfile: async (profileData) => {
-      return await reduxAuth.updateUserProfile(profileData);
-    },
-
-    logout: async () => {
-      return await reduxAuth.logout();
-    },
-
-    // State setters
-    setAuthType: reduxAuth.setAuthType,
-    setTempPhoneNumber: reduxAuth.setTempPhoneNumber,
-    setIsAuthPanelOpen: reduxAuth.setIsAuthPanelOpen,
-    setIsNewUser: reduxAuth.setIsNewUser,
-    clearError: reduxAuth.clearError,
-
-    // Additional methods for compatibility
-    setAuthError: (error) => {
-      // For compatibility - errors are now managed through Redux actions
-      console.warn('setAuthError is deprecated. Use Redux actions instead.');
-    },
-
-    // Method to get fresh user data
-    refreshUser: async () => {
-      return await reduxAuth.getCurrentUser();
-    },
-  };
-
-  return (
-    <CompatibilityAuthContext.Provider value={contextValue}>
-      {children}
-    </CompatibilityAuthContext.Provider>
+// Deprecated useAuth hook - use the real one from hooks/useAuth.js
+export const useAuth = () => {
+  throw new Error(
+    'AuthCompatibility useAuth is deprecated. Import useAuth from hooks/useAuth.js or context/AuthContext/AuthContextRedux.jsx instead.'
   );
 };
 

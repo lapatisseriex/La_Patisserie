@@ -121,8 +121,7 @@ export const signInWithGoogle = createAsyncThunk(
         phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
       };
       
-      // Cache user data in localStorage
-      localStorage.setItem('cachedUser', JSON.stringify(userData));
+      // Note: User data now cached via redux-persist, not manual localStorage
       
       return {
         user: userData,
@@ -185,8 +184,7 @@ export const signUpWithEmail = createAsyncThunk(
         phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
       };
       
-      // Cache user data in localStorage
-      localStorage.setItem('cachedUser', JSON.stringify(userData));
+      // Note: User data now cached via redux-persist, not manual localStorage
       
       return {
         user: userData,
@@ -231,8 +229,7 @@ export const signInWithEmail = createAsyncThunk(
         phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
       };
       
-      // Cache user data in localStorage
-      localStorage.setItem('cachedUser', JSON.stringify(userData));
+      // Note: User data now cached via redux-persist, not manual localStorage
       
       return {
         user: userData,
@@ -276,8 +273,7 @@ export const getCurrentUser = createAsyncThunk(
           phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
         };
         
-        // Cache user data in localStorage
-        localStorage.setItem('cachedUser', JSON.stringify(freshUserData));
+        // Note: User data now cached via redux-persist, not manual localStorage
         
         return freshUserData;
       }
@@ -302,8 +298,7 @@ export const updateUserProfile = createAsyncThunk(
       const response = await api.put(`/users/${userId}`, profileData);
       
       if (response.data.success) {
-        // Cache updated user data
-        localStorage.setItem('cachedUser', JSON.stringify(response.data.user));
+        // Note: User data now cached via redux-persist, not manual localStorage
         
         return response.data.user;
       }
@@ -372,8 +367,7 @@ const authSlice = createSlice({
     updateUser: (state, action) => {
       // Update user data directly in state
       state.user = { ...state.user, ...action.payload };
-      // Update localStorage cache
-      localStorage.setItem('cachedUser', JSON.stringify(state.user));
+      // Note: localStorage now handled by redux-persist, not manual writes
     },
     setUser: (state, action) => {
       state.user = action.payload.user;

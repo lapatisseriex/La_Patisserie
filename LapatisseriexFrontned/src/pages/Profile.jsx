@@ -393,14 +393,19 @@ const ProfilePage = () => {
                     </button>
                   </div>
                   <p className="text-gray-600">
-                    {typeof user.location === 'object' 
-                      ? `${user.location.area}, ${user.location.city} - ${user.location.pincode}`
-                      : 'Location not specified'
-                    }
+                    {(() => {
+                      if (typeof user.location === 'object' && user.location.area) {
+                        return `${user.location.area}, ${user.location.city} - ${user.location.pincode}`;
+                      } else if (typeof user.location === 'string') {
+                        return 'Location loading...';
+                      }
+                      return 'Location not specified';
+                    })()}
                   </p>
                   {user.hostel && (
                     <p className="text-gray-500 text-sm mt-1">
-                      Hostel: {typeof user.hostel === 'object' ? user.hostel.name : user.hostel}
+                      Hostel: {typeof user.hostel === 'object' && user.hostel.name ? user.hostel.name : 
+                               typeof user.hostel === 'string' ? 'Loading hostel info...' : 'Not specified'}
                     </p>
                   )}
                 </div>

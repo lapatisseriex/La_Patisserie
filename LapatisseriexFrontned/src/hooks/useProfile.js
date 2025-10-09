@@ -2,13 +2,10 @@ import { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   updateUserProfile,
-  uploadProfileImage,
-  deleteProfileImage,
-  fetchUserProfile,
-  updateUserField,
-  setError,
+  getCurrentUser,
+  updateUser,
   clearError,
-} from '../redux/userSlice';
+} from '../redux/authSlice';
 
 /**
  * Custom hook for profile management with Redux
@@ -17,14 +14,13 @@ import {
 export const useProfile = () => {
   const dispatch = useDispatch();
   
-  // Get user and profile-related state from Redux
+  // Get user and profile-related state from Redux - using canonical auth slice
   const {
     user,
-    profileUpdateLoading,
-    profileUpdateError,
+    profileUpdating: profileUpdateLoading,
+    error: profileUpdateError,
     loading,
-    error,
-  } = useSelector(state => state.user);
+  } = useSelector(state => state.auth);
 
   // Update profile data
   const updateProfile = useCallback(async (profileData) => {

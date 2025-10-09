@@ -85,7 +85,9 @@ export const updateUser = asyncHandler(async (req, res) => {
     hostel, 
     role,
     email,
-    phone
+    phone,
+    phoneVerified,
+    phoneVerifiedAt
   } = req.body;
   
   if (name) user.name = name;
@@ -127,6 +129,14 @@ export const updateUser = asyncHandler(async (req, res) => {
     user.phone = phone;
   }
   
+  // Handle phone verification updates
+  if (phoneVerified !== undefined) {
+    user.phoneVerified = phoneVerified;
+  }
+  if (phoneVerifiedAt !== undefined) {
+    user.phoneVerifiedAt = phoneVerifiedAt ? new Date(phoneVerifiedAt) : null;
+  }
+  
   // Email verification status removed
   
   // Save updated user
@@ -161,7 +171,10 @@ export const updateUser = asyncHandler(async (req, res) => {
       profilePhoto: updatedUser.profilePhoto || { url: '', public_id: '' },
       email: updatedUser.email || '',
       emailVerified: updatedUser.emailVerified || false,
-      emailVerifiedAt: updatedUser.emailVerifiedAt || null
+      emailVerifiedAt: updatedUser.emailVerifiedAt || null,
+      phone: updatedUser.phone || '',
+      phoneVerified: updatedUser.phoneVerified || false,
+      phoneVerifiedAt: updatedUser.phoneVerifiedAt || null
     }
   });
 });

@@ -41,7 +41,7 @@ export const sendEmailOtp = async (req, res) => {
     // Check if email is already verified by another user
     const existingUser = await User.findOne({ 
       email: email,
-      isEmailVerified: true,
+      emailVerified: true,
       uid: { $ne: userId }
     });
 
@@ -147,7 +147,8 @@ export const verifyEmailOtp = async (req, res) => {
       { uid: userId },
       { 
         email: email,
-        isEmailVerified: true
+        emailVerified: true,
+        emailVerifiedAt: new Date()
       },
       { new: true }
     );
@@ -163,7 +164,8 @@ export const verifyEmailOtp = async (req, res) => {
       message: 'Email verified successfully',
       user: {
         email: user.email,
-        isEmailVerified: user.isEmailVerified
+        emailVerified: user.emailVerified,
+        emailVerifiedAt: user.emailVerifiedAt
       }
     });
 

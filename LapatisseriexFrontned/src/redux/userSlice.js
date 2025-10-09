@@ -108,21 +108,11 @@ const userSlice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
-      // Update localStorage
-      if (action.payload) {
-        localStorage.setItem('cachedUser', JSON.stringify(action.payload));
-      } else {
-        localStorage.removeItem('cachedUser');
-      }
+      // Note: localStorage is now handled by redux-persist, not manual writes
     },
     setToken: (state, action) => {
       state.token = action.payload;
-      // Update localStorage
-      if (action.payload) {
-        localStorage.setItem('authToken', action.payload);
-      } else {
-        localStorage.removeItem('authToken');
-      }
+      // Note: localStorage is now handled by redux-persist, not manual writes
     },
     setLoading: (state, action) => {
       state.loading = action.payload;
@@ -175,9 +165,7 @@ const userSlice = createSlice({
       state.profileUpdateLoading = false;
       state.profileUpdateError = null;
       
-      // Clear localStorage
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('cachedUser');
+      // Clear localStorage (keep profileFormData clearing, remove auth data clearing - handled by redux-persist)
       localStorage.removeItem('profileFormData');
       
       // Save important data for next login
@@ -188,7 +176,7 @@ const userSlice = createSlice({
     updateUserField: (state, action) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
-        localStorage.setItem('cachedUser', JSON.stringify(state.user));
+        // Note: localStorage is now handled by redux-persist, not manual writes
       }
     },
     initializeFromStorage: (state) => {
@@ -224,8 +212,7 @@ const userSlice = createSlice({
         state.isAuthenticated = true;
         state.isNewUser = action.payload.isNewUser || false;
         
-        // Update localStorage
-        localStorage.setItem('cachedUser', JSON.stringify(action.payload.user));
+        // Note: localStorage is now handled by redux-persist, not manual writes
       })
       .addCase(verifyToken.rejected, (state, action) => {
         state.loading = false;
@@ -242,8 +229,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.user = action.payload;
         
-        // Update localStorage
-        localStorage.setItem('cachedUser', JSON.stringify(action.payload));
+        // Note: localStorage is now handled by redux-persist, not manual writes
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;
@@ -261,7 +247,7 @@ const userSlice = createSlice({
         // Check if this is an admin update
         if (!action.payload.isAdminUpdate) {
           state.user = { ...state.user, ...action.payload.user };
-          localStorage.setItem('cachedUser', JSON.stringify(state.user));
+          // Note: localStorage is now handled by redux-persist, not manual writes
         }
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
@@ -278,7 +264,7 @@ const userSlice = createSlice({
         state.profileUpdateLoading = false;
         if (state.user && action.payload.user) {
           state.user = { ...state.user, ...action.payload.user };
-          localStorage.setItem('cachedUser', JSON.stringify(state.user));
+          // Note: localStorage is now handled by redux-persist, not manual writes
         }
       })
       .addCase(uploadProfileImage.rejected, (state, action) => {
@@ -295,7 +281,7 @@ const userSlice = createSlice({
         state.profileUpdateLoading = false;
         if (state.user && action.payload.user) {
           state.user = { ...state.user, ...action.payload.user };
-          localStorage.setItem('cachedUser', JSON.stringify(state.user));
+          // Note: localStorage is now handled by redux-persist, not manual writes
         }
       })
       .addCase(deleteProfileImage.rejected, (state, action) => {

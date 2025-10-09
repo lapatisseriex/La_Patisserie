@@ -64,17 +64,33 @@ const EmailVerification = () => {
       const resp = await emailService.verifyOtp(email.trim(), otp.trim());
       setStatus('verified');
       setMessage(resp?.message || 'Email verified successfully');
-      // Update user in context
+      
+      // Update user in context with backend response data
+      const verificationData = {
+        email: email.trim(),
+        emailVerified: true,
+        emailVerifiedAt: resp?.user?.emailVerifiedAt || new Date().toISOString(),
+      };
+      
+      // If backend returns user data, use it, otherwise use local data
       if (resp?.user) {
         updateUser({
-          email: resp.user.email,
-          emailVerified: true,
-          emailVerifiedAt: resp.user.emailVerifiedAt || new Date().toISOString(),
+          ...resp.user,
+          emailVerified: resp.user.emailVerified || true,
+          emailVerifiedAt: resp.user.emailVerifiedAt || new Date().toISOString()
         });
       } else {
-        updateUser({ email: email.trim(), emailVerified: true, emailVerifiedAt: new Date().toISOString() });
+        updateUser(verificationData);
       }
+      
       setExpiresAt(null);
+      
+      // Clear form after successful verification
+      setTimeout(() => {
+        setOtp('');
+        setStatus('idle');
+      }, 3000);
+      
     } catch (err) {
       setStatus('error');
       setMessage(err?.response?.data?.message || err.message || 'Invalid OTP');
@@ -111,7 +127,14 @@ const EmailVerification = () => {
             </div>
             {user?.emailVerified && (
               <div className="mt-2 inline-flex items-center text-green-600 text-sm">
-                <CheckCircle2 size={16} className="mr-1"/> Verified on {user?.emailVerifiedAt ? new Date(user.emailVerifiedAt).toLocaleDateString() : '—'}
+                <CheckCircle2 size={16} className="mr-1"/> 
+                Verified on {user?.emailVerifiedAt ? new Date(user.emailVerifiedAt).toLocaleDateString() : new Date().toLocaleDateString()}
+              </div>
+            )}
+            {status === 'verified' && !user?.emailVerified && (
+              <div className="mt-2 inline-flex items-center text-green-600 text-sm">
+                <CheckCircle2 size={16} className="mr-1"/> 
+                Verified on {new Date().toLocaleDateString()}
               </div>
             )}
           </div>
@@ -172,11 +195,14 @@ const EmailVerification = () => {
         )}
 
         {status==='verified' && (
-          <div className="flex items-center gap-2 mt-2">
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 text-green-800 text-sm mb-2">
+              <CheckCircle2 size={16}/> Email verification completed successfully!
+            </div>
             <button
               type="button"
               onClick={()=>{ setStatus('idle'); setMessage(''); setOtp(''); setExpiresAt(null);} }
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-green-300 hover:bg-green-100 text-green-700 text-sm"
             >
               <RefreshCcw size={16}/> Verify another email
             </button>
