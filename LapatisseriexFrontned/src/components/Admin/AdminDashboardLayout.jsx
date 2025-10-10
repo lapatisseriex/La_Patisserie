@@ -15,6 +15,7 @@ import {
   FaClock,
   FaBox
 } from 'react-icons/fa';
+import { MdPayment } from 'react-icons/md';
 
 import { useAuth } from '../../hooks/useAuth';
 
@@ -146,6 +147,16 @@ const AdminDashboardLayout = () => {
 
           <nav className="flex-1 py-4 overflow-y-auto">
             <ul className="space-y-1">
+              <li>
+                <Link
+                  to="/admin/payments"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/payments' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <MdPayment className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Payments</span>
+                </Link>
+              </li>
               <li>
                 <Link
                   to="/admin/dashboard"

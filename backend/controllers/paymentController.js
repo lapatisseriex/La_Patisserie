@@ -4,6 +4,9 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import Order from '../models/orderModel.js';
 import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
+import Location from '../models/locationModel.js';
+import mongoose from 'mongoose';
+import Payment from '../models/paymentModel.js';
 import { sendOrderStatusNotification, sendOrderConfirmationEmail } from '../utils/orderEmailService.js';
 
 // Initialize Razorpay with validation
@@ -15,6 +18,96 @@ const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
+
+// Helper: safely build a case-insensitive regex from input
+const ciExact = (text) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+
+// Helper: Resolve a Location document from an order's deliveryLocation value or userDetails
+const resolveLocationInfo = async (deliveryLocation, userDetails) => {
+  try {
+    if (!deliveryLocation && !userDetails) return null;
+
+    let locDoc = null;
+    const raw = typeof deliveryLocation === 'string' ? deliveryLocation.trim() : '';
+
+    // 1) If it's a valid ObjectId, try by _id first
+    if (raw && mongoose.Types.ObjectId.isValid(raw)) {
+      locDoc = await Location.findById(raw).select('city area pincode');
+    }
+
+    // 2) If not found, try to parse JSON string (in case a serialized object was stored)
+    if (!locDoc && raw && (raw.startsWith('{') || raw.startsWith('['))) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed._id && mongoose.Types.ObjectId.isValid(parsed._id)) {
+            locDoc = await Location.findById(parsed._id).select('city area pincode');
+          }
+          if (!locDoc) {
+            // Try match by pincode or area from parsed object
+            if (parsed.pincode) {
+              locDoc = await Location.findOne({ pincode: String(parsed.pincode) }).select('city area pincode');
+            }
+            if (!locDoc && parsed.area) {
+              locDoc = await Location.findOne({ area: ciExact(String(parsed.area)) }).select('city area pincode');
+            }
+          }
+        }
+      } catch (_) {
+        // ignore JSON parse errors
+      }
+    }
+
+    // 3) If still not found, try to extract a 6-digit pincode from the string
+    if (!locDoc && raw) {
+      const pinMatch = raw.match(/\b(\d{6})\b/);
+      if (pinMatch) {
+        locDoc = await Location.findOne({ pincode: pinMatch[1] }).select('city area pincode');
+      }
+    }
+
+    // 4) Try to parse common "Area, City - Pincode" pattern or "Area, City"
+    if (!locDoc && raw) {
+      // Split on '-' first to separate pincode segment if present, then on ',' for area/city
+      const left = raw.split('-')[0].trim();
+      const parts = left.split(',').map(s => s.trim()).filter(Boolean);
+      const area = parts[0];
+      const city = parts[1];
+      if (area) {
+        // Prefer exact area match
+        locDoc = await Location.findOne({ area: ciExact(area) }).select('city area pincode');
+      }
+      if (!locDoc && city) {
+        // Fallback: combine area+city search to narrow down
+        locDoc = await Location.findOne({ city: ciExact(city), ...(area ? { area: ciExact(area) } : {}) }).select('city area pincode');
+      }
+    }
+
+    // 5) Fallbacks using userDetails
+    if (!locDoc && userDetails?.pincode) {
+      locDoc = await Location.findOne({ pincode: String(userDetails.pincode) }).select('city area pincode');
+    }
+    if (!locDoc && userDetails?.city) {
+      locDoc = await Location.findOne({ city: ciExact(String(userDetails.city)) }).select('city area pincode');
+    }
+
+    if (locDoc) {
+      return { city: locDoc.city, area: locDoc.area, pincode: locDoc.pincode, locationId: locDoc._id };
+    }
+
+    // Last resort: surface whatever we can from userDetails or raw
+    if (userDetails?.city || userDetails?.pincode) {
+      return { city: userDetails.city || null, area: null, pincode: userDetails.pincode || null, locationId: null };
+    }
+    if (raw) {
+      return { city: raw, area: null, pincode: null, locationId: null };
+    }
+    return null;
+  } catch (e) {
+    console.error('resolveLocationInfo error:', e.message);
+    return null;
+  }
+};
 
 // Helper function to restore product stock when orders are cancelled
 const restoreProductStock = async (cartItems) => {
@@ -215,6 +308,26 @@ export const createOrder = asyncHandler(async (req, res) => {
       await updateProductOrderCounts(cartItems);
     }
 
+    // For COD orders, create a pending Payment record so admin can track it
+    if (paymentMethod === 'cod') {
+      try {
+        await Payment.create({
+          userId,
+          email: userDetails?.email,
+          orderId: orderNumber,
+          amount: amount / 100,
+          paymentMethod: 'cod',
+          paymentStatus: 'pending',
+          date: new Date(),
+          seatCount: Array.isArray(cartItems) ? cartItems.reduce((a, c) => a + (c.quantity || 0), 0) : undefined,
+          meta: { source: 'createOrder' }
+        });
+        console.log('Created pending payment record for COD order:', orderNumber);
+      } catch (e) {
+        console.error('Failed to create COD payment record:', e.message);
+      }
+    }
+
     // For COD, send order confirmation email asynchronously AFTER responding,
     // so the UI confirms immediately. For online payments, email is sent after verification.
     if (paymentMethod === 'cod') {
@@ -303,6 +416,27 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       }
       
       console.log('Payment verified successfully for order:', order.orderNumber);
+
+      // Persist payment record for admin reporting
+      try {
+        await Payment.create({
+          userId: order.userId,
+          email: order?.userDetails?.email,
+          orderId: order.orderNumber,
+          movieName: order?.orderSummary?.note || undefined,
+          amount: order.amount,
+          paymentMethod: 'razorpay',
+          paymentStatus: 'success',
+          date: new Date(),
+          parkingType: order?.orderSummary?.parkingType,
+          seatCount: Array.isArray(order?.cartItems) ? order.cartItems.reduce((a, c) => a + (c.quantity || 0), 0) : undefined,
+          gatewayPaymentId: razorpay_payment_id,
+          gatewayOrderId: razorpay_order_id,
+          meta: { source: 'verifyPayment' }
+        });
+      } catch (persistErr) {
+        console.error('Failed to persist payment record:', persistErr.message);
+      }
       
       // IMPORTANT: Decrement actual stock now that payment is confirmed
       if (order.cartItems && order.cartItems.length > 0) {
@@ -394,6 +528,24 @@ export const handleWebhook = asyncHandler(async (req, res) => {
             orderStatus: 'confirmed'
           }
         );
+        // Save payment record as success
+        try {
+          const linkedOrder = await Order.findOne({ razorpayOrderId: capturedPayment.order_id });
+          await Payment.create({
+            userId: linkedOrder?.userId,
+            email: linkedOrder?.userDetails?.email,
+            orderId: linkedOrder?.orderNumber || capturedPayment.order_id,
+            amount: (capturedPayment.amount / 100),
+            paymentMethod: 'razorpay',
+            paymentStatus: 'success',
+            date: new Date(capturedPayment.created_at ? capturedPayment.created_at * 1000 : Date.now()),
+            gatewayPaymentId: capturedPayment.id,
+            gatewayOrderId: capturedPayment.order_id,
+            meta: { source: 'webhook', method: capturedPayment.method }
+          });
+        } catch (err) {
+          console.error('Failed to save webhook payment:', err.message);
+        }
         break;
 
       case 'payment.failed':
@@ -407,6 +559,23 @@ export const handleWebhook = asyncHandler(async (req, res) => {
             paymentStatus: 'failed'
           }
         );
+        try {
+          const linkedOrder = await Order.findOne({ razorpayOrderId: failedPayment.order_id });
+          await Payment.create({
+            userId: linkedOrder?.userId,
+            email: linkedOrder?.userDetails?.email,
+            orderId: linkedOrder?.orderNumber || failedPayment.order_id,
+            amount: (failedPayment.amount / 100),
+            paymentMethod: 'razorpay',
+            paymentStatus: 'pending',
+            date: new Date(failedPayment.created_at ? failedPayment.created_at * 1000 : Date.now()),
+            gatewayPaymentId: failedPayment.id,
+            gatewayOrderId: failedPayment.order_id,
+            meta: { source: 'webhook', reason: failedPayment.error_reason }
+          });
+        } catch (err) {
+          console.error('Failed to save failed payment:', err.message);
+        }
         break;
 
       default:
@@ -727,4 +896,181 @@ export const getUserOrders = asyncHandler(async (req, res) => {
       error: error.message 
     });
   }
+});
+
+// Admin: List all payments with filters and pagination
+export const listPayments = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, status, method, startDate, endDate, search } = req.query;
+  const filter = {};
+  if (status) filter.paymentStatus = status;
+  if (method) filter.paymentMethod = method;
+  if (startDate || endDate) {
+    filter.date = {};
+    if (startDate) filter.date.$gte = new Date(startDate);
+    if (endDate) filter.date.$lte = new Date(endDate);
+  }
+  if (search) {
+    filter.$or = [
+      { email: { $regex: search, $options: 'i' } },
+      { orderId: { $regex: search, $options: 'i' } },
+    ];
+  }
+  const skip = (Number(page) - 1) * Number(limit);
+  const [items, total] = await Promise.all([
+    Payment.find(filter).sort({ date: -1 }).skip(skip).limit(Number(limit)),
+    Payment.countDocuments(filter)
+  ]);
+  // Avoid stale caching in browsers/proxies
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.json({ success: true, items, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
+});
+
+// Admin: Get single payment by id
+export const getPaymentById = asyncHandler(async (req, res) => {
+  const payment = await Payment.findById(req.params.id)
+    .populate('userId', 'name email phone city pincode country role');
+  if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' });
+
+  // Try to attach minimal order summary by orderNumber
+  let order = null;
+  let locationInfo = null;
+  if (payment.orderId) {
+    const orderDoc = await Order.findOne({ orderNumber: payment.orderId })
+      .select('orderNumber paymentMethod paymentStatus orderStatus amount createdAt userDetails deliveryLocation cartItems');
+    if (orderDoc) {
+      // Enrich cart items with product info (image, category)
+      const enrichedCartItems = await Promise.all(orderDoc.cartItems.map(async (item) => {
+        try {
+          const prod = await Product.findById(item.productId).select('name images category');
+          return {
+            ...item.toObject(),
+            productImage: prod?.images?.[0] || null,
+            productCategory: prod?.category || null,
+          };
+        } catch (e) {
+          return { ...item.toObject(), productImage: null, productCategory: null };
+        }
+      }));
+
+      order = {
+        ...orderDoc.toObject(),
+        cartItems: enrichedCartItems,
+      };
+
+      // Robustly resolve city/area/pincode from Location
+      locationInfo = await resolveLocationInfo(orderDoc.deliveryLocation, orderDoc.userDetails);
+    }
+  }
+
+  res.json({ success: true, payment, order, location: locationInfo });
+});
+
+// Create payment record (e.g., when booking confirmed for COD or external success)
+export const createPaymentRecord = asyncHandler(async (req, res) => {
+  const { userId, email, orderId, movieName, amount, paymentMethod, paymentStatus = 'pending', date, parkingType, seatCount, gatewayPaymentId, gatewayOrderId, meta } = req.body;
+  const doc = await Payment.create({
+    userId,
+    email,
+    orderId,
+    movieName,
+    amount,
+    paymentMethod,
+    paymentStatus,
+    date: date ? new Date(date) : new Date(),
+    parkingType,
+    seatCount,
+    gatewayPaymentId,
+    gatewayOrderId,
+    meta,
+  });
+  res.status(201).json({ success: true, payment: doc });
+});
+
+// Admin: Backfill payments from Orders collection
+export const backfillPaymentsFromOrders = asyncHandler(async (req, res) => {
+  const { dryRun = false } = req.query;
+  // Fetch orders to backfill
+  const orders = await Order.find({}).select('orderNumber userId userDetails amount createdAt paymentMethod paymentStatus razorpayPaymentId razorpayOrderId');
+  let created = 0, skipped = 0, updated = 0;
+
+  for (const o of orders) {
+    // Determine status mapping
+    let paymentStatus = 'pending';
+    if (o.paymentStatus === 'paid') paymentStatus = 'success';
+    // We track only success/pending, ignore others
+
+    const payload = {
+      userId: o.userId,
+      email: o?.userDetails?.email,
+      orderId: o.orderNumber,
+      amount: o.amount,
+      paymentMethod: o.paymentMethod || 'razorpay',
+      paymentStatus,
+      date: o.createdAt,
+      gatewayPaymentId: o.razorpayPaymentId,
+      gatewayOrderId: o.razorpayOrderId,
+      meta: { source: 'backfill' }
+    };
+
+    const existing = await Payment.findOne({ orderId: o.orderNumber });
+    if (!existing) {
+      if (!dryRun) await Payment.create(payload);
+      created++;
+    } else {
+      // Optionally update mismatched fields
+      const needsUpdate = (existing.paymentStatus !== paymentStatus) || (existing.amount !== o.amount) || (existing.paymentMethod !== payload.paymentMethod);
+      if (needsUpdate) {
+        if (!dryRun) await Payment.updateOne({ _id: existing._id }, { $set: payload });
+        updated++;
+      } else {
+        skipped++;
+      }
+    }
+  }
+
+  res.json({ success: true, created, updated, skipped, totalOrders: orders.length });
+});
+
+// Admin: Update payment status (e.g., mark COD as paid)
+export const updatePaymentStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { paymentStatus } = req.body;
+
+  const allowed = ['pending', 'success'];
+  if (!allowed.includes(paymentStatus)) {
+    return res.status(400).json({ success: false, message: 'Invalid payment status. Allowed: pending, success' });
+  }
+
+  const payment = await Payment.findById(id);
+  if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' });
+
+  const prev = payment.paymentStatus;
+  payment.paymentStatus = paymentStatus;
+  await payment.save();
+
+  // Sync related order paymentStatus when possible
+  if (payment.orderId) {
+    const order = await Order.findOne({ orderNumber: payment.orderId });
+    if (order) {
+      if (paymentStatus === 'success') {
+        // Mark order as paid; keep current orderStatus unchanged
+        if (order.paymentStatus !== 'paid') {
+          order.paymentStatus = 'paid';
+          await order.save();
+        }
+      } else if (paymentStatus === 'pending') {
+        // Only revert if not already paid online; be conservative
+        if (order.paymentStatus === 'paid') {
+          // Do not auto-downgrade from paid; keep as paid
+        } else {
+          order.paymentStatus = 'pending';
+          await order.save();
+        }
+      }
+    }
+  }
+
+  res.json({ success: true, payment, previousStatus: prev });
 });

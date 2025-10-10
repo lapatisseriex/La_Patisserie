@@ -36,6 +36,7 @@ import AdminCategories from './components/Admin/Categories/AdminCategories';
 import AdminInventory from './components/Admin/Inventory/AdminInventory';
 import AdminTimeSettings from './components/Admin/AdminTimeSettings';
 import AdminOrders from './components/Admin/AdminOrders';
+import AdminPayments from './components/Admin/AdminPayments';
 
 // Cart and Payment Components
 import Cart from './components/Cart/Cart';
@@ -178,6 +179,7 @@ function App() {
                               <Route path="users" element={<AdminUsers />} />
                               <Route path="locations" element={<AdminLocations />} />
                               <Route path="orders" element={<React.Suspense fallback={<div>Loading...</div>}><AdminOrders /></React.Suspense>} />
+                              <Route path="payments" element={<React.Suspense fallback={<div>Loading...</div>}><AdminPayments /></React.Suspense>} />
                               <Route path="products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
                               <Route path="categories" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCategories /></React.Suspense>} />
                               <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
