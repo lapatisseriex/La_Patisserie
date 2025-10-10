@@ -39,7 +39,7 @@ const Payment = () => {
     // For testing, let's temporarily bypass location validation when no user is logged in
     const bypassLocationCheck = !user; // If no user is logged in, bypass location check
     
-    if (!bypassLocationCheck && !hasValidDeliveryLocation()) {
+    if (!bypassLocationCheck && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation()) {
       setShowLocationError(true);
       // Don't redirect immediately, show error message instead
       // navigate('/cart');

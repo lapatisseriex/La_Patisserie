@@ -569,7 +569,7 @@ const Header = ({ isAdminView = false }) => {
               <div className="flex items-center text-xs text-black py-1 px-2 rounded-md" style={{fontFamily: 'sans-serif'}}>
                 <MapPin className="h-3 w-3 mr-2 text-rose-500" />
                 <span className="truncate max-w-[120px] font-medium">{memoizedUserLocationDisplay}</span>
-                {user && !hasValidDeliveryLocation() && (
+                {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                   <AlertTriangle className="h-3 w-3 ml-1 text-amber-400" />
                 )}
               </div>
@@ -836,7 +836,7 @@ const Header = ({ isAdminView = false }) => {
                   <MapPin className="h-4 w-4 text-gray-600 group-hover:text-rose-600 transition-all duration-300 group-hover:scale-110" />
                   <span className="truncate max-w-[120px] sm:max-w-[140px] font-medium relative z-10">{memoizedUserLocationDisplay}</span>
                   <ChevronDown className="h-4 w-4 text-gray-600 transition-all duration-300 group-hover:rotate-180 group-hover:text-rose-600" />
-                  {user && !hasValidDeliveryLocation() && (
+                  {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                     <div className="absolute -top-1 -right-1">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     </div>
