@@ -15,7 +15,8 @@ import {
   FaClock,
   FaBox,
   FaChartBar,
-  FaEnvelope
+  FaEnvelope,
+  FaTruck
 } from 'react-icons/fa';
 import { MdPayment } from 'react-icons/md';
 
@@ -197,6 +198,16 @@ const AdminDashboardLayout = () => {
                 >
                   <FaShoppingCart className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Orders</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/order-tracking"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/order-tracking' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaTruck className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Order Tracking</span>
                 </Link>
               </li>
               <li>

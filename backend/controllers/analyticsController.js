@@ -37,49 +37,39 @@ const getDashboardOverview = asyncHandler(async (req, res) => {
     }
   ]);
 
-  // Get delivery location mappings for top hostel calculation
-  const deliveryMappings = await DeliveryLocationMapping.find({ isActive: true });
-  const mappingMap = new Map();
-  deliveryMappings.forEach(mapping => {
-    mappingMap.set(mapping.deliveryLocation, mapping.hostelName);
-  });
-
-  // Get top hostel by orders using proper mapping
+  // Get top hostel by orders using direct hostelName field
   const topHostelData = await Order.aggregate([
     {
-      $match: { createdAt: { $gte: startDate } }
+      $match: { 
+        createdAt: { $gte: startDate },
+        hostelName: { $exists: true, $ne: null, $ne: '' }
+      }
     },
     {
       $group: {
-        _id: '$deliveryLocation',
+        _id: '$hostelName',
+        hostelName: { $first: '$hostelName' },
         orderCount: { $sum: 1 },
         revenue: { $sum: '$amount' }
+      }
+    },
+    {
+      $sort: { orderCount: -1 }
+    },
+    {
+      $limit: 1
+    },
+    {
+      $project: {
+        _id: '$hostelName',
+        hostelName: 1,
+        orderCount: 1,
+        revenue: 1
       }
     }
   ]);
 
-  // Map delivery locations to hostel names and group by hostel
-  const hostelGroups = {};
-  topHostelData.forEach(item => {
-    const hostelName = mappingMap.get(item._id) || item._id;
-    if (hostelGroups[hostelName]) {
-      hostelGroups[hostelName].orderCount += item.orderCount;
-      hostelGroups[hostelName].revenue += item.revenue;
-    } else {
-      hostelGroups[hostelName] = {
-        _id: hostelName,
-        orderCount: item.orderCount,
-        revenue: item.revenue
-      };
-    }
-  });
-
-  // Get top hostel
-  const topHostel = Object.values(hostelGroups)
-    .sort((a, b) => b.orderCount - a.orderCount)
-    .slice(0, 1);
-
-  console.log('Top hostel data (with proper mapping):', JSON.stringify(topHostel, null, 2));
+  console.log('Top hostel data (using direct hostelName field):', JSON.stringify(topHostelData, null, 2));
 
   // Get top product
   const topProduct = await Order.aggregate([
@@ -177,7 +167,7 @@ const getDashboardOverview = asyncHandler(async (req, res) => {
       totalOrders,
       totalRevenue: revenueData[0]?.totalRevenue || 0,
       averageOrderValue: revenueData[0]?.averageOrderValue || 0,
-      topHostel: topHostel[0] || { _id: 'N/A', orderCount: 0 },
+      topHostel: topHostelData[0] || { _id: 'N/A', orderCount: 0 },
       topProduct: topProduct[0] || { _id: { productName: 'N/A' }, totalQuantity: 0 },
       topCategory: topCategory[0] || { _id: { categoryName: 'N/A' }, orderCount: 0 },
       paymentSuccessRate: Math.round(paymentSuccessRate * 100) / 100,
@@ -277,29 +267,17 @@ const getOrdersByLocation = asyncHandler(async (req, res) => {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - daysAgo);
 
-  // Get delivery location mappings
-  const deliveryMappings = await DeliveryLocationMapping.find({ isActive: true });
-  const mappingMap = new Map();
-  
-  // Create a lookup map for fast access
-  deliveryMappings.forEach(mapping => {
-    mappingMap.set(mapping.deliveryLocation, mapping.hostelName);
-  });
-  
-  // Function to get hostel name from delivery location using mapping table
-  const getHostelName = (deliveryLocation) => {
-    return mappingMap.get(deliveryLocation) || deliveryLocation;
-  };
-
   const locationData = await Order.aggregate([
     {
       $match: {
-        createdAt: { $gte: startDate }
+        createdAt: { $gte: startDate },
+        hostelName: { $exists: true, $ne: null, $ne: '' }
       }
     },
     {
       $group: {
-        _id: '$deliveryLocation',
+        _id: '$hostelName',
+        hostelName: { $first: '$hostelName' },
         orderCount: { $sum: 1 },
         totalRevenue: {
           $sum: {
@@ -312,39 +290,25 @@ const getOrdersByLocation = asyncHandler(async (req, res) => {
         },
         averageOrderValue: { $avg: '$amount' }
       }
+    },
+    {
+      $project: {
+        _id: '$hostelName',
+        hostelName: 1,
+        orderCount: 1,
+        totalRevenue: 1,
+        averageOrderValue: 1
+      }
+    },
+    {
+      $sort: { orderCount: -1 }
+    },
+    {
+      $limit: 20
     }
   ]);
 
-  // Map delivery locations to hostel names using mapping table
-  const mappedLocationData = locationData.map(item => {
-    const hostelName = getHostelName(item._id);
-    return {
-      _id: hostelName,
-      orderCount: item.orderCount,
-      totalRevenue: item.totalRevenue,
-      averageOrderValue: item.averageOrderValue,
-      originalLocation: item._id
-    };
-  });
-
-  // Group by hostel name (in case multiple delivery locations map to the same hostel)
-  const groupedByHostel = {};
-  mappedLocationData.forEach(item => {
-    if (groupedByHostel[item._id]) {
-      groupedByHostel[item._id].orderCount += item.orderCount;
-      groupedByHostel[item._id].totalRevenue += item.totalRevenue;
-      groupedByHostel[item._id].averageOrderValue = 
-        (groupedByHostel[item._id].averageOrderValue + item.averageOrderValue) / 2;
-    } else {
-      groupedByHostel[item._id] = item;
-    }
-  });
-
-  const finalLocationData = Object.values(groupedByHostel)
-    .sort((a, b) => b.orderCount - a.orderCount)
-    .slice(0, 20);
-
-  console.log('Hostel analytics data (with names):', JSON.stringify(locationData, null, 2));
+  console.log('Hostel analytics data (using direct hostelName field):', JSON.stringify(locationData, null, 2));
 
   res.json({
     success: true,
@@ -619,12 +583,14 @@ const getHostelPerformance = asyncHandler(async (req, res) => {
   const hostelData = await Order.aggregate([
     {
       $match: {
-        createdAt: { $gte: startDate }
+        createdAt: { $gte: startDate },
+        hostelName: { $exists: true, $ne: null, $ne: '' }
       }
     },
     {
       $group: {
-        _id: '$deliveryLocation',
+        _id: '$hostelName',
+        hostelName: { $first: '$hostelName' },
         totalOrders: { $sum: 1 },
         totalRevenue: { $sum: '$amount' },
         averageOrderValue: { $avg: '$amount' },
@@ -651,6 +617,18 @@ const getHostelPerformance = asyncHandler(async (req, res) => {
       }
     },
     {
+      $project: {
+        _id: '$hostelName',
+        hostelName: 1,
+        totalOrders: 1,
+        totalRevenue: 1,
+        averageOrderValue: 1,
+        completedOrders: 1,
+        pendingOrders: 1,
+        completionRate: 1
+      }
+    },
+    {
       $sort: { totalRevenue: -1 }
     },
     {
@@ -658,7 +636,7 @@ const getHostelPerformance = asyncHandler(async (req, res) => {
     }
   ]);
 
-  console.log('Hostel performance data:', JSON.stringify(hostelData, null, 2));
+  console.log('Hostel performance data (using direct hostelName field):', JSON.stringify(hostelData, null, 2));
 
   res.json({
     success: true,

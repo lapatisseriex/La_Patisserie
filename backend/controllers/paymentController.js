@@ -240,10 +240,12 @@ export const createOrder = asyncHandler(async (req, res) => {
       cartItems,
       userDetails,
       deliveryLocation,
+      hostelName,
       orderSummary 
     } = req.body;
 
     console.log('Creating order with amount:', amount, 'Payment method:', paymentMethod);
+    console.log('Hostel name received:', hostelName);
     console.log('User from request:', { uid: req.user?.uid, _id: req.user?._id });
     console.log('Cart items received:', JSON.stringify(cartItems, null, 2));
 
@@ -286,6 +288,7 @@ export const createOrder = asyncHandler(async (req, res) => {
       cartItems,
       userDetails,
       deliveryLocation,
+      hostelName,
       orderSummary: {
         cartTotal: orderSummary.cartTotal,
         discountedTotal: orderSummary.discountedTotal,
@@ -299,6 +302,7 @@ export const createOrder = asyncHandler(async (req, res) => {
 
     await order.save();
     console.log('Order saved to database:', order._id);
+    console.log('Order hostelName stored:', order.hostelName);
 
     // For COD orders, decrement stock immediately since payment is guaranteed
     if (paymentMethod === 'cod' && cartItems && cartItems.length > 0) {

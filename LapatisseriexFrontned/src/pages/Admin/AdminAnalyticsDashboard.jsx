@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import { BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
+import { BarChart3, AlertCircle } from 'lucide-react';
 
 import FilterControls from '../../components/Admin/FilterControls';
 import SummaryCards from '../../components/Admin/SummaryCards';
@@ -84,10 +84,6 @@ const AdminAnalyticsDashboard = () => {
       ]);
 
       // Update state with fetched data
-      console.log('Frontend - Overview data:', overviewResponse.data.data);
-      console.log('Frontend - Location data:', locationResponse.data.data);
-      console.log('Frontend - Hostel data:', hostelResponse.data.data);
-      
       setOverviewData(overviewResponse.data.data);
       setTrendData(trendResponse.data.data);
       setLocationData(locationResponse.data.data);
@@ -251,37 +247,6 @@ const AdminAnalyticsDashboard = () => {
           recentOrders={recentOrders}
           loading={loading}
         />
-
-        {/* Performance Insights */}
-        <div className="mt-12 bg-white border-t-2 border-gray-200 pt-8">
-          <div className="flex items-center space-x-3 mb-8">
-            <TrendingUp className="text-gray-700" size={20} />
-            <h3 className="text-lg font-medium text-gray-900 uppercase tracking-wide">Performance Insights</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white border border-gray-300 p-6">
-              <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide">Business Trends</h4>
-              <p className="text-sm text-gray-600">
-                Monitor your business growth with real-time order tracking and revenue analysis.
-              </p>
-            </div>
-            
-            <div className="bg-white border border-gray-300 p-6">
-              <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide">Smart Analytics</h4>
-              <p className="text-sm text-gray-600">
-                Understand customer preferences and optimize your product offerings accordingly.
-              </p>
-            </div>
-            
-            <div className="bg-white border border-gray-300 p-6">
-              <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide">Real-time Updates</h4>
-              <p className="text-sm text-gray-600">
-                Dashboard automatically refreshes every 5 minutes to show latest business metrics.
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Footer */}
         <div className="mt-12 border-t border-gray-200 pt-8 text-center text-gray-500 text-xs">

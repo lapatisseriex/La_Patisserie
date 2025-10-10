@@ -107,6 +107,10 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  hostelName: {
+    type: String,
+    trim: true
+  },
   orderSummary: orderSummarySchema,
   notes: {
     type: String,

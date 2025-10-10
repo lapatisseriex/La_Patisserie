@@ -197,6 +197,7 @@ const Payment = () => {
           country: user?.country || 'India'
         },
         deliveryLocation: user?.location?.fullAddress || getCurrentLocationName(),
+        hostelName: user?.hostel?.name || null,
         orderSummary: {
           cartTotal: discountedCartTotal,
           discountedTotal: discountedCartTotal,
