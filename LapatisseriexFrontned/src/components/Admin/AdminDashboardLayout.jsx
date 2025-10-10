@@ -13,7 +13,8 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaClock,
-  FaBox
+  FaBox,
+  FaChartBar
 } from 'react-icons/fa';
 import { MdPayment } from 'react-icons/md';
 
@@ -165,6 +166,16 @@ const AdminDashboardLayout = () => {
                 >
                   <FaTachometerAlt className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Dashboard</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/analytics"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/analytics' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaChartBar className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Analytics</span>
                 </Link>
               </li>
               <li>

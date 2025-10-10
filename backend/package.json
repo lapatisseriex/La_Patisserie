@@ -8,7 +8,9 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "trim:recent": "node ./scripts/trimRecentlyViewed.js",
-    "migrate:cart": "node ./scripts/migrateCartToSingleDocument.js"
+    "migrate:cart": "node ./scripts/migrateCartToSingleDocument.js",
+    "analyze:hostels": "node ./scripts/analyzeHostelMapping.js",
+    "setup:hostels": "node ./scripts/setupHostelMapping.js"
   },
   "dependencies": {
     "axios": "^1.12.2",

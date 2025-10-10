@@ -37,6 +37,7 @@ import AdminInventory from './components/Admin/Inventory/AdminInventory';
 import AdminTimeSettings from './components/Admin/AdminTimeSettings';
 import AdminOrders from './components/Admin/AdminOrders';
 import AdminPayments from './components/Admin/AdminPayments';
+import AdminAnalyticsDashboard from './pages/Admin/AdminAnalyticsDashboard';
 
 // Cart and Payment Components
 import Cart from './components/Cart/Cart';
@@ -144,6 +145,8 @@ function App() {
                             <Route path="cart" element={<Cart />} />
                             <Route path="favorites" element={<Favorites />} />
                             <Route path="payment" element={<Payment />} />
+                            {/* Demo Analytics Dashboard - Public Route */}
+                            
                           </Route>
                           {/* Profile and Orders with regular Layout */}
                           <Route path="/" element={<Layout />}>
@@ -176,6 +179,7 @@ function App() {
                             <Route element={<AdminDashboardLayout />}>
                               <Route index element={<Navigate to="dashboard" />} />
                               <Route path="dashboard" element={<AdminDashboard />} />
+                              <Route path="analytics" element={<AdminAnalyticsDashboard />} />
                               <Route path="users" element={<AdminUsers />} />
                               <Route path="locations" element={<AdminLocations />} />
                               <Route path="orders" element={<React.Suspense fallback={<div>Loading...</div>}><AdminOrders /></React.Suspense>} />
