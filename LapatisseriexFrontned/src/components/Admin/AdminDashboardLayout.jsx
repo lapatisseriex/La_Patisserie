@@ -12,7 +12,8 @@ import {
   FaTimes,
   FaChevronLeft,
   FaChevronRight,
-  FaClock
+  FaClock,
+  FaBox
 } from 'react-icons/fa';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -193,6 +194,16 @@ const AdminDashboardLayout = () => {
                 >
                   <FaList className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Categories</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/inventory"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/inventory' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaBox className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Inventory</span>
                 </Link>
               </li>
               {/* Banners removed: managed statically in codebase */}

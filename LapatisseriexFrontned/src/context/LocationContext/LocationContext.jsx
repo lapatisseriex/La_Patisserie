@@ -14,14 +14,44 @@ export const LocationProvider = ({ children }) => {
   
   const API_URL = import.meta.env.VITE_API_URL;
 
+  const LOC_CACHE_KEY = 'lp_locations_cache_v1';
+  const LOC_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  const readCachedLocations = () => {
+    try {
+      const raw = localStorage.getItem(LOC_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.timestamp || !Array.isArray(parsed?.data)) return null;
+      if (Date.now() - parsed.timestamp > LOC_CACHE_TTL) return null;
+      return parsed.data;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeCachedLocations = (data) => {
+    try {
+      localStorage.setItem(LOC_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch {}
+  };
+
   // Fetch all active delivery locations
   const fetchLocations = async () => {
     try {
-      setLoading(true);
+      // Use cached data immediately to avoid UI flicker
+      const cached = readCachedLocations();
+      if (cached && cached.length > 0) {
+        setLocations(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       
       const response = await axios.get(`${API_URL}/locations`);
       setLocations(response.data);
+      writeCachedLocations(response.data);
       
       return response.data;
     } catch (err) {
@@ -145,6 +175,13 @@ export const LocationProvider = ({ children }) => {
 
   // Fetch locations on component mount
   useEffect(() => {
+    // Prime from cache synchronously
+    const cached = readCachedLocations();
+    if (cached && cached.length > 0) {
+      setLocations(cached);
+      setLoading(false);
+    }
+    // Then fetch fresh in background
     fetchLocations();
   }, []);
 

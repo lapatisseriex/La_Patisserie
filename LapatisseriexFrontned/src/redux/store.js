@@ -130,4 +130,11 @@ store.subscribe(() => {
 
 export const persistor = persistStore(store);
 
+// Expose store for debugging/non-hook access in rare cases
+try {
+  if (typeof window !== 'undefined') {
+    window.__APP_STORE__ = store;
+  }
+} catch {}
+
 export default store;

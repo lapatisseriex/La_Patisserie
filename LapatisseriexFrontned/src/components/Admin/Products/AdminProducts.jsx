@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useProduct } from '../../../context/ProductContext/ProductContext';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import { useSidebar } from '../AdminDashboardLayout';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ProductForm from './ProductForm';
 import { Link } from 'react-router-dom';
 import { FaPlus, FaFilter, FaEgg, FaLeaf } from 'react-icons/fa';
@@ -13,6 +14,8 @@ const AdminProducts = () => {
   const { products, loading, error, fetchProducts, deleteProduct, getProduct } = useProduct();
   const { categories, fetchCategories } = useCategory();
   const { closeSidebarIfOpen, closeSidebarForModal, isSidebarOpen, isMobile } = useSidebar();
+  const location = useLocation();
+  const navigate = useNavigate();
   
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -215,6 +218,50 @@ const AdminProducts = () => {
     setShowForm(true);
   };
 
+  // Helper: remove ?edit from URL to avoid reopening on close
+  const clearEditParam = () => {
+    const params = new URLSearchParams(location.search);
+    if (params.has('edit')) {
+      params.delete('edit');
+      const q = params.toString();
+      navigate({ pathname: location.pathname, search: q ? `?${q}` : '' }, { replace: true });
+    }
+  };
+
+  // If navigated with ?edit=<productId>, auto-open the edit form
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const editId = params.get('edit');
+    if (!editId) return;
+    // Avoid re-opening if already open for the same product
+    if (showForm && (editingProduct?._id === editId || editingProduct?.id === editId)) return;
+
+    const openFromListOrFetch = async () => {
+      // Try to find in current list first
+      const p = (productList || []).find(pr => (pr?._id || pr?.id) === editId);
+      if (p) {
+        await handleEdit(p);
+        clearEditParam();
+        return;
+      }
+      // Fallback: fetch product by id directly
+      try {
+        closeSidebarForModal();
+        const full = await getProduct(editId, { forceRefresh: true });
+        if (full) {
+          setEditingProduct(full);
+          setShowForm(true);
+          clearEditParam();
+        }
+      } catch (e) {
+        console.warn('Failed to auto-open product by id from query:', e);
+      }
+    };
+
+    openFromListOrFetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, productList, showForm, editingProduct]);
+
   // Open form for editing an existing product
   const handleEdit = async (product) => {
     closeSidebarForModal(); // Force-close sidebar to avoid modal collision
@@ -273,6 +320,8 @@ const AdminProducts = () => {
   const handleCloseForm = async () => {
     setShowForm(false);
     setEditingProduct(null);
+    // Ensure ?edit is cleared so the modal doesn't auto-reopen
+    clearEditParam();
     await loadProducts(selectedCategory, selectedStatus, priceMin, priceMax, searchQuery, page);
   };
 
@@ -403,8 +452,8 @@ const AdminProducts = () => {
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-300"
               >
                 <option value="">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category._id} value={category._id}>
+                {[...new Map(categories.map(c => [c._id || c.id, c])).values()].map((category) => (
+                  <option key={category._id || category.id} value={category._id || category.id}>
                     {category.name}
                   </option>
                 ))}
@@ -566,10 +615,10 @@ const AdminProducts = () => {
                       {Array.isArray(product.variants) && product.variants.length > 0 ? (
                         <select
                           className="border rounded px-2 py-1"
-                          defaultValue={product.variants[0]._id} // default to first variant
+                          defaultValue={0} // default to first variant index
                         >
-                          {product.variants.map((variant) => (
-                            <option key={variant._id} value={variant._id}>
+                          {product.variants.map((variant, variantIndex) => (
+                            <option key={`${product._id}-variant-${variantIndex}`} value={variantIndex}>
                               {variant.name ? `${variant.name} - ` : ''}
                               {formatPrice(variant.price)}
                               {variant.quantity ? ` (${variant.quantity}${variant.measuringUnit || ''})` : ''}

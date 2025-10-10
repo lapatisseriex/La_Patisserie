@@ -91,6 +91,7 @@ export const useAuth = () => {
     authType: auth.authType || 'login',
     isAuthPanelOpen: auth.isAuthPanelOpen || false,
     isNewUser: auth.isNewUser || false,
+  hydrated: auth.hydrated || false,
 
     // New authentication actions
     signInWithGoogle: signInWithGoogleAction,

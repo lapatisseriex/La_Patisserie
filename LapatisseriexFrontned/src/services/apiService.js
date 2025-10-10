@@ -1,8 +1,24 @@
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 
-// Create an instance of axios with base URL from environment variable
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// Resolve API base URL for all environments
+// Priority:
+// 1) Explicit VITE_API_URL
+// 2) If running on localhost -> http://localhost:3000/api
+// 3) Otherwise use relative '/api' (works when frontend and backend share the same origin in production)
+const resolveApiBaseUrl = () => {
+  const fromEnv = import.meta.env?.VITE_API_URL;
+  if (fromEnv && typeof fromEnv === 'string' && fromEnv.trim().length > 0) {
+    return fromEnv.trim().replace(/\/$/, '');
+  }
+  const isLocalhost = typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
+  if (isLocalhost) {
+    return 'http://localhost:3000/api';
+  }
+  return '/api';
+};
+
+const API_URL = resolveApiBaseUrl();
 
 // Create axios instance with default config
 const api = axios.create({

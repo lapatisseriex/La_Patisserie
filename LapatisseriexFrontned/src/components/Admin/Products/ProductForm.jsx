@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaLeaf, FaEgg, FaCheckCircle, FaImage, FaVideo, FaMoneyBillAlt, FaCog, FaPen } from 'react-icons/fa';
+import { FaLeaf, FaEgg, FaCheckCircle, FaImage, FaVideo, FaMoneyBillAlt, FaCog, FaPen, FaBox } from 'react-icons/fa';
 import { useProduct } from '../../../context/ProductContext/ProductContext';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import MediaUploader from '../../common/MediaUpload/MediaUploader';
 import MediaPreview from '../../common/MediaUpload/MediaPreview';
 import PricingCalculator from '../../common/PricingCalculator';
+import QuickStockUpdate from './QuickStockUpdate';
 import { calculatePricing } from '../../../utils/pricingUtils';
 
 // Custom hook to detect admin sidebar state
@@ -389,6 +390,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
             { key: 'basic', label: 'Basic Info', icon: <FaPen /> },
             { key: 'media', label: 'Media', icon: <FaImage /> },
             { key: 'pricing', label: 'Pricing & Stock', icon: <FaMoneyBillAlt /> },
+            ...(isEditing ? [{ key: 'stock', label: 'Stock Management', icon: <FaBox /> }] : []),
             { key: 'details', label: 'Details', icon: <FaCog /> }
           ].map(tab => (
             <button
@@ -463,8 +465,8 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                 required
               >
                 <option value="">Select a category</option>
-                {categories.map(cat => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                {[...new Map(categories.map(cat => [(cat?._id || cat?.id), cat])).values()].map(cat => (
+                  <option key={cat._id || cat.id} value={cat._id || cat.id}>{cat.name}</option>
                 ))}
               </select>
             </div>
@@ -1038,6 +1040,29 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
               </div>
             </div>
           </>
+        )}
+
+        {/* STOCK MANAGEMENT TAB - Only available for existing products */}
+        {activeTab === 'stock' && isEditing && (
+          <div className="space-y-6">
+            <QuickStockUpdate 
+              productId={product?._id}
+              variants={formData.variants || []}
+              onStockUpdate={(variantIndex, result) => {
+                // Update local form data to reflect the stock change
+                if (result.success) {
+                  setFormData(prev => ({
+                    ...prev,
+                    variants: prev.variants.map((variant, idx) => 
+                      idx === variantIndex 
+                        ? { ...variant, stock: result.updatedStock, isStockActive: result.isStockActive }
+                        : variant
+                    )
+                  }));
+                }
+              }}
+            />
+          </div>
         )}
 
         <div className="mt-6">

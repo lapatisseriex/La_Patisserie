@@ -54,32 +54,52 @@ export const initializeAuthListener = createAsyncThunk(
             // Store token in localStorage
             localStorage.setItem('authToken', idToken);
             
-            // Create user data - this is just basic Firebase data
-            // Full user data will be loaded via getCurrentUser or auth verification
-            const userData = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              name: firebaseUser.displayName,
-              profilePhoto: { url: firebaseUser.photoURL || '', public_id: '' },
-              // Add default fields to avoid undefined errors
-              phone: '',
-              phoneVerified: false,
-              city: '',
-              pincode: '',
-              country: 'India',
-              gender: '',
-              dob: null,
-              anniversary: null,
-            };
-            
-            dispatch({
-              type: 'auth/setUser',
-              payload: {
-                user: userData,
-                token: idToken,
-                isAuthenticated: true
-              }
-            });
+            // Verify token with backend to get full user (including role, location)
+            try {
+              const verifyResp = await axios.post(`${API_URL}/auth/verify`, {
+                idToken,
+                authMethod: 'session'
+              });
+              const backendUser = {
+                // Firebase fallback
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                name: firebaseUser.displayName,
+                profilePhoto: { url: firebaseUser.photoURL || '', public_id: '' },
+                // Backend authoritative data
+                ...verifyResp.data.user,
+              };
+              // Persist rich user immediately to minimize UI flicker
+              localStorage.setItem('cachedUser', JSON.stringify(backendUser));
+
+              dispatch({
+                type: 'auth/setUser',
+                payload: {
+                  user: backendUser,
+                  token: idToken,
+                  isAuthenticated: true
+                }
+              });
+            } catch (verifyErr) {
+              console.warn('Auth verify during listener failed, falling back to Firebase data:', verifyErr?.response?.data || verifyErr?.message);
+              // Create minimal user as fallback
+              const userData = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                name: firebaseUser.displayName,
+                profilePhoto: { url: firebaseUser.photoURL || '', public_id: '' },
+              };
+              dispatch({
+                type: 'auth/setUser',
+                payload: {
+                  user: userData,
+                  token: idToken,
+                  isAuthenticated: true
+                }
+              });
+              // Attempt a non-blocking refresh for complete data
+              dispatch(getCurrentUser());
+            }
           } catch (error) {
             console.error('Error processing auth state change:', error);
           }
@@ -375,6 +395,7 @@ const initialState = {
   isNewUser: false,
   authenticating: false,
   profileUpdating: false,
+  hydrated: false, // becomes true after initializing from storage / backend
 };
 
 // Auth slice
@@ -400,9 +421,10 @@ const authSlice = createSlice({
       // Note: localStorage now handled by redux-persist, not manual writes
     },
     setUser: (state, action) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.isAuthenticated = action.payload.isAuthenticated;
+      // Merge to avoid wiping fields like role when Firebase sends partial user
+      state.user = { ...(state.user || {}), ...(action.payload.user || {}) };
+      if (action.payload.token !== undefined) state.token = action.payload.token;
+      if (action.payload.isAuthenticated !== undefined) state.isAuthenticated = action.payload.isAuthenticated;
       state.loading = false;
     },
     clearUser: (state) => {
@@ -431,6 +453,7 @@ const authSlice = createSlice({
       }
       
       state.loading = false;
+      state.hydrated = true;
     },
     authExpired: (state) => {
       state.user = null;

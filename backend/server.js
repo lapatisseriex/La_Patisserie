@@ -30,6 +30,7 @@ import newCartRoutes from './routes/newCartRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import twilioRoutes from './routes/twilioRoutesNew.js';
 import stockRoutes from './routes/stockRoutes.js';
+import stockValidationRoutes from './routes/stockValidationRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -189,6 +190,7 @@ const startServer = async () => {
     app.use('/api/payments', paymentRoutes);
     app.use('/api/twilio', twilioRoutes);
     app.use('/api/stock', stockRoutes);
+    app.use('/api/stock-validation', stockValidationRoutes);
 
     // Health check endpoint
     app.get('/health', (req, res) => {

@@ -1,4 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
+import { useSelector } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import ScrollToTop from "./ScrollToTop.jsx";
@@ -32,6 +33,7 @@ import AdminUsers from './components/Admin/AdminUsers';
 import AdminLocations from './components/Admin/AdminLocations';
 import AdminProducts from './components/Admin/Products/AdminProducts';
 import AdminCategories from './components/Admin/Categories/AdminCategories';
+import AdminInventory from './components/Admin/Inventory/AdminInventory';
 import AdminTimeSettings from './components/Admin/AdminTimeSettings';
 import AdminOrders from './components/Admin/AdminOrders';
 
@@ -77,8 +79,9 @@ const HomePage = () => {
 // Protected route for admin pages
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const hydrated = useSelector((state) => state?.auth?.hydrated ?? true);
   
-  if (loading) {
+  if (loading || !hydrated) {
     return <div>Loading...</div>;
   }
   
@@ -92,8 +95,9 @@ const AdminRoute = ({ children }) => {
 // Protected route for authenticated users
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const hydrated = useSelector((state) => state?.auth?.hydrated ?? true);
   
-  if (loading) {
+  if (loading || !hydrated) {
     return <div>Loading...</div>;
   }
   
@@ -177,6 +181,7 @@ function App() {
                               <Route path="products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
                               <Route path="categories" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCategories /></React.Suspense>} />
                               <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
+              <Route path="inventory" element={<React.Suspense fallback={<div>Loading...</div>}><AdminInventory /></React.Suspense>} />
                               <Route path="time-settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTimeSettings /></React.Suspense>} />
                             </Route>
                           </Route>
