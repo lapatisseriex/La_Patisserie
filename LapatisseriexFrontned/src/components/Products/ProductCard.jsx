@@ -11,6 +11,7 @@ import { useShopStatus } from '../../context/ShopStatusContext';
 import { useSparkToCart } from '../../hooks/useSparkToCart';
 import { toast } from 'react-toastify';
 import { calculatePricing, formatCurrency } from '../../utils/pricingUtils';
+import productLiveCache from '../../utils/productLiveCache';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -28,39 +29,21 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const { buttonRef: addToCartButtonRef } = useSparkToCart();
   const navigate = useNavigate();
 
-  // Refresh product data to get latest stock information
-  const refreshProductData = useCallback(async () => {
-    try {
-      setIsRefreshing(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/products/${product._id}`);
-      if (response.ok) {
-        const freshProduct = await response.json();
-        setRefreshedProduct(freshProduct);
-        setLastRefresh(Date.now());
-        console.log(`🔄 Refreshed stock data for ${freshProduct.name}:`, {
-          variants: freshProduct.variants?.map(v => ({
-            stock: v.stock,
-            isStockActive: v.isStockActive
-          }))
-        });
-      }
-    } catch (error) {
-      console.warn('Failed to refresh product data:', error);
-      // Fallback to original product data
-      setRefreshedProduct(product);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [product._id]);
-
-  // Initial refresh on mount and auto-refresh every 5 seconds to get latest stock
+  // Subscribe to shared live cache for this product (dedupes network requests)
   useEffect(() => {
-    // Initial refresh immediately
-    refreshProductData();
-    
-    const interval = setInterval(refreshProductData, 5000);
-    return () => clearInterval(interval);
-  }, [refreshProductData]);
+    if (!product?._id) return;
+    setIsRefreshing(true);
+    const unsub = productLiveCache.subscribe(product._id, undefined, (fresh) => {
+      setRefreshedProduct(fresh || product);
+      setLastRefresh(Date.now());
+      setIsRefreshing(false);
+    });
+
+    // Also try to get immediately (resolves from cache if fresh)
+    productLiveCache.get(product._id, undefined).catch(() => setIsRefreshing(false));
+
+    return () => unsub();
+  }, [product?._id]);
 
   // Use refreshed product data
   const currentProduct = refreshedProduct || product;
@@ -191,8 +174,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       // Add to cart with correct variant index
       await addToCart(currentProduct, 1, variantIndex);
       
-      // Immediately refresh stock data after adding to cart
-      setTimeout(refreshProductData, 500);
+      // Trigger a targeted refresh soon after add to cart to reflect stock
+      const API_BASE = import.meta.env.VITE_API_URL;
+  setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
     } catch (error) {
       console.error('Error adding to cart:', error);
       const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
@@ -221,8 +205,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         console.log('[Reserve] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
         await addToCart(currentProduct, 1, variantIndex);
         
-        // Immediately refresh stock data after adding to cart
-        setTimeout(refreshProductData, 500);
+  // Immediately refresh stock data after adding to cart
+  const API_BASE = import.meta.env.VITE_API_URL;
+  setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
         
         navigate('/cart');
       } catch (error) {
@@ -256,8 +241,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         console.log('[BuyNow] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
         await addToCart(currentProduct, 1, variantIndex);
         
-        // Immediately refresh stock data after adding to cart
-        setTimeout(refreshProductData, 500);
+  // Immediately refresh stock data after adding to cart
+  const API_BASE = import.meta.env.VITE_API_URL;
+  setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
       }
       
       navigate('/cart');
@@ -284,11 +270,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     // Fire and forget - no loading states for smooth experience
     updateQuantity(currentProduct._id, newQuantity).then(() => {
       // Immediately refresh stock data after quantity change
-      setTimeout(refreshProductData, 500);
+      const API_BASE = import.meta.env.VITE_API_URL;
+  setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
     }).catch(error => {
       console.error('Error updating quantity:', error);
     });
-  }, [updateQuantity, currentProduct._id, lastQuantityChangeTime, refreshProductData]);
+  }, [updateQuantity, currentProduct._id, lastQuantityChangeTime]);
 
 
 

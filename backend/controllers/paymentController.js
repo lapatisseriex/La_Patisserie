@@ -211,26 +211,31 @@ export const createOrder = asyncHandler(async (req, res) => {
     if (paymentMethod === 'cod' && cartItems && cartItems.length > 0) {
       console.log('📦 COD Order - decrementing product stock immediately');
       await decrementProductStock(cartItems);
+      // Update product order counts for COD orders as they're confirmed at placement
+      await updateProductOrderCounts(cartItems);
     }
 
-    // Send order confirmation email
-    try {
-      // Get user email from the user record
-      const user = await User.findById(userId).select('email name');
-      if (user && user.email) {
-        console.log('Sending order confirmation email to:', user.email);
-        const emailResult = await sendOrderConfirmationEmail(order, user.email);
-        if (emailResult.success) {
-          console.log('Order confirmation email sent successfully:', emailResult.messageId);
-        } else {
-          console.error('Failed to send order confirmation email:', emailResult.error);
+    // For COD, send order confirmation email asynchronously AFTER responding,
+    // so the UI confirms immediately. For online payments, email is sent after verification.
+    if (paymentMethod === 'cod') {
+      setImmediate(async () => {
+        try {
+          const user = await User.findById(userId).select('email name');
+          if (user && user.email) {
+            console.log('Sending COD order confirmation email to:', user.email);
+            const emailResult = await sendOrderConfirmationEmail(order, user.email);
+            if (emailResult.success) {
+              console.log('Order confirmation email sent successfully:', emailResult.messageId);
+            } else {
+              console.error('Failed to send order confirmation email:', emailResult.error);
+            }
+          } else {
+            console.log('User email not found, skipping confirmation email');
+          }
+        } catch (emailError) {
+          console.error('Error sending order confirmation email (async):', emailError.message);
         }
-      } else {
-        console.log('User email not found, skipping confirmation email');
-      }
-    } catch (emailError) {
-      console.error('Error sending order confirmation email:', emailError.message);
-      // Don't fail the order creation if email fails
+      });
     }
 
     // Return response
@@ -246,7 +251,7 @@ export const createOrder = asyncHandler(async (req, res) => {
       response.key = process.env.RAZORPAY_KEY_ID;
     }
 
-    res.status(201).json(response);
+  res.status(201).json(response);
   } catch (error) {
     console.error('Error creating order:', error);
     res.status(500).json({ 
@@ -309,6 +314,26 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       if (order.cartItems && order.cartItems.length > 0) {
         await updateProductOrderCounts(order.cartItems);
       }
+
+      // Send order confirmation email asynchronously for online payments
+      setImmediate(async () => {
+        try {
+          const user = await User.findById(order.userId).select('email name');
+          if (user && user.email) {
+            console.log('Sending online payment order confirmation email to:', user.email);
+            const emailResult = await sendOrderConfirmationEmail(order, user.email);
+            if (emailResult.success) {
+              console.log('Order confirmation email sent successfully:', emailResult.messageId);
+            } else {
+              console.error('Failed to send order confirmation email:', emailResult.error);
+            }
+          } else {
+            console.log('User email not found, skipping confirmation email');
+          }
+        } catch (emailError) {
+          console.error('Error sending order confirmation email (async):', emailError.message);
+        }
+      });
       
       res.json({
         success: true,

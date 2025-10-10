@@ -8,6 +8,7 @@ import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
 import { calculateCartTotals, calculatePricing, formatCurrency } from '../../utils/pricingUtils';
+import api from '../../services/apiService';
 
 const Payment = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
@@ -161,7 +162,7 @@ const Payment = () => {
     });
   };
 
-  // Create order on backend
+  // Create order on backend using centralized api (handles auth + retries)
   const createOrder = async (amount, paymentMethod = 'razorpay') => {
     try {
       const orderData = {
@@ -205,27 +206,8 @@ const Payment = () => {
         }
       };
 
-      // Get authentication token from localStorage
-      const authToken = localStorage.getItem('authToken');
-      
-      if (!authToken) {
-        throw new Error('Authentication required. Please login again.');
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/create-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create order');
-      }
-
-      return await response.json();
+      const { data } = await api.post('/payments/create-order', orderData);
+      return data;
     } catch (error) {
       console.error('Error creating order:', error);
       throw error;
@@ -352,23 +334,26 @@ const Payment = () => {
       return;
     }
 
+    // Optimistic UI: show success immediately while we call backend
     setIsProcessing(true);
+    setIsOrderComplete(true);
+    setOrderNumber('...');
 
     try {
-  const orderData = await createOrder(grandTotal, 'cod');
-      
-      // For COD, directly mark order as placed
-  setIsOrderComplete(true);
-  setOrderNumber(orderData.orderNumber);
-  // Clear cart - no stock restoration needed since stock is decremented on order placement for COD
-  try {
-    await clearCart();
-  } catch (cartError) {
-    console.error('❌ Failed to clear cart after COD order:', cartError);
-    // Don't fail the order, just log the error
-  }
+      const orderData = await createOrder(grandTotal, 'cod');
+      // Reconcile with real order number
+      setOrderNumber(orderData.orderNumber);
+      // Clear cart - stock already decremented for COD on backend
+      try {
+        await clearCart();
+      } catch (cartError) {
+        console.error('❌ Failed to clear cart after COD order:', cartError);
+      }
     } catch (error) {
       console.error('COD order error:', error);
+      // Rollback optimistic state
+      setIsOrderComplete(false);
+      setOrderNumber('');
       alert('Failed to place order. Please try again.');
     } finally {
       setIsProcessing(false);
