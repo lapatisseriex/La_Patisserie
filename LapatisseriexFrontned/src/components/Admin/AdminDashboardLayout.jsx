@@ -14,7 +14,8 @@ import {
   FaChevronRight,
   FaClock,
   FaBox,
-  FaChartBar
+  FaChartBar,
+  FaEnvelope
 } from 'react-icons/fa';
 import { MdPayment } from 'react-icons/md';
 
@@ -247,6 +248,16 @@ const AdminDashboardLayout = () => {
                 >
                   <FaClock className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Time Settings</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/contacts"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/contacts' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaEnvelope className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Contacts</span>
                 </Link>
               </li>
             </ul>

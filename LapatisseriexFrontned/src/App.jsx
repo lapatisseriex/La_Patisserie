@@ -39,6 +39,10 @@ import AdminOrders from './components/Admin/AdminOrders';
 import AdminPayments from './components/Admin/AdminPayments';
 import AdminAnalyticsDashboard from './pages/Admin/AdminAnalyticsDashboard';
 
+// Contact Components
+import Contact from './pages/Contact';
+import ContactManagement from './pages/Admin/ContactManagement';
+
 // Cart and Payment Components
 import Cart from './components/Cart/Cart';
 import Payment from './components/Payment/Payment';
@@ -133,7 +137,7 @@ function App() {
                           {/* Home with regular Layout */}
                           <Route path="/" element={<Layout />}>
                             <Route index element={<HomePage />} />
-                            <Route path="contact" element={<Newsletter />} />
+                            <Route path="contact" element={<Contact />} />
                             <Route path="products" element={<Products />} />
                             <Route path="privacy-policy" element={<PrivacyPolicy />} />
                             <Route path="our-services" element={<OurServices />} />
@@ -189,6 +193,7 @@ function App() {
                               <Route path="categories/:categoryId/products" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProducts /></React.Suspense>} />
               <Route path="inventory" element={<React.Suspense fallback={<div>Loading...</div>}><AdminInventory /></React.Suspense>} />
                               <Route path="time-settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTimeSettings /></React.Suspense>} />
+                              <Route path="contacts" element={<React.Suspense fallback={<div>Loading...</div>}><ContactManagement /></React.Suspense>} />
                             </Route>
                           </Route>
                           {/* Catch-all route for any undefined paths */}
