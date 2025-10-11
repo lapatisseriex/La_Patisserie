@@ -14,7 +14,14 @@ import {
   updateUser,
   initializeAuth,
   authExpired,
-  initializeAuthListener
+  initializeAuthListener,
+  sendPasswordResetOTP,
+  verifyPasswordResetOTP,
+  resetPassword,
+  resetPasswordState,
+  setPasswordResetStep,
+  setPasswordResetEmail,
+  setLoginFormEmail
 } from '../redux/authSlice';
 
 // Custom hook for authentication - Compatible with existing modal interface
@@ -91,7 +98,18 @@ export const useAuth = () => {
     authType: auth.authType || 'login',
     isAuthPanelOpen: auth.isAuthPanelOpen || false,
     isNewUser: auth.isNewUser || false,
-  hydrated: auth.hydrated || false,
+    hydrated: auth.hydrated || false,
+    loginFormEmail: auth.loginFormEmail || '',
+    
+    // Password reset state
+    passwordReset: auth.passwordReset || {
+      step: 'email',
+      email: '',
+      loading: false,
+      error: null,
+      message: '',
+      otpVerified: false
+    },
 
     // New authentication actions
     signInWithGoogle: signInWithGoogleAction,
@@ -103,6 +121,15 @@ export const useAuth = () => {
     toggleAuthPanel,
     changeAuthType,
     clearError: () => dispatch(clearError()),
+    
+    // Password reset actions
+    sendPasswordResetOTP: (email) => dispatch(sendPasswordResetOTP({ email })),
+    verifyPasswordResetOTP: (email, otp) => dispatch(verifyPasswordResetOTP({ email, otp })),
+    resetPassword: (email, newPassword) => dispatch(resetPassword({ email, newPassword })),
+    resetPasswordState: () => dispatch(resetPasswordState()),
+    setPasswordResetStep: (step) => dispatch(setPasswordResetStep(step)),
+    setPasswordResetEmail: (email) => dispatch(setPasswordResetEmail(email)),
+    setLoginFormEmail: (email) => dispatch(setLoginFormEmail(email)),
     
     // Additional Redux actions (for advanced usage)
     getCurrentUser: () => dispatch(getCurrentUser()),

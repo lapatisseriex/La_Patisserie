@@ -1,6 +1,12 @@
 import asyncHandler from 'express-async-handler';
 import firebaseAdmin from '../config/firebase.js';
 import User from '../models/userModel.js';
+import { 
+  generateOTP, 
+  generateOTPExpiry, 
+  sendPasswordResetOTP as sendOTPEmail, 
+  PASSWORD_RESET_LIMITS 
+} from '../utils/passwordResetService.js';
 
 // Helper function to handle user conflicts
 const resolveUserConflict = async (uid, email, locationId) => {
@@ -742,5 +748,231 @@ export const verifyToken = asyncHandler(async (req, res) => {
     
     res.status(statusCode);
     throw new Error(errorMessage);
+  }
+});
+
+// @desc    Send password reset OTP
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const sendPasswordResetOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    res.status(400);
+    throw new Error('Email address is required');
+  }
+
+  try {
+    // Find user by email
+    const user = await User.findOne({ 
+      email: email.toLowerCase().trim(),
+      isActive: true 
+    });
+
+    if (!user) {
+      res.status(404);
+      throw new Error('No account found with this email address');
+    }
+
+    // Check if user is currently blocked from password reset attempts
+    if (user.passwordResetBlockedUntil && user.passwordResetBlockedUntil > new Date()) {
+      const remainingTime = Math.ceil((user.passwordResetBlockedUntil - new Date()) / 1000 / 60);
+      res.status(429);
+      throw new Error(`Too many failed attempts. Please try again in ${remainingTime} minutes`);
+    }
+
+    // Check rate limiting - max 3 OTP requests per hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    if (user.passwordResetOTPExpires && user.passwordResetOTPExpires > oneHourAgo) {
+      const recentRequests = user.passwordResetAttempts || 0;
+      if (recentRequests >= 3) {
+        res.status(429);
+        throw new Error('Too many OTP requests. Please try again after an hour');
+      }
+    }
+
+    // Generate OTP and expiry
+    const otp = generateOTP();
+    const otpExpiry = generateOTPExpiry();
+
+    // Save OTP to database
+    user.passwordResetOTP = otp;
+    user.passwordResetOTPExpires = otpExpiry;
+    user.passwordResetAttempts = (user.passwordResetAttempts || 0) + 1;
+    
+    await user.save();
+
+    // Send OTP via email
+    await sendOTPEmail(user.email, otp);
+
+    console.log(`Password reset OTP sent to user: ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset OTP sent to your email address',
+      expiresIn: '10 minutes'
+    });
+
+  } catch (error) {
+    console.error('Error in sendPasswordResetOTP:', error);
+    
+    if (error.message.includes('Failed to send password reset email')) {
+      res.status(500);
+      throw new Error('Unable to send email. Please try again later');
+    }
+    
+    throw error;
+  }
+});
+
+// @desc    Verify password reset OTP
+// @route   POST /api/auth/verify-reset-otp
+// @access  Public
+export const verifyPasswordResetOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    res.status(400);
+    throw new Error('Email and OTP are required');
+  }
+
+  try {
+    // Find user by email
+    const user = await User.findOne({ 
+      email: email.toLowerCase().trim(),
+      isActive: true 
+    });
+
+    if (!user) {
+      res.status(404);
+      throw new Error('No account found with this email address');
+    }
+
+    // Check if user is blocked
+    if (user.passwordResetBlockedUntil && user.passwordResetBlockedUntil > new Date()) {
+      const remainingTime = Math.ceil((user.passwordResetBlockedUntil - new Date()) / 1000 / 60);
+      res.status(429);
+      throw new Error(`Account temporarily locked. Try again in ${remainingTime} minutes`);
+    }
+
+    // Check if OTP exists and is not expired
+    if (!user.passwordResetOTP || !user.passwordResetOTPExpires) {
+      res.status(400);
+      throw new Error('No valid OTP found. Please request a new password reset');
+    }
+
+    if (user.passwordResetOTPExpires < new Date()) {
+      // Clear expired OTP
+      user.passwordResetOTP = undefined;
+      user.passwordResetOTPExpires = undefined;
+      await user.save();
+      
+      res.status(400);
+      throw new Error('OTP has expired. Please request a new password reset');
+    }
+
+    // Verify OTP
+    if (user.passwordResetOTP !== otp.trim()) {
+      // Increment failed attempts
+      user.passwordResetAttempts = (user.passwordResetAttempts || 0) + 1;
+      
+      // Block user after max attempts
+      if (user.passwordResetAttempts >= PASSWORD_RESET_LIMITS.MAX_ATTEMPTS) {
+        user.passwordResetBlockedUntil = new Date(Date.now() + PASSWORD_RESET_LIMITS.BLOCK_DURATION);
+        await user.save();
+        
+        res.status(429);
+        throw new Error('Too many failed attempts. Account temporarily locked for 15 minutes');
+      }
+      
+      await user.save();
+      
+      const remainingAttempts = PASSWORD_RESET_LIMITS.MAX_ATTEMPTS - user.passwordResetAttempts;
+      res.status(400);
+      throw new Error(`Invalid OTP. ${remainingAttempts} attempts remaining`);
+    }
+
+    // OTP is valid - clear reset fields and reset attempts
+    user.passwordResetOTP = undefined;
+    user.passwordResetOTPExpires = undefined;
+    user.passwordResetAttempts = 0;
+    user.passwordResetBlockedUntil = undefined;
+    
+    await user.save();
+
+    console.log(`Password reset OTP verified for user: ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully. You can now reset your password',
+      email: user.email
+    });
+
+  } catch (error) {
+    console.error('Error in verifyPasswordResetOTP:', error);
+    throw error;
+  }
+});
+
+// @desc    Reset password with new password
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  if (!email || !newPassword) {
+    res.status(400);
+    throw new Error('Email and new password are required');
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400);
+    throw new Error('Password must be at least 6 characters long');
+  }
+
+  try {
+    // Find user by email
+    const user = await User.findOne({ 
+      email: email.toLowerCase().trim(),
+      isActive: true 
+    });
+
+    if (!user) {
+      res.status(404);
+      throw new Error('No account found with this email address');
+    }
+
+    // For security, we only allow password reset immediately after OTP verification
+    // Check that no reset fields exist (they should be cleared after successful OTP verification)
+    if (user.passwordResetOTP || user.passwordResetOTPExpires) {
+      res.status(400);
+      throw new Error('Please verify your OTP first before resetting password');
+    }
+
+    // Update password in Firebase Auth
+    try {
+      await firebaseAdmin.auth().updateUser(user.uid, {
+        password: newPassword
+      });
+    } catch (firebaseError) {
+      console.error('Firebase password update error:', firebaseError);
+      res.status(500);
+      throw new Error('Failed to update password. Please try again');
+    }
+
+    // Update user's last password change (you can add this field to schema if needed)
+    user.lastPasswordChange = new Date();
+    await user.save();
+
+    console.log(`Password reset completed for user: ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully. You can now sign in with your new password'
+    });
+
+  } catch (error) {
+    console.error('Error in resetPassword:', error);
+    throw error;
   }
 });

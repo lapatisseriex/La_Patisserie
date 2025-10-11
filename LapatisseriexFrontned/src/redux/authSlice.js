@@ -383,6 +383,66 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+// Password Reset Functions
+export const sendPasswordResetOTP = createAsyncThunk(
+  'auth/sendPasswordResetOTP',
+  async ({ email }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+        email: email.toLowerCase().trim()
+      });
+      
+      return {
+        message: response.data.message,
+        email: email.toLowerCase().trim(),
+        expiresIn: response.data.expiresIn
+      };
+    } catch (error) {
+      console.error('Error sending password reset OTP:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to send password reset OTP');
+    }
+  }
+);
+
+export const verifyPasswordResetOTP = createAsyncThunk(
+  'auth/verifyPasswordResetOTP',
+  async ({ email, otp }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/verify-reset-otp`, {
+        email: email.toLowerCase().trim(),
+        otp: otp.trim()
+      });
+      
+      return {
+        message: response.data.message,
+        email: email.toLowerCase().trim()
+      };
+    } catch (error) {
+      console.error('Error verifying password reset OTP:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to verify OTP');
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async ({ email, newPassword }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/reset-password`, {
+        email: email.toLowerCase().trim(),
+        newPassword
+      });
+      
+      return {
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to reset password');
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   user: null,
@@ -390,12 +450,23 @@ const initialState = {
   isAuthenticated: false,
   loading: true,
   error: null,
-  authType: 'login', // login, signup, profile
+  authType: 'login', // login, signup, profile, forgot-password, verify-otp, reset-password
   isAuthPanelOpen: false,
   isNewUser: false,
   authenticating: false,
   profileUpdating: false,
   hydrated: false, // becomes true after initializing from storage / backend
+  // Password reset state
+  passwordReset: {
+    step: 'email', // 'email', 'otp', 'password'
+    email: '',
+    loading: false,
+    error: null,
+    message: '',
+    otpVerified: false
+  },
+  // Temporary storage for login form email
+  loginFormEmail: ''
 };
 
 // Auth slice
@@ -462,6 +533,26 @@ const authSlice = createSlice({
       state.authType = 'login';
       state.isAuthPanelOpen = true;
       state.error = 'Your session has expired. Please log in again.';
+    },
+    // Password reset actions
+    resetPasswordState: (state) => {
+      state.passwordReset = {
+        step: 'email',
+        email: '',
+        loading: false,
+        error: null,
+        message: '',
+        otpVerified: false
+      };
+    },
+    setPasswordResetStep: (state, action) => {
+      state.passwordReset.step = action.payload;
+    },
+    setPasswordResetEmail: (state, action) => {
+      state.passwordReset.email = action.payload;
+    },
+    setLoginFormEmail: (state, action) => {
+      state.loginFormEmail = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -592,6 +683,64 @@ const authSlice = createSlice({
       .addCase(initializeAuthListener.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      
+      // Password Reset OTP Send
+      .addCase(sendPasswordResetOTP.pending, (state) => {
+        state.passwordReset.loading = true;
+        state.passwordReset.error = null;
+        state.passwordReset.message = '';
+      })
+      .addCase(sendPasswordResetOTP.fulfilled, (state, action) => {
+        state.passwordReset.loading = false;
+        state.passwordReset.email = action.payload.email;
+        state.passwordReset.message = action.payload.message;
+        state.passwordReset.step = 'otp';
+      })
+      .addCase(sendPasswordResetOTP.rejected, (state, action) => {
+        state.passwordReset.loading = false;
+        state.passwordReset.error = action.payload;
+      })
+      
+      // Password Reset OTP Verify
+      .addCase(verifyPasswordResetOTP.pending, (state) => {
+        state.passwordReset.loading = true;
+        state.passwordReset.error = null;
+      })
+      .addCase(verifyPasswordResetOTP.fulfilled, (state, action) => {
+        state.passwordReset.loading = false;
+        state.passwordReset.message = action.payload.message;
+        state.passwordReset.otpVerified = true;
+        state.passwordReset.step = 'password';
+      })
+      .addCase(verifyPasswordResetOTP.rejected, (state, action) => {
+        state.passwordReset.loading = false;
+        state.passwordReset.error = action.payload;
+      })
+      
+      // Password Reset Final
+      .addCase(resetPassword.pending, (state) => {
+        state.passwordReset.loading = true;
+        state.passwordReset.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.passwordReset.loading = false;
+        state.passwordReset.message = action.payload.message;
+        // Reset password reset state after successful reset
+        state.passwordReset = {
+          step: 'email',
+          email: '',
+          loading: false,
+          error: null,
+          message: '',
+          otpVerified: false
+        };
+        // Switch back to login
+        state.authType = 'login';
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.passwordReset.loading = false;
+        state.passwordReset.error = action.payload;
       });
   },
 });
@@ -605,7 +754,11 @@ export const {
   initializeAuth,
   authExpired,
   setUser,
-  clearUser
+  clearUser,
+  resetPasswordState,
+  setPasswordResetStep,
+  setPasswordResetEmail,
+  setLoginFormEmail
 } = authSlice.actions;
 
 export default authSlice.reducer;

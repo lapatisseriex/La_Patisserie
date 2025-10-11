@@ -62,7 +62,7 @@ const AdminOrderTracking = () => {
         return;
       }
       
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const apiBaseUrl = import.meta.env.VITE_API_URL;
       const apiUrl = `${apiBaseUrl}/admin/orders/grouped`;
       
       console.log('Fetching order data from:', apiUrl, 'isRefresh:', isRefresh);
@@ -195,7 +195,7 @@ const AdminOrderTracking = () => {
       [categoryName]: !prev[categoryName]
     }));
   };
-
+  console.log();
   // Product Card Component
   const ProductCard = ({ product, hostel, category }) => {
     const dispatchKey = `${hostel}-${category}-${product.productName}`;

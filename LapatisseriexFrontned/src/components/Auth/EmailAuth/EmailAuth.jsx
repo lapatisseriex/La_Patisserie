@@ -11,7 +11,7 @@ const EmailAuth = ({ isSignUp = false }) => {
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState('');
   
-  const { signUpWithEmail, signInWithEmail, error, clearError, toggleAuthPanel, user, isAuthenticated } = useAuth();
+  const { signUpWithEmail, signInWithEmail, error, clearError, toggleAuthPanel, user, isAuthenticated, changeAuthType, setLoginFormEmail } = useAuth();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,6 +19,12 @@ const EmailAuth = ({ isSignUp = false }) => {
       ...prev,
       [name]: value
     }));
+    
+    // Track email changes for forgot password feature
+    if (name === 'email') {
+      setLoginFormEmail(value);
+    }
+    
     setLocalError('');
   };
 
@@ -177,6 +183,24 @@ const EmailAuth = ({ isSignUp = false }) => {
         >
           {loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')}
         </button>
+        
+        {!isSignUp && (
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                if (!formData.email.trim()) {
+                  setLocalError('Please enter your email address first');
+                  return;
+                }
+                changeAuthType('forgot-password');
+              }}
+              className="text-sm text-pink-600 hover:text-pink-700 transition-colors duration-200"
+            >
+              Forgot your password?
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

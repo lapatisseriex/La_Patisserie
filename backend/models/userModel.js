@@ -98,9 +98,26 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    lastPasswordChange: {
+      type: Date,
+    },
     isActive: {
       type: Boolean,
       default: true,
+    },
+    // Password reset OTP fields
+    passwordResetOTP: {
+      type: String,
+    },
+    passwordResetOTPExpires: {
+      type: Date,
+    },
+    passwordResetAttempts: {
+      type: Number,
+      default: 0,
+    },
+    passwordResetBlockedUntil: {
+      type: Date,
     },
   },
   {
