@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   FaSearch, 
   FaEye, 
-  FaEdit, 
   FaMoneyBillWave, 
   FaCreditCard,
   FaFilter,
@@ -24,7 +23,6 @@ const AdminOrders = () => {
   });
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [updating, setUpdating] = useState(false);
 
   // Status color mapping
   const getStatusColor = (status) => {
@@ -49,68 +47,6 @@ const AdminOrders = () => {
       'refunded': 'bg-gray-100 text-gray-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  // Get possible next status actions for quick updates
-  const getNextStatusActions = (currentStatus, paymentStatus) => {
-    const actions = [];
-    
-    if (currentStatus === 'placed' && paymentStatus === 'paid') {
-      actions.push({
-        status: 'confirmed',
-        label: 'Confirm',
-        title: 'Confirm Order',
-        className: 'bg-green-100 text-green-800'
-      });
-    }
-    
-    if (currentStatus === 'confirmed') {
-      actions.push({
-        status: 'preparing',
-        label: 'Prepare',
-        title: 'Start Preparing',
-        className: 'bg-yellow-100 text-yellow-800'
-      });
-    }
-    
-    if (currentStatus === 'preparing') {
-      actions.push({
-        status: 'ready',
-        label: 'Ready',
-        title: 'Mark as Ready',
-        className: 'bg-orange-100 text-orange-800'
-      });
-    }
-    
-    if (currentStatus === 'ready') {
-      actions.push({
-        status: 'out_for_delivery',
-        label: 'Ship',
-        title: 'Out for Delivery',
-        className: 'bg-purple-100 text-purple-800'
-      });
-    }
-    
-    if (currentStatus === 'out_for_delivery') {
-      actions.push({
-        status: 'delivered',
-        label: 'Deliver',
-        title: 'Mark as Delivered',
-        className: 'bg-green-200 text-green-900'
-      });
-    }
-    
-    return actions;
-  };
-
-  // Handle quick status updates
-  const handleQuickStatusUpdate = async (orderNumber, newStatus) => {
-    if (updating) return;
-    
-    const confirmMessage = `Are you sure you want to update this order to "${newStatus.replace('_', ' ')}"?`;
-    if (!window.confirm(confirmMessage)) return;
-    
-    await updateOrderStatus(orderNumber, newStatus);
   };
 
   // Fetch orders
@@ -149,47 +85,6 @@ const AdminOrders = () => {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Update order status
-  const updateOrderStatus = async (orderNumber, newStatus, notes = '') => {
-    try {
-      setUpdating(true);
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/orders/${orderNumber}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ orderStatus: newStatus, notes })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update order status');
-      }
-
-      const data = await response.json();
-      
-      // Update the order in the list
-      setOrders(orders.map(order => 
-        order.orderNumber === orderNumber 
-          ? { ...order, orderStatus: newStatus, notes: notes || order.notes }
-          : order
-      ));
-
-      // Update selected order if it's open
-      if (selectedOrder && selectedOrder.orderNumber === orderNumber) {
-        setSelectedOrder({ ...selectedOrder, orderStatus: newStatus, notes: notes || selectedOrder.notes });
-      }
-
-      alert('Order status updated successfully!');
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      alert('Failed to update order status');
-    } finally {
-      setUpdating(false);
     }
   };
 
@@ -461,38 +356,13 @@ const AdminOrders = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end items-center space-x-1">
-                        {/* Quick Status Actions */}
-                        {getNextStatusActions(order.orderStatus, order.paymentStatus).map((action) => (
-                          <button
-                            key={action.status}
-                            onClick={() => handleQuickStatusUpdate(order.orderNumber, action.status)}
-                            className={`px-2 py-1 text-xs font-medium rounded ${action.className} ${updating ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
-                            title={action.title}
-                            disabled={updating}
-                          >
-                            {action.label}
-                          </button>
-                        ))}
-                        
                         {/* View Details */}
                         <button
                           onClick={() => viewOrderDetails(order.orderNumber)}
-                          className="text-blue-600 hover:text-blue-900 p-1 ml-2"
+                          className="text-blue-600 hover:text-blue-900 p-1"
                           title="View Details"
                         >
                           <FaEye />
-                        </button>
-                        
-                        {/* Edit Modal */}
-                        <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowOrderModal(true);
-                          }}
-                          className="text-green-600 hover:text-green-900 p-1"
-                          title="Update Status"
-                        >
-                          <FaEdit />
                         </button>
                       </div>
                     </td>
@@ -637,51 +507,14 @@ const AdminOrders = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Status Update */}
-                <div className="mb-6">
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Update Order Status</h4>
-                  <div className="space-y-3">
-                    <select
-                      value={selectedOrder.orderStatus}
-                      onChange={(e) => setSelectedOrder({ ...selectedOrder, orderStatus: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      disabled={updating}
-                    >
-                      <option value="placed">Placed</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="preparing">Preparing</option>
-                      <option value="ready">Ready</option>
-                      <option value="out_for_delivery">Out for Delivery</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                    <textarea
-                      placeholder="Add notes (optional)"
-                      value={selectedOrder.notes || ''}
-                      onChange={(e) => setSelectedOrder({ ...selectedOrder, notes: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows="3"
-                      disabled={updating}
-                    />
-                  </div>
-                </div>
               </div>
 
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   onClick={() => setShowOrderModal(false)}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                  disabled={updating}
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => updateOrderStatus(selectedOrder.orderNumber, selectedOrder.orderStatus, selectedOrder.notes)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  disabled={updating}
-                >
-                  {updating ? 'Updating...' : 'Update Status'}
+                  Close
                 </button>
               </div>
             </div>

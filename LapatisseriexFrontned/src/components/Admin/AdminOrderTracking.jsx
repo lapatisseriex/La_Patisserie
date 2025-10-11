@@ -1,21 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FaChevronDown, 
-  FaChevronRight, 
   FaTruck, 
   FaEdit,
   FaMapMarkerAlt,
-  FaLayerGroup,
-  FaCube,
-  FaSpinner
+  FaSpinner,
+  FaShoppingBag,
+  FaBox,
+  FaChevronDown,
+  FaChevronRight,
+  FaSync
 } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+
+// CSS for line clamp
+const styles = `
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+`;
+
+// Add styles to head if not already present
+if (typeof document !== 'undefined' && !document.getElementById('admin-order-tracking-styles')) {
+  const styleSheet = document.createElement('style');
+  styleSheet.id = 'admin-order-tracking-styles';
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
 
 const AdminOrderTracking = () => {
   const [orderData, setOrderData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedHostels, setExpandedHostels] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedHostel, setSelectedHostel] = useState(null);
   const [expandedCategories, setExpandedCategories] = useState({});
   const [dispatchLoading, setDispatchLoading] = useState({});
   const [customDispatchModal, setCustomDispatchModal] = useState({
@@ -28,9 +48,13 @@ const AdminOrderTracking = () => {
   });
 
   // Fetch grouped order data
-  const fetchOrderData = async () => {
+  const fetchOrderData = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -38,8 +62,10 @@ const AdminOrderTracking = () => {
         return;
       }
       
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      const apiUrl = `${apiBaseUrl}/api/admin/orders/grouped`;
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const apiUrl = `${apiBaseUrl}/admin/orders/grouped`;
+      
+      console.log('Fetching order data from:', apiUrl, 'isRefresh:', isRefresh);
       
       const response = await fetch(apiUrl, {
         headers: {
@@ -86,11 +112,20 @@ const AdminOrderTracking = () => {
       
       setOrderData(data);
       
-      if (data.length === 0) {
-        toast.success('No orders with placed status at the moment');
+      if (isRefresh) {
+        if (data.length === 0) {
+          toast.success('No orders with placed status at the moment');
+        } else {
+          const filteredData = filterOrdersByStatus(data);
+          toast.success(`Refreshed! Loaded 'placed' orders from ${filteredData.length} hostels`);
+        }
       } else {
-        const filteredData = filterOrdersByStatus(data);
-        toast.success(`Loaded 'placed' orders from ${filteredData.length} hostels`);
+        if (data.length === 0) {
+          toast.success('No orders with placed status at the moment');
+        } else {
+          const filteredData = filterOrdersByStatus(data);
+          toast.success(`Loaded 'placed' orders from ${filteredData.length} hostels`);
+        }
       }
       
     } catch (error) {
@@ -108,13 +143,19 @@ const AdminOrderTracking = () => {
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  // Refresh data function
+  const handleRefresh = () => {
+    console.log('Refresh button clicked - calling fetchOrderData with isRefresh=true');
+    fetchOrderData(true);
   };
 
   // Filter orders - simplified since backend only returns 'placed' orders
   const filterOrdersByStatus = (orderData) => {
     if (!orderData || !Array.isArray(orderData)) return [];
-    
     return orderData.map(hostelGroup => {
       const filteredCategories = hostelGroup.categories.map(categoryGroup => {
         const filteredProducts = categoryGroup.products.filter(product => product.orderCount > 0);
@@ -141,21 +182,250 @@ const AdminOrderTracking = () => {
     fetchOrderData();
   }, []);
 
-  // Toggle hostel expansion
-  const toggleHostel = (hostelName) => {
-    setExpandedHostels(prev => ({
-      ...prev,
-      [hostelName]: !prev[hostelName]
-    }));
+  // Select hostel function
+  const selectHostel = (hostelGroup) => {
+    setSelectedHostel(hostelGroup);
+    setExpandedCategories({}); // Reset expanded categories when switching hostels
   };
 
   // Toggle category expansion
-  const toggleCategory = (hostelName, categoryName) => {
-    const key = `${hostelName}-${categoryName}`;
+  const toggleCategory = (categoryName) => {
     setExpandedCategories(prev => ({
       ...prev,
-      [key]: !prev[key]
+      [categoryName]: !prev[categoryName]
     }));
+  };
+
+  // Product Card Component
+  const ProductCard = ({ product, hostel, category }) => {
+    const dispatchKey = `${hostel}-${category}-${product.productName}`;
+    const isDispatching = dispatchLoading[dispatchKey];
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden group"
+      >
+        {/* Product Image */}
+        <div className="relative h-32 bg-gradient-to-br from-gray-100 to-gray-200">
+          {product.productImage ? (
+            <img
+              src={product.productImage}
+              alt={product.productName}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div className={`absolute inset-0 flex items-center justify-center ${product.productImage ? 'hidden' : 'flex'}`}>
+            <FaBox className="text-4xl text-gray-400" />
+          </div>
+          
+          {/* Order Count Badge */}
+          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg">
+            {product.orderCount}
+          </div>
+        </div>
+
+        {/* Product Info */}
+        <div className="p-3">
+          <h4 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2 min-h-[2.5rem]">
+            {product.productName}
+          </h4>
+          
+          <div className="flex items-center gap-1 mb-3 text-xs text-gray-600">
+            <FaShoppingBag className="text-blue-500" />
+            <span>Qty: {product.totalQuantity || product.orderCount}</span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-1">
+            <button
+              onClick={() => dispatchAll(hostel, category, product.productName, product.orderCount)}
+              disabled={isDispatching}
+              className="flex-1 px-2 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-1 font-medium"
+            >
+              {isDispatching ? (
+                <FaSpinner className="animate-spin" />
+              ) : (
+                <FaTruck className="text-xs" />
+              )}
+              <span>Dispatch</span>
+            </button>
+            
+            <button
+              onClick={() => openCustomDispatchModal(hostel, category, product.productName, product.orderCount)}
+              disabled={isDispatching}
+              className="px-2 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
+            >
+              <FaEdit />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Hostel Button Component
+  const HostelButton = ({ hostelGroup, isSelected }) => {
+    return (
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        onClick={() => selectHostel(hostelGroup)}
+        className={`w-full p-4 rounded-lg border-2 transition-all duration-300 text-left ${
+          isSelected 
+            ? 'border-rose-500 bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-lg' 
+            : 'border-gray-200 bg-white text-gray-900 hover:border-rose-300 hover:shadow-md'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              isSelected ? 'bg-white bg-opacity-20' : 'bg-rose-100'
+            }`}>
+              <FaMapMarkerAlt className={`text-lg ${isSelected ? 'text-white' : 'text-rose-600'}`} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">{hostelGroup.hostel}</h3>
+              <p className={`text-sm ${isSelected ? 'text-rose-100' : 'text-gray-600'}`}>
+                📍 {hostelGroup.deliveryLocation || 'Unknown Location'}
+              </p>
+              <p className={`text-xs ${isSelected ? 'text-rose-200' : 'text-gray-500'}`}>
+                {hostelGroup.totalOrders} pending orders
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              isSelected 
+                ? 'bg-white bg-opacity-20 text-white' 
+                : 'bg-rose-100 text-rose-800'
+            }`}>
+              {hostelGroup.categories.length} categories
+            </span>
+          </div>
+        </div>
+      </motion.button>
+    );
+  };
+
+  // Categories and Products Display Component
+  const HostelDetails = ({ hostelGroup }) => {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white rounded-lg shadow-lg border border-gray-200 p-6"
+      >
+        {/* Selected Hostel Header */}
+        <div className="mb-6 pb-4 border-b border-gray-200">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 bg-rose-100 rounded-lg flex items-center justify-center">
+              <FaMapMarkerAlt className="text-2xl text-rose-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">{hostelGroup.hostel}</h2>
+              <p className="text-gray-600 flex items-center gap-1">
+                📍 {hostelGroup.deliveryLocation || 'Unknown Location'}
+              </p>
+              <p className="text-sm text-gray-500">
+                {hostelGroup.totalOrders} pending orders across {hostelGroup.categories.length} categories
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Categories */}
+        <div className="space-y-4">
+          {hostelGroup.categories.map((categoryGroup) => (
+            <div key={categoryGroup.category} className="border border-gray-200 rounded-lg overflow-hidden">
+              {/* Category Header - Clickable */}
+              <div
+                className="bg-blue-50 p-4 cursor-pointer hover:bg-blue-100 transition-colors duration-200 border-b border-gray-200"
+                onClick={() => toggleCategory(categoryGroup.category)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FaBox className="text-blue-600" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {categoryGroup.category}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {categoryGroup.totalOrders} orders • {categoryGroup.products.length} products
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                      {categoryGroup.totalOrders} orders
+                    </span>
+                    {expandedCategories[categoryGroup.category] ? 
+                      <FaChevronDown className="text-blue-600" /> : 
+                      <FaChevronRight className="text-blue-600" />
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Products Grid - Expandable */}
+              <AnimatePresence>
+                {expandedCategories[categoryGroup.category] && (
+                  <motion.div
+                    variants={expandVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {categoryGroup.products.map((product) => (
+                          <ProductCard
+                            key={product.productName}
+                            product={product}
+                            hostel={hostelGroup.hostel}
+                            category={categoryGroup.category}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Animation variants
+  const expandVariants = {
+    hidden: { height: 0, opacity: 0 },
+    visible: {
+      height: 'auto',
+      opacity: 1,
+      transition: {
+        height: { duration: 0.3 },
+        opacity: { duration: 0.2, delay: 0.1 }
+      }
+    },
+    exit: {
+      height: 0,
+      opacity: 0,
+      transition: {
+        height: { duration: 0.3 },
+        opacity: { duration: 0.2 }
+      }
+    }
   };
 
   // Dispatch all orders for a product
@@ -170,10 +440,40 @@ const AdminOrderTracking = () => {
         toast.error('Authentication required. Please log in.');
         return;
       }
+
+      // Optimistic update: immediately reduce the count in the UI
+      setOrderData(prevData => {
+        return prevData.map(hostelGroup => {
+          if (hostelGroup.hostel === hostel) {
+            return {
+              ...hostelGroup,
+              categories: hostelGroup.categories.map(categoryGroup => {
+                if (categoryGroup.category === category) {
+                  return {
+                    ...categoryGroup,
+                    products: categoryGroup.products.map(product => {
+                      if (product.productName === productName) {
+                        const newOrderCount = Math.max(0, product.orderCount - count);
+                        return {
+                          ...product,
+                          orderCount: newOrderCount
+                        };
+                      }
+                      return product;
+                    }).filter(product => product.orderCount > 0) // Remove products with 0 count
+                  };
+                }
+                return categoryGroup;
+              }).filter(categoryGroup => categoryGroup.products.length > 0) // Remove empty categories
+            };
+          }
+          return hostelGroup;
+        }).filter(hostelGroup => hostelGroup.categories.length > 0); // Remove empty hostels
+      });
       
       // Use environment variable for API base URL or fallback to relative path
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      const apiUrl = `${apiBaseUrl}/api/admin/dispatch`;
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const apiUrl = `${apiBaseUrl}/admin/dispatch`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -190,6 +490,9 @@ const AdminOrderTracking = () => {
       });
 
       if (!response.ok) {
+        // If the API call fails, revert the optimistic update
+        await fetchOrderData();
+        
         const contentType = response.headers.get('content-type');
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         
@@ -209,10 +512,15 @@ const AdminOrderTracking = () => {
       }
 
       const result = await response.json();
-      toast.success(`Successfully dispatched ${result.dispatchedCount || count} orders for ${productName}`);
       
-      // Refresh data
-      await fetchOrderData();
+      // Always refresh data after successful dispatch to ensure consistency
+      // Use a small delay to ensure database transaction is committed
+      setTimeout(async () => {
+        console.log('Refreshing order data after successful dispatch...');
+        await fetchOrderData();
+      }, 300);
+      
+      toast.success(`Successfully dispatched ${result.dispatchedCount || count} orders for ${productName}`);
       
     } catch (error) {
       console.error('Error dispatching orders:', error);
@@ -268,48 +576,6 @@ const AdminOrderTracking = () => {
     closeCustomDispatchModal();
   };
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const cardVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.3
-      }
-    }
-  };
-
-  const expandVariants = {
-    hidden: { height: 0, opacity: 0 },
-    visible: {
-      height: 'auto',
-      opacity: 1,
-      transition: {
-        height: { duration: 0.3 },
-        opacity: { duration: 0.2, delay: 0.1 }
-      }
-    },
-    exit: {
-      height: 0,
-      opacity: 0,
-      transition: {
-        height: { duration: 0.3 },
-        opacity: { duration: 0.2 }
-      }
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -323,11 +589,27 @@ const AdminOrderTracking = () => {
   const filteredOrderData = filterOrdersByStatus(orderData);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Tracking</h1>
-        <p className="text-gray-600">Track and dispatch pending orders (showing only 'placed' orders)</p>
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Order Tracking Dashboard</h1>
+            <p className="text-gray-600">Track and dispatch pending orders (showing only 'placed' orders)</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg"
+            >
+              <FaSync className={`${refreshing ? 'animate-spin' : ''}`} />
+              <span className="font-medium">
+                {refreshing ? 'Refreshing...' : 'Refresh Data'}
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* No data state */}
@@ -338,178 +620,36 @@ const AdminOrderTracking = () => {
           <p className="text-gray-500">All orders have been dispatched or there are no orders with 'placed' status.</p>
         </div>
       ) : (
-        /* Order Data */
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-6"
-        >
-          {filteredOrderData.map((hostelGroup) => (
-            <motion.div
-              key={hostelGroup.hostel}
-              variants={cardVariants}
-              className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden"
-            >
-              {/* Hostel Header */}
-              <div
-                className="bg-gradient-to-r from-rose-600 to-pink-600 text-white p-6 cursor-pointer hover:from-rose-700 hover:to-pink-700 transition-all duration-200"
-                onClick={() => toggleHostel(hostelGroup.hostel)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <FaMapMarkerAlt className="text-2xl" />
-                    <div>
-                      <h2 className="text-2xl font-bold">{hostelGroup.hostel}</h2>
-                      <p className="text-rose-100">
-                        {hostelGroup.totalOrders} pending orders across {hostelGroup.categories.length} categories
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">
-                      {hostelGroup.totalOrders} orders
-                    </span>
-                    {expandedHostels[hostelGroup.hostel] ? 
-                      <FaChevronDown className="text-xl" /> : 
-                      <FaChevronRight className="text-xl" />
-                    }
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Side - Hostel Buttons */}
+          <div className="lg:col-span-1">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Hostel</h3>
+              <div className="space-y-3">
+                {filteredOrderData.map((hostelGroup) => (
+                  <HostelButton
+                    key={hostelGroup.hostel}
+                    hostelGroup={hostelGroup}
+                    isSelected={selectedHostel?.hostel === hostelGroup.hostel}
+                  />
+                ))}
               </div>
+            </div>
+          </div>
 
-              {/* Categories */}
-              <AnimatePresence>
-                {expandedHostels[hostelGroup.hostel] && (
-                  <motion.div
-                    variants={expandVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="overflow-hidden"
-                  >
-                    <div className="p-6 space-y-4">
-                      {hostelGroup.categories.map((categoryGroup) => (
-                        <div
-                          key={categoryGroup.category}
-                          className="border border-gray-200 rounded-lg overflow-hidden"
-                        >
-                          {/* Category Header */}
-                          <div
-                            className="bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-                            onClick={() => toggleCategory(hostelGroup.hostel, categoryGroup.category)}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <FaLayerGroup className="text-gray-600" />
-                                <div>
-                                  <h3 className="text-lg font-semibold text-gray-900">
-                                    {categoryGroup.category}
-                                  </h3>
-                                  <p className="text-sm text-gray-600">
-                                    {categoryGroup.totalOrders} orders across {categoryGroup.products.length} products
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                  {categoryGroup.totalOrders} orders
-                                </span>
-                                {expandedCategories[`${hostelGroup.hostel}-${categoryGroup.category}`] ? 
-                                  <FaChevronDown className="text-gray-600" /> : 
-                                  <FaChevronRight className="text-gray-600" />
-                                }
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Products */}
-                          <AnimatePresence>
-                            {expandedCategories[`${hostelGroup.hostel}-${categoryGroup.category}`] && (
-                              <motion.div
-                                variants={expandVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit="exit"
-                                className="overflow-hidden"
-                              >
-                                <div className="p-4 space-y-3 bg-white">
-                                  {categoryGroup.products.map((product) => {
-                                    const dispatchKey = `${hostelGroup.hostel}-${categoryGroup.category}-${product.productName}`;
-                                    const isDispatching = dispatchLoading[dispatchKey];
-
-                                    return (
-                                      <div
-                                        key={product.productName}
-                                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200"
-                                      >
-                                        <div className="flex items-center space-x-3">
-                                          <FaCube className="text-gray-500" />
-                                          <div>
-                                            <h4 className="font-medium text-gray-900">
-                                              {product.productName}
-                                            </h4>
-                                            <p className="text-sm text-gray-600">
-                                              {product.orderCount} pending orders
-                                            </p>
-                                          </div>
-                                        </div>
-
-                                        <div className="flex items-center space-x-3">
-                                          <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-                                            {product.orderCount} orders
-                                          </span>
-                                          
-                                          <div className="flex space-x-2">
-                                            <button
-                                              onClick={() => dispatchAll(
-                                                hostelGroup.hostel,
-                                                categoryGroup.category,
-                                                product.productName,
-                                                product.orderCount
-                                              )}
-                                              disabled={isDispatching}
-                                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center space-x-2"
-                                            >
-                                              {isDispatching ? (
-                                                <FaSpinner className="animate-spin" />
-                                              ) : (
-                                                <FaTruck />
-                                              )}
-                                              <span>Dispatch All</span>
-                                            </button>
-                                            
-                                            <button
-                                              onClick={() => openCustomDispatchModal(
-                                                hostelGroup.hostel,
-                                                categoryGroup.category,
-                                                product.productName,
-                                                product.orderCount
-                                              )}
-                                              disabled={isDispatching}
-                                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center space-x-2"
-                                            >
-                                              <FaEdit />
-                                              <span>Custom Count</span>
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </motion.div>
+          {/* Right Side - Categories and Products */}
+          <div className="lg:col-span-2">
+            {selectedHostel ? (
+              <HostelDetails hostelGroup={selectedHostel} />
+            ) : (
+              <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-12 text-center">
+                <FaMapMarkerAlt className="mx-auto text-6xl text-gray-300 mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">Select a Hostel</h3>
+                <p className="text-gray-500">Choose a hostel from the left panel to view categories and products</p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Custom Dispatch Modal */}

@@ -17,6 +17,7 @@ import './hide-search.css';
 
 // Import UserMenu component
 import UserMenu from './UserMenu/UserMenu';
+import NotificationBell from '../Notifications/NotificationBell';
 
 // Import icons
 import { 
@@ -903,6 +904,9 @@ const Header = ({ isAdminView = false }) => {
 
                 {/* Favorites component */}
                 <FavoritesIcon />
+
+                {/* Notification Bell */}
+                <NotificationBell />
 
                 {/* Cart component - Premium Design with Tooltip */}
                 <div className="tooltip">

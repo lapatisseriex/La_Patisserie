@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import mongoose from 'mongoose';
 import compression from 'compression';
 import helmet from 'helmet';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import dbConnection from './utils/database.js';
 import { 
   generalRateLimit, 
@@ -33,9 +35,11 @@ import stockRoutes from './routes/stockRoutes.js';
 import stockValidationRoutes from './routes/stockValidationRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // Initialize Express app
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -195,6 +199,43 @@ const startServer = async () => {
     app.use('/api/stock-validation', stockValidationRoutes);
     app.use('/api/analytics', analyticsRoutes);
     app.use('/api/contact', contactRoutes);
+    app.use('/api/notifications', notificationRoutes);
+
+    // WebSocket setup
+    const io = new Server(server, {
+      cors: {
+        origin: allowedOrigins,
+        methods: ['GET', 'POST'],
+        credentials: true
+      }
+    });
+
+    // Store connected users
+    const connectedUsers = new Map();
+
+    io.on('connection', (socket) => {
+      console.log('User connected:', socket.id);
+
+      // Handle user authentication
+      socket.on('authenticate', (userId) => {
+        if (userId) {
+          connectedUsers.set(userId, socket.id);
+          socket.userId = userId;
+          console.log(`User ${userId} authenticated with socket ${socket.id}`);
+        }
+      });
+
+      socket.on('disconnect', () => {
+        if (socket.userId) {
+          connectedUsers.delete(socket.userId);
+          console.log(`User ${socket.userId} disconnected`);
+        }
+      });
+    });
+
+    // Make io available globally for use in other files
+    global.io = io;
+    global.connectedUsers = connectedUsers;
 
     // Health check endpoint
     app.get('/health', (req, res) => {
@@ -240,9 +281,10 @@ const startServer = async () => {
     });
 
     // Start server only after database connection is established
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Health check available at http://localhost:${PORT}/health`);
+      console.log(`WebSocket server running on port ${PORT}`);
     });
 
   } catch (error) {

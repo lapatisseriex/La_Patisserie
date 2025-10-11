@@ -1,6 +1,8 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js';
+import DeliveryLocationMapping from '../models/deliveryLocationMappingModel.js';
+import { createNotification } from './notificationController.js';
 
 // @desc    Get grouped pending orders for order tracking
 // @route   GET /api/admin/orders/grouped
@@ -32,9 +34,16 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
       if (!hostelGroups[hostelName]) {
         hostelGroups[hostelName] = {
           hostel: hostelName,
+          deliveryLocations: [], // Store all delivery locations
           categories: {},
           totalOrders: 0
         };
+      }
+      
+      // Add delivery location to the list if not already present
+      const location = order.deliveryLocation?.trim();
+      if (location && location !== '' && !hostelGroups[hostelName].deliveryLocations.includes(location)) {
+        hostelGroups[hostelName].deliveryLocations.push(location);
       }
       
       // Process each cart item
@@ -62,6 +71,9 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
           hostelGroups[hostelName].categories[categoryName].products[productName] = {
             productName: productName,
             productId: item.productId ? item.productId._id : item.productId,
+            productImage: item.productId && item.productId.images && item.productId.images.length > 0 
+              ? item.productId.images[0] 
+              : null,
             orderCount: 0,
             totalQuantity: 0,
             orderIds: []
@@ -81,6 +93,9 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
     // Convert to array format expected by frontend
     const result = Object.values(hostelGroups).map(hostelGroup => ({
       hostel: hostelGroup.hostel,
+      deliveryLocation: hostelGroup.deliveryLocations.length > 0 
+        ? hostelGroup.deliveryLocations[0]
+        : 'Unknown Location',
       totalOrders: hostelGroup.totalOrders,
       categories: Object.values(hostelGroup.categories).map(categoryGroup => ({
         category: categoryGroup.category,
@@ -88,6 +103,27 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
         products: Object.values(categoryGroup.products)
       }))
     }));
+
+    // Try to enhance with delivery location mapping data
+    try {
+      const mappings = await DeliveryLocationMapping.find({ isActive: true }).lean();
+      const mappingByHostel = {};
+      
+      mappings.forEach(mapping => {
+        if (mapping.hostelName && mapping.deliveryLocation) {
+          mappingByHostel[mapping.hostelName] = mapping.deliveryLocation;
+        }
+      });
+
+      // Update delivery locations with mapping data
+      result.forEach(hostelGroup => {
+        if (mappingByHostel[hostelGroup.hostel]) {
+          hostelGroup.deliveryLocation = mappingByHostel[hostelGroup.hostel];
+        }
+      });
+    } catch (mappingError) {
+      console.log('Could not fetch delivery location mappings:', mappingError.message);
+    }
     
     res.status(200).json(result);
     
@@ -173,6 +209,42 @@ export const dispatchOrders = asyncHandler(async (req, res) => {
         }
       }
     );
+
+    // Send notifications to users
+    try {
+      for (const order of ordersToDispatch) {
+        // Create notification in database
+        await createNotification(
+          order.userId,
+          order.orderNumber,
+          'order_dispatched',
+          '**Order Dispatched!** 🚚',
+          `Your order **#${order.orderNumber}** is now out for delivery and will reach you soon!`,
+          {
+            orderNumber: order.orderNumber,
+            productName: productName,
+            hostel: hostel,
+            deliveryLocation: order.deliveryLocation
+          }
+        );
+
+        // Send real-time notification via WebSocket
+        if (global.io && global.connectedUsers) {
+          const userSocketId = global.connectedUsers.get(order.userId.toString());
+          if (userSocketId) {
+            global.io.to(userSocketId).emit('orderStatusUpdate', {
+              orderNumber: order.orderNumber,
+              status: 'out_for_delivery',
+              message: `Your order **#${order.orderNumber}** is now out for delivery!`,
+              timestamp: new Date().toISOString()
+            });
+          }
+        }
+      }
+    } catch (notificationError) {
+      console.error('Error sending notifications:', notificationError);
+      // Don't fail the dispatch if notifications fail
+    }
 
     res.status(200).json({
       message: 'Orders dispatched successfully',

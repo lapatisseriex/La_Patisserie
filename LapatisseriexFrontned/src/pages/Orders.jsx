@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowLeft, FaBoxOpen, FaClock, FaTruck, FaCheckCircle, FaTimesCircle, FaReceipt } from 'react-icons/fa';
+import { FaArrowLeft, FaBoxOpen, FaClock, FaTruck, FaCheckCircle, FaTimesCircle, FaReceipt, FaEye } from 'react-icons/fa';
 import { useAuth } from '../hooks/useAuth';
 import { calculatePricing } from '../utils/pricingUtils';
 
@@ -241,14 +241,25 @@ const Orders = () => {
                   </div>
 
                   {/* Status Badges */}
-                  <div className="flex gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(order.orderStatus)}`}>
-                      {getStatusIcon(order.orderStatus)}
-                      {getStatusText(order.orderStatus)}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
-                      Payment: {order.paymentStatus}
-                    </span>
+                  <div className="flex gap-2 items-center justify-between">
+                    <div className="flex gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(order.orderStatus)}`}>
+                        {getStatusIcon(order.orderStatus)}
+                        {getStatusText(order.orderStatus)}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
+                        Payment: {order.paymentStatus}
+                      </span>
+                    </div>
+                    
+                    {/* Track Order Button */}
+                    <Link
+                      to={`/orders/${order.orderNumber}`}
+                      className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-full transition-colors duration-200"
+                    >
+                      <FaEye className="text-xs" />
+                      Track Order
+                    </Link>
                   </div>
                 </div>
 

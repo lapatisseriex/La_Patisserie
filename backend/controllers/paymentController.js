@@ -7,7 +7,9 @@ import Product from '../models/productModel.js';
 import Location from '../models/locationModel.js';
 import mongoose from 'mongoose';
 import Payment from '../models/paymentModel.js';
+import Notification from '../models/notificationModel.js';
 import { sendOrderStatusNotification, sendOrderConfirmationEmail } from '../utils/orderEmailService.js';
+import { createNotification } from './notificationController.js';
 
 // Initialize Razorpay with validation
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -303,6 +305,48 @@ export const createOrder = asyncHandler(async (req, res) => {
     await order.save();
     console.log('Order saved to database:', order._id);
     console.log('Order hostelName stored:', order.hostelName);
+    console.log('Starting notification creation for user:', userId, 'order:', orderNumber);
+
+    // Create "Order Placed" notification for the user
+    try {
+      // Check if notification already exists for this order
+      const existingNotification = await Notification.findOne({
+        userId,
+        orderNumber,
+        type: 'order_placed'
+      });
+
+      if (!existingNotification) {
+        await createNotification(
+          userId,
+          orderNumber,
+          'order_placed',
+          '**Order Placed** Successfully',
+          `Your order **#${orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`
+        );
+
+        // Emit real-time notification via WebSocket if user is connected
+        const io = global.io;
+        const connectedUsers = global.connectedUsers;
+        if (io && connectedUsers && connectedUsers.has(userId.toString())) {
+          const socketId = connectedUsers.get(userId.toString());
+          io.to(socketId).emit('newNotification', {
+            type: 'order_placed',
+            title: '**Order Placed** Successfully',
+            message: `Your order **#${orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`,
+            orderNumber
+          });
+          console.log('Order placed notification sent via WebSocket to user:', userId);
+        } else {
+          console.log('User not connected via WebSocket, notification saved to database only');
+        }
+      } else {
+        console.log('Order placed notification already exists for order:', orderNumber);
+      }
+    } catch (notificationError) {
+      console.error('Error creating order placed notification:', notificationError);
+      // Don't fail the order creation if notification fails
+    }
 
     // For COD orders, decrement stock immediately since payment is guaranteed
     if (paymentMethod === 'cod' && cartItems && cartItems.length > 0) {
@@ -727,104 +771,6 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to fetch order details',
-      error: error.message 
-    });
-  }
-});
-
-// Update Order Status
-export const updateOrderStatus = asyncHandler(async (req, res) => {
-  try {
-    const { orderNumber } = req.params;
-    const { orderStatus, notes } = req.body;
-
-    const validStatuses = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'];
-    
-    if (!validStatuses.includes(orderStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid order status'
-      });
-    }
-
-    const updateData = { orderStatus };
-    if (notes) updateData.notes = notes;
-    if (orderStatus === 'delivered') updateData.actualDeliveryTime = new Date();
-
-    // Get the existing order to check previous status
-    const existingOrder = await Order.findOne({ orderNumber }).populate('userId', 'email name');
-    
-    if (!existingOrder) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
-    }
-
-    // Handle order cancellation - restore stock
-    if (orderStatus === 'cancelled' && existingOrder.orderStatus !== 'cancelled') {
-      console.log('🔄 Order cancelled - restoring product stock');
-      await restoreProductStock(existingOrder.cartItems);
-    }
-
-    // Update the order
-    const order = await Order.findOneAndUpdate(
-      { orderNumber },
-      updateData,
-      { new: true }
-    ).populate('userId', 'email name');
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found after update'
-      });
-    }
-
-    // Update product order counts if status is being confirmed for the first time
-    if (existingOrder.orderStatus !== 'confirmed' && orderStatus === 'confirmed' && order.cartItems && order.cartItems.length > 0) {
-      console.log('Order confirmed - updating product order counts');
-      await updateProductOrderCounts(order.cartItems);
-    }
-
-    // Send email notification if status changed and user has email
-    let emailResult = null;
-    if (existingOrder.orderStatus !== orderStatus && order.userId?.email) {
-      console.log(`Order status changed from ${existingOrder.orderStatus} to ${orderStatus}, sending email notification`);
-      
-      try {
-        emailResult = await sendOrderStatusNotification(
-          order,
-          orderStatus,
-          order.userId.email
-        );
-        
-        if (emailResult.success) {
-          console.log('Email notification sent successfully:', emailResult.messageId);
-        } else {
-          console.error('Failed to send email notification:', emailResult.error);
-        }
-      } catch (emailError) {
-        console.error('Error sending email notification:', emailError.message);
-        // Don't fail the order update if email fails
-      }
-    }
-
-    res.json({
-      success: true,
-      message: 'Order status updated successfully',
-      order,
-      emailNotification: emailResult ? {
-        sent: emailResult.success,
-        messageId: emailResult.messageId,
-        error: emailResult.error
-      } : null
-    });
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update order status',
       error: error.message 
     });
   }

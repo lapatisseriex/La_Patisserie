@@ -8,6 +8,8 @@ import {
 } from 'firebase/auth';
 import axios from 'axios';
 import api from '../../services/apiService';
+import webSocketService from '../../services/websocketService';
+import { toast } from 'react-hot-toast';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -286,6 +288,60 @@ export const AuthProvider = ({ children }) => {
       }
     };
   }, []);
+
+  // Handle WebSocket connection when user changes
+  useEffect(() => {
+    if (user && user._id) {
+      // Connect to WebSocket
+      console.log('Connecting to WebSocket for user:', user._id);
+      webSocketService.connect(user._id);
+
+      // Listen for order status updates
+      const handleOrderStatusUpdate = (data) => {
+        console.log('Received order status update:', data);
+        toast.success(data.message, {
+          duration: 5000,
+          icon: '🚚'
+        });
+      };
+
+      // Listen for new notifications
+      const handleNewNotification = (data) => {
+        console.log('Received new notification:', data);
+        
+        // Show toast notification (strip markdown for plain text)
+        const iconMap = {
+          'order_placed': '🛒',
+          'order_dispatched': '🚚',
+          'order_delivered': '✅',
+          'order_cancelled': '❌'
+        };
+        
+        // Strip markdown formatting for toast display
+        const plainMessage = data.message.replace(/\*\*(.*?)\*\*/g, '$1');
+        const plainTitle = data.title.replace(/\*\*(.*?)\*\*/g, '$1');
+        
+        toast.success(`${plainTitle}: ${plainMessage}`, {
+          duration: 5000,
+          icon: iconMap[data.type] || '🔔'
+        });
+
+        // Trigger a custom event to update notification bell
+        window.dispatchEvent(new CustomEvent('newNotification', { detail: data }));
+      };
+
+      webSocketService.onOrderStatusUpdate(handleOrderStatusUpdate);
+      webSocketService.onNewNotification(handleNewNotification);
+
+      return () => {
+        webSocketService.offOrderStatusUpdate(handleOrderStatusUpdate);
+        webSocketService.offNewNotification(handleNewNotification);
+      };
+    } else {
+      // Disconnect WebSocket when user logs out
+      webSocketService.disconnect();
+    }
+  }, [user]);
 
   // Reset reCAPTCHA when needed
   const resetRecaptcha = () => {
