@@ -793,7 +793,11 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 
     const skip = (page - 1) * limit;
     
-    const orders = await Order.find({ userId })
+    // Only show orders with specific statuses for users
+    const orders = await Order.find({ 
+      userId,
+      orderStatus: { $in: ['placed', 'out_for_delivery', 'delivered'] }
+    })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -826,7 +830,10 @@ export const getUserOrders = asyncHandler(async (req, res) => {
       };
     }));
 
-    const total = await Order.countDocuments({ userId });
+    const total = await Order.countDocuments({ 
+      userId,
+      orderStatus: { $in: ['placed', 'out_for_delivery', 'delivered'] }
+    });
 
     res.json({
       success: true,

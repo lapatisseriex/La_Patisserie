@@ -2,6 +2,8 @@ import { createContext, useState, useContext, useEffect, useCallback, useRef } f
 import axios from 'axios';
 import axiosInstance from '../../utils/axiosConfig';
 import { useAuth } from '../../hooks/useAuth';
+import { useDispatch } from 'react-redux';
+import { removeProduct } from '../../redux/productsSlice';
 import CacheManager from '../../utils/cacheManager';
 
 const ProductContext = createContext();
@@ -16,6 +18,7 @@ export const ProductProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { user } = useAuth();
+  const dispatch = useDispatch();
 
   // Circuit breaker state for API resilience
   const circuitBreakerRef = useRef({
@@ -447,6 +450,12 @@ export const ProductProvider = ({ children }) => {
         }
       }
       
+      // Also clear localStorage/sessionStorage product caches
+      CacheManager.clearProductCache();
+      
+      // Update products in state immediately without making another API call
+      setProducts(prev => [...prev, response.data]);
+      
       return response.data;
     } catch (err) {
       console.error("Error creating product:", err);
@@ -493,6 +502,12 @@ export const ProductProvider = ({ children }) => {
         }
       }
       
+      // Also clear localStorage/sessionStorage product caches
+      CacheManager.clearProductCache();
+      
+      // Update product in state immediately without making another API call
+      setProducts(prev => prev.map(p => p._id === productId ? response.data : p));
+      
       return response.data;
     } catch (err) {
       console.error(`Error updating product ${productId}:`, err);
@@ -525,6 +540,19 @@ export const ProductProvider = ({ children }) => {
         }
       );
       
+      // Clear cache after updating discount to ensure fresh data on next fetch
+      for (const key of requestCache.current.keys()) {
+        if (key.startsWith('products-')) {
+          requestCache.current.delete(key);
+        }
+      }
+      
+      // Also clear localStorage/sessionStorage product caches
+      CacheManager.clearProductCache();
+      
+      // Update product in state immediately without making another API call
+      setProducts(prev => prev.map(p => p._id === productId ? response.data : p));
+      
       return response.data;
     } catch (err) {
       console.error(`Error updating product discount ${productId}:`, err);
@@ -541,12 +569,14 @@ export const ProductProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
+      console.log(`Attempting to delete product: ${productId}`);
+      
       // Get auth token
       const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      await axios.delete(
+      const response = await axios.delete(
         `${API_URL}/products/${productId}`,
         {
           headers: { 
@@ -554,6 +584,8 @@ export const ProductProvider = ({ children }) => {
           }
         }
       );
+      
+      console.log(`Product deletion response:`, response.data);
       
       // Clear cache to ensure fresh data on next fetch
       for (const key of requestCache.current.keys()) {
@@ -565,15 +597,38 @@ export const ProductProvider = ({ children }) => {
       // Update products list in state to remove the deleted product
       setProducts(prev => prev.filter(product => product._id !== productId));
       
+      // Also update Redux store to keep everything in sync
+      dispatch(removeProduct(productId));
+      
+      console.log(`Product ${productId} deleted successfully from frontend state`);
+      
       return true;
     } catch (err) {
       console.error(`Error deleting product ${productId}:`, err);
-      setError(err.response?.data?.message || "Failed to delete product");
-      throw err;
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to delete product";
+      
+      if (err.response?.status === 404) {
+        errorMessage = "Product not found";
+      } else if (err.response?.status === 401) {
+        errorMessage = "You are not authorized to delete this product";
+      } else if (err.response?.status === 403) {
+        errorMessage = "Access denied. Admin privileges required";
+      } else if (err.response?.status === 500) {
+        errorMessage = "Server error occurred while deleting product. Please try again.";
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, [API_URL, dispatch]);
   
   // Context value
   const value = {

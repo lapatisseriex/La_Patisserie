@@ -104,7 +104,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         setCurrentImageIndex((prevIndex) => 
           (prevIndex + 1) % currentProduct.images.length
         );
-      }, 4500); // Change image every 4.5 seconds for very slow, smooth experience
+      }, 8000); // Change image every 8 seconds for very slow, gentle experience
 
       return () => clearInterval(interval);
     }
@@ -347,9 +347,9 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             <MediaDisplay
           src={currentProduct.images?.[currentImageIndex] || null}
           alt={currentProduct.name}
-          className="w-full h-full transition-all duration-1000 ease-in-out"
+          className="w-full h-full transition-all duration-[3000ms] ease-in-out"
           style={{
-            transition: 'opacity 1.2s ease-in-out, transform 1.2s ease-in-out',
+            transition: 'opacity 3s ease-in-out, transform 3s ease-in-out',
             opacity: 1
           }}
           aspectRatio="auto"

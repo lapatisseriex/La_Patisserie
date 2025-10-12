@@ -6,9 +6,13 @@ import {
   FaCreditCard,
   FaFilter,
   FaDownload,
-  FaSyncAlt
+  FaSyncAlt,
+  FaTruck,
+  FaSpinner,
+  FaCheck
 } from 'react-icons/fa';
 import { BsCashCoin } from 'react-icons/bs';
+import { toast } from 'react-hot-toast';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -23,6 +27,8 @@ const AdminOrders = () => {
   });
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [deliveryLoading, setDeliveryLoading] = useState({});
+  const [deliverySuccess, setDeliverySuccess] = useState({});
 
   // Status color mapping
   const getStatusColor = (status) => {
@@ -139,6 +145,76 @@ const AdminOrders = () => {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // Mark item(s) as delivered function
+  const markAsDelivered = async (orderId, productName, categoryName, deliverAll = false) => {
+    const deliveryKey = deliverAll ? `${orderId}-ALL_DISPATCHED` : `${orderId}-${productName}`;
+    
+    try {
+      console.log('Marking as delivered:', { orderId, productName, categoryName, deliverAll });
+      setDeliveryLoading(prev => ({ ...prev, [deliveryKey]: true }));
+      
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('Authentication required. Please log in.');
+        return;
+      }
+      
+      const apiBaseUrl = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${apiBaseUrl}/admin/deliver-item`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          orderId,
+          productName: deliverAll ? undefined : productName,
+          categoryName: deliverAll ? undefined : categoryName,
+          deliverAll: deliverAll
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Delivery successful:', result);
+      
+      // Show success state briefly
+      setDeliverySuccess(prev => ({ ...prev, [deliveryKey]: true }));
+      
+      // Refresh orders and order details
+      await fetchOrders(currentPage, filters);
+      if (selectedOrder && selectedOrder._id === orderId) {
+        await viewOrderDetails(selectedOrder.orderNumber);
+      }
+      
+      if (deliverAll) {
+        toast.success(`Successfully marked all dispatched items as delivered`);
+      } else {
+        toast.success(`Successfully delivered ${productName}`);
+      }
+      
+      // Clear success state after a brief moment
+      setTimeout(() => {
+        setDeliverySuccess(prev => ({ ...prev, [deliveryKey]: false }));
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error marking as delivered:', error);
+      setDeliverySuccess(prev => ({ ...prev, [deliveryKey]: false }));
+      
+      if (error.message.includes('Failed to fetch')) {
+        toast.error('Cannot connect to server. Please ensure the backend server is running.');
+      } else {
+        toast.error(error.message || 'Failed to mark as delivered');
+      }
+    } finally {
+      setDeliveryLoading(prev => ({ ...prev, [deliveryKey]: false }));
+    }
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
@@ -287,6 +363,9 @@ const AdminOrders = () => {
                     Customer
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Items Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Payment
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -327,6 +406,28 @@ const AdminOrders = () => {
                         <div className="text-xs text-gray-400">
                           {order.userDetails?.email || 'N/A'}
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-xs space-y-1">
+                        {order.cartItems && order.cartItems.length > 0 ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="text-orange-600">📦 Pending: {order.cartItems.filter(item => !item.dispatchStatus || item.dispatchStatus === 'pending').length}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-purple-600">🚚 Dispatched: {order.cartItems.filter(item => item.dispatchStatus === 'dispatched').length}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-green-600">✅ Delivered: {order.cartItems.filter(item => item.dispatchStatus === 'delivered').length}</span>
+                            </div>
+                            <div className="text-gray-500">
+                              Total: {order.cartItems.length} items
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">No items</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -461,17 +562,121 @@ const AdminOrders = () => {
 
                 {/* Order Items */}
                 <div className="mb-6">
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Order Items</h4>
-                  <div className="space-y-2">
-                    {selectedOrder.cartItems?.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                        <div>
-                          <div className="font-medium">{item.productName}</div>
-                          <div className="text-sm text-gray-500">Quantity: {item.quantity}</div>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-md font-medium text-gray-900">Order Items</h4>
+                    {/* Bulk Deliver All Button */}
+                    {selectedOrder.cartItems?.filter(item => item.dispatchStatus === 'dispatched').length > 0 && (
+                      <button
+                        onClick={() => markAsDelivered(selectedOrder._id, null, null, 'ALL_DISPATCHED')}
+                        disabled={deliveryLoading[`${selectedOrder._id}-ALL_DISPATCHED`]}
+                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {deliveryLoading[`${selectedOrder._id}-ALL_DISPATCHED`] ? (
+                          <FaSpinner className="animate-spin" />
+                        ) : (
+                          <FaCheck />
+                        )}
+                        Deliver All Dispatched
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {selectedOrder.cartItems?.map((item, index) => {
+                      const dispatchStatus = item.dispatchStatus || 'pending';
+                      const deliveryKey = `${selectedOrder._id}-${item.productName}`;
+                      const isDelivering = deliveryLoading[deliveryKey];
+                      const isDelivered = deliverySuccess[deliveryKey];
+                      
+                      return (
+                        <div key={index} className={`flex justify-between items-center p-3 rounded-lg border ${
+                          dispatchStatus === 'delivered' ? 'bg-green-50 border-green-200' :
+                          dispatchStatus === 'dispatched' ? 'bg-purple-50 border-purple-200' :
+                          'bg-orange-50 border-orange-200'
+                        }`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                dispatchStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                                dispatchStatus === 'dispatched' ? 'bg-purple-100 text-purple-800' :
+                                'bg-orange-100 text-orange-800'
+                              }`}>
+                                {dispatchStatus === 'delivered' ? 'DELIVERED' :
+                                 dispatchStatus === 'dispatched' ? 'DISPATCHED' :
+                                 'PENDING'}
+                              </span>
+                              <div className="font-medium">{item.productName}</div>
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              Quantity: {item.quantity} | Unit Price: {formatCurrency(item.price)}
+                            </div>
+                            {item.dispatchedAt && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                Dispatched: {new Date(item.dispatchedAt).toLocaleString('en-IN', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                            {item.deliveredAt && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                Delivered: {new Date(item.deliveredAt).toLocaleString('en-IN', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <div className="font-medium">{formatCurrency(item.price * item.quantity)}</div>
+                            
+                            {/* Delivery Button for Dispatched Items */}
+                            {dispatchStatus === 'dispatched' && (
+                              <button
+                                onClick={() => markAsDelivered(selectedOrder._id, item.productName, item.categoryName)}
+                                disabled={isDelivering || isDelivered}
+                                className={`px-3 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1 ${
+                                  isDelivered 
+                                    ? 'bg-emerald-500 text-white cursor-default' 
+                                    : 'bg-green-600 hover:bg-green-700 text-white disabled:opacity-50'
+                                }`}
+                              >
+                                {isDelivering ? (
+                                  <FaSpinner className="animate-spin" />
+                                ) : isDelivered ? (
+                                  <>
+                                    <FaCheck />
+                                    <span>Delivered!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaCheck />
+                                    <span>Mark Delivered</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                            
+                            {/* Status Display for Other Items */}
+                            {dispatchStatus === 'delivered' && (
+                              <div className="px-3 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                                ✅ Completed
+                              </div>
+                            )}
+                            
+                            {dispatchStatus === 'pending' && (
+                              <div className="px-3 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">
+                                📦 Pending
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="font-medium">{formatCurrency(item.price * item.quantity)}</div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 

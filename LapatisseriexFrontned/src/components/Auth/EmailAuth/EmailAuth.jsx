@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import '../auth.css';
 
@@ -12,6 +12,11 @@ const EmailAuth = ({ isSignUp = false }) => {
   const [localError, setLocalError] = useState('');
   
   const { signUpWithEmail, signInWithEmail, error, clearError, toggleAuthPanel, user, isAuthenticated, changeAuthType, setLoginFormEmail } = useAuth();
+
+  // Clear local error when switching between sign in and sign up
+  useEffect(() => {
+    setLocalError('');
+  }, [isSignUp]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

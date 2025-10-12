@@ -7,6 +7,7 @@ import {
   FaSpinner,
   FaShoppingBag,
   FaBox,
+  FaBoxOpen,
   FaChevronDown,
   FaChevronRight,
   FaSync
@@ -31,13 +32,223 @@ if (typeof document !== 'undefined' && !document.getElementById('admin-order-tra
   document.head.appendChild(styleSheet);
 }
 
+// Individual Order Card Component
+const IndividualOrderCard = ({ order, onDispatchItem, dispatchLoading, dispatchSuccess }) => {
+
+  // Calculate dispatch progress
+  const totalItems = order.totalItems || 0;
+  const dispatchedItems = order.dispatchedItems || 0;
+  const deliveredItems = order.deliveredItems || 0;
+  const pendingItems = order.pendingItems?.length || 0;
+  
+  // Get all items (pending + dispatched + delivered) for full order view
+  const allOrderItems = [
+    ...(order.pendingItems || []).map(item => ({ ...item, status: 'pending' })),
+    ...(order.dispatchedItems_list || []).map(item => ({ ...item, status: 'dispatched' })),
+    ...(order.deliveredItems_list || []).map(item => ({ ...item, status: 'delivered' }))
+  ];
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+      {/* Order Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Order #{order.orderNumber}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {order.userDetails?.name || 'Customer'} • {order.hostelName}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-lg font-bold text-gray-900">₹{order.amount}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                order.orderStatus === 'out_for_delivery' ? 'bg-purple-100 text-purple-800' :
+                order.orderStatus === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {order.orderStatus.replace('_', ' ').toUpperCase()}
+              </span>
+            </div>
+            
+            {/* Dispatch Progress */}
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span className="text-orange-600">📦 Pending: {pendingItems}</span>
+                <span className="text-purple-600">🚚 Dispatched: {dispatchedItems}</span>
+                <span className="text-green-600">✅ Delivered: {deliveredItems}</span>
+              </div>
+              <div className="text-xs text-gray-500">
+                Progress: {deliveredItems + dispatchedItems}/{totalItems} processed
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Bulk Actions - Remove delivery functionality */}
+        </div>
+
+      {/* All Order Items */}
+      <div className="p-6">
+        <h4 className="text-md font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <FaBox className="text-blue-500" />
+          Order Items ({totalItems})
+        </h4>
+        
+        <div className="space-y-3">
+          {/* Pending Items Only */}
+          {(order.pendingItems || []).map((item, index) => {
+            const dispatchKey = `${order._id}-${item.productName}`;
+            const isDispatching = dispatchLoading[dispatchKey];
+            const isSuccess = dispatchSuccess[dispatchKey];
+            
+            return (
+              <div key={`pending-${index}`} className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">PENDING</span>
+                    <h5 className="font-medium text-gray-900">{item.productName}</h5>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                    <span>Category: {item.categoryName}</span>
+                    <span>Qty: {item.quantity}</span>
+                    <span>Price: ₹{item.price}</span>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => onDispatchItem(order._id, item.productName, item.categoryName)}
+                  disabled={isDispatching || isSuccess}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2 ${
+                    isSuccess 
+                      ? 'bg-emerald-500 text-white cursor-default' 
+                      : 'bg-green-600 hover:bg-green-700 text-white disabled:opacity-50'
+                  }`}
+                >
+                  {isDispatching ? (
+                    <FaSpinner className="animate-spin" />
+                  ) : isSuccess ? (
+                    <>
+                      <span>✓</span>
+                      <span>Dispatched!</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaTruck />
+                      <span>Dispatch</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            );
+          })}
+
+          {/* Show dispatched items but without delivery buttons - just for reference */}
+          {(order.dispatchedItems_list || []).map((item, index) => (
+            <div key={`dispatched-${index}`} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">DISPATCHED</span>
+                  <h5 className="font-medium text-gray-900">{item.productName}</h5>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                  <span>Category: {item.categoryName}</span>
+                  <span>Qty: {item.quantity}</span>
+                  <span>Price: ₹{item.price}</span>
+                  {item.dispatchedAt && (
+                    <span>Dispatched: {new Date(item.dispatchedAt).toLocaleString('en-IN', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm font-medium">
+                🚚 Out for Delivery
+              </div>
+            </div>
+          ))}
+
+          {/* Show delivered items for reference */}
+          {(order.deliveredItems_list || []).map((item, index) => (
+            <div key={`delivered-${index}`} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">DELIVERED</span>
+                  <h5 className="font-medium text-gray-900">{item.productName}</h5>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                  <span>Category: {item.categoryName}</span>
+                  <span>Qty: {item.quantity}</span>
+                  <span>Price: ₹{item.price}</span>
+                  {item.deliveredAt && (
+                    <span>Delivered: {new Date(item.deliveredAt).toLocaleString('en-IN', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
+                ✅ Completed
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Order Info */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-gray-500">Delivery Location:</span>
+              <p className="font-medium">{order.deliveryLocation}</p>
+            </div>
+            <div>
+              <span className="text-gray-500">Order Time:</span>
+              <p className="font-medium">
+                {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminOrderTracking = () => {
+  // Initialize state with localStorage values for persistence
   const [orderData, setOrderData] = useState([]);
+  const [individualOrders, setIndividualOrders] = useState([]);
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('adminOrderView') || 'grouped';
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedHostel, setSelectedHostel] = useState(null);
-  const [expandedCategories, setExpandedCategories] = useState({});
+  const [selectedHostel, setSelectedHostel] = useState(() => {
+    const saved = localStorage.getItem('selectedHostel');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [expandedCategories, setExpandedCategories] = useState(() => {
+    const saved = localStorage.getItem('expandedCategories');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [dispatchLoading, setDispatchLoading] = useState({});
+  const [dispatchSuccess, setDispatchSuccess] = useState({});
   const [customDispatchModal, setCustomDispatchModal] = useState({
     isOpen: false,
     hostel: '',
@@ -47,7 +258,7 @@ const AdminOrderTracking = () => {
     customCount: 1
   });
 
-  // Fetch grouped order data
+  // Fetch order data (both grouped and individual)
   const fetchOrderData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -55,7 +266,7 @@ const AdminOrderTracking = () => {
       } else {
         setLoading(true);
       }
-      
+
       const token = localStorage.getItem('authToken');
       if (!token) {
         toast.error('Authentication required. Please log in.');
@@ -63,67 +274,53 @@ const AdminOrderTracking = () => {
       }
       
       const apiBaseUrl = import.meta.env.VITE_API_URL;
-      const apiUrl = `${apiBaseUrl}/admin/orders/grouped`;
       
-      console.log('Fetching order data from:', apiUrl, 'isRefresh:', isRefresh);
-      
-      const response = await fetch(apiUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const contentType = response.headers.get('content-type');
-      
-      if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        
-        try {
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
-          } else {
-            const errorText = await response.text();
-            
-            if (errorText.includes('<!doctype') || errorText.includes('<html')) {
-              errorMessage = 'Server returned an HTML error page. Check if the backend server is running on port 3000.';
-            } else {
-              errorMessage = errorText.substring(0, 200);
-            }
+      // Fetch both grouped and individual data
+      const [groupedResponse, individualResponse] = await Promise.all([
+        fetch(`${apiBaseUrl}/admin/orders/grouped`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
-        } catch (parseError) {
-          console.error('Error parsing error response:', parseError);
-        }
-        
-        throw new Error(errorMessage);
+        }),
+        fetch(`${apiBaseUrl}/admin/orders/individual`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
+
+      console.log('Fetching order data - isRefresh:', isRefresh);
+      
+      // Process grouped response
+      if (!groupedResponse.ok) {
+        throw new Error(`Failed to fetch grouped orders: ${groupedResponse.statusText}`);
       }
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        const responseText = await response.text();
-        throw new Error('Server returned non-JSON response. Backend server may not be running.');
+      const groupedData = await groupedResponse.json();
+      console.log('Grouped order data received:', groupedData);
+      setOrderData(Array.isArray(groupedData) ? groupedData : []);
+
+      // Process individual response
+      if (!individualResponse.ok) {
+        throw new Error(`Failed to fetch individual orders: ${individualResponse.statusText}`);
       }
-      
-      const data = await response.json();
-      
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid data format received from server');
-      }
-      
-      setOrderData(data);
+      const individualData = await individualResponse.json();
+      console.log('Individual order data received:', individualData);
+      setIndividualOrders(Array.isArray(individualData) ? individualData : []);
       
       if (isRefresh) {
-        if (data.length === 0) {
+        if (groupedData.length === 0) {
           toast.success('No orders with placed status at the moment');
         } else {
-          const filteredData = filterOrdersByStatus(data);
+          const filteredData = filterOrdersByStatus(groupedData);
           toast.success(`Refreshed! Loaded 'placed' orders from ${filteredData.length} hostels`);
         }
       } else {
-        if (data.length === 0) {
+        if (groupedData.length === 0) {
           toast.success('No orders with placed status at the moment');
         } else {
-          const filteredData = filterOrdersByStatus(data);
+          const filteredData = filterOrdersByStatus(groupedData);
           toast.success(`Loaded 'placed' orders from ${filteredData.length} hostels`);
         }
       }
@@ -182,6 +379,41 @@ const AdminOrderTracking = () => {
     fetchOrderData();
   }, []);
 
+  // Persist viewMode to localStorage
+  useEffect(() => {
+    localStorage.setItem('adminOrderView', viewMode);
+  }, [viewMode]);
+
+  // Persist selectedHostel to localStorage
+  useEffect(() => {
+    if (selectedHostel) {
+      localStorage.setItem('selectedHostel', JSON.stringify(selectedHostel));
+    } else {
+      localStorage.removeItem('selectedHostel');
+    }
+  }, [selectedHostel]);
+
+  // Persist expandedCategories to localStorage
+  useEffect(() => {
+    localStorage.setItem('expandedCategories', JSON.stringify(expandedCategories));
+  }, [expandedCategories]);
+
+  // Restore selectedHostel from saved data when orderData changes
+  useEffect(() => {
+    if (orderData.length > 0 && selectedHostel) {
+      // Find the updated version of the selected hostel in the new data
+      const updatedHostel = orderData.find(hostel => hostel.hostel === selectedHostel.hostel);
+      if (updatedHostel) {
+        setSelectedHostel(updatedHostel);
+      } else {
+        // If the hostel no longer exists (all orders dispatched), clear selection
+        setSelectedHostel(null);
+      }
+    }
+  }, [orderData]);
+
+
+
   // Select hostel function
   const selectHostel = (hostelGroup) => {
     setSelectedHostel(hostelGroup);
@@ -200,6 +432,7 @@ const AdminOrderTracking = () => {
   const ProductCard = ({ product, hostel, category }) => {
     const dispatchKey = `${hostel}-${category}-${product.productName}`;
     const isDispatching = dispatchLoading[dispatchKey];
+    const isSuccess = dispatchSuccess[dispatchKey];
 
     return (
       <motion.div
@@ -245,21 +478,21 @@ const AdminOrderTracking = () => {
           {/* Action Buttons */}
           <div className="flex gap-1">
             <button
-              onClick={() => dispatchAll(hostel, category, product.productName, product.orderCount)}
+              onClick={() => navigateToProductOrders(product.productName, hostel, category)}
               disabled={isDispatching}
-              className="flex-1 px-2 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-1 font-medium"
+              className="flex-1 px-2 py-1.5 text-white rounded text-xs transition-colors duration-200 flex items-center justify-center gap-1 font-medium bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isDispatching ? (
                 <FaSpinner className="animate-spin" />
               ) : (
                 <FaTruck className="text-xs" />
               )}
-              <span>Dispatch</span>
+              <span>Dispatch Orders</span>
             </button>
             
             <button
               onClick={() => openCustomDispatchModal(hostel, category, product.productName, product.orderCount)}
-              disabled={isDispatching}
+              disabled={isDispatching || isSuccess}
               className="px-2 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
             >
               <FaEdit />
@@ -428,7 +661,97 @@ const AdminOrderTracking = () => {
     }
   };
 
-  // Dispatch all orders for a product
+  // Dispatch individual item from specific order
+  const dispatchIndividualItem = async (orderId, productName, categoryName) => {
+    const dispatchKey = `${orderId}-${productName}`;
+    
+    try {
+      console.log('Dispatching item:', { orderId, productName, categoryName });
+      setDispatchLoading(prev => ({ ...prev, [dispatchKey]: true }));
+      
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('Authentication required. Please log in.');
+        return;
+      }
+      
+      const apiBaseUrl = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          orderId,
+          productName,
+          categoryName
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Dispatch successful:', result);
+      
+      // Show success state briefly
+      setDispatchSuccess(prev => ({ ...prev, [dispatchKey]: true }));
+      
+      // Immediately refresh ALL data after dispatch to ensure consistency
+      console.log('Refreshing all order data after item dispatch...');
+      await fetchOrderData(false); // Re-fetch both grouped and individual data
+      
+      // If we have a selected hostel, it will be automatically updated by the useEffect hook
+      if (selectedHostel) {
+        console.log('Selected hostel will be updated with fresh data');
+      }
+      
+      toast.success(`Successfully dispatched ${productName} - All views updated`);
+      
+      // Clear success state after a brief moment
+      setTimeout(() => {
+        setDispatchSuccess(prev => ({ ...prev, [dispatchKey]: false }));
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error dispatching item:', error);
+      setDispatchSuccess(prev => ({ ...prev, [dispatchKey]: false }));
+      
+      if (error.message.includes('Failed to fetch')) {
+        toast.error('Cannot connect to server. Please ensure the backend server is running.');
+      } else {
+        toast.error(error.message || 'Failed to dispatch item');
+      }
+    } finally {
+      setDispatchLoading(prev => ({ ...prev, [dispatchKey]: false }));
+    }
+  };
+
+  // Navigate to order view without filter - just switch to show all orders
+  const navigateToProductOrders = (productName, hostelName, categoryName) => {
+    console.log('Navigating to order view for product:', { productName, hostelName, categoryName });
+    
+    // Switch to individual view WITHOUT setting filter - show all orders
+    setViewMode('individual');
+    
+    // Show toast to inform user
+    toast.success(`Switched to Order View - You can now dispatch individual items`);
+  };
+
+  // Debug function to check current order state
+  const debugOrderState = () => {
+    console.log('=== ORDER STATE DEBUG ===');
+    console.log('View Mode:', viewMode);
+    console.log('Grouped Orders Count:', orderData.length);
+    console.log('Individual Orders Count:', individualOrders.length);
+    console.log('Grouped Orders:', orderData);
+    console.log('Individual Orders:', individualOrders);
+    console.log('========================');
+  };
+
+  // Dispatch all orders for a product (grouped view)
   const dispatchAll = async (hostel, category, productName, count) => {
     const dispatchKey = `${hostel}-${category}-${productName}`;
     
@@ -443,32 +766,59 @@ const AdminOrderTracking = () => {
 
       // Optimistic update: immediately reduce the count in the UI
       setOrderData(prevData => {
-        return prevData.map(hostelGroup => {
+        const updatedData = prevData.map(hostelGroup => {
           if (hostelGroup.hostel === hostel) {
-            return {
+            const updatedCategories = hostelGroup.categories.map(categoryGroup => {
+              if (categoryGroup.category === category) {
+                const updatedProducts = categoryGroup.products.map(product => {
+                  if (product.productName === productName) {
+                    const newOrderCount = Math.max(0, product.orderCount - count);
+                    return {
+                      ...product,
+                      orderCount: newOrderCount
+                    };
+                  }
+                  return product;
+                }).filter(product => product.orderCount > 0); // Remove products with 0 count
+                
+                // Recalculate category total orders
+                const categoryTotalOrders = updatedProducts.reduce((sum, product) => sum + product.orderCount, 0);
+                
+                return {
+                  ...categoryGroup,
+                  products: updatedProducts,
+                  totalOrders: categoryTotalOrders
+                };
+              }
+              return categoryGroup;
+            }).filter(categoryGroup => categoryGroup.products.length > 0); // Remove empty categories
+            
+            // Recalculate hostel total orders
+            const hostelTotalOrders = updatedCategories.reduce((sum, category) => sum + category.totalOrders, 0);
+            
+            const updatedHostelGroup = {
               ...hostelGroup,
-              categories: hostelGroup.categories.map(categoryGroup => {
-                if (categoryGroup.category === category) {
-                  return {
-                    ...categoryGroup,
-                    products: categoryGroup.products.map(product => {
-                      if (product.productName === productName) {
-                        const newOrderCount = Math.max(0, product.orderCount - count);
-                        return {
-                          ...product,
-                          orderCount: newOrderCount
-                        };
-                      }
-                      return product;
-                    }).filter(product => product.orderCount > 0) // Remove products with 0 count
-                  };
-                }
-                return categoryGroup;
-              }).filter(categoryGroup => categoryGroup.products.length > 0) // Remove empty categories
+              categories: updatedCategories,
+              totalOrders: hostelTotalOrders
             };
+
+            // Update selectedHostel if this is the currently selected hostel
+            setSelectedHostel(prevSelected => {
+              if (prevSelected && prevSelected.hostel === hostel) {
+                if (updatedCategories.length === 0) {
+                  return null; // Clear selection if hostel becomes empty
+                }
+                return updatedHostelGroup; // Update with new data
+              }
+              return prevSelected;
+            });
+
+            return updatedHostelGroup;
           }
           return hostelGroup;
         }).filter(hostelGroup => hostelGroup.categories.length > 0); // Remove empty hostels
+        
+        return updatedData;
       });
       
       // Use environment variable for API base URL or fallback to relative path
@@ -513,17 +863,25 @@ const AdminOrderTracking = () => {
 
       const result = await response.json();
       
-      // Always refresh data after successful dispatch to ensure consistency
-      // Use a small delay to ensure database transaction is committed
-      setTimeout(async () => {
-        console.log('Refreshing order data after successful dispatch...');
-        await fetchOrderData();
-      }, 300);
+      // Show success state briefly
+      setDispatchSuccess(prev => ({ ...prev, [dispatchKey]: true }));
+      
+      // Immediately refresh data after successful dispatch to ensure consistency
+      console.log('Refreshing order data after successful dispatch...');
+      await fetchOrderData();
       
       toast.success(`Successfully dispatched ${result.dispatchedCount || count} orders for ${productName}`);
       
+      // Clear success state after a brief moment
+      setTimeout(() => {
+        setDispatchSuccess(prev => ({ ...prev, [dispatchKey]: false }));
+      }, 1500);
+      
     } catch (error) {
       console.error('Error dispatching orders:', error);
+      
+      // Clear any success state on error
+      setDispatchSuccess(prev => ({ ...prev, [dispatchKey]: false }));
       
       if (error.message.includes('Failed to fetch')) {
         toast.error('Cannot connect to server. Please ensure the backend server is running on port 3000.');
@@ -598,6 +956,33 @@ const AdminOrderTracking = () => {
             <p className="text-gray-600">Track and dispatch pending orders (showing only 'placed' orders)</p>
           </div>
           <div className="flex items-center gap-3">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => {
+                  console.log('Switching to grouped view - data already up to date');
+                  setViewMode('grouped');
+                }}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  viewMode === 'grouped'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Grouped View
+              </button>
+              <button
+                onClick={() => setViewMode('individual')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  viewMode === 'individual'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Order View
+              </button>
+            </div>
+            
             <button
               onClick={handleRefresh}
               disabled={refreshing || loading}
@@ -612,14 +997,37 @@ const AdminOrderTracking = () => {
         </div>
       </div>
 
-      {/* No data state */}
-      {filteredOrderData.length === 0 ? (
-        <div className="text-center py-12">
-          <FaTruck className="mx-auto text-6xl text-gray-300 mb-4" />
-          <h3 className="text-xl font-medium text-gray-900 mb-2">No Pending Orders</h3>
-          <p className="text-gray-500">All orders have been dispatched or there are no orders with 'placed' status.</p>
-        </div>
+      {/* Content based on view mode */}
+      {viewMode === 'individual' ? (
+        // Individual Orders View - Show ALL orders without filtering
+        individualOrders.length === 0 ? (
+          <div className="text-center py-12">
+            <FaTruck className="mx-auto text-6xl text-gray-300 mb-4" />
+            <h3 className="text-xl font-medium text-gray-900 mb-2">No Pending Orders</h3>
+            <p className="text-gray-500">All orders have been dispatched or there are no orders requiring dispatch.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {individualOrders.map((order) => (
+              <IndividualOrderCard 
+                key={order._id} 
+                order={order} 
+                onDispatchItem={dispatchIndividualItem}
+                dispatchLoading={dispatchLoading}
+                dispatchSuccess={dispatchSuccess}
+              />
+            ))}
+          </div>
+        )
       ) : (
+        // Grouped View (existing)
+        filteredOrderData.length === 0 ? (
+          <div className="text-center py-12">
+            <FaTruck className="mx-auto text-6xl text-gray-300 mb-4" />
+            <h3 className="text-xl font-medium text-gray-900 mb-2">No Pending Orders</h3>
+            <p className="text-gray-500">All orders have been dispatched or there are no orders with 'placed' status.</p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Side - Hostel Buttons */}
           <div className="lg:col-span-1">
@@ -650,6 +1058,7 @@ const AdminOrderTracking = () => {
             )}
           </div>
         </div>
+        )
       )}
 
       {/* Custom Dispatch Modal */}

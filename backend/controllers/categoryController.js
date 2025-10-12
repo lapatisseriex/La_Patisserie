@@ -128,6 +128,9 @@ export const createCategory = asyncHandler(async (req, res) => {
     images: processedImages.length > 0 ? processedImages : images || [],
     videos: videos || []
   });
+
+  // Clear cache after creating category to ensure fresh data on next fetch
+  cache.clear();
   
   res.status(201).json(category);
 });
@@ -232,6 +235,10 @@ export const updateCategory = asyncHandler(async (req, res) => {
   
   // Save updated category
   const updatedCategory = await category.save();
+  
+  // Clear cache after updating category to ensure fresh data on next fetch
+  cache.clear();
+  
   res.status(200).json(updatedCategory);
 });
 
@@ -239,53 +246,93 @@ export const updateCategory = asyncHandler(async (req, res) => {
 // @route   DELETE /api/categories/:id
 // @access  Admin only
 export const deleteCategory = asyncHandler(async (req, res) => {
-  const category = await Category.findById(req.params.id);
-  
-  if (!category) {
-    res.status(404);
-    throw new Error('Category not found');
-  }
-  
-  // Check if there are products using this category
-  const productCount = await Product.countDocuments({ category: req.params.id });
-  
-  if (productCount > 0) {
-    res.status(400);
-    throw new Error(`Cannot delete category. ${productCount} products are using this category.`);
-  }
-  
-  // Delete all images and videos from Cloudinary
-  const imagesToDelete = [...category.images];
-  const videosToDelete = [...category.videos];
-  
-  // Delete images from Cloudinary
-  for (const imageUrl of imagesToDelete) {
-    const publicId = getPublicIdFromUrl(imageUrl);
-    if (publicId) {
-      try {
-        await deleteFromCloudinary(publicId);
-      } catch (error) {
-        console.error(`Failed to delete image ${publicId}:`, error);
+  try {
+    console.log(`Attempting to delete category with ID: ${req.params.id}`);
+    
+    const category = await Category.findById(req.params.id);
+    
+    if (!category) {
+      console.log(`Category not found with ID: ${req.params.id}`);
+      res.status(404);
+      throw new Error('Category not found');
+    }
+
+    console.log(`Found category: ${category.name}, checking for dependent products...`);
+    
+    // Check if there are products using this category
+    const productCount = await Product.countDocuments({ category: req.params.id });
+    
+    if (productCount > 0) {
+      console.log(`Cannot delete category ${category.name}: ${productCount} products are using it`);
+      res.status(400);
+      throw new Error(`Cannot delete category. ${productCount} products are using this category.`);
+    }
+
+    console.log(`Category ${category.name} has no dependent products, proceeding with deletion...`);
+    
+    // Delete all images and videos from Cloudinary
+    const imagesToDelete = [...(category.images || [])];
+    const videosToDelete = [...(category.videos || [])];
+    
+    console.log(`Images to delete: ${imagesToDelete.length}, Videos to delete: ${videosToDelete.length}`);
+    
+    // Delete images from Cloudinary
+    for (const imageUrl of imagesToDelete) {
+      const publicId = getPublicIdFromUrl(imageUrl);
+      if (publicId) {
+        try {
+          console.log(`Deleting category image: ${publicId}`);
+          await deleteFromCloudinary(publicId);
+        } catch (error) {
+          console.error(`Failed to delete category image ${publicId}:`, error);
+          // Continue with deletion even if Cloudinary fails
+        }
       }
     }
-  }
-  
-  // Delete videos from Cloudinary
-  for (const videoUrl of videosToDelete) {
-    const publicId = getPublicIdFromUrl(videoUrl);
-    if (publicId) {
-      try {
-        await deleteFromCloudinary(publicId, { resource_type: 'video' });
-      } catch (error) {
-        console.error(`Failed to delete video ${publicId}:`, error);
+    
+    // Delete videos from Cloudinary
+    for (const videoUrl of videosToDelete) {
+      const publicId = getPublicIdFromUrl(videoUrl);
+      if (publicId) {
+        try {
+          console.log(`Deleting category video: ${publicId}`);
+          await deleteFromCloudinary(publicId, { resource_type: 'video' });
+        } catch (error) {
+          console.error(`Failed to delete category video ${publicId}:`, error);
+          // Continue with deletion even if Cloudinary fails
+        }
       }
     }
+    
+    console.log('Starting category database deletion...');
+    
+    // Delete the category
+    await category.deleteOne();
+    
+    console.log(`Category ${req.params.id} deleted successfully`);
+    
+    // Clear cache after deleting category to ensure fresh data on next fetch
+    cache.clear();
+    
+    res.status(200).json({ message: 'Category removed successfully' });
+    
+  } catch (error) {
+    console.error(`Error deleting category ${req.params.id}:`, error);
+    
+    // More specific error handling
+    if (error.name === 'CastError') {
+      res.status(400);
+      throw new Error('Invalid category ID format');
+    }
+    
+    if (error.name === 'ValidationError') {
+      res.status(400);
+      throw new Error('Validation error during deletion');
+    }
+    
+    // Re-throw the error to be handled by asyncHandler
+    throw error;
   }
-  
-  // Delete the category
-  await category.deleteOne();
-  
-  res.status(200).json({ message: 'Category removed successfully' });
 });
 
 // @desc    Get products by category

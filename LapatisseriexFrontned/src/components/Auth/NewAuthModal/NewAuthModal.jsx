@@ -7,7 +7,7 @@ import { X } from 'lucide-react';
 import '../auth.css';
 
 const NewAuthModal = () => {
-  const { isAuthPanelOpen, toggleAuthPanel, authType, changeAuthType } = useAuth();
+  const { isAuthPanelOpen, toggleAuthPanel, authType, changeAuthType, clearError } = useAuth();
   const [activeTab, setActiveTab] = useState('login'); // 'login' or 'signup'
   const [isClosing, setIsClosing] = useState(false);
 
@@ -39,6 +39,7 @@ const NewAuthModal = () => {
   const switchTab = (tab) => {
     setActiveTab(tab);
     changeAuthType(tab);
+    clearError(); // Clear any existing errors when switching tabs
   };
 
   return (

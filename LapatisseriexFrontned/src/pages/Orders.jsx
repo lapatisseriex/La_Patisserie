@@ -44,12 +44,8 @@ const Orders = () => {
   const getStatusIcon = (status) => {
     const icons = {
       'placed': <FaReceipt className="text-blue-500" />,
-      'confirmed': <FaCheckCircle className="text-green-500" />,
-      'preparing': <FaClock className="text-yellow-500" />,
-      'ready': <FaBoxOpen className="text-orange-500" />,
       'out_for_delivery': <FaTruck className="text-purple-500" />,
-      'delivered': <FaCheckCircle className="text-green-600" />,
-      'cancelled': <FaTimesCircle className="text-red-500" />
+      'delivered': <FaCheckCircle className="text-green-600" />
     };
     return icons[status] || <FaClock className="text-gray-500" />;
   };
@@ -57,12 +53,8 @@ const Orders = () => {
   const getStatusColor = (status) => {
     const colors = {
       'placed': 'bg-blue-100 text-blue-800',
-      'confirmed': 'bg-green-100 text-green-800',
-      'preparing': 'bg-yellow-100 text-yellow-800',
-      'ready': 'bg-orange-100 text-orange-800',
       'out_for_delivery': 'bg-purple-100 text-purple-800',
-      'delivered': 'bg-green-200 text-green-900',
-      'cancelled': 'bg-red-100 text-red-800'
+      'delivered': 'bg-green-200 text-green-900'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -70,12 +62,8 @@ const Orders = () => {
   const getStatusText = (status) => {
     const texts = {
       'placed': 'Order Placed',
-      'confirmed': 'Order Confirmed',
-      'preparing': 'Preparing',
-      'ready': 'Ready for Pickup',
       'out_for_delivery': 'Out for Delivery',
-      'delivered': 'Delivered',
-      'cancelled': 'Cancelled'
+      'delivered': 'Delivered'
     };
     return texts[status] || status;
   };
@@ -94,9 +82,6 @@ const Orders = () => {
   const StatusTimeline = ({ orderStatus, paymentStatus, createdAt }) => {
     const steps = [
       { key: 'placed', label: 'Order Placed', icon: FaReceipt },
-      { key: 'confirmed', label: 'Confirmed', icon: FaCheckCircle },
-      { key: 'preparing', label: 'Preparing', icon: FaClock },
-      { key: 'ready', label: 'Ready', icon: FaBoxOpen },
       { key: 'out_for_delivery', label: 'Out for Delivery', icon: FaTruck },
       { key: 'delivered', label: 'Delivered', icon: FaCheckCircle }
     ];

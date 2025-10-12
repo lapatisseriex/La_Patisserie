@@ -6,9 +6,12 @@ import {
   updateLocation, 
   toggleLocationStatus 
 } from '../controllers/locationController.js';
-import { 
+import {
   getGroupedPendingOrders,
+  getIndividualPendingOrders,
   dispatchOrders,
+  dispatchIndividualItem,
+  markAsDelivered,
   getOrderStats
 } from '../controllers/orderController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
@@ -26,7 +29,10 @@ router.patch('/locations/:id/toggle', protect, admin, toggleLocationStatus);
 
 // Admin order tracking routes
 router.get('/orders/grouped', protect, admin, getGroupedPendingOrders);
+router.get('/orders/individual', protect, admin, getIndividualPendingOrders);
 router.get('/orders/stats', protect, admin, getOrderStats);
 router.post('/dispatch', protect, admin, dispatchOrders);
+router.post('/dispatch-item', protect, admin, dispatchIndividualItem);
+router.post('/deliver-item', protect, admin, markAsDelivered);
 
 export default router;

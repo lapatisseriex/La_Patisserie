@@ -38,7 +38,6 @@ import {
   ShoppingCart,
   Utensils,
   Crown,
-  Sparkles,
   Power,
   Phone
 } from 'lucide-react';
@@ -712,12 +711,6 @@ const Header = ({ isAdminView = false }) => {
             
             {/* Navigation Links moved next to logo text on the same line - Premium Design */}
             <div className="flex items-center ml-4 md:ml-6 lg:ml-8 space-x-2 md:space-x-3 lg:space-x-4">
-              <Link to="/special" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
-                <Sparkles className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
-                <span className="relative z-10 font-medium">Special Deals</span>
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
-              </Link>
-              
               {/* Menu Nav Item with Mega Dropdown - Premium Design */}
               <div 
                 className="relative" 

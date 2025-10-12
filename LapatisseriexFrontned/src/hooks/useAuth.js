@@ -95,6 +95,7 @@ export const useAuth = () => {
     isAuthenticated: auth.isAuthenticated || false,
     loading: auth.loading || auth.authenticating || auth.profileUpdating || false,
     authError: auth.error || null,
+    error: auth.error || null, // Alias for authError for backward compatibility
     authType: auth.authType || 'login',
     isAuthPanelOpen: auth.isAuthPanelOpen || false,
     isNewUser: auth.isNewUser || false,

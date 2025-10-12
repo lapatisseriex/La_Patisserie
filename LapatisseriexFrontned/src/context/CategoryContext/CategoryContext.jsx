@@ -210,12 +210,14 @@ export const CategoryProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
+      console.log(`Attempting to delete category: ${categoryId}`);
+      
       // Get auth token
       const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      await axios.delete(
+      const response = await axios.delete(
         `${API_URL}/categories/${categoryId}`,
         {
           headers: { 
@@ -223,6 +225,8 @@ export const CategoryProvider = ({ children }) => {
           }
         }
       );
+      
+      console.log(`Category deletion response:`, response.data);
       
       // Clear cache to ensure fresh data on next fetch
       for (const key of requestCache.current.keys()) {
@@ -234,11 +238,38 @@ export const CategoryProvider = ({ children }) => {
       // Update categories in state immediately without making another API call
       setCategories(prev => prev.filter(cat => cat._id !== categoryId));
       
+      console.log(`Category ${categoryId} deleted successfully from frontend state`);
+      
       return true;
     } catch (err) {
       console.error(`Error deleting category ${categoryId}:`, err);
-      setError(err.response?.data?.message || "Failed to delete category");
-      throw err;
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to delete category";
+      
+      if (err.response?.status === 404) {
+        errorMessage = "Category not found";
+      } else if (err.response?.status === 401) {
+        errorMessage = "You are not authorized to delete this category";
+      } else if (err.response?.status === 403) {
+        errorMessage = "Access denied. Admin privileges required";
+      } else if (err.response?.status === 400) {
+        // Check if it's the products dependency error
+        if (err.response?.data?.message?.includes('products are using this category')) {
+          errorMessage = err.response.data.message;
+        } else {
+          errorMessage = err.response?.data?.message || "Invalid request";
+        }
+      } else if (err.response?.status === 500) {
+        errorMessage = "Server error occurred while deleting category. Please try again.";
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }

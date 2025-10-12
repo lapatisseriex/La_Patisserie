@@ -8,12 +8,8 @@ const OrderTrackingContent = ({ order }) => {
   const getStatusIcon = (status) => {
     const icons = {
       'placed': Package,
-      'confirmed': CheckCircle,
-      'preparing': Clock,
-      'ready': Package,
       'out_for_delivery': Truck,
-      'delivered': CheckCircle,
-      'cancelled': XCircle
+      'delivered': CheckCircle
     };
     return icons[status] || Clock;
   };
@@ -21,12 +17,8 @@ const OrderTrackingContent = ({ order }) => {
   const getStatusColor = (status) => {
     const colors = {
       'placed': 'bg-blue-100 text-blue-800',
-      'confirmed': 'bg-green-100 text-green-800',
-      'preparing': 'bg-yellow-100 text-yellow-800',
-      'ready': 'bg-orange-100 text-orange-800',
       'out_for_delivery': 'bg-purple-100 text-purple-800',
-      'delivered': 'bg-green-200 text-green-900',
-      'cancelled': 'bg-red-100 text-red-800'
+      'delivered': 'bg-green-200 text-green-900'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -34,12 +26,8 @@ const OrderTrackingContent = ({ order }) => {
   const getStatusText = (status) => {
     const texts = {
       'placed': 'Order Placed',
-      'confirmed': 'Order Confirmed',
-      'preparing': 'Preparing',
-      'ready': 'Ready for Pickup',
       'out_for_delivery': 'Out for Delivery',
-      'delivered': 'Delivered',
-      'cancelled': 'Cancelled'
+      'delivered': 'Delivered'
     };
     return texts[status] || status;
   };
@@ -58,9 +46,6 @@ const OrderTrackingContent = ({ order }) => {
   const StatusTimeline = ({ orderStatus }) => {
     const steps = [
       { key: 'placed', label: 'Order Placed', icon: Package },
-      { key: 'confirmed', label: 'Confirmed', icon: CheckCircle },
-      { key: 'preparing', label: 'Preparing', icon: Clock },
-      { key: 'ready', label: 'Ready', icon: Package },
       { key: 'out_for_delivery', label: 'Out for Delivery', icon: Truck },
       { key: 'delivered', label: 'Delivered', icon: CheckCircle }
     ];
@@ -151,12 +136,41 @@ const OrderTrackingContent = ({ order }) => {
         <div className="space-y-3">
           {order.cartItems?.map((item, index) => (
             <div key={index} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
-              <div>
-                <p className="font-medium text-gray-900">{item.productName}</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-medium text-gray-900">{item.productName}</p>
+                  {/* Item Dispatch Status */}
+                  {item.dispatchStatus && (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      item.dispatchStatus === 'delivered' 
+                        ? 'bg-green-100 text-green-800' 
+                        : item.dispatchStatus === 'dispatched'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {item.dispatchStatus === 'delivered' && <CheckCircle className="h-3 w-3" />}
+                      {item.dispatchStatus === 'dispatched' && <Truck className="h-3 w-3" />}
+                      {item.dispatchStatus === 'pending' && <Clock className="h-3 w-3" />}
+                      {item.dispatchStatus === 'delivered' ? 'Delivered' 
+                       : item.dispatchStatus === 'dispatched' ? 'Dispatched'
+                       : 'Preparing'}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
                 {item.selectedVariant && (
                   <p className="text-sm text-gray-500">
                     Variant: {item.selectedVariant.weight} {item.selectedVariant.unit}
+                  </p>
+                )}
+                {item.dispatchedAt && (
+                  <p className="text-xs text-gray-400">
+                    Dispatched: {new Date(item.dispatchedAt).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </p>
                 )}
               </div>

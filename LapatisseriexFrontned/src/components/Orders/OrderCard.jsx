@@ -26,12 +26,8 @@ const OrderCard = ({ order }) => {
   const getStatusIcon = (status) => {
     const icons = {
       'placed': <Clock className="h-4 w-4 text-blue-500" />,
-      'confirmed': <CheckCircle className="h-4 w-4 text-green-500" />,
-      'preparing': <Clock className="h-4 w-4 text-yellow-500 animate-pulse" />,
-      'ready': <Package className="h-4 w-4 text-orange-500" />,
       'out_for_delivery': <Truck className="h-4 w-4 text-purple-500" />,
-      'delivered': <CheckCircle className="h-4 w-4 text-green-600" />,
-      'cancelled': <XCircle className="h-4 w-4 text-red-500" />
+      'delivered': <CheckCircle className="h-4 w-4 text-green-600" />
     };
     return icons[status] || <Clock className="h-4 w-4 text-gray-500" />;
   };
@@ -39,12 +35,8 @@ const OrderCard = ({ order }) => {
   const getStatusColor = (status) => {
     const colors = {
       'placed': 'bg-blue-50 text-blue-700 border-blue-200',
-      'confirmed': 'bg-green-50 text-green-700 border-green-200',
-      'preparing': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      'ready': 'bg-orange-50 text-orange-700 border-orange-200',
       'out_for_delivery': 'bg-purple-50 text-purple-700 border-purple-200',
-      'delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      'cancelled': 'bg-red-50 text-red-700 border-red-200'
+      'delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200'
     };
     return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
   };
@@ -52,12 +44,8 @@ const OrderCard = ({ order }) => {
   const getStatusText = (status) => {
     const texts = {
       'placed': 'Order Placed',
-      'confirmed': 'Confirmed',
-      'preparing': 'Preparing',
-      'ready': 'Ready',
       'out_for_delivery': 'Out for Delivery',
-      'delivered': 'Delivered',
-      'cancelled': 'Cancelled'
+      'delivered': 'Delivered'
     };
     return texts[status] || status;
   };
@@ -109,6 +97,15 @@ const OrderCard = ({ order }) => {
                 <ShoppingBag className="h-4 w-4" />
                 <span>{order.cartItems?.length || 0} item{(order.cartItems?.length || 0) !== 1 ? 's' : ''}</span>
               </div>
+              {/* Dispatch Progress Indicator */}
+              {order.cartItems && order.cartItems.length > 1 && order.orderStatus === 'out_for_delivery' && (
+                <div className="flex items-center gap-1">
+                  <Truck className="h-4 w-4 text-purple-500" />
+                  <span className="text-purple-600 font-medium">
+                    {order.cartItems.filter(item => item.dispatchStatus === 'dispatched').length}/{order.cartItems.length} dispatched
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           
@@ -255,10 +252,10 @@ const OrderCard = ({ order }) => {
                 <span>Order Completed</span>
               </div>
             )}
-            {order.orderStatus === 'preparing' && (
-              <div className="flex items-center gap-1 text-sm text-yellow-600">
-                <Clock className="h-4 w-4 animate-pulse" />
-                <span>Being Prepared</span>
+            {order.orderStatus === 'out_for_delivery' && (
+              <div className="flex items-center gap-1 text-sm text-purple-600">
+                <Truck className="h-4 w-4 animate-pulse" />
+                <span>On the Way</span>
               </div>
             )}
           </div>

@@ -119,14 +119,6 @@
 }
 
 /* Status-specific animations */
-.status-preparing .status-icon {
-  animation: pulse 1.5s infinite;
-}
-
-.status-ready .status-icon {
-  animation: bounce 2s infinite;
-}
-
 .status-delivered .status-icon {
   animation: checkmark 0.6s ease-in-out;
 }

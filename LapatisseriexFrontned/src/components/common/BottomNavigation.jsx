@@ -8,7 +8,7 @@ import {
   Home, 
   Utensils, 
   ShoppingCart, 
-  Heart, 
+  Package, 
   User,Cake 
 } from 'lucide-react';
 
@@ -53,11 +53,16 @@ const BottomNavigation = () => {
       isActive: location.pathname === '/cart'
     },
     {
-      id: 'favorites',
-      label: 'Favorites',
-      icon: Heart,
-      path: '/favorites',
-      isActive: location.pathname === '/favorites'
+      id: 'orders',
+      label: 'Orders',
+      icon: Package,
+      path: '/orders',
+      isActive: location.pathname === '/orders',
+      requiresAuth: !user,
+      onClick: !user ? (e) => {
+        e.preventDefault();
+        toggleAuthPanel();
+      } : null
     },
     {
       id: 'profile',

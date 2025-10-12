@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import ProductForm from './ProductForm';
 import { Link } from 'react-router-dom';
 import { FaPlus, FaFilter, FaEgg, FaLeaf } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 /**
  * AdminProducts component for managing products in admin dashboard
@@ -97,6 +98,21 @@ const AdminProducts = () => {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync local product list with ProductContext products when they change
+  useEffect(() => {
+    // Always sync when ProductContext products change, but respect active filters
+    if (!selectedCategory && !selectedStatus && !searchQuery && !priceMin && !priceMax) {
+      // No filters active - sync directly with ProductContext
+      if (products && products.length >= 0) { // Changed from > 0 to >= 0 to handle empty arrays
+        setProductList(products);
+        setProductCount(products.length);
+      }
+    } else {
+      // Filters are active - the loadProducts function will handle the refresh
+      // This ensures we don't override filtered results with unfiltered ProductContext data
+    }
+  }, [products, selectedCategory, selectedStatus, searchQuery, priceMin, priceMax]);
 
   // Load products based on selected category
   const loadProducts = async (
@@ -297,13 +313,18 @@ const AdminProducts = () => {
       setDeleteId(id);
       setDeleteError(null);
       
-  await deleteProduct(id);
+      await deleteProduct(id);
       
-  // Reload products after deletion
-  await loadProducts();
+      // Update local state immediately to reflect the deletion
+      setProductList(prev => prev.filter(product => product._id !== id));
+      setProductCount(prev => Math.max(0, prev - 1));
+      
+      // Show success message
+      toast.success('Product deleted successfully!');
       
     } catch (err) {
       setDeleteError(err.message || 'Failed to delete product');
+      toast.error(err.message || 'Failed to delete product');
     } finally {
       setIsDeleting(false);
       setDeleteId(null);
@@ -322,6 +343,9 @@ const AdminProducts = () => {
     setEditingProduct(null);
     // Ensure ?edit is cleared so the modal doesn't auto-reopen
     clearEditParam();
+    
+    // Always refresh products after form close to ensure immediate display
+    // This ensures new products show up immediately regardless of filters
     await loadProducts(selectedCategory, selectedStatus, priceMin, priceMax, searchQuery, page);
   };
 

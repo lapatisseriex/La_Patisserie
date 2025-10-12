@@ -311,6 +311,9 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   const createdProduct = await Product.findById(product._id).populate('category', 'name');
 
+  // Clear cache after creating product to ensure fresh data on next fetch
+  cache.clear();
+
   res.status(201).json(createdProduct);
 });
 
@@ -443,6 +446,9 @@ export const updateProduct = asyncHandler(async (req, res) => {
   const populatedProduct = await Product.findById(updatedProduct._id)
     .populate('category', 'name');
 
+  // Clear cache after updating product to ensure fresh data on next fetch
+  cache.clear();
+
   res.status(200).json(populatedProduct);
 });
 
@@ -450,45 +456,82 @@ export const updateProduct = asyncHandler(async (req, res) => {
 // @route   DELETE /api/products/:id
 // @access  Admin only
 export const deleteProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  
-  if (!product) {
-    res.status(404);
-    throw new Error('Product not found');
-  }
-  
-  // Delete all images and videos from Cloudinary
-  const imagesToDelete = [...product.images];
-  const videosToDelete = [...product.videos];
-  
-  // Delete images from Cloudinary
-  for (const imageUrl of imagesToDelete) {
-    const publicId = getPublicIdFromUrl(imageUrl);
-    if (publicId) {
-      try {
-        await deleteFromCloudinary(publicId);
-      } catch (error) {
-        console.error(`Failed to delete image ${publicId}:`, error);
+  try {
+    console.log(`Attempting to delete product with ID: ${req.params.id}`);
+    
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      console.log(`Product not found with ID: ${req.params.id}`);
+      res.status(404);
+      throw new Error('Product not found');
+    }
+
+    console.log(`Found product: ${product.name}, starting deletion process...`);
+    
+    // Delete all images and videos from Cloudinary
+    const imagesToDelete = [...(product.images || [])];
+    const videosToDelete = [...(product.videos || [])];
+    
+    console.log(`Images to delete: ${imagesToDelete.length}, Videos to delete: ${videosToDelete.length}`);
+    
+    // Delete images from Cloudinary
+    for (const imageUrl of imagesToDelete) {
+      const publicId = getPublicIdFromUrl(imageUrl);
+      if (publicId) {
+        try {
+          console.log(`Deleting image: ${publicId}`);
+          await deleteFromCloudinary(publicId);
+        } catch (error) {
+          console.error(`Failed to delete image ${publicId}:`, error);
+          // Continue with deletion even if Cloudinary fails
+        }
       }
     }
-  }
-  
-  // Delete videos from Cloudinary
-  for (const videoUrl of videosToDelete) {
-    const publicId = getPublicIdFromUrl(videoUrl);
-    if (publicId) {
-      try {
-        await deleteFromCloudinary(publicId, { resource_type: 'video' });
-      } catch (error) {
-        console.error(`Failed to delete video ${publicId}:`, error);
+    
+    // Delete videos from Cloudinary
+    for (const videoUrl of videosToDelete) {
+      const publicId = getPublicIdFromUrl(videoUrl);
+      if (publicId) {
+        try {
+          console.log(`Deleting video: ${publicId}`);
+          await deleteFromCloudinary(publicId, { resource_type: 'video' });
+        } catch (error) {
+          console.error(`Failed to delete video ${publicId}:`, error);
+          // Continue with deletion even if Cloudinary fails
+        }
       }
     }
+    
+    console.log('Starting database deletion...');
+    
+    // Delete the product from database
+    await product.deleteOne();
+    
+    console.log(`Product ${req.params.id} deleted successfully`);
+    
+    // Clear cache after deleting product to ensure fresh data on next fetch
+    cache.clear();
+    
+    res.status(200).json({ message: 'Product removed successfully' });
+    
+  } catch (error) {
+    console.error(`Error deleting product ${req.params.id}:`, error);
+    
+    // More specific error handling
+    if (error.name === 'CastError') {
+      res.status(400);
+      throw new Error('Invalid product ID format');
+    }
+    
+    if (error.name === 'ValidationError') {
+      res.status(400);
+      throw new Error('Validation error during deletion');
+    }
+    
+    // Re-throw the error to be handled by asyncHandler
+    throw error;
   }
-  
-  // Delete the product
-  await product.deleteOne();
-  
-  res.status(200).json({ message: 'Product removed successfully' });
 });
 
 // @desc    Update product discount
@@ -514,6 +557,9 @@ export const updateProductDiscount = asyncHandler(async (req, res) => {
   }
   
   const updatedProduct = await product.save();
+  
+  // Clear cache after updating product discount to ensure fresh data on next fetch
+  cache.clear();
   
   res.status(200).json(updatedProduct);
 });
@@ -732,6 +778,9 @@ export const updateProductOrderCount = asyncHandler(async (req, res) => {
   
   const updatedProduct = await product.save();
 
+  // Clear cache after updating product order count to ensure fresh data on next fetch
+  cache.clear();
+
   res.json({
     _id: updatedProduct._id,
     name: updatedProduct.name,
@@ -789,6 +838,9 @@ export const bulkUpdateOrderCounts = asyncHandler(async (req, res) => {
 
     const updatedProducts = await Promise.all(updatePromises);
     const successfulUpdates = updatedProducts.filter(p => p !== null);
+
+    // Clear cache after bulk updating products to ensure fresh data on next fetch
+    cache.clear();
 
     // Get summary statistics
     const totalProducts = await Product.countDocuments();

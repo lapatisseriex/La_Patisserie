@@ -84,6 +84,29 @@ const productsSlice = createSlice({
     setAllProducts: (state, action) => {
       state.allProducts = action.payload;
     },
+    removeProduct: (state, action) => {
+      const productId = action.payload;
+      
+      // Remove from main products array
+      state.products = state.products.filter(product => product._id !== productId);
+      
+      // Remove from all keyed lists
+      Object.keys(state.listsByKey).forEach(key => {
+        state.listsByKey[key] = state.listsByKey[key].filter(product => product._id !== productId);
+      });
+      
+      // Remove from category-specific lists
+      Object.keys(state.productsByCategory).forEach(categoryId => {
+        state.productsByCategory[categoryId] = state.productsByCategory[categoryId].filter(
+          product => product._id !== productId
+        );
+      });
+      
+      // Update counts
+      if (state.totalProducts > 0) {
+        state.totalProducts -= 1;
+      }
+    },
     clearProducts: (state) => {
       state.products = [];
       state.productsByCategory = {};
@@ -163,6 +186,7 @@ export const {
   setProducts, 
   setProductsByCategory, 
   setAllProducts, 
+  removeProduct,
   clearProducts 
 } = productsSlice.actions;
 

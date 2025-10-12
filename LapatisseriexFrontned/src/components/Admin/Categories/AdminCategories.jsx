@@ -48,18 +48,13 @@ const AdminCategories = () => {
     };
     
     loadCategories();
-    
-    // Set up an interval to refresh categories data every minute
-    const refreshInterval = setInterval(() => {
-      console.log('Auto-refreshing categories data');
-      loadCategories();
-    }, 60000); // Refresh every minute
-    
-    return () => {
-      clearInterval(refreshInterval); // Clean up on unmount
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Debug: Log category state changes
+  useEffect(() => {
+    console.log(`AdminCategories: Categories state updated, count: ${categories.length}`);
+  }, [categories]);
 
   // Open form for creating a new category
   const handleAddNew = () => {
@@ -83,10 +78,13 @@ const AdminCategories = () => {
       setDeleteError(null);
       
       await deleteCategory(id);
-      // We don't need to call fetchCategories here as the deleteCategory method already refreshes the list
+      
+      // Show success message
+      toast.success('Category deleted successfully!');
       
     } catch (err) {
       setDeleteError(err.message || 'Failed to delete category');
+      toast.error(err.message || 'Failed to delete category');
     } finally {
       setIsDeleting(false);
       setDeleteId(null);
@@ -439,7 +437,7 @@ const AdminCategories = () => {
                               const expanded = !!expandedDescriptions[category._id];
                               const needsSlice = (desc || '').length > limit;
                               return (
-                                <div className={`text-black ${expanded ? 'whitespace-normal break-words [overflow-wrap:anywhere]' : 'truncate'}`}>
+                                <div className={`text-black ${expanded ? 'whitespace-normal break-words' : 'truncate'}`}>
                                   {expanded || !needsSlice ? (
                                     desc
                                   ) : (

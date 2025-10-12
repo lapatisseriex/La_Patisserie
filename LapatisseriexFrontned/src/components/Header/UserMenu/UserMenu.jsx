@@ -114,7 +114,7 @@ const UserMenu = memo(() => {
             </Link>
             
             <Link 
-              to="/profile?tab=orders" 
+              to="/orders" 
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-black hover:text-yellow-600 hover:bg-gray-50 user-menu-item transition-all duration-200"
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
