@@ -76,7 +76,7 @@ const BottomNavigation = () => {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-t border-[#733857]/20 shadow-lg">
       <div className="grid grid-cols-5 h-16">
         {navItems.map((item) => {
           const IconComponent = item.icon;
@@ -88,30 +88,30 @@ const BottomNavigation = () => {
               onClick={item.onClick}
               className={`flex flex-col items-center justify-center px-2 py-1 transition-all duration-200 relative ${
                 item.isActive 
-                  ? 'text-yellow-600' 
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'text-[#733857]' 
+                  : 'text-white/70 hover:text-white/90'
               }`}
-              style={{ fontFamily: 'sans-serif' }}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               <div className="relative">
                 <IconComponent 
                   className={`h-5 w-5 transition-all duration-200 ${
-                    item.isActive ? 'text-yellow-500' : 'text-gray-500'
+                    item.isActive ? 'text-[#733857]' : 'text-white/50'
                   }`} 
                 />
                 {item.badge && (
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                  <div className="absolute -top-2 -right-2 bg-gradient-to-r from-[#733857] to-[#8d4466] text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-light">
                     {item.badge > 99 ? '99+' : item.badge}
                   </div>
                 )}
               </div>
-              <span className={`text-xs mt-1 font-medium ${
-                item.isActive ? 'text-yellow-600' : 'text-gray-500'
+              <span className={`text-xs mt-1 font-light ${
+                item.isActive ? 'text-[#733857]' : 'text-white/70'
               }`}>
                 {item.label}
               </span>
               {item.isActive && (
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-yellow-600 rounded-full"></div>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-[#733857] rounded-full"></div>
               )}
             </Link>
           );

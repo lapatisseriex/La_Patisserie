@@ -176,18 +176,13 @@ const CartPickedForYou = () => {
   }
 
   return (
-    <section className="w-full py-0 md:py-6">
+    <section className="w-full py-0 md:py-6 bg-white" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
-        <div className="mb-8 space-y-3">
-          <h2 className="text-2xl font-bold tracking-wide text-left" style={{ 
-            background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textShadow: '0px 0px 1px rgba(249, 115, 22, 0.2)'
-          }}>
+        <div className="mb-8">
+          <h2 className="text-2xl font-light tracking-wide text-left text-[#733857]">
             Picked for Your Cart
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-sm font-light mt-2">
             {cartAnalysis.lastProduct ? 
               `Based on your cart` : 
               'Recommended just for you'
@@ -199,7 +194,7 @@ const CartPickedForYou = () => {
         {recommendedProducts.length > 0 ? (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">
+              <h3 className="text-lg font-light text-gray-900">
                 {recommendationType || 'You Might Also Like'}
               </h3>
             
@@ -216,7 +211,7 @@ const CartPickedForYou = () => {
           </div>
         ) : (
           <div className="text-center py-8">
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 text-sm font-light">
               No recommendations available at the moment
             </p>
           </div>

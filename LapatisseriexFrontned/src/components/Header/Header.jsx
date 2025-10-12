@@ -559,16 +559,16 @@ const Header = ({ isAdminView = false }) => {
 
   return (
     <>
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300" style={{fontFamily: 'sans-serif'}}>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] transition-all duration-300" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
       
       {/* Mobile Location Bar - Display only, no dropdown */}
       {!isAdminView && (
-        <div className={`mobile-location-bar md:hidden bg-white border-b border-gray-200 z-[56] transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
+        <div className={`mobile-location-bar md:hidden bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-b border-[#733857]/20 z-[56] transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
           <div className="px-3">
             <div className="flex justify-start">
-              <div className="flex items-center text-xs text-black py-1 px-2 rounded-md" style={{fontFamily: 'sans-serif'}}>
-                <MapPin className="h-3 w-3 mr-2 text-rose-500" />
-                <span className="truncate max-w-[120px] font-medium">{memoizedUserLocationDisplay}</span>
+              <div className="flex items-center text-xs text-white/70 py-1 px-2 rounded-md" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <MapPin className="h-3 w-3 mr-2 text-[#733857]" />
+                <span className="truncate max-w-[120px] font-light">{memoizedUserLocationDisplay}</span>
                 {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                   <AlertTriangle className="h-3 w-3 ml-1 text-amber-400" />
                 )}
@@ -580,10 +580,10 @@ const Header = ({ isAdminView = false }) => {
       
       {/* Premium Luxury Banner */}
       {!isAdminView && (
-        <div className="luxury-banner-container relative overflow-hidden bg-gradient-to-r from-rose-100 via-pink-50 to-orange-50 py-1 px-3 sm:px-5">
+        <div className="luxury-banner-container relative overflow-hidden bg-gradient-to-r from-[#281c20] via-[#412434] to-[#281c20] py-1 px-3 sm:px-5">
           {/* Cake-themed Accent Lines */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-300 to-transparent opacity-80"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-300 to-transparent opacity-80"></div>
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#733857] to-transparent opacity-80"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#733857] to-transparent opacity-80"></div>
           
           {/* Animated Background Elements */}
           <div className="absolute inset-0 opacity-20">
@@ -597,8 +597,8 @@ const Header = ({ isAdminView = false }) => {
           </div>
           
           {/* Elegant Border Frame */}
-          <div className="absolute inset-2 border border-rose-300/40 rounded-lg"></div>
-          <div className="absolute inset-3 border border-pink-200/30 rounded-md"></div>
+          <div className="absolute inset-2 border border-[#733857]/40 rounded-lg"></div>
+          <div className="absolute inset-3 border border-[#733857]/30 rounded-md"></div>
           
           {/* Main Content */}
           <div className="container mx-auto relative z-20 py-1">
@@ -607,19 +607,19 @@ const Header = ({ isAdminView = false }) => {
               <div className="flex flex-col items-center justify-center px-4">
                 {/* Premium Badge */}
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-rose-400"></div>
-                  <span className="text-rose-600 text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'serif'}}>
+                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-[#733857]"></div>
+                  <span className="text-[#733857] text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                     La Patisserie
                   </span>
-                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-rose-400"></div>
+                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-[#733857]"></div>
                 </div>
                 
                 {/* Main Message */}
-                <h2 className="text-gray-800 text-sm font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
+                <h2 className="text-white/80 text-sm font-light tracking-wide text-center" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   <span className="inline-block animate-fade-in-up">🧁</span>
                   <span className="mx-1 relative">
                     Fresh Artisan Cakes & Pastries
-                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-400 to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
+                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
                   </span>
                   <span className="inline-block animate-fade-in-up animation-delay-500">🍰</span>
                 </h2>
@@ -631,8 +631,8 @@ const Header = ({ isAdminView = false }) => {
               {/* Phone Number - Left */}
               <div className="flex items-center justify-start flex-shrink-0 w-48">
                 <button 
-                  className="flex items-center gap-1 text-rose-600/80 flex-shrink-0 hover:text-rose-700 transition-colors duration-200"
-                  style={{fontFamily: 'sans-serif'}}
+                  className="flex items-center gap-1 text-[#733857]/80 flex-shrink-0 hover:text-[#733857] transition-colors duration-200"
+                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   <Phone className="h-3 w-3" />
                   <span className="text-xs font-light">
@@ -645,19 +645,19 @@ const Header = ({ isAdminView = false }) => {
               <div className="flex flex-col items-center justify-center flex-1 px-4">
                 {/* Premium Badge */}
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-rose-400"></div>
-                  <span className="text-rose-600 text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'serif'}}>
+                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-[#733857]"></div>
+                  <span className="text-[#733857] text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                     La Patisserie
                   </span>
-                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-rose-400"></div>
+                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-[#733857]"></div>
                 </div>
                 
                 {/* Main Message */}
-                <h2 className="text-gray-800 text-lg font-light tracking-wide text-center" style={{fontFamily: 'serif'}}>
+                <h2 className="text-white/80 text-lg font-light tracking-wide text-center" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   <span className="inline-block animate-fade-in-up">🧁</span>
                   <span className="mx-1 relative">
                     Fresh Artisan Cakes & Pastries
-                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-400 to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
+                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
                   </span>
                   <span className="inline-block animate-fade-in-up animation-delay-500">🍰</span>
                 </h2>
@@ -666,8 +666,8 @@ const Header = ({ isAdminView = false }) => {
               {/* Address - Right */}
               <div className="flex items-center justify-end flex-shrink-0 w-48">
                 <button 
-                  className="flex items-center gap-1 text-rose-600/80 flex-shrink-0 hover:text-rose-700 transition-colors duration-200"
-                  style={{fontFamily: 'sans-serif'}}
+                  className="flex items-center gap-1 text-[#733857]/80 flex-shrink-0 hover:text-[#733857] transition-colors duration-200"
+                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   <span className="text-xs font-light text-right">
                     LIG 208 GANDHI MAANAGAR PEELAMEDU COIMBATORE
@@ -679,18 +679,18 @@ const Header = ({ isAdminView = false }) => {
           </div>
           
           {/* Subtle Overlay Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-r from-rose-200/10 via-transparent to-pink-200/10 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#733857]/10 via-transparent to-[#733857]/10 pointer-events-none"></div>
         </div>
       )}
       
       {/* Middle Bar - Logo and Profile/Login - Hidden on mobile */}
-      <div className="hidden md:block py-2 sm:py-3 px-2 sm:px-4 bg-white">
+      <div className="hidden md:block py-2 sm:py-3 px-2 sm:px-4 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-b border-[#733857]/20">
         <div className="container mx-auto flex justify-between items-center">
           {/* Logo Text on Left with Navigation Links beside it - Hidden on mobile */}
           <div className="hidden md:flex items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center header-logo-text">
-                <span className="text-rose-600 font-light text-bold sm:text-xl md:text-2xl  truncate max-w-[120px] sm:max-w-none">
+                <span className="text-[#733857] font-light text-bold sm:text-xl md:text-2xl  truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   La Patisserie
                   <div className="sugar-sprinkles">
                     {[...Array(15)].map((_, i) => (
@@ -718,10 +718,10 @@ const Header = ({ isAdminView = false }) => {
                 onMouseEnter={handleMegaMenuEnter}
                 onMouseLeave={handleMegaMenuLeave}
               >
-                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
-                  <Utensils className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
-                  <span className="relative z-10 font-medium">Menu</span>
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                  <Utensils className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
+                  <span className="relative z-10 font-light">Menu</span>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </Link>
                 
                 {/* Invisible bridge to prevent hover gap */}
@@ -732,14 +732,14 @@ const Header = ({ isAdminView = false }) => {
                 {/* Mega Menu Dropdown */}
                 {isMegaMenuOpen && filteredCategories.length > 0 && (
                   <div
-                    className="absolute top-full left-0 mt-3 w-[600px] h-[400px] bg-white backdrop-blur-sm shadow-xl rounded-lg overflow-hidden z-50 border border-gray-200 transform opacity-0 scale-95 animate-dropdown"
-                    style={{fontFamily: 'sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
+                    className="absolute top-full left-0 mt-3 w-[600px] h-[400px] bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] backdrop-blur-sm shadow-xl rounded-lg overflow-hidden z-50 border border-[#733857]/20 transform opacity-0 scale-95 animate-dropdown"
+                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
                   >
                     <div className="flex h-full">
                       {/* Categories Sidebar */}
-                      <div className="w-1/2 bg-white border-r border-gray-200">
-                        <div className="px-4 py-3 bg-gray-50 text-gray-700 border-b border-gray-200">
-                          <h3 className="text-sm font-medium tracking-wide">Categories</h3>
+                      <div className="w-1/2 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-r border-[#733857]/20">
+                        <div className="px-4 py-3 bg-[#281c20]/50 text-white/60 border-b border-[#733857]/20">
+                          <h3 className="text-sm font-light tracking-wide uppercase">Categories</h3>
                         </div>
                         <div className="p-4 overflow-y-auto h-[calc(100%-56px)] custom-scrollbar">
                           <div className="space-y-1">
@@ -748,8 +748,8 @@ const Header = ({ isAdminView = false }) => {
                                 key={category._id}
                                 className={`w-full text-left px-3 py-2 rounded-md transition-all duration-200 group relative ${
                                   hoveredCategory?._id === category._id
-                                    ? 'bg-gray-100 text-gray-900'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                                    ? 'bg-white/5 text-[#733857]'
+                                    : 'text-white/70 hover:bg-white/5 hover:text-[#733857]'
                                 }`}
                                 onMouseEnter={() => handleCategoryHover(category)}
                                 onClick={() => {
@@ -757,7 +757,7 @@ const Header = ({ isAdminView = false }) => {
                                   navigate(`/products?category=${category._id}`);
                                 }}
                               >
-                                <span className="relative z-10 font-medium text-sm">{category.name}</span>
+                                <span className="relative z-10 font-light text-sm">{category.name}</span>
                               </button>
                             ))}
                           </div>
@@ -765,9 +765,9 @@ const Header = ({ isAdminView = false }) => {
                       </div>
                       
                       {/* Dynamic Image Display */}
-                      <div className="w-1/2 bg-white flex flex-col">
-                        <div className="px-4 py-3 bg-gray-50 text-gray-700 border-b border-gray-200">
-                          <h3 className="text-sm font-medium tracking-wide">
+                      <div className="w-1/2 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] flex flex-col">
+                        <div className="px-4 py-3 bg-[#281c20]/50 text-white/60 border-b border-[#733857]/20">
+                          <h3 className="text-sm font-light tracking-wide uppercase">
                             {hoveredCategory ? hoveredCategory.name : 'Select Category'}
                           </h3>
                         </div>
@@ -783,24 +783,24 @@ const Header = ({ isAdminView = false }) => {
                                   e.target.nextSibling.style.display = 'flex';
                                 }}
                               />
-                              <div className="hidden w-full h-full bg-gray-100 items-center justify-center">
-                                <Utensils className="h-16 w-16 text-gray-400" />
+                              <div className="hidden w-full h-full bg-[#281c20]/50 items-center justify-center">
+                                <Utensils className="h-16 w-16 text-white/40" />
                               </div>
                             </div>
                           ) : (
-                            <div className="w-full h-full max-w-[200px] max-h-[200px] bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
+                            <div className="w-full h-full max-w-[200px] max-h-[200px] bg-[#281c20]/50 rounded-lg flex items-center justify-center border border-[#733857]/20">
                               <div className="text-center">
-                                <Utensils className="h-16 w-16 text-gray-400 mx-auto mb-3" />
-                                <p className="text-gray-500 text-sm">
+                                <Utensils className="h-16 w-16 text-white/40 mx-auto mb-3" />
+                                <p className="text-white/50 text-sm font-light">
                                   {hoveredCategory ? 'No Image Available' : 'Hover over a category'}
                                 </p>
                               </div>
                             </div>
                           )}
                         </div>
-                        <div className="px-4 py-3 bg-white border-t border-gray-200">
+                        <div className="px-4 py-3 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-t border-[#733857]/20">
                           <button 
-                            className="w-full bg-gradient-to-r from-rose-400 to-coral-500 text-white py-2 px-4 rounded-lg font-medium text-sm hover:from-rose-300 hover:to-coral-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                            className="w-full bg-[#733857] text-white py-2 px-4 rounded-lg font-light text-sm hover:bg-[#733857]/80 transition-all duration-200 shadow-sm hover:shadow-md"
                             onClick={() => {
                               setIsMegaMenuOpen(false);
                               navigate('/products');
@@ -823,19 +823,19 @@ const Header = ({ isAdminView = false }) => {
                 onMouseLeave={handleLocationHoverLeave}
               >
                 <button 
-                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-rose-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group"
+                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 relative group"
                   onClick={toggleLocationDropdown}
-                  style={{fontFamily: 'sans-serif'}}
+                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
-                  <MapPin className="h-4 w-4 text-gray-600 group-hover:text-rose-600 transition-all duration-300 group-hover:scale-110" />
-                  <span className="truncate max-w-[120px] sm:max-w-[140px] font-medium relative z-10">{memoizedUserLocationDisplay}</span>
-                  <ChevronDown className="h-4 w-4 text-gray-600 transition-all duration-300 group-hover:rotate-180 group-hover:text-rose-600" />
+                  <MapPin className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-all duration-300 group-hover:scale-110" />
+                  <span className="truncate max-w-[120px] sm:max-w-[140px] font-light relative z-10">{memoizedUserLocationDisplay}</span>
+                  <ChevronDown className="h-4 w-4 text-white/50 transition-all duration-300 group-hover:rotate-180 group-hover:text-[#733857]" />
                   {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                     <div className="absolute -top-1 -right-1">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </button>
                 
                 {/* Invisible bridge to prevent hover gap */}
@@ -846,20 +846,20 @@ const Header = ({ isAdminView = false }) => {
                 {/* Location Dropdown */}
                 {isLocationDropdownOpen && (
                   <div
-                    className="absolute top-full left-0 mt-3 w-56 bg-white shadow-xl rounded-lg overflow-hidden z-50 border border-gray-200 transform opacity-0 scale-95 animate-dropdown"
-                    style={{fontFamily: 'sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
+                    className="absolute top-full left-0 mt-3 w-56 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] shadow-xl rounded-lg overflow-hidden z-50 border border-[#733857]/20 transform opacity-0 scale-95 animate-dropdown"
+                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
                   >
-                    <div className="px-4 py-3  text-gray-400 ">
-                      <h3 className="text-xs font-medium tracking-wide">Settings</h3>
+                    <div className="px-4 py-3 text-white/60 border-b border-[#733857]/20">
+                      <h3 className="text-xs font-light tracking-wide uppercase">Settings</h3>
                     </div>
                     <div className="p-2">
                       <Link
                         to="/profile"
-                        className="flex items-center gap-3 px-3 py-2 text-rose-500 rounded-lg transition-all duration-200 font-medium"
-                        style={{fontFamily: 'sans-serif'}}
+                        className="flex items-center gap-3 px-3 py-2 text-[#733857] hover:bg-white/5 rounded-lg transition-all duration-200 font-light"
+                        style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                         onClick={() => setIsLocationDropdownOpen(false)}
                       >
-                        <Settings className="h-4 w-4 text-black" />
+                        <Settings className="h-4 w-4 text-white/50" />
                         <span>Edit in settings</span>
                       </Link>
                     </div>
@@ -868,10 +868,10 @@ const Header = ({ isAdminView = false }) => {
               </div>
               
               {/* Contact Nav Item - Premium Design */}
-              <Link to="/contact" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-black hover:text-yellow-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
-                <Phone className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
-                <span className="relative z-10 font-medium">Contact</span>
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+              <Link to="/contact" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <Phone className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
+                <span className="relative z-10 font-light">Contact</span>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
               </Link>
             </div>
           </div>
@@ -882,10 +882,10 @@ const Header = ({ isAdminView = false }) => {
               <>
                 {/* Admin Dashboard Button - Show only for admins - Positioned first */}
                 {user.role === 'admin' && (
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700">
-                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-black hover:text-rose-600 rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'sans-serif'}}>
-                      <Settings className="h-5 w-5 text-gray-600 group-hover:text-rose-600 transition-colors duration-300" />
-                      <span className="ml-2 text-sm font-medium">Dashboard</span>
+                  <div className="bg-[#281c20]/50 backdrop-blur-sm rounded-lg border border-[#733857]/30">
+                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-white/70 hover:text-[#733857] rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                      <Settings className="h-5 w-5 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
+                      <span className="ml-2 text-sm font-light">Dashboard</span>
                     </Link>
                   </div>
                 )}
@@ -904,17 +904,17 @@ const Header = ({ isAdminView = false }) => {
                 {/* Cart component - Premium Design with Tooltip */}
                 <div className="tooltip">
                   <div className="tooltip-content">
-                    <div className="animate-bounce text-rose-500 -rotate-10 text-sm font-black italic select-none">Cart</div>
+                    <div className="animate-bounce text-[#733857] -rotate-10 text-sm font-black italic select-none">Cart</div>
                   </div>
                   <Link 
                     to="/cart" 
-                    className="flex items-center px-3 py-2 text-black hover:text-rose-600 backdrop-blur-sm rounded-lg transition-all duration-300 relative group" 
-                    style={{fontFamily: 'sans-serif'}}
+                    className="flex items-center px-3 py-2 text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" 
+                    style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                     data-cart-icon="true"
                   >
-                    <ShoppingBag className="h-4 w-4 text-gray-600 group-hover:text-rose-600 transition-colors duration-300" />
+                    <ShoppingBag className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
                     {memoizedCartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-400 to-rose-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium shadow-lg">
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#733857] to-[#8d4466] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-light shadow-lg">
                         {memoizedCartCount}
                       </span>
                     )}
@@ -929,29 +929,29 @@ const Header = ({ isAdminView = false }) => {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 px-2 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 shadow-sm"
-              style={{fontFamily: 'sans-serif'}}
+              style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               title="Contact us on WhatsApp"
             >
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
               </svg>
-              <span className="text-xs font-medium hidden sm:inline">WhatsApp</span>
+              <span className="text-xs font-light hidden sm:inline">WhatsApp</span>
             </a>
             
             {!user && (
               <button 
                 onClick={toggleAuthPanel}
-                className="flex items-center gap-2 px-3 py-2 text-black hover:text-rose-600 backdrop-blur-sm rounded-lg transition-all duration-300"
-                style={{fontFamily: 'sans-serif'}}
+                className="flex items-center gap-2 px-3 py-2 text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 group"
+                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               >
-                <User className="h-4 w-4 text-gray-600 group-hover:text-rose-600 transition-colors duration-300" />
-                <span className="text-sm font-medium">Login</span>
+                <User className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
+                <span className="text-sm font-light">Login</span>
               </button>
             )}
             
             {/* Logo image on right */}
             <Link to="/" className="flex items-center ml-4 header-logo-image">
-              <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-12 sm:h-14" />
+              <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-12 sm:h-14 brightness-0 invert opacity-90" />
             </Link>
           </div>
         </div>

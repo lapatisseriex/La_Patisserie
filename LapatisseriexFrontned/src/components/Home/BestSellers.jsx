@@ -31,18 +31,12 @@ const BestSellers = () => {
   }
 
   return (
-    <section className="w-full py-0 md:py-6">
+    <section className="w-full py-0 md:py-6 bg-white">
       <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
-        <div className="mb-8 space-y-3">
-          <h2 className="text-2xl font-bold tracking-wide text-left" style={{ 
-            background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
-          }}>
+        <div className="mb-8">
+          <h2 className="text-2xl font-light tracking-wide text-left text-[#733857]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Best Sellers
           </h2>
-        
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

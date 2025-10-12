@@ -74,11 +74,12 @@ const UserMenu = memo(() => {
       {/* Dropdown Menu */}
       {isMenuOpen && (
         <div 
-          className="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-50 transform origin-top-right transition-all duration-200"
+          className="absolute right-0 mt-1 w-56 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] rounded-lg shadow-xl border border-[#733857]/20 z-50 transform origin-top-right transition-all duration-200"
           style={{ 
             animation: 'fadeIn 0.3s ease-out forwards',
             maxWidth: 'calc(100vw - 20px)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+            boxShadow: '0 4px 20px rgba(115, 56, 87, 0.3)',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
           }}
           onMouseEnter={() => {
             // Clear timeout when user mouses over the menu
@@ -91,14 +92,15 @@ const UserMenu = memo(() => {
             }, 150); // Match the 150ms delay on the parent
           }}
         >
-          <div className="p-3 border-b border-gray-200">
-            <p className="text-xs font-medium text-gray-600 tracking-wide uppercase">MY ACCOUNT</p>
+          <div className="p-3 border-b border-[#733857]/20">
+            <p className="text-xs font-medium text-[#733857] tracking-[0.25em] uppercase" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>MY ACCOUNT</p>
           </div>
           
           <div className="py-1">
             <Link 
               to="/profile" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-black hover:text-yellow-600 hover:bg-gray-50 user-menu-item transition-all duration-200"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-[#733857] hover:bg-white/5 user-menu-item transition-all duration-300"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling
@@ -109,13 +111,14 @@ const UserMenu = memo(() => {
                 }, 100);
               }}
             >
-              <User className="h-4 w-4 text-gray-600" />
-              <span className="font-medium">My Profile</span>
+              <User className="h-4 w-4 text-white/50" />
+              <span className="font-light">My Profile</span>
             </Link>
             
             <Link 
               to="/orders" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-black hover:text-yellow-600 hover:bg-gray-50 user-menu-item transition-all duration-200"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-[#733857] hover:bg-white/5 user-menu-item transition-all duration-300"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling
@@ -126,18 +129,19 @@ const UserMenu = memo(() => {
                 }, 100);
               }}
             >
-              <Package className="h-4 w-4 text-gray-600" />
-              <span className="font-medium">My Orders</span>
+              <Package className="h-4 w-4 text-white/50" />
+              <span className="font-light">My Orders</span>
             </Link>
           </div>
           
-          <div className="p-2 border-t border-gray-200">
+          <div className="p-2 border-t border-[#733857]/20">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md user-menu-item transition-all duration-200"
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-[#733857] hover:bg-white/5 rounded-md user-menu-item transition-all duration-300"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
-              <LogOut className="h-4 w-4" />
-              <span className="font-medium">Sign Out</span>
+              <LogOut className="h-4 w-4 text-white/50" />
+              <span className="font-light">Sign Out</span>
             </button>
           </div>
         </div>

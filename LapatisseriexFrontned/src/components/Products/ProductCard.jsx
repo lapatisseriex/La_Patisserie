@@ -418,11 +418,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                 ref={addToCartButtonRef}
                 onClick={handleAddToCart}
                 disabled={!isActive || isOutOfStockTracked || !isProductAvailable}
-                className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-semibold transition-all duration-300 ease-out rounded-lg border ${
+                className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-light transition-all duration-300 ease-out rounded-lg border ${
                   !isActive || isOutOfStockTracked || !isProductAvailable
                     ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
-                    : 'bg-white text-red-500 border-red-500 hover:bg-red-50 hover:shadow-md shadow-sm transform hover:scale-105'
+                    : 'bg-white text-[#733857] border-[#733857] hover:bg-[#733857] hover:text-white hover:shadow-md shadow-sm transform hover:scale-105'
                 }`}
+                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               >
                 {!isProductAvailable ? 'Closed' : isOutOfStockTracked ? 'Unavailable' : 'Add'}
               </button>
@@ -430,7 +431,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               <div className={`absolute bottom-2 right-2 flex items-center rounded-lg shadow-sm ${
                 !isProductAvailable 
                   ? 'bg-gray-100 border border-gray-300' 
-                  : 'bg-white border border-red-500'
+                  : 'bg-white border border-[#733857]'
               }`}>
                 <button
                   onClick={(e) => {
@@ -438,19 +439,22 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                     handleQuantityChange(currentQuantity - 1);
                   }}
                   disabled={!isProductAvailable || isOutOfStockTracked}
-                  className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-medium ${
+                  className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-light ${
                     !isProductAvailable || isOutOfStockTracked
                       ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-red-500 hover:bg-red-50'
+                      : 'text-[#733857] hover:bg-[#733857]/10'
                   }`}
+                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   −
                 </button>
-                <span className={`px-3 py-1 font-semibold text-xs min-w-[1.5rem] text-center border-l border-r ${
+                <span className={`px-3 py-1 font-light text-xs min-w-[1.5rem] text-center border-l border-r ${
                   !isProductAvailable || isOutOfStockTracked
                     ? 'text-gray-400 border-gray-300'
-                    : 'text-red-500 border-red-500'
-                }`}>
+                    : 'text-[#733857] border-[#733857]'
+                }`}
+                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                >
                   {currentQuantity}
                 </span>
                 <button
@@ -459,11 +463,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                     handleQuantityChange(currentQuantity + 1);
                   }}
                   disabled={isOutOfStockTracked || (tracks && currentQuantity >= totalStock) || !isProductAvailable}
-                  className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-medium ${
+                  className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light ${
                     !isProductAvailable || isOutOfStockTracked
                       ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-red-500 hover:bg-red-50'
+                      : 'text-[#733857] hover:bg-[#733857]/10'
                   }`}
+                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   +
                 </button>
@@ -481,13 +486,14 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   } flex flex-col justify-between`}>
         <div className="space-y-1 sm:space-y-2">
           <h3
-            className={`font-semibold text-black line-clamp-1 leading-tight ${
+            className={`font-light text-gray-900 line-clamp-1 leading-tight ${
               featured 
                 ? 'text-sm sm:text-base' 
                 : compact 
                 ? 'text-sm' 
                 : 'text-xs sm:text-sm md:text-base'
-            } cursor-pointer mb-1 hover:text-gray-700 transition-colors`}
+            } cursor-pointer mb-1 hover:text-[#733857] transition-colors`}
+            style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
             onClick={handleCardClick}
           >
             {currentProduct.name}
@@ -497,83 +503,67 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           <div className="flex items-center justify-between mb-2 gap-1 flex-wrap">
             {/* Rating chip */}
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-full px-2 py-0.5 shadow-sm">
+              <div className="inline-flex items-center gap-2 bg-white border border-[#733857]/30 rounded-full px-2 py-0.5 shadow-sm">
                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 text-white text-[9px] leading-none">★</span>
-                <span className="text-xs font-medium text-gray-900">{productRating.rating}</span>
+                <span className="text-xs font-light text-gray-900" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{productRating.rating}</span>
                 <span className="text-xs text-gray-600">|</span>
-                <span className="text-xs text-gray-600">{ratingCountDisplay}</span>
+                <span className="text-xs text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{ratingCountDisplay}</span>
               </div>
             </div>
 
             {/* Welcome Offer or Special Text */}
             <div className="text-xs flex-shrink-0">
               {user && user.hasPlacedOrder ? (
-                <span className="text-violet-600 font-bold">Premium Choice</span>
+                <span className="text-violet-900 font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Premium Choice</span>
               ) : (
-                <span className="text-violet-600 font-bold">Welcome Gift</span>
+                <span className="text-violet-900 font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Welcome Gift</span>
               )}
             </div>
           </div>
 
           {/* One-line product description */}
-          <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+          <p className="text-xs text-gray-600 mb-2 line-clamp-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
             {currentProduct.description || 'Delicious handcrafted treat made with premium ingredients.'}
           </p>
 
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-baseline gap-1">
               {discountPercentage > 0 && (
-                <span className="text-gray-500 line-through text-xs">
+                <span className="text-gray-500 line-through text-xs" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   {formatCurrency(originalPrice)}
                 </span>
               )}
               <span
-                className={`font-bold text-black ${
+                className={`font-light text-gray-900 ${
                   featured || compact ? 'text-sm' : 'text-sm sm:text-base'
                 }`}
+                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               >
                 {formatCurrency(sellingPrice)}
               </span>
             </div>
             {discountPercentage > 0 && (
-              <span className="text-green-500 text-xs font-medium px-1.5 py-0.5  rounded-full">
+              <span className="text-[#733857] text-xs font-light" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                 {discountPercentage}% OFF
               </span>
             )}
           </div>
-
-          {tracks && totalStock > 0 && totalStock < 15 && (
-            <span className="text-orange-600 font-medium text-sm bg-orange-50 px-2 py-1 rounded">
-              Only {totalStock} left in stock
-            </span>
-          )}
-
-          {tracks && totalStock === 0 && (
-            <span className="text-red-600 font-medium text-sm bg-red-50 px-2 py-1 rounded">
-              Currently Out of Stock
-            </span>
-          )}
-          
-          {tracks && totalStock >= 15 && (
-            <span className="text-green-600 font-medium text-sm bg-green-50 px-2 py-1 rounded">
-              ✓ In Stock ({totalStock} available)
-            </span>
-          )}
         </div>
 
         {/* Reserve Button - Creative Animated Design with Mobile Support */}
         <button
           onClick={handleReserve}
           disabled={!isActive || totalStock === 0 || !isProductAvailable}
-          className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-semibold transition-all duration-200 rounded-lg overflow-hidden ${
+          className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-light transition-all duration-200 rounded-lg overflow-hidden ${
             !isActive || totalStock === 0 || !isProductAvailable
               ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
-              : 'bg-white text-black border-2 border-black hover:text-white active:text-white touch-manipulation'
+              : 'bg-white text-gray-900 border-2 border-[#733857] hover:text-white active:text-white touch-manipulation'
           }`}
+          style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
         >
           {/* Animated background fill - works on both hover and active (touch) */}
           {isActive && totalStock > 0 && isProductAvailable && (
-            <div className="absolute inset-0 bg-black transform -translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-200 ease-out"></div>
+            <div className="absolute inset-0 bg-[#733857] transform -translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-200 ease-out"></div>
           )}
           
           {/* Button content with animations for both hover and touch */}
@@ -613,15 +603,15 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           {/* Sparkle effects - show on both hover and active for mobile */}
           {isActive && totalStock > 0 && isProductAvailable && (
             <>
-              <div className="absolute top-1 right-2 w-1 h-1 bg-rose-400 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
-              <div className="absolute bottom-1 left-3 w-1 h-1 bg-pink-300 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
-              <div className="absolute top-2 left-1/2 w-0.5 h-0.5 bg-rose-500 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-pulse group-active:animate-pulse transition-opacity duration-300 delay-150"></div>
+              <div className="absolute top-1 right-2 w-1 h-1 bg-[#8d4466] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
+              <div className="absolute bottom-1 left-3 w-1 h-1 bg-[#733857] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
+              <div className="absolute top-2 left-1/2 w-0.5 h-0.5 bg-[#8d4466] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-pulse group-active:animate-pulse transition-opacity duration-300 delay-150"></div>
             </>
           )}
 
           {/* Mobile-specific pulse animation on tap */}
           {isProductAvailable && (
-            <div className="absolute inset-0 bg-black opacity-0 group-active:opacity-10 transition-opacity duration-150 rounded-lg md:hidden"></div>
+            <div className="absolute inset-0 bg-[#733857] opacity-0 group-active:opacity-10 transition-opacity duration-150 rounded-lg md:hidden"></div>
           )}
         </button>
       </div>

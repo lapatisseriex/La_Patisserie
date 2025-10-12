@@ -193,27 +193,22 @@ const CategorySwiperHome = ({
   const { firstRow, secondRow } = interleaveItems();
 
   return (
-    <div className="w-full py-0 md:py-6 font-sans">
+    <div className="w-full py-0 md:py-6 bg-white" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 md:px-16 pt-6 pb-6 md:pt-0 md:pb-0">
         <div className="flex flex-col md:flex-row md:items-start md:gap-8">
           
           {/* Text Section */}
           <div className="w-full md:w-2/5 text-left">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ 
-              background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
-            }}>
+            <h2 className="text-2xl md:text-3xl font-light mb-2 text-[#733857]">
               Delightful Pastries & Elegant Cakes
             </h2>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-gray-600 mb-4 font-light">
               Swipe left or right to explore more
             </p>
             
             {/* Banner Image - Hidden on mobile, visible on larger devices */}
             <div className="hidden md:block mt-6">
-              <div className="relative w-full h-48 rounded-lg overflow-hidden shadow-lg">
+              <div className="relative w-full h-48 rounded-lg overflow-hidden">
                 <img
                   src="/images/new.jpg"
                   alt="Delicious Cakes Collection"
@@ -223,10 +218,10 @@ const CategorySwiperHome = ({
                     e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial, sans-serif' font-size='16' fill='%236b7280' text-anchor='middle' dy='.3em'%3ECategory Banner%3C/text%3E%3C/svg%3E";
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <p className="text-sm font-medium">Fresh Daily</p>
-                  <p className="text-xs opacity-90">Premium Quality Cakes</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#733857]/20 to-transparent"></div>
+                <div className="absolute bottom-4 left-4 text-gray-900">
+                  <p className="text-sm font-light">Fresh Daily</p>
+                  <p className="text-xs font-light text-gray-600">Premium Quality Cakes</p>
                 </div>
               </div>
             </div>
@@ -251,14 +246,14 @@ const CategorySwiperHome = ({
                   }
                   className="flex-shrink-0 w-28 text-center cursor-pointer transition-transform hover:scale-105"
                 >
-                  <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center bg-transparent overflow-hidden">
+                  <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center bg-transparent overflow-hidden border border-[#733857]/10">
                     <img
                       src={normalizeImageUrl(item.image || item.images?.[0] || '/images/default-category.png')}
                       alt={item.name}
                       className="w-20 h-20 object-contain"
                     />
                   </div>
-                  <p className={`text-xs font-medium mt-2 px-1 ${item.color || "text-gray-700"}`}>
+                  <p className={`text-xs font-light mt-2 px-1 ${item.color || "text-gray-900"}`}>
                     {item.icon || null}{item.name}
                   </p>
                 </div>
@@ -282,14 +277,14 @@ const CategorySwiperHome = ({
                   }
                   className="flex-shrink-0 w-28 text-center cursor-pointer transition-transform hover:scale-105"
                 >
-                  <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center bg-transparent overflow-hidden">
+                  <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center bg-transparent overflow-hidden border border-[#733857]/10">
                     <img
                       src={normalizeImageUrl(item.image || item.images?.[0] || '/images/default-category.png')}
                       alt={item.name}
                       className="w-20 h-20 object-contain"
                     />
                   </div>
-                  <p className={`text-xs font-medium mt-2 px-1 ${item.color || "text-gray-700"}`}>
+                  <p className={`text-xs font-light mt-2 px-1 ${item.color || "text-gray-900"}`}>
                     {item.icon || null}{item.name}
                   </p>
                 </div>
