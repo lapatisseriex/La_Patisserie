@@ -149,7 +149,7 @@ const Orders = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your orders...</p>
+          <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Loading your orders...</p>
         </div>
       </div>
     );
@@ -161,14 +161,7 @@ const Orders = () => {
       <div className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center">
-            <Link 
-              to="/"
-              className="flex items-center text-gray-600 hover:text-gray-800 mr-4"
-            >
-              <FaArrowLeft className="mr-2" />
-              Back to Home
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">My Orders</h1>
           </div>
         </div>
       </div>
@@ -185,8 +178,8 @@ const Orders = () => {
         {orders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <FaBoxOpen className="text-6xl text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">No Orders Yet</h2>
-            <p className="text-gray-500 mb-4">You haven't placed any orders yet.</p>
+            <h2 className="text-xl font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2">No Orders Yet</h2>
+            <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-4">You haven't placed any orders yet.</p>
             <Link 
               to="/"
               className="inline-block bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
@@ -202,7 +195,7 @@ const Orders = () => {
                 <div className="border-b border-gray-200 p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                         Order #{order.orderNumber}
                       </h3>
                       <p className="text-sm text-gray-500">

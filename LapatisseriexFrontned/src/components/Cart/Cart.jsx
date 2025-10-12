@@ -158,8 +158,8 @@ const Cart = () => {
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <FaShoppingCart className="text-gray-400 text-4xl" />
             </div>
-            <h2 className="text-2xl font-semibold text-black mb-2">Your cart is empty</h2>
-            <p className="text-gray-600 mb-8">Looks like you haven't added any items to your cart yet</p>
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2">Your cart is empty</h2>
+            <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-8">Looks like you haven't added any items to your cart yet</p>
             <Link 
               to="/products" 
               className="bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium py-3 px-8 rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
@@ -178,7 +178,7 @@ const Cart = () => {
       <div className="max-w-6xl mx-auto">
         {/* Back button - hidden on mobile, visible on desktop with top padding */}
         <div className="hidden md:flex items-center mb-6 pt-4">
-          <Link to="/products" className="flex items-center text-black hover:text-gray-600 transition-colors">
+          <Link to="/products" className="flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:opacity-80 transition-opacity">
             <FaArrowLeft className="mr-2" />
             <span>Back</span>
           </Link>
@@ -192,15 +192,15 @@ const Cart = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h2 className="font-semibold text-lg text-black">Cart Items ({cartItems.length})</h2>
+                      <h2 className="font-semibold text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Cart Items ({cartItems.length})</h2>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                       <FaMapMarkerAlt className={`${hasValidDeliveryLocation() ? 'text-gray-500' : 'text-amber-500'} mr-1`} />
                       <span className="mr-2">{user?.location ? `${user.location.area}, ${user.location.city}` : 'Select Location'}</span>
                     </div>
                   </div>
                   <button 
-                    className="text-black hover:text-blue-600 transition-colors text-sm font-medium"
+                    className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:opacity-80 transition-opacity text-sm font-medium"
                     onClick={() => setShowLocationModal(true)}
                   >
                     {user?.location ? 'Change' : 'Select'}
@@ -251,7 +251,7 @@ const Cart = () => {
                     {/* Content section - takes remaining space */}
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-black text-sm md:text-base pr-2">{item.name || 'Product'}</h3>
+                        <h3 className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm md:text-base pr-2">{item.name || 'Product'}</h3>
                         <button 
                           onClick={() => {
                             removeFromCart(item.productId);
@@ -319,7 +319,7 @@ const Cart = () => {
                               // Skip item if no variant found - invalid cart item
                               console.warn('Cart item missing variant data:', item);
                               return (
-                                <div className="font-medium text-red-500 text-sm md:text-base">
+                                <div className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm md:text-base">
                                   Invalid item
                                 </div>
                               );
@@ -330,13 +330,13 @@ const Cart = () => {
                             
                             return (
                               <>
-                                <div className="font-medium text-black text-sm md:text-base">
+                                <div className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm md:text-base">
                                   {formatCurrency(pricing.finalPrice * item.quantity)}
                                 </div>
                                 <div className="text-xs md:text-sm">
                                   <div className="space-y-1">
                                     {pricing.mrp > pricing.finalPrice && (
-                                      <div className="text-gray-500">
+                                      <div className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                                         <span className="line-through">{formatCurrency(pricing.mrp)}</span>
                                         <span className="text-green-600 ml-1">{formatCurrency(pricing.finalPrice)}</span> each
                                       </div>
@@ -364,21 +364,21 @@ const Cart = () => {
           {/* Order Summary */}
           <div className="lg:col-span-4">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-[130px] md:top-[140px]">
-              <h2 className="font-semibold text-lg text-black pb-4 border-b border-gray-200 mb-4">
+              <h2 className="font-semibold text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent pb-4 border-b border-gray-200 mb-4">
                 Order Summary
               </h2>
               
               {/* Price Breakdown */}
-              <div className="space-y-3 text-gray-700">
+              <div className="space-y-3">
                 {(() => {
                   // Use pre-calculated averageDiscountPercentage from admin pricing logic
                   return (
                     <>
                       {originalTotal > discountedCartTotal && (
                         <>
-                          <div className="flex justify-between text-sm text-gray-500">
-                            <span>Original Price</span>
-                            <span className="line-through">{formatCurrency(originalTotal)}</span>
+                          <div className="flex justify-between text-sm">
+                            <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Original Price</span>
+                            <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-through">{formatCurrency(originalTotal)}</span>
                           </div>
                           <div className="flex justify-between text-green-600">
                             <span>Discount Savings {averageDiscountPercentage > 0 && `(${averageDiscountPercentage}% OFF)`}</span>
@@ -387,8 +387,8 @@ const Cart = () => {
                         </>
                       )}
                       <div className="flex justify-between">
-                        <span>Subtotal</span>
-                        <span className="font-medium">{formatCurrency(discountedCartTotal)}</span>
+                        <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Subtotal</span>
+                        <span className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{formatCurrency(discountedCartTotal)}</span>
                       </div>
                     </>
                   );
@@ -396,20 +396,20 @@ const Cart = () => {
                 
                 <div className="flex justify-between">
                   <div>
-                    <span>Delivery Charge</span>
+                    <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Delivery Charge</span>
                     {(() => {
                       // Use the location object directly if it exists in user, otherwise search in locations array
                       const userLocation = user?.location || 
                         (user?.locationId && locations?.find(loc => loc._id === user.locationId));
                       
                       return userLocation ? (
-                        <div className="text-xs text-gray-500">to {userLocation.area}</div>
+                        <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">to {userLocation.area}</div>
                       ) : (
-                        <div className="text-xs text-gray-500">default rate</div>
+                        <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">default rate</div>
                       );
                     })()}
                   </div>
-                  <span className="font-medium">
+                  <span className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                     {deliveryCharge === 0 ? (
                       <span className="text-green-500">
                         Free
@@ -425,8 +425,8 @@ const Cart = () => {
                 
                 <div className="border-t border-gray-200 pt-3 mt-3">
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>₹{grandTotal.toFixed(2)}</span>
+                    <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Total</span>
+                    <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">₹{grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -435,11 +435,36 @@ const Cart = () => {
               <div className="mt-6">
                 <button 
                   onClick={handleCheckout}
-                  className={`w-full bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium py-3 rounded-md mb-3 ${
-                    hasValidDeliveryLocation() ? 'hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg' : 'opacity-80 cursor-not-allowed'
+                  disabled={!hasValidDeliveryLocation()}
+                  className={`group relative w-full rounded-lg overflow-hidden transition-all duration-300 font-semibold py-3 px-5 text-sm ${
+                    hasValidDeliveryLocation()
+                      ? 'bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:border-[#733857] transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation'
+                      : 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
                   }`}
                 >
-                  Proceed to Checkout
+                  <span className="relative z-10 flex items-center justify-center gap-1.5">
+                    <svg className={`w-3 h-3 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-12 group-active:scale-110 ${
+                      hasValidDeliveryLocation() 
+                        ? 'text-[#733857] group-hover:text-white' 
+                        : 'text-gray-400'
+                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13v6a1 1 0 001 1h9a1 1 0 001-1v-6M17 13v6a1 1 0 01-1 1H8a1 1 0 01-1-1v-6" />
+                    </svg>
+                    <span className={`transform transition-all duration-300 group-hover:tracking-wider group-active:tracking-wider ${
+                      hasValidDeliveryLocation() 
+                        ? 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent group-hover:text-white' 
+                        : 'text-gray-400'
+                    }`}>
+                      {hasValidDeliveryLocation() ? 'Proceed to Checkout' : 'Select Delivery Location'}
+                    </span>
+                    <svg className={`w-3 h-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:translate-x-1 group-active:scale-110 ${
+                      hasValidDeliveryLocation() 
+                        ? 'text-[#733857] group-hover:text-white' 
+                        : 'text-gray-400'
+                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
                 </button>
                 
                 {!hasValidDeliveryLocation() && (

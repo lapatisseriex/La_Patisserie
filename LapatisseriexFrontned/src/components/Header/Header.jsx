@@ -565,121 +565,21 @@ const Header = ({ isAdminView = false }) => {
       {!isAdminView && (
         <div className={`mobile-location-bar md:hidden bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-b border-[#733857]/20 z-[56] transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
           <div className="px-3">
-            <div className="flex justify-start">
-              <div className="flex items-center text-xs text-white/70 py-1 px-2 rounded-md" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <MapPin className="h-3 w-3 mr-2 text-[#733857]" />
+            <div className="flex justify-between items-center">
+              <div className="flex items-center text-xs text-white py-1 px-2 rounded-md" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <MapPin className="h-3 w-3 mr-2 text-[#A855F7]" />
                 <span className="truncate max-w-[120px] font-light">{memoizedUserLocationDisplay}</span>
                 {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                   <AlertTriangle className="h-3 w-3 ml-1 text-amber-400" />
                 )}
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Premium Luxury Banner */}
-      {!isAdminView && (
-        <div className="luxury-banner-container relative overflow-hidden bg-gradient-to-r from-[#281c20] via-[#412434] to-[#281c20] py-1 px-3 sm:px-5">
-          {/* Cake-themed Accent Lines */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#733857] to-transparent opacity-80"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#733857] to-transparent opacity-80"></div>
-          
-          {/* Animated Background Elements */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="floating-cake floating-cake-1"></div>
-            <div className="floating-cake floating-cake-2"></div>
-            <div className="floating-cake floating-cake-3"></div>
-            <div className="floating-sparkle floating-sparkle-1">🧁</div>
-            <div className="floating-sparkle floating-sparkle-2">🍰</div>
-            <div className="floating-sparkle floating-sparkle-3">🎂</div>
-            <div className="floating-sparkle floating-sparkle-4">🍪</div>
-          </div>
-          
-          {/* Elegant Border Frame */}
-          <div className="absolute inset-2 border border-[#733857]/40 rounded-lg"></div>
-          <div className="absolute inset-3 border border-[#733857]/30 rounded-md"></div>
-          
-          {/* Main Content */}
-          <div className="container mx-auto relative z-20 py-1">
-            {/* Mobile Layout - Center Only */}
-            <div className="md:hidden flex items-center justify-center">
-              <div className="flex flex-col items-center justify-center px-4">
-                {/* Premium Badge */}
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-[#733857]"></div>
-                  <span className="text-[#733857] text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                    La Patisserie
-                  </span>
-                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-[#733857]"></div>
-                </div>
-                
-                {/* Main Message */}
-                <h2 className="text-white/80 text-sm font-light tracking-wide text-center" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <span className="inline-block animate-fade-in-up">🧁</span>
-                  <span className="mx-1 relative">
-                    Fresh Artisan Cakes & Pastries
-                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
-                  </span>
-                  <span className="inline-block animate-fade-in-up animation-delay-500">🍰</span>
-                </h2>
-              </div>
-            </div>
-
-            {/* Desktop Layout - Three Column */}
-            <div className="hidden md:flex items-center justify-between">
-              {/* Phone Number - Left */}
-              <div className="flex items-center justify-start flex-shrink-0 w-48">
-                <button 
-                  className="flex items-center gap-1 text-[#733857]/80 flex-shrink-0 hover:text-[#733857] transition-colors duration-200"
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
-                >
-                  <Phone className="h-3 w-3" />
-                  <span className="text-xs font-light">
-                    7845712388 / 9362166816
-                  </span>
-                </button>
-              </div>
               
-              {/* Center Content */}
-              <div className="flex flex-col items-center justify-center flex-1 px-4">
-                {/* Premium Badge */}
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-4 h-px bg-gradient-to-r from-transparent to-[#733857]"></div>
-                  <span className="text-[#733857] text-xs font-light tracking-[0.2em] uppercase" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                    La Patisserie
-                  </span>
-                  <div className="w-4 h-px bg-gradient-to-l from-transparent to-[#733857]"></div>
-                </div>
-                
-                {/* Main Message */}
-                <h2 className="text-white/80 text-lg font-light tracking-wide text-center" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <span className="inline-block animate-fade-in-up">🧁</span>
-                  <span className="mx-1 relative">
-                    Fresh Artisan Cakes & Pastries
-                    <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 animate-scale-in animation-delay-1000"></div>
-                  </span>
-                  <span className="inline-block animate-fade-in-up animation-delay-500">🍰</span>
-                </h2>
-              </div>
-              
-              {/* Address - Right */}
-              <div className="flex items-center justify-end flex-shrink-0 w-48">
-                <button 
-                  className="flex items-center gap-1 text-[#733857]/80 flex-shrink-0 hover:text-[#733857] transition-colors duration-200"
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
-                >
-                  <span className="text-xs font-light text-right">
-                    LIG 208 GANDHI MAANAGAR PEELAMEDU COIMBATORE
-                  </span>
-                  <MapPin className="h-3 w-3" />
-                </button>
+              {/* Mobile Notification Bell - Right Side */}
+              <div className="flex items-center">
+                <NotificationBell />
               </div>
             </div>
           </div>
-          
-          {/* Subtle Overlay Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#733857]/10 via-transparent to-[#733857]/10 pointer-events-none"></div>
         </div>
       )}
       
@@ -690,7 +590,7 @@ const Header = ({ isAdminView = false }) => {
           <div className="hidden md:flex items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center header-logo-text">
-                <span className="text-[#733857] font-light text-bold sm:text-xl md:text-2xl  truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <span className="text-white hover:text-[#A855F7] transition-colors duration-300 font-light text-bold sm:text-xl md:text-2xl  truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   La Patisserie
                   <div className="sugar-sprinkles">
                     {[...Array(15)].map((_, i) => (
@@ -718,10 +618,10 @@ const Header = ({ isAdminView = false }) => {
                 onMouseEnter={handleMegaMenuEnter}
                 onMouseLeave={handleMegaMenuLeave}
               >
-                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <Utensils className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
-                  <span className="relative z-10 font-light">Menu</span>
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                  <Utensils className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
+                  <span className="relative z-10">Menu</span>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#A855F7] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </Link>
                 
                 {/* Invisible bridge to prevent hover gap */}
@@ -748,8 +648,8 @@ const Header = ({ isAdminView = false }) => {
                                 key={category._id}
                                 className={`w-full text-left px-3 py-2 rounded-md transition-all duration-200 group relative ${
                                   hoveredCategory?._id === category._id
-                                    ? 'bg-white/5 text-[#733857]'
-                                    : 'text-white/70 hover:bg-white/5 hover:text-[#733857]'
+                                    ? 'bg-white/5 text-[#A855F7]'
+                                    : 'text-white hover:bg-white/5 hover:text-[#A855F7]'
                                 }`}
                                 onMouseEnter={() => handleCategoryHover(category)}
                                 onClick={() => {
@@ -766,7 +666,7 @@ const Header = ({ isAdminView = false }) => {
                       
                       {/* Dynamic Image Display */}
                       <div className="w-1/2 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] flex flex-col">
-                        <div className="px-4 py-3 bg-[#281c20]/50 text-white/60 border-b border-[#733857]/20">
+                        <div className="px-4 py-3 bg-[#281c20]/50 text-white border-b border-[#733857]/20">
                           <h3 className="text-sm font-light tracking-wide uppercase">
                             {hoveredCategory ? hoveredCategory.name : 'Select Category'}
                           </h3>
@@ -800,7 +700,7 @@ const Header = ({ isAdminView = false }) => {
                         </div>
                         <div className="px-4 py-3 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-t border-[#733857]/20">
                           <button 
-                            className="w-full bg-[#733857] text-white py-2 px-4 rounded-lg font-light text-sm hover:bg-[#733857]/80 transition-all duration-200 shadow-sm hover:shadow-md"
+                            className="w-full bg-[#A855F7] text-white py-2 px-4 rounded-lg font-light text-sm hover:bg-[#A855F7]/80 transition-all duration-200 shadow-sm hover:shadow-md"
                             onClick={() => {
                               setIsMegaMenuOpen(false);
                               navigate('/products');
@@ -823,19 +723,19 @@ const Header = ({ isAdminView = false }) => {
                 onMouseLeave={handleLocationHoverLeave}
               >
                 <button 
-                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 relative group"
+                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group"
                   onClick={toggleLocationDropdown}
                   style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
-                  <MapPin className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-all duration-300 group-hover:scale-110" />
+                  <MapPin className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-all duration-300 group-hover:scale-110" />
                   <span className="truncate max-w-[120px] sm:max-w-[140px] font-light relative z-10">{memoizedUserLocationDisplay}</span>
-                  <ChevronDown className="h-4 w-4 text-white/50 transition-all duration-300 group-hover:rotate-180 group-hover:text-[#733857]" />
+                  <ChevronDown className="h-4 w-4 text-white transition-all duration-300 group-hover:rotate-180 group-hover:text-[#A855F7]" />
                   {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                     <div className="absolute -top-1 -right-1">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#A855F7] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </button>
                 
                 {/* Invisible bridge to prevent hover gap */}
@@ -849,17 +749,17 @@ const Header = ({ isAdminView = false }) => {
                     className="absolute top-full left-0 mt-3 w-56 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] shadow-xl rounded-lg overflow-hidden z-50 border border-[#733857]/20 transform opacity-0 scale-95 animate-dropdown"
                     style={{fontFamily: 'system-ui, -apple-system, sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards'}}
                   >
-                    <div className="px-4 py-3 text-white/60 border-b border-[#733857]/20">
+                    <div className="px-4 py-3 text-white border-b border-[#733857]/20">
                       <h3 className="text-xs font-light tracking-wide uppercase">Settings</h3>
                     </div>
                     <div className="p-2">
                       <Link
                         to="/profile"
-                        className="flex items-center gap-3 px-3 py-2 text-[#733857] hover:bg-white/5 rounded-lg transition-all duration-200 font-light"
+                        className="flex items-center gap-3 px-3 py-2 text-white hover:text-[#A855F7] hover:bg-white/5 rounded-lg transition-all duration-200 font-light"
                         style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                         onClick={() => setIsLocationDropdownOpen(false)}
                       >
-                        <Settings className="h-4 w-4 text-white/50" />
+                        <Settings className="h-4 w-4 text-white" />
                         <span>Edit in settings</span>
                       </Link>
                     </div>
@@ -868,10 +768,10 @@ const Header = ({ isAdminView = false }) => {
               </div>
               
               {/* Contact Nav Item - Premium Design */}
-              <Link to="/contact" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <Phone className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
+              <Link to="/contact" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <Phone className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
                 <span className="relative z-10 font-light">Contact</span>
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#A855F7] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
               </Link>
             </div>
           </div>
@@ -883,8 +783,8 @@ const Header = ({ isAdminView = false }) => {
                 {/* Admin Dashboard Button - Show only for admins - Positioned first */}
                 {user.role === 'admin' && (
                   <div className="bg-[#281c20]/50 backdrop-blur-sm rounded-lg border border-[#733857]/30">
-                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-white/70 hover:text-[#733857] rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                      <Settings className="h-5 w-5 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
+                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-white hover:text-[#A855F7] rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                      <Settings className="h-5 w-5 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
                       <span className="ml-2 text-sm font-light">Dashboard</span>
                     </Link>
                   </div>
@@ -904,17 +804,17 @@ const Header = ({ isAdminView = false }) => {
                 {/* Cart component - Premium Design with Tooltip */}
                 <div className="tooltip">
                   <div className="tooltip-content">
-                    <div className="animate-bounce text-[#733857] -rotate-10 text-sm font-black italic select-none">Cart</div>
+                    <div className="animate-bounce text-[#A855F7] -rotate-10 text-sm font-black italic select-none">Cart</div>
                   </div>
                   <Link 
                     to="/cart" 
-                    className="flex items-center px-3 py-2 text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" 
+                    className="flex items-center px-3 py-2 text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" 
                     style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                     data-cart-icon="true"
                   >
-                    <ShoppingBag className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
+                    <ShoppingBag className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
                     {memoizedCartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#733857] to-[#8d4466] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-light shadow-lg">
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#A855F7] to-[#9333EA] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-light shadow-lg">
                         {memoizedCartCount}
                       </span>
                     )}
@@ -941,10 +841,10 @@ const Header = ({ isAdminView = false }) => {
             {!user && (
               <button 
                 onClick={toggleAuthPanel}
-                className="flex items-center gap-2 px-3 py-2 text-white/70 hover:text-[#733857] backdrop-blur-sm rounded-lg transition-all duration-300 group"
+                className="flex items-center gap-2 px-3 py-2 text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 group"
                 style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               >
-                <User className="h-4 w-4 text-white/50 group-hover:text-[#733857] transition-colors duration-300" />
+                <User className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
                 <span className="text-sm font-light">Login</span>
               </button>
             )}

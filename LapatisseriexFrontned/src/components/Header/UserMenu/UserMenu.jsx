@@ -55,11 +55,11 @@ const UserMenu = memo(() => {
       }}
     >
       <div 
-        className="flex items-center gap-2 px-3 py-2 text-black hover:text-yellow-600 rounded-lg transition-all duration-300 border border-transparent cursor-pointer relative group"
+        className="flex items-center gap-2 px-3 py-2 text-white hover:text-[#A855F7] rounded-lg transition-all duration-300 border border-transparent cursor-pointer relative group"
         style={{fontFamily: 'sans-serif'}}
         aria-label="My Account"
       >
-        <User className="h-4 w-4 text-gray-600 group-hover:text-yellow-600 transition-colors duration-300" />
+        <User className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
         
         {isProfileIncomplete && (
           <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 animate-pulse rounded-none" />
@@ -93,13 +93,13 @@ const UserMenu = memo(() => {
           }}
         >
           <div className="p-3 border-b border-[#733857]/20">
-            <p className="text-xs font-medium text-[#733857] tracking-[0.25em] uppercase" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>MY ACCOUNT</p>
+            <p className="text-xs font-medium text-[#A855F7] tracking-[0.25em] uppercase" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>MY ACCOUNT</p>
           </div>
           
           <div className="py-1">
             <Link 
               to="/profile" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-[#733857] hover:bg-white/5 user-menu-item transition-all duration-300"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white hover:text-[#A855F7] hover:bg-white/5 user-menu-item transition-all duration-300"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
@@ -111,13 +111,13 @@ const UserMenu = memo(() => {
                 }, 100);
               }}
             >
-              <User className="h-4 w-4 text-white/50" />
+              <User className="h-4 w-4 text-white" />
               <span className="font-light">My Profile</span>
             </Link>
             
             <Link 
               to="/orders" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-[#733857] hover:bg-white/5 user-menu-item transition-all duration-300"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white hover:text-[#A855F7] hover:bg-white/5 user-menu-item transition-all duration-300"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
@@ -129,7 +129,7 @@ const UserMenu = memo(() => {
                 }, 100);
               }}
             >
-              <Package className="h-4 w-4 text-white/50" />
+              <Package className="h-4 w-4 text-white" />
               <span className="font-light">My Orders</span>
             </Link>
           </div>
@@ -137,10 +137,10 @@ const UserMenu = memo(() => {
           <div className="p-2 border-t border-[#733857]/20">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-[#733857] hover:bg-white/5 rounded-md user-menu-item transition-all duration-300"
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-white hover:text-[#A855F7] hover:bg-white/5 rounded-md user-menu-item transition-all duration-300"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
-              <LogOut className="h-4 w-4 text-white/50" />
+              <LogOut className="h-4 w-4 text-white" />
               <span className="font-light">Sign Out</span>
             </button>
           </div>

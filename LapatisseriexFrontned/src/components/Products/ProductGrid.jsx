@@ -33,31 +33,28 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
       {title && (
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <div className="text-center sm:text-left">
-            <h2 className="text-2xl sm:text-3xl font-bold" style={{ 
-              background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{ 
+              fontFamily: 'system-ui, -apple-system, sans-serif'
             }}>{title}</h2>
-            {subtitle && <p className="text-sm sm:text-base text-black mt-1">{subtitle}</p>}
+            {subtitle && <p className="text-sm sm:text-base bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-1 font-medium">{subtitle}</p>}
           </div>
           <div className="flex items-center mt-4 sm:mt-0 space-x-2">
             <button
               ref={navigationPrevRef}
-              className="bg-white shadow-md border border-gray-300 text-black rounded-full p-2 sm:p-3 transition"
+              className="bg-white shadow-md border border-gray-300 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent rounded-full p-2 sm:p-3 transition"
             >
               <FaChevronLeft />
             </button>
             <button
               ref={navigationNextRef}
-              className="bg-white shadow-md border border-gray-300 text-black rounded-full p-2 sm:p-3 transition"
+              className="bg-white shadow-md border border-gray-300 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent rounded-full p-2 sm:p-3 transition"
             >
               <FaChevronRight />
             </button>
             {viewAllLink && (
               <Link
                 to={viewAllLink}
-                className="hidden sm:flex items-center text-black"
+                className="hidden sm:flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium"
               >
                 View All →
               </Link>

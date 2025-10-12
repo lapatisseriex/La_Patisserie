@@ -116,8 +116,8 @@ const TextCategoryBar = ({
             ref={(el) => categoryRefs.current['all'] = el}
             className={`flex-shrink-0 cursor-pointer transition-all duration-300 relative group ${
               selectedCategory === null 
-                ? 'text-black font-medium' 
-                : 'text-gray-500 hover:text-black'
+                ? 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium' 
+                : 'text-gray-500 hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:bg-clip-text hover:text-transparent'
             }`}
             onClick={handleAllCategories}
           >
@@ -130,7 +130,7 @@ const TextCategoryBar = ({
             </span>
             {/* Active state underline */}
             <div 
-              className={`absolute bottom-0 left-0 right-0 h-[2px] bg-black transition-all duration-300 ${
+              className={`absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] transition-all duration-300 ${
                 selectedCategory === null ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'
               }`}
             />
@@ -156,8 +156,8 @@ const TextCategoryBar = ({
                 ref={(el) => categoryRefs.current[category._id || category.id] = el}
                 className={`flex-shrink-0 cursor-pointer transition-all duration-300 relative group ${
                   selectedCategory === (category._id || category.id) 
-                    ? 'text-black font-medium' 
-                    : 'text-gray-500 hover:text-black'
+                    ? 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium' 
+                    : 'text-gray-500 hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:bg-clip-text hover:text-transparent'
                 }`}
                 onClick={() => onSelectCategory(category._id || category.id)}
               >
@@ -170,7 +170,7 @@ const TextCategoryBar = ({
                 </span>
                 {/* Active state underline */}
                 <div 
-                  className={`absolute bottom-0 left-0 right-0 h-[2px] bg-black transition-all duration-300 ${
+                  className={`absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] transition-all duration-300 ${
                     selectedCategory === (category._id || category.id) ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'
                   }`}
                 />

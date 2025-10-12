@@ -1,251 +1,89 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const AdvertisementBanner = memo(() => {
-  // === STATE & REFS (ALL TOP-LEVEL) ===
+const AdvertisementBanner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [videoEnded, setVideoEnded] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-  const [isPaused, setIsPaused] = useState(false);
-  const [preloadedImages, setPreloadedImages] = useState(new Set());
-  const [bannerSlides, setBannerSlides] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const videoRef = useRef(null);
-  const intervalRef = useRef(null);
-  const bannerRef = useRef(null);
+  // Advertisement data with the actual banner image
+  const advertisements = [
+    {
+      id: 1,
+      type: 'image',
+      src: '/jk.png',
+      alt: 'Pastel Pink and Brown Modern Sale Food Banner',
+      title: 'Special Sale Event',
+    },
+  ];
 
-  // Backend banners API removed – use static assets
-  const minSwipeDistance = 50;
-
-  // === LOAD STATIC BANNERS FROM ASSETS ===
+  // Auto-slide functionality (if you add more images later)
   useEffect(() => {
-    setLoading(true);
-    // Static banners list
-    const slides = [
-      {
-        _id: 'local-vid',
-        type: 'video',
-        src: '/images/La-patesserie.mp4',
-        title: 'La Patisserie',
-        subtitle: 'Artisan Treats, Fresh Daily',
-        description: 'From flaky croissants to creamy tiramisu—made with love, served with joy.',
-        leftContent: { features: ['Premium Ingredients','Baked Fresh Daily','Authentic French Methods'] },
-      },
-      {
-        _id: 'local-1',
-        type: 'image',
-        src: '/images/mini_crossants.jpg',
-        title: 'Golden Croissants',
-        subtitle: 'Crisp Layers, Buttery Heart',
-        description: 'Perfectly laminated layers that melt in your mouth.',
-        leftContent: { features: ['Handcrafted Dough','European Butter','Irresistibly Flaky'] },
-      },
-      {
-        _id: 'local-2',
-        type: 'image',
-        src: '/images/creme_bruls.jpg',
-        title: 'Crème Brûlée',
-        subtitle: 'Silky Custard, Caramelized Top',
-        description: 'A classic French dessert with a perfect crack.',
-        leftContent: { features: ['Torch-caramelized','Silky Texture','Vanilla Aroma'] },
-      },
-      {
-        _id: 'local-3',
-        type: 'image',
-        src: '/images/tirumisu.jpg',
-        title: 'Classic Tiramisu',
-        subtitle: 'Coffee-soaked Bliss',
-        description: 'Layers of mascarpone, espresso, and cocoa.',
-        leftContent: { features: ['Mascarpone-rich','Balanced Sweetness','Italian Classic'] },
-      },
-    ];
-    setBannerSlides(slides);
-    setLoading(false);
-  }, []);
-
-  // === PRELOAD IMAGES ===
-  useEffect(() => {
-    bannerSlides.forEach(slide => {
-      if (slide.type === 'image' && !preloadedImages.has(slide.src)) {
-        const img = new Image();
-        img.onload = () => setPreloadedImages(prev => new Set([...prev, slide.src]));
-        img.src = slide.src;
-      }
-    });
-  }, [bannerSlides]); // Remove preloadedImages from dependencies to prevent infinite loop
-
-  // === DETECT MOBILE ===
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // === AUTO-PLAY SLIDES ===
-  useEffect(() => {
-    if (!bannerSlides.length) return;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    intervalRef.current = setInterval(() => {
-      if (!isPaused && !isTransitioning && bannerSlides.length > 0) {
-        const currentBanner = bannerSlides[currentSlide];
-        // Only auto-advance for image banners, let videos play naturally
-        if (currentBanner.type === 'image') goToNextSlide();
-      }
-    }, 3000);
-
-    return () => clearInterval(intervalRef.current);
-  }, [currentSlide, isPaused, isTransitioning, bannerSlides.length]); // Use bannerSlides.length instead of the entire array
-
-  // === HANDLERS ===
-  const goToNextSlide = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setVideoEnded(false);
-    setTimeout(() => {
-      setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
-      setTimeout(() => setIsTransitioning(false), 100);
-    }, 600);
-  };
-
-  const goToPrevSlide = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setVideoEnded(false);
-    setTimeout(() => {
-      setCurrentSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
-      setTimeout(() => setIsTransitioning(false), 100);
-    }, 600);
-  };
-
-  const handleVideoEnd = () => {
-    setVideoEnded(true);
-    goToNextSlide();
-  };
-
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-    setIsPaused(true);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) {
-      setIsPaused(false);
-      return;
+    if (advertisements.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % advertisements.length);
+      }, 5000);
+      return () => clearInterval(interval);
     }
-    const distance = touchStart - touchEnd;
-    if (distance > minSwipeDistance) goToNextSlide();
-    else if (distance < -minSwipeDistance) goToPrevSlide();
-    setIsPaused(false);
-  };
-
-  // === FALLBACK BANNER ===
-  const fallbackBanner = () => ({
-    _id: 'fallback',
-    type: 'video',
-    src: '/fallback.mp4',
-    title: 'La Patisserie',
-    subtitle: 'Sweet Perfection Awaits',
-    description: 'Discover our exquisite collection of handcrafted desserts',
-    leftContent: { features: ['Authentic French Techniques','Premium Ingredients','Artisan Crafted Daily'] },
-  });
-
-  const currentBanner = bannerSlides[currentSlide];
-  
-  // Only log banner changes for debugging, not every render
-  useEffect(() => {
-    if (currentBanner && !loading && bannerSlides.length > 0) {
-      console.log('🎬 Banner changed to:', currentBanner.title, '(type:', currentBanner.type + ')');
-    }
-  }, [currentSlide, currentBanner?.title, loading, bannerSlides.length]);
-
-  // === RENDER LOADING / EMPTY ===
-  if (loading) return <BannerLoading />;
-  if (!bannerSlides.length) return <BannerEmpty />;
+  }, [advertisements.length]);
 
   return (
-    <div 
-      ref={bannerRef} 
-      className="relative w-full h-[60vh] md:h-[70vh] lg:h-[80vh] overflow-hidden select-none"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-    >
-      {/* Background Media */}
-      {currentBanner.type === 'video' ? (
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          playsInline
-          loop={isMobile}
-          controls={false}
-          controlsList="nodownload nofullscreen noremoteplayback"
-          disablePictureInPicture
-          poster="/placeholder.jpg"
-          key={`video-${currentSlide}`}
-          onEnded={handleVideoEnd}
-          style={{ outline: 'none', backgroundColor: '#000', transition: 'opacity 800ms ease-in-out' }}
-        >
-          <source src={currentBanner.src} type="video/mp4" />
-        </video>
-      ) : (
-        <div
-          className="w-full h-full bg-cover bg-center"
-          style={{ 
-            backgroundImage: `url(${currentBanner.src})`,
-            backgroundColor: '#000',
-            opacity: preloadedImages.has(currentBanner.src) ? 1 : 0,
-            transition: 'opacity 800ms ease-in-out'
-          }}
-          key={`image-${currentSlide}`}
-        />
-      )}
-
-      {/* Overlay & Content */}
-      <div className="absolute inset-0 z-10 bg-black/20"></div>
-      <div className="absolute inset-0 z-20 p-8 text-white">
-        <h1 className="text-4xl font-bold">{currentBanner.title}</h1>
-        <p className="text-xl italic mt-2">{currentBanner.subtitle}</p>
-        <p className="mt-4 max-w-md">{currentBanner.description}</p>
-        <ul className="mt-4 space-y-2">
-          {currentBanner.leftContent.features.map((f, i) => (
-            <li key={i} className="text-sm">• {f}</li>
-          ))}
-        </ul>
+    <div className="sticky top-[72px] z-40 w-full h-[240px] sm:h-[250px] md:h-[300px] lg:h-[450px] xl:h-[500px] overflow-hidden">
+      {/* Carousel Container */}
+      <div 
+        className="flex transition-transform duration-500 ease-in-out h-full"
+        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+      >
+        {advertisements.map((ad, index) => (
+          <div key={ad.id} className="w-full h-full flex-shrink-0 relative">
+            {ad.type === 'image' ? (
+              <img
+                src={ad.src}
+                alt={ad.alt}
+                className="w-full h-full object-cover"
+                loading={index === 0 ? 'eager' : 'lazy'}
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  e.target.src = '/placeholder-image.jpg';
+                }}
+              />
+            ) : ad.type === 'video' ? (
+              <video
+                src={ad.src}
+                className="w-full h-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : null}
+            
+            {/* Conditional overlay - lighter for sale banner, darker for others */}
+            {ad.id !== 1 && (
+              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                <div className="text-center text-white px-4">
+                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-light mb-2 text-white">
+                    {ad.title}
+                  </h2>
+                  <p className="text-sm md:text-lg lg:text-xl text-white/90">
+                    {ad.subtitle}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Light overlay for the sale banner to preserve readability */}
+            {ad.id === 1 && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent flex items-end justify-center pb-8">
+                <div className="text-center text-white px-4">
+                  <p className="text-sm md:text-base lg:text-lg text-white/90 bg-black/40 px-4 py-2 rounded-lg backdrop-blur-sm">
+                    {ad.subtitle}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
-});
-
-// === LOADING COMPONENT ===
-const BannerLoading = () => (
-  <div className="relative w-full h-[60vh] md:h-[70vh] lg:h-[80vh] flex items-center justify-center bg-black">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-pink-400 mx-auto"></div>
-      <p className="text-white mt-4">Loading banners...</p>
-    </div>
-  </div>
-);
-
-// === EMPTY COMPONENT ===
-const BannerEmpty = () => (
-  <div className="relative w-full h-[60vh] md:h-[70vh] lg:h-[80vh] flex items-center justify-center bg-black text-white text-center">
-    <h2 className="text-4xl font-bold">La Patisserie</h2>
-    <p>Sweet Perfection Awaits</p>
-  </div>
-);
+};
 
 export default AdvertisementBanner;

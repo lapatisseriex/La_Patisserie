@@ -170,7 +170,7 @@ const ProfilePage = () => {
   if (!user) {
     return (
       <div className="min-h-[60vh] pt-8 flex flex-col justify-center items-center">
-        <h2 className="text-xl font-medium text-black mb-2">Please log in to view your account</h2>
+        <h2 className="text-xl font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2">Please log in to view your account</h2>
         <p className="text-black">You need to be logged in to access this page.</p>
       </div>
     );

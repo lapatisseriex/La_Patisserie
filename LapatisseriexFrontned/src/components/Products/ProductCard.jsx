@@ -486,13 +486,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   } flex flex-col justify-between`}>
         <div className="space-y-1 sm:space-y-2">
           <h3
-            className={`font-light text-gray-900 line-clamp-1 leading-tight ${
+            className={`font-light bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-clamp-1 leading-tight ${
               featured 
                 ? 'text-sm sm:text-base' 
                 : compact 
                 ? 'text-sm' 
                 : 'text-xs sm:text-sm md:text-base'
-            } cursor-pointer mb-1 hover:text-[#733857] transition-colors`}
+            } cursor-pointer mb-1 hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-all duration-300`}
             style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
             onClick={handleCardClick}
           >
@@ -505,36 +505,36 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 bg-white border border-[#733857]/30 rounded-full px-2 py-0.5 shadow-sm">
                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 text-white text-[9px] leading-none">★</span>
-                <span className="text-xs font-light text-gray-900" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{productRating.rating}</span>
-                <span className="text-xs text-gray-600">|</span>
-                <span className="text-xs text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{ratingCountDisplay}</span>
+                <span className="text-xs font-light bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{productRating.rating}</span>
+                <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">|</span>
+                <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{ratingCountDisplay}</span>
               </div>
             </div>
 
             {/* Welcome Offer or Special Text */}
             <div className="text-xs flex-shrink-0">
               {user && user.hasPlacedOrder ? (
-                <span className="text-violet-900 font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Premium Choice</span>
+                <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Premium Choice</span>
               ) : (
-                <span className="text-violet-900 font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Welcome Gift</span>
+                <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Welcome Gift</span>
               )}
             </div>
           </div>
 
           {/* One-line product description */}
-          <p className="text-xs text-gray-600 mb-2 line-clamp-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+          <p className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2 line-clamp-1 font-medium" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
             {currentProduct.description || 'Delicious handcrafted treat made with premium ingredients.'}
           </p>
 
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-baseline gap-1">
               {discountPercentage > 0 && (
-                <span className="text-gray-500 line-through text-xs" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-through text-xs font-medium" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   {formatCurrency(originalPrice)}
                 </span>
               )}
               <span
-                className={`font-light text-gray-900 ${
+                className={`font-light bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent ${
                   featured || compact ? 'text-sm' : 'text-sm sm:text-base'
                 }`}
                 style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
@@ -543,7 +543,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </span>
             </div>
             {discountPercentage > 0 && (
-              <span className="text-[#733857] text-xs font-light" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+              <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-xs font-light" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                 {discountPercentage}% OFF
               </span>
             )}

@@ -530,11 +530,8 @@ const Products = () => {
     return (
       <div className="mb-12">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl md:text-2xl font-bold" style={{ 
-            background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+          <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{ 
+            fontFamily: 'system-ui, -apple-system, sans-serif'
           }}>{title}</h2>
         </div>
         
@@ -688,13 +685,13 @@ const Products = () => {
           <div className="flex justify-center items-center min-h-screen bg-white">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-400 mx-auto"></div>
-              <p className="text-black mt-4">Loading delicious products...</p>
+              <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-4 font-medium">Loading delicious products...</p>
             </div>
           </div>
         ) : error ? (
-          <div className="text-center text-red-500 py-10 bg-white rounded-xl shadow-sm my-6">
-            <div className="text-lg font-medium mb-2">Oops! Something went wrong</div>
-            <div className="text-sm">{error}</div>
+          <div className="text-center py-10 bg-white rounded-xl shadow-sm my-6">
+            <div className="text-lg font-medium mb-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Oops! Something went wrong</div>
+            <div className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{error}</div>
           </div>
         ) : (
           <AnimatePresence mode="wait">
@@ -707,11 +704,8 @@ const Products = () => {
               <div className="mt-0">
                 {/* Display products by category */}
                 <div className="mt-0">
-                  <h2 className="text-2xl lg:text-3xl font-bold mb-3 md:mb-4" style={{ 
-                    background: 'linear-gradient(135deg, #e0a47d 0%, #c17e5b 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    textShadow: '0px 0px 1px rgba(224, 164, 125, 0.2)'
+                  <h2 className="text-2xl lg:text-3xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{ 
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
                   }}>
                     All Categories
                   </h2>
