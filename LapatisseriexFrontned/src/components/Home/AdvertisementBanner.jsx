@@ -25,7 +25,7 @@ const AdvertisementBanner = () => {
   }, [advertisements.length]);
 
   return (
-    <div className="sticky top-[72px] z-40 w-full h-[240px] sm:h-[250px] md:h-[300px] lg:h-[450px] xl:h-[500px] overflow-hidden">
+    <div className="sticky top-[72px] z-40 w-full h-[320px] sm:h-[350px] md:h-[300px] lg:h-[450px] xl:h-[500px] overflow-hidden">
       {/* Carousel Container */}
       <div 
         className="flex transition-transform duration-500 ease-in-out h-full"

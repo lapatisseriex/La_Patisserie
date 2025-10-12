@@ -54,7 +54,7 @@ const Checkout = () => {
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
           <div className="flex items-center">
             <ShoppingBag className="text-blue-500 mr-2" size={20} />
-            <p className="text-blue-800 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+            <p className="text-blue-800">
               <strong>{cartCount}</strong> items in your cart - Total:{' '}
               <strong>₹{isNaN(cartTotal) ? '0.00' : cartTotal.toFixed(2)}</strong>
             </p>
@@ -76,8 +76,8 @@ const Checkout = () => {
       {isEmpty ? (
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm text-center">
           <Package className="mx-auto text-gray-400 mb-4" size={48} />
-          <h2 className="text-xl font-semibold mb-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Your cart is empty</h2>
-          <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-4">
+          <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+          <p className="text-gray-600 mb-4">
             Add some delicious items to your cart before proceeding to checkout.
           </p>
           <button
@@ -95,51 +95,51 @@ const Checkout = () => {
             <div className="flex items-center justify-center mb-8">
               <div
                 className={`flex items-center ${
-                  step >= 1 ? 'text-[#733857]' : 'text-gray-400'
+                  step >= 1 ? 'text-blue-600' : 'text-gray-400'
                 }`}
               >
                 <div
                   className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
-                    step >= 1 ? 'border-[#733857] bg-gradient-to-r from-[#733857]/10 to-[#412434]/10' : 'border-gray-300'
+                    step >= 1 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
                   }`}
                 >
                   1
                 </div>
-                <span className="ml-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">User Info</span>
+                <span className="ml-2">User Info</span>
               </div>
               <div
-                className={`w-12 h-1 mx-2 ${step >= 2 ? 'bg-gradient-to-r from-[#733857] to-[#412434]' : 'bg-gray-300'}`}
+                className={`w-12 h-1 mx-2 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}
               ></div>
               <div
                 className={`flex items-center ${
-                  step >= 2 ? 'text-[#733857]' : 'text-gray-400'
+                  step >= 2 ? 'text-blue-600' : 'text-gray-400'
                 }`}
               >
                 <div
                   className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
-                    step >= 2 ? 'border-[#733857] bg-gradient-to-r from-[#733857]/10 to-[#412434]/10' : 'border-gray-300'
+                    step >= 2 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
                   }`}
                 >
                   2
                 </div>
-                <span className="ml-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Payment</span>
+                <span className="ml-2">Payment</span>
               </div>
               <div
-                className={`w-12 h-1 mx-2 ${step >= 3 ? 'bg-gradient-to-r from-[#733857] to-[#412434]' : 'bg-gray-300'}`}
+                className={`w-12 h-1 mx-2 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}
               ></div>
               <div
                 className={`flex items-center ${
-                  step >= 3 ? 'text-[#733857]' : 'text-gray-400'
+                  step >= 3 ? 'text-blue-600' : 'text-gray-400'
                 }`}
               >
                 <div
                   className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
-                    step >= 3 ? 'border-[#733857] bg-gradient-to-r from-[#733857]/10 to-[#412434]/10' : 'border-gray-300'
+                    step >= 3 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
                   }`}
                 >
                   3
                 </div>
-                <span className="ml-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Confirmation</span>
+                <span className="ml-2">Confirmation</span>
               </div>
             </div>
 
@@ -154,12 +154,12 @@ const Checkout = () => {
                       Name <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#733857]" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="text"
                         value={user?.name || ''}
                         readOnly
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
                       />
                     </div>
                   </div>
@@ -170,12 +170,12 @@ const Checkout = () => {
                       Phone <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#733857]" />
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="text"
                         value={user?.phone || ''}
                         readOnly
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
                       />
                     </div>
                   </div>
@@ -186,13 +186,13 @@ const Checkout = () => {
                       Email <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#733857]" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="email"
                         value={email}
                         onChange={handleEmailChange}
                         placeholder="Enter your email address"
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#733857] focus:border-transparent bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -203,12 +203,12 @@ const Checkout = () => {
                       Delivery Location <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#733857]" />
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="text"
                         value={user?.location?.name || 'Not set'}
                         readOnly
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
                       />
                     </div>
                   </div>
@@ -229,8 +229,8 @@ const Checkout = () => {
             {/* Payment Step */}
             {step === 2 && (
               <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-                <h2 className="text-xl font-semibold mb-4 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Payment</h2>
-                <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-4">
+                <h2 className="text-xl font-semibold mb-4">Payment</h2>
+                <p className="text-gray-600 mb-4">
                   Payment processing would be implemented here.
                 </p>
                 <div className="flex gap-4">
@@ -257,8 +257,8 @@ const Checkout = () => {
                   <div className="rounded-full bg-green-100 p-4 mb-4">
                     <CheckCircle className="text-green-600" size={48} />
                   </div>
-                  <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Order Confirmed!</h2>
-                  <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-6">
+                  <h2 className="text-2xl font-bold mb-2">Order Confirmed!</h2>
+                  <p className="text-gray-600 mb-6">
                     A confirmation email has been sent to {email}
                   </p>
                   <button

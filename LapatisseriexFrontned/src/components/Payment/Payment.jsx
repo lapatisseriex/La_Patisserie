@@ -363,30 +363,30 @@ const Payment = () => {
 
   if (isOrderComplete) {
     return (
-      <div className="container mx-auto px-4 py-8 min-h-screen">
-        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 min-h-screen">
+        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-8">
           <div className="text-center py-6">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <FaCheckCircle className="text-green-500 text-4xl" />
             </div>
             <h2 className="text-2xl font-bold text-green-600 mb-2">Order Successful!</h2>
-            <p className="text-black mb-1">Thank you for your purchase</p>
-            <p className="text-black text-sm mb-6">Your order has been placed successfully</p>
+            <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Thank you for your purchase</p>
+            <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm mb-6">Your order has been placed successfully</p>
             
             <div className="bg-gray-100 rounded-lg p-4 mb-6">
               <div className="flex justify-between items-center mb-2">
-                <p className="text-gray-600 text-sm">Order Number:</p>
+                <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm">Order Number:</p>
                 <button 
                   onClick={() => refreshCart()}
                   className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
                 >
                   Refresh Cart
                 </button>
-              </div>  <p className="text-black font-medium">Order Number:</p>
-              <p className="text-2xl font-bold text-black tracking-wide">{orderNumber}</p>
+              </div>  <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">Order Number:</p>
+              <p className="text-2xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent tracking-wide">{orderNumber}</p>
             </div>
             
-            <p className="text-black mb-6">
+            <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-6">
               We have sent you an email with the order details and tracking information.
               You will also receive updates about your order status.
             </p>
@@ -400,7 +400,7 @@ const Payment = () => {
               </Link>
               <Link 
                 to="/products" 
-                className="px-8 py-3 border border-white text-black font-medium rounded-md hover:bg-gray-100 transition-colors"
+                className="px-8 py-3 border border-white bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium rounded-md hover:bg-gray-100 transition-colors"
               >
                 Continue Shopping
               </Link>
@@ -414,14 +414,14 @@ const Payment = () => {
   // Show location error if no valid delivery location
   if (showLocationError) {
     return (
-      <div className="container mx-auto px-4 py-8 pt-8 min-h-screen">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 pt-4 sm:pt-8 min-h-screen">
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center mb-6">
-            <Link to="/cart" className="flex items-center text-black hover:text-black transition-colors">
-              <FaArrowLeft className="mr-2" />
+          <div className="flex items-center mb-4 sm:mb-6">
+            <Link to="/cart" className="hidden sm:flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-colors">
+              <FaArrowLeft className="mr-2 text-[#733857]" />
               <span>Back to Cart</span>
             </Link>
-            <h1 className="text-2xl font-bold text-center flex-grow">Checkout</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-center flex-grow bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Checkout</h1>
           </div>
           
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -429,7 +429,7 @@ const Payment = () => {
               <FaExclamationTriangle className="text-red-500 text-4xl" />
             </div>
             <h2 className="text-2xl font-bold text-red-600 mb-4">Delivery Location Required</h2>
-            <p className="text-black mb-6">
+            <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-6">
               Please select a delivery location to proceed with checkout.
             </p>
             
@@ -440,7 +440,7 @@ const Payment = () => {
               >
                 Go Back to Cart
               </Link>
-              <p className="text-sm text-black">
+              <p className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                 You can select your delivery location from the cart page.
               </p>
             </div>
@@ -452,24 +452,24 @@ const Payment = () => {
 
   return (
     <ShopClosureOverlay overlayType="page" showWhenClosed={!isOpen}>
-      <div className="container mx-auto px-4 py-8 min-h-screen">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 min-h-screen">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center mb-6">
-          <Link to="/cart" className="flex items-center text-black hover:text-black transition-colors">
-            <FaArrowLeft className="mr-2" />
+        <div className="flex items-center mb-4 sm:mb-6">
+          <Link to="/cart" className="hidden sm:flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-colors">
+            <FaArrowLeft className="mr-2 text-[#733857]" />
             <span>Back to Cart</span>
           </Link>
-          <h1 className="text-2xl font-bold text-center flex-grow">Checkout</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-center flex-grow bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Checkout</h1>
         </div>
         
         {/* Delivery Location Info */}
         {user && hasValidDeliveryLocation() && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
             <div className="flex items-center">
               <FaMapMarkerAlt className="text-green-600 mr-2" />
               <div>
-                <p className="text-green-800 font-medium">Delivering to:</p>
-                <p className="text-green-700">{getCurrentLocationName()}</p>
+                <p className="text-green-800 font-medium text-sm sm:text-base">Delivering to:</p>
+                <p className="text-green-700 text-sm sm:text-base">{getCurrentLocationName()}</p>
               </div>
             </div>
           </div>
@@ -477,55 +477,55 @@ const Payment = () => {
         
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
           {/* Payment Form */}
-          <div className="lg:col-span-8 mb-8 lg:mb-0">
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h2 className="font-semibold text-lg text-black pb-4 border-b border-white mb-4 flex items-center">
-                <FaMapMarkerAlt className="mr-2 text-yellow-600" />
+          <div className="lg:col-span-8 mb-6 lg:mb-0">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+              <h2 className="font-semibold text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent pb-3 sm:pb-4 border-b border-white mb-3 sm:mb-4 flex items-center">
+                <FaMapMarkerAlt className="mr-2 text-[#733857]" />
                 Delivery Address
               </h2>
               
               {!userDataLoaded ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading user information...</p>
+                  <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Loading user information...</p>
                 </div>
               ) : user ? (
                 <div className="space-y-4">
 
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Name</p>
-                      <p className="text-black font-medium">{user.name || user.displayName || user.firstName || 'Not provided'}</p>
+                      <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Name</p>
+                      <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium text-sm sm:text-base">{user.name || user.displayName || user.firstName || 'Not provided'}</p>
                     </div>
                     
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Phone</p>
-                      <p className="text-black font-medium">{user.phone || user.phoneNumber || 'Not provided'}</p>
+                      <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Phone</p>
+                      <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium text-sm sm:text-base">{user.phone || user.phoneNumber || 'Not provided'}</p>
+                    </div>
+                    
+                    <div className="col-span-2 lg:col-span-1">
+                      <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Email</p>
+                      <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium text-sm sm:text-base">{user.email || 'Not provided'}</p>
                     </div>
                     
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Email</p>
-                      <p className="text-black font-medium">{user.email || 'Not provided'}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">City</p>
-                      <p className="text-black font-medium">
+                      <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">City</p>
+                      <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium text-sm sm:text-base">
                         {user.location?.city || user.city || user.address?.city || 'Not provided'}
                       </p>
                     </div>
                     
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Postal Code</p>
-                      <p className="text-black font-medium">
+                      <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Postal Code</p>
+                      <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium text-sm sm:text-base">
                         {user.location?.pincode || user.pincode || user.postalCode || user.address?.postalCode || 'Not provided'}
                       </p>
                     </div>
                     
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Country</p>
-                      <p className="text-black font-medium">{user.country || user.address?.country || 'India'}</p>
+                      <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Country</p>
+                      <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium text-sm sm:text-base">{user.country || user.address?.country || 'India'}</p>
                     </div>
                   </div>
                   
@@ -586,7 +586,7 @@ const Payment = () => {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-600 mb-4">Please login to see your delivery address</p>
+                  <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-4">Please login to see your delivery address</p>
                   <button 
                     onClick={() => {
                       // You can implement opening the auth modal here
@@ -600,38 +600,38 @@ const Payment = () => {
               )}
             </div>
             
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="font-semibold text-lg text-black pb-4 border-b border-white mb-4">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+              <h2 className="font-semibold text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent pb-3 sm:pb-4 border-b border-white mb-3 sm:mb-4">
                 Payment Method
               </h2>
               
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Razorpay Payment */}
                   <div 
                     onClick={() => setSelectedPaymentMethod('razorpay')}
-                    className={`p-6 border-2 rounded-lg cursor-pointer transition-all duration-300 ${
+                    className={`p-4 sm:p-6 border-2 rounded-lg cursor-pointer transition-all duration-300 ${
                       selectedPaymentMethod === 'razorpay' 
                         ? 'border-yellow-500 bg-yellow-50 shadow-lg' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center mb-4">
-                      <FaCreditCard className={`mr-3 text-2xl ${selectedPaymentMethod === 'razorpay' ? 'text-yellow-600' : 'text-gray-600'}`} />
+                    <div className="flex items-center mb-3 sm:mb-4">
+                      <FaCreditCard className={`mr-2 sm:mr-3 text-xl sm:text-2xl ${selectedPaymentMethod === 'razorpay' ? 'text-yellow-600' : 'text-[#733857]'}`} />
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-800">Online Payment</h3>
-                        <p className="text-sm text-gray-600">Powered by Razorpay</p>
+                        <h3 className="font-semibold text-base sm:text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Online Payment</h3>
+                        <p className="text-xs sm:text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Powered by Razorpay</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-3 mb-3">
-                      <img src="https://cdn.razorpay.com/static/assets/logo/payment.svg" alt="Razorpay" className="h-6" />
-                      <img src="https://cdn-icons-png.flaticon.com/512/196/196578.png" alt="Visa" className="h-6" />
-                      <img src="https://cdn-icons-png.flaticon.com/512/196/196561.png" alt="MasterCard" className="h-6" />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" className="h-6" />
+                    <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
+                      <img src="https://cdn.razorpay.com/static/assets/logo/payment.svg" alt="Razorpay" className="h-4 sm:h-6" />
+                      <img src="https://cdn-icons-png.flaticon.com/512/196/196578.png" alt="Visa" className="h-4 sm:h-6" />
+                      <img src="https://cdn-icons-png.flaticon.com/512/196/196561.png" alt="MasterCard" className="h-4 sm:h-6" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" className="h-4 sm:h-6" />
                     </div>
                     
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                       <div className="flex items-center mb-1">
                         <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                         Secure & Fast Payment
@@ -646,21 +646,21 @@ const Payment = () => {
                   {/* Cash on Delivery */}
                   <div 
                     onClick={() => setSelectedPaymentMethod('cod')}
-                    className={`p-6 border-2 rounded-lg cursor-pointer transition-all duration-300 ${
+                    className={`p-4 sm:p-6 border-2 rounded-lg cursor-pointer transition-all duration-300 ${
                       selectedPaymentMethod === 'cod' 
                         ? 'border-green-500 bg-green-50 shadow-lg' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center mb-4">
-                      <BsCashCoin className={`mr-3 text-2xl ${selectedPaymentMethod === 'cod' ? 'text-green-600' : 'text-gray-600'}`} />
+                    <div className="flex items-center mb-3 sm:mb-4">
+                      <BsCashCoin className={`mr-2 sm:mr-3 text-xl sm:text-2xl ${selectedPaymentMethod === 'cod' ? 'text-green-600' : 'text-[#733857]'}`} />
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-800">Cash on Delivery</h3>
-                        <p className="text-sm text-gray-600">Pay when you receive</p>
+                        <h3 className="font-semibold text-base sm:text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Cash on Delivery</h3>
+                        <p className="text-xs sm:text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Pay when you receive</p>
                       </div>
                     </div>
                     
-                    <div className="text-xs text-gray-600 space-y-1">
+                    <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent space-y-1">
                       <div className="flex items-center">
                         <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
                         Pay in cash to delivery person
@@ -671,7 +671,7 @@ const Payment = () => {
                       </div>
                     </div>
                     
-                    <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                    <div className="mt-2 sm:mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
                       <strong>Note:</strong> Please keep exact change ready
                     </div>
                   </div>
@@ -692,25 +692,30 @@ const Payment = () => {
                     <button
                       onClick={handleRazorpayPayment}
                       disabled={isProcessing}
-                      className={`w-full py-4 text-white font-medium rounded-lg transition-all duration-300 ${
+                      className={`group relative w-full rounded-lg overflow-hidden transition-all duration-300 font-semibold py-4 px-5 text-sm ${
                         isProcessing 
-                          ? 'bg-gray-400 cursor-not-allowed' 
-                          : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
-                      } flex items-center justify-center`}
+                          ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed' 
+                          : 'bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:border-[#733857] transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation shadow-lg hover:shadow-xl'
+                      }`}
                     >
                       {isProcessing ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <span className="relative z-10 flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Processing Payment...
-                        </>
+                          <span className="text-gray-400">Processing Payment...</span>
+                        </span>
                       ) : (
-                        <>
-                          <FaCreditCard className="mr-2" />
-                          Pay ₹{grandTotal.toFixed(2)} with Razorpay
-                        </>
+                        <span className="relative z-10 flex items-center justify-center gap-1.5">
+                          <FaCreditCard className="w-4 h-4 transition-all duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-12 group-active:scale-110 text-[#733857] group-hover:text-white" />
+                          <span className="transform transition-all duration-300 group-hover:tracking-wider group-active:tracking-wider bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent group-hover:text-white font-semibold">
+                            Pay ₹{grandTotal.toFixed(2)} with Razorpay
+                          </span>
+                          <svg className="w-3 h-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:translate-x-1 group-active:scale-110 text-[#733857] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </span>
                       )}
                     </button>
                   </div>
@@ -761,15 +766,15 @@ const Payment = () => {
           
           {/* Order Summary */}
           <div className="lg:col-span-4">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
-              <h2 className="font-semibold text-lg text-black pb-4 border-b border-white mb-4">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 lg:sticky lg:top-6">
+              <h2 className="font-semibold text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent pb-3 sm:pb-4 border-b border-white mb-3 sm:mb-4">
                 Order Summary
               </h2>
               
-              <div className="max-h-[300px] overflow-y-auto mb-4 pr-2">
+              <div className="max-h-[250px] sm:max-h-[300px] overflow-y-auto mb-4 pr-1 sm:pr-2">
                 {cartItems.map((item) => (
-                  <div key={`${item.id || item._id}-${JSON.stringify(item.options)}`} className="flex items-center py-3 border-b border-white">
-                    <div className="w-16 h-16 flex-shrink-0">
+                  <div key={`${item.id || item._id}-${JSON.stringify(item.options)}`} className="flex items-center py-2 sm:py-3 border-b border-white">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                       <img 
                         src={item.image || (item.images && item.images[0]) || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K'} 
                         alt={item.name} 
@@ -779,10 +784,10 @@ const Payment = () => {
                         }}
                       />
                     </div>
-                    <div className="ml-3 flex-grow">
-                      <p className="text-sm font-medium">{item.name}</p>
+                    <div className="ml-2 sm:ml-3 flex-grow">
+                      <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{item.name}</p>
                       <div className="flex justify-between items-center">
-                        <p className="text-xs text-black">
+                        <p className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                           {(() => {
                             const opts = item.options || item.productDetails?.options || {};
                             const weight = opts.weight || item.productDetails?.weight || item.productDetails?.variant?.weight || '';
@@ -805,7 +810,7 @@ const Payment = () => {
                               <div className="space-y-1">
                                 <div>
                                   <span className="font-medium text-green-600">₹{Math.round(pricing.finalPrice)}</span>
-                                  <span className="text-black"> × {item.quantity}</span>
+                                  <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent"> × {item.quantity}</span>
                                 </div>
                                 {pricing.discountPercentage > 0 && (
                                   <div className="text-green-600 font-medium text-xs">
@@ -822,14 +827,14 @@ const Payment = () => {
                 ))}
               </div>
               
-              <div className="space-y-2 text-black">
+              <div className="space-y-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                 {(() => {
                   // Use the centralized cart totals data
                   const totals = cartTotalsData;
                   
                   return (
                     <>
-                      <div className="flex justify-between text-sm text-gray-500">
+                      <div className="flex justify-between text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                         <span>Original Price</span>
                         <span className="line-through">₹{Math.round(totals.originalTotal)}</span>
                       </div>
@@ -869,9 +874,9 @@ const Payment = () => {
                         (user?.locationId && locations?.find(loc => loc._id === user.locationId));
                       
                       return userLocation ? (
-                        <div className="text-xs text-gray-500">to {userLocation.area}</div>
+                        <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">to {userLocation.area}</div>
                       ) : (
-                        <div className="text-xs text-gray-500">default rate</div>
+                        <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">default rate</div>
                       );
                     })()}
                   </div>
@@ -900,11 +905,11 @@ const Payment = () => {
                           onChange={(e) => setUseFreeCash(e.target.checked)}
                           className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                         />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                           Use Free Cash
                         </span>
                       </label>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
                         ₹{totalFreeCashAvailable.toFixed(2)} available
                       </span>
                     </div>
@@ -916,7 +921,7 @@ const Payment = () => {
                       </div>
                     )}
                     
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-1">
                       Free cash earned from previous purchases and promotions
                     </div>
                   </div>
@@ -924,8 +929,8 @@ const Payment = () => {
                 
                 <div className="border-t border-white pt-3 mt-3">
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>₹{grandTotal.toFixed(2)}</span>
+                    <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Total</span>
+                    <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">₹{grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
