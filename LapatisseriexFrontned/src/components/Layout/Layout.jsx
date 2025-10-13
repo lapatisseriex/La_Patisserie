@@ -19,7 +19,7 @@ const Layout = () => {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white pt-[75px] md:pt-[130px] pb-20 md:pb-4 transition-all duration-300">
+      <main className="min-h-screen bg-white pt-[75px] md:pt-[80px] pb-16 md:pb-0 transition-all duration-300">
         <Outlet />
       </main>
       <Footer />

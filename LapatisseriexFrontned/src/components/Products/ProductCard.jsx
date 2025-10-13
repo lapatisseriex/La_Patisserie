@@ -516,7 +516,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               {user && user.hasPlacedOrder ? (
                 <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Premium Choice</span>
               ) : (
-                <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Welcome Gift</span>
+                <span className="bg-gradient-to-r from-[#d30f0f] via-[#db3956] to-[#7a1313] bg-clip-text text-transparent font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Welcome Gift</span>
               )}
             </div>
           </div>
@@ -529,7 +529,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-baseline gap-1">
               {discountPercentage > 0 && (
-                <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-through text-xs font-medium" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <span className="text-gray-500 line-through text-xs font-medium" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   {formatCurrency(originalPrice)}
                 </span>
               )}
@@ -543,7 +543,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </span>
             </div>
             {discountPercentage > 0 && (
-              <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-xs font-light" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+              <span className="bg-gradient-to-r from-[#71de73] via-[#69c94b] to-[#3fc62d] bg-clip-text text-transparent text-xs font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                 {discountPercentage}% OFF
               </span>
             )}

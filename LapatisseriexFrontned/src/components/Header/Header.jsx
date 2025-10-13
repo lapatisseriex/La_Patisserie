@@ -768,11 +768,7 @@ const Header = ({ isAdminView = false }) => {
               </div>
               
               {/* Contact Nav Item - Premium Design */}
-              <Link to="/contact" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <Phone className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
-                <span className="relative z-10 font-light">Contact</span>
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#A855F7] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
-              </Link>
+             
             </div>
           </div>
           

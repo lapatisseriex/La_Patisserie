@@ -18,6 +18,10 @@ import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import OurServices from './pages/OurServices';
+import About from './pages/About';
+import RefundPolicy from './pages/RefundPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
+import FAQ from './pages/FAQ';
 
 // Error Boundary for Product Pages
 import ProductErrorBoundary from './components/common/ProductErrorBoundary';
@@ -139,9 +143,13 @@ function App() {
                           {/* Home with regular Layout */}
                           <Route path="/" element={<Layout />}>
                             <Route index element={<HomePage />} />
+                            <Route path="about" element={<About />} />
                             <Route path="contact" element={<Contact />} />
                             <Route path="products" element={<Products />} />
                             <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                            <Route path="refund-policy" element={<RefundPolicy />} />
+                            <Route path="terms" element={<TermsAndConditions />} />
+                            <Route path="faq" element={<FAQ />} />
                             <Route path="our-services" element={<OurServices />} />
                             <Route path="product/:productId" element={
                               <ProductErrorBoundary>
