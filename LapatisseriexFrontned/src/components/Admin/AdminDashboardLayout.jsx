@@ -271,6 +271,16 @@ const AdminDashboardLayout = () => {
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Contacts</span>
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/admin/newsletter"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/newsletter' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaEnvelope className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Newsletter</span>
+                </Link>
+              </li>
             </ul>
           </nav>
 

@@ -36,6 +36,7 @@ import stockValidationRoutes from './routes/stockValidationRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import newsletterRoutes from './routes/newsletterRoutes.js';
 
 // Initialize Express app
 const app = express();
@@ -200,6 +201,7 @@ const startServer = async () => {
     app.use('/api/analytics', analyticsRoutes);
     app.use('/api/contact', contactRoutes);
     app.use('/api/notifications', notificationRoutes);
+    app.use('/api/newsletter', newsletterRoutes);
 
     // WebSocket setup
     const io = new Server(server, {

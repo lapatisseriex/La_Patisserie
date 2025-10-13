@@ -4,6 +4,8 @@ import Product from '../models/productModel.js';
 import { deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
 import { cache } from '../utils/cache.js';
 import { removeBackground } from '../utils/backgroundRemoval.js';
+import { sendNewCategoryNewsletter } from '../utils/newsletterEmailService.js';
+
 
 // @desc    Get all categories
 // @route   GET /api/categories
@@ -131,6 +133,11 @@ export const createCategory = asyncHandler(async (req, res) => {
 
   // Clear cache after creating category to ensure fresh data on next fetch
   cache.clear();
+  
+  // Send newsletter to all subscribers about new category (async, don't wait)
+  sendNewCategoryNewsletter(category).catch(err => {
+    console.error('Failed to send new category newsletter:', err);
+  });
   
   res.status(201).json(category);
 });

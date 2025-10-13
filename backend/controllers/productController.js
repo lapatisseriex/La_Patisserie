@@ -5,6 +5,7 @@ import Category from '../models/categoryModel.js';
 import TimeSettings from '../models/timeSettingsModel.js';
 import { deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
 import { cache } from '../utils/cache.js';
+import { sendNewProductNewsletter, sendDiscountNewsletter } from '../utils/newsletterEmailService.js';
 
 // @desc    Get all products with optional filtering
 // @route   GET /api/products
@@ -272,6 +273,15 @@ export const createProduct = asyncHandler(async (req, res) => {
     console.warn(`Creating product in inactive category: ${categoryExists.name}`);
   }
 
+  // Check if product ID already exists
+  if (id) {
+    const existingProduct = await Product.findOne({ id });
+    if (existingProduct) {
+      res.status(400);
+      throw new Error(`Product with ID "${id}" already exists. Please use a different ID.`);
+    }
+  }
+
   // Validate variants if provided
   if (variants && !Array.isArray(variants)) {
     res.status(400);
@@ -313,6 +323,11 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   // Clear cache after creating product to ensure fresh data on next fetch
   cache.clear();
+
+  // Send newsletter to all subscribers about new product (async, don't wait)
+  sendNewProductNewsletter(createdProduct).catch(err => {
+    console.error('Failed to send new product newsletter:', err);
+  });
 
   res.status(201).json(createdProduct);
 });
@@ -546,6 +561,9 @@ export const updateProductDiscount = asyncHandler(async (req, res) => {
     throw new Error('Product not found');
   }
   
+  // Track if this is a new discount being applied
+  const isNewDiscount = (!product.discount?.type || product.cancelOffer) && type && value > 0 && !cancelOffer;
+  
   // Update discount
   if (type && value !== undefined) {
     product.discount = { type, value };
@@ -558,8 +576,27 @@ export const updateProductDiscount = asyncHandler(async (req, res) => {
   
   const updatedProduct = await product.save();
   
+  // Populate category for newsletter
+  const populatedProduct = await Product.findById(updatedProduct._id).populate('category', 'name');
+  
   // Clear cache after updating product discount to ensure fresh data on next fetch
   cache.clear();
+  
+  // Send newsletter if a new discount is applied
+  if (isNewDiscount && populatedProduct.isActive) {
+    const discountData = {
+      ...populatedProduct.toObject(),
+      discountPercentage: type === 'percentage' ? value : Math.round((value / populatedProduct.variants[0]?.price) * 100),
+      originalPrice: populatedProduct.variants[0]?.price || 0,
+      discountedPrice: type === 'percentage' 
+        ? populatedProduct.variants[0]?.price * (1 - value / 100)
+        : populatedProduct.variants[0]?.price - value
+    };
+    
+    sendDiscountNewsletter(discountData).catch(err => {
+      console.error('Failed to send discount newsletter:', err);
+    });
+  }
   
   res.status(200).json(updatedProduct);
 });

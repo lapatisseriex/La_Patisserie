@@ -39,6 +39,7 @@ import AdminOrders from './components/Admin/AdminOrders';
 import AdminOrderTracking from './components/Admin/AdminOrderTracking';
 import AdminPayments from './components/Admin/AdminPayments';
 import AdminAnalyticsDashboard from './pages/Admin/AdminAnalyticsDashboard';
+import AdminNewsletter from './components/Admin/AdminNewsletter';
 
 // Contact Components
 import Contact from './pages/Contact';
@@ -196,6 +197,7 @@ function App() {
               <Route path="inventory" element={<React.Suspense fallback={<div>Loading...</div>}><AdminInventory /></React.Suspense>} />
                               <Route path="time-settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTimeSettings /></React.Suspense>} />
                               <Route path="contacts" element={<React.Suspense fallback={<div>Loading...</div>}><ContactManagement /></React.Suspense>} />
+                              <Route path="newsletter" element={<React.Suspense fallback={<div>Loading...</div>}><AdminNewsletter /></React.Suspense>} />
                             </Route>
                           </Route>
                           {/* Catch-all route for any undefined paths */}

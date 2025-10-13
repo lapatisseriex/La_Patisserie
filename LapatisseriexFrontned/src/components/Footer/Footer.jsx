@@ -1,7 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  const handleNewsletterSubscribe = async (e) => {
+    e.preventDefault();
+    
+    // Basic email validation
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage({ type: 'error', text: 'Please enter a valid email address' });
+      return;
+    }
+
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/newsletter/subscribe`, {
+        email,
+        source: 'footer'
+      });
+
+      setMessage({ type: 'success', text: response.data.message });
+      setEmail(''); // Clear input on success
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to subscribe. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <footer className="relative bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] pt-8 sm:pt-12 lg:pt-16 pb-6" id="contact">
       {/* Decorative Top Border */}
@@ -164,13 +202,16 @@ const Footer = () => {
             </h3>
             
             {/* Newsletter Form */}
-            <div className="mb-6 sm:mb-8">
+            <form onSubmit={handleNewsletterSubscribe} className="mb-6 sm:mb-8">
               <div className="flex flex-col gap-2 sm:gap-3 mb-4 sm:mb-6">
                 <div className="relative">
                   <input
                     type="email"
                     placeholder="Enter your email..."
-                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white/5 border border-white/10 rounded text-white text-xs sm:text-sm font-light placeholder-white/40 focus:outline-none focus:border-[#A855F7]/50 transition-colors duration-300"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white/5 border border-white/10 rounded text-white text-xs sm:text-sm font-light placeholder-white/40 focus:outline-none focus:border-[#A855F7]/50 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   />
                   <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2">
@@ -180,13 +221,24 @@ const Footer = () => {
                   </div>
                 </div>
                 <button 
-                  className="w-full px-4 sm:px-6 py-2 sm:py-2.5 bg-transparent border border-[#A855F7] text-[#A855F7] text-xs sm:text-sm font-medium tracking-[0.15em] uppercase rounded hover:bg-[#A855F7] hover:text-white transition-all duration-300"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full px-4 sm:px-6 py-2 sm:py-2.5 bg-transparent border border-[#A855F7] text-[#A855F7] text-xs sm:text-sm font-medium tracking-[0.15em] uppercase rounded hover:bg-[#A855F7] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 >
-                  Sign Up
+                  {loading ? 'Subscribing...' : 'Sign Up'}
                 </button>
               </div>
-            </div>
+              
+              {/* Message Display */}
+              {message.text && (
+                <div className={`text-xs sm:text-sm text-center mb-3 ${
+                  message.type === 'success' ? 'text-green-400' : 'text-red-400'
+                }`} style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  {message.text}
+                </div>
+              )}
+            </form>
 
             {/* Our Stores */}
             <div>

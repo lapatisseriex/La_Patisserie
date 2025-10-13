@@ -438,6 +438,25 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
               />
             </div>
 
+            {/* Product ID */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-800">
+                Product ID <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="id"
+                value={formData.id}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                placeholder="e.g., TIRAM-007, CAKE-001"
+                required
+              />
+              <p className="text-xs text-gray-500">
+                Enter a unique product ID (e.g., TIRAM-007 for Tiramisu, CAKE-001 for Cakes)
+              </p>
+            </div>
+
             {/* Description */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-800">
