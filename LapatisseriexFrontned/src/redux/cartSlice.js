@@ -344,8 +344,10 @@ const cartSlice = createSlice({
       // Add to Cart
       .addCase(addToCart.pending, (state, action) => {
         const { product, quantity } = action.meta.arg;
-        // Set pending operation
-        state.pendingOperations[product._id] = 'adding';
+        state.pendingOperations[product._id] = {
+          type: 'adding',
+          requestId: action.meta.requestId
+        };
         
         // Apply optimistic update if not already applied
         if (!state.isOptimisticLoading) {
@@ -354,10 +356,14 @@ const cartSlice = createSlice({
       })
       .addCase(addToCart.fulfilled, (state, action) => {
         const { item, items, cartTotal, cartCount, optimisticId, productId } = action.payload;
+        const requestId = action.meta.requestId;
 
-        // Remove pending operation (prefer item.productId if available, else fallback to provided productId)
         const pid = item?.productId || productId;
         if (pid) {
+          const pending = state.pendingOperations[pid];
+          if (pending?.requestId && pending.requestId !== requestId) {
+            return;
+          }
           delete state.pendingOperations[pid];
         }
 
@@ -416,17 +422,22 @@ const cartSlice = createSlice({
         state.lastUpdated = Date.now();
       })
       .addCase(addToCart.rejected, (state, action) => {
-        const { productId } = action.payload;
-        
-        // Remove pending operation
-        delete state.pendingOperations[productId];
-        
-        // Revert optimistic update
+        const productId = action.payload?.productId || action.meta.arg?.product?._id;
+        if (productId) {
+          const pending = state.pendingOperations[productId];
+          if (pending?.requestId && pending.requestId !== action.meta.requestId) {
+            return;
+          }
+          delete state.pendingOperations[productId];
+        }
+
         state.isOptimisticLoading = false;
-        state.error = action.payload.error;
+        state.error = action.payload?.error || action.error?.message;
         
         // Remove optimistic item if it exists
-        const optimisticIndex = state.items.findIndex(i => i.productId === productId && i.isOptimistic);
+        const optimisticIndex = productId
+          ? state.items.findIndex(i => i.productId === productId && i.isOptimistic)
+          : -1;
         if (optimisticIndex >= 0) {
           const item = state.items[optimisticIndex];
           const itemPrice = parseFloat(item.productDetails?.price || item.price) || 0;
@@ -438,11 +449,20 @@ const cartSlice = createSlice({
 
       // Update Quantity
       .addCase(updateCartQuantity.pending, (state, action) => {
-        const { productId } = action.meta.arg;
-        state.pendingOperations[productId] = 'updating';
+        const { productId, quantity } = action.meta.arg;
+        state.pendingOperations[productId] = {
+          type: 'updating',
+          requestId: action.meta.requestId,
+          targetQuantity: quantity
+        };
       })
       .addCase(updateCartQuantity.fulfilled, (state, action) => {
         const { productId, quantity, cartTotal, cartCount, isRemoved } = action.payload;
+        const requestId = action.meta.requestId;
+        const pending = state.pendingOperations[productId];
+        if (pending?.requestId && pending.requestId !== requestId) {
+          return;
+        }
         
         delete state.pendingOperations[productId];
         
@@ -468,6 +488,10 @@ const cartSlice = createSlice({
       })
       .addCase(updateCartQuantity.rejected, (state, action) => {
         const { productId } = action.meta.arg;
+        const pending = state.pendingOperations[productId];
+        if (pending?.requestId && pending.requestId !== action.meta.requestId) {
+          return;
+        }
         delete state.pendingOperations[productId];
         // Suppress noisy duplicate-operation errors
         if (action.payload !== 'Operation already in progress') {
@@ -479,10 +503,18 @@ const cartSlice = createSlice({
       // Remove from Cart
       .addCase(removeFromCart.pending, (state, action) => {
         const productId = action.meta.arg;
-        state.pendingOperations[productId] = 'removing';
+        state.pendingOperations[productId] = {
+          type: 'removing',
+          requestId: action.meta.requestId
+        };
       })
       .addCase(removeFromCart.fulfilled, (state, action) => {
         const { productId, cartTotal, cartCount } = action.payload;
+        const requestId = action.meta.requestId;
+        const pending = state.pendingOperations[productId];
+        if (pending?.requestId && pending.requestId !== requestId) {
+          return;
+        }
         
         delete state.pendingOperations[productId];
         
@@ -497,6 +529,10 @@ const cartSlice = createSlice({
       })
       .addCase(removeFromCart.rejected, (state, action) => {
         const productId = action.meta.arg;
+        const pending = state.pendingOperations[productId];
+        if (pending?.requestId && pending.requestId !== action.meta.requestId) {
+          return;
+        }
         delete state.pendingOperations[productId];
         state.error = action.payload;
       })

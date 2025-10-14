@@ -308,7 +308,8 @@ export const useCart = () => {
     try {
       console.log(`🗑️ Removing ${productId} from cart`);
       // Prevent duplicate remove dispatches while one is in-flight for this item
-      if (pendingOperations && pendingOperations[productId] === 'removing') {
+      const pending = pendingOperations && pendingOperations[productId];
+      if (pending && (pending === 'removing' || pending.type === 'removing')) {
         console.log('⏳ Remove already in progress for', productId);
         return;
       }
@@ -389,7 +390,9 @@ export const useCart = () => {
   }), [cartCount, cartTotal, isEmpty, hasItems]);
 
   const isOperationPending = useCallback((productId) => {
-    return !!pendingOperations[productId];
+    const pending = pendingOperations[productId];
+    if (!pending) return false;
+    return typeof pending === 'string' ? true : Boolean(pending?.type);
   }, [pendingOperations]);
 
   return {
