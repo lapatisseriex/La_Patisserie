@@ -2,6 +2,47 @@ import Favorite from '../models/favoriteModel.js';
 import Product from '../models/productModel.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
+// Internal helper to produce populated favorites in the unified shape
+const buildPopulatedFavoritesResponse = async (userId) => {
+  const favorites = await Favorite.getUserFavorites(userId);
+
+  if (!favorites.productIds.length) {
+    return { products: [], count: 0 };
+  }
+
+  let products;
+  try {
+    products = await Product.find({ _id: { $in: favorites.productIds } })
+      .populate('category')
+      .lean();
+  } catch (populateError) {
+    console.warn('Error populating categories, fetching without populate:', populateError);
+    products = await Product.find({ _id: { $in: favorites.productIds } }).lean();
+  }
+
+  const productsMap = products.reduce((acc, product) => {
+    acc[product._id.toString()] = product;
+    return acc;
+  }, {});
+
+  const validProducts = [];
+  favorites.productIds.forEach(id => {
+    const idStr = id.toString();
+    const product = productsMap[idStr];
+    if (product && product.isActive !== false) {
+      if (product.images && product.images.length > 0 && !product.image) {
+        product.image = { url: product.images[0], alt: product.name };
+      }
+      if (product.variants && product.variants.length > 0 && !product.price) {
+        product.price = product.variants[0].price;
+      }
+      validProducts.push(product);
+    }
+  });
+
+  return { products: validProducts, count: validProducts.length };
+};
+
 // @desc    Get user's favorites
 // @route   GET /api/users/favorites
 // @access  Private
@@ -109,13 +150,13 @@ export const addToFavorites = asyncHandler(async (req, res) => {
     // Add to favorites
     await Favorite.addToFavorites(req.user.uid, productId);
     
-    // Get updated favorites
-    const updatedFavorites = await Favorite.getUserFavorites(req.user.uid);
-    
+    // Return unified populated favorites shape for frontend consistency
+    const { products, count } = await buildPopulatedFavoritesResponse(req.user.uid);
     res.status(200).json({
       success: true,
       message: 'Product added to favorites',
-      data: updatedFavorites
+      data: products,
+      count
     });
   } catch (error) {
     console.error('Add to favorites error:', error);
@@ -144,13 +185,13 @@ export const removeFromFavorites = asyncHandler(async (req, res) => {
     // Remove from favorites
     await Favorite.removeFromFavorites(req.user.uid, productId);
     
-    // Get updated favorites
-    const updatedFavorites = await Favorite.getUserFavorites(req.user.uid);
-    
+    // Return unified populated favorites shape for frontend consistency
+    const { products, count } = await buildPopulatedFavoritesResponse(req.user.uid);
     res.status(200).json({
       success: true,
       message: 'Product removed from favorites',
-      data: updatedFavorites
+      data: products,
+      count
     });
   } catch (error) {
     console.error('Remove from favorites error:', error);

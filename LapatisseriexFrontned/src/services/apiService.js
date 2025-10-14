@@ -46,6 +46,23 @@ const getAuthSafe = () => {
 const requestCache = new Map(); // key -> { data, expiry }
 const inFlight = new Map(); // key -> Promise
 
+// Public (internal) invalidation helpers
+export const invalidateGetCacheByPredicate = (predicateFn) => {
+  for (const key of requestCache.keys()) {
+    if (predicateFn(key)) {
+      requestCache.delete(key);
+    }
+  }
+};
+
+export const invalidateGetCacheExact = (method, url) => {
+  for (const key of requestCache.keys()) {
+    if (key.startsWith(`${method.toUpperCase()} ${url}`)) {
+      requestCache.delete(key);
+    }
+  }
+};
+
 const buildKey = (method, url, paramsOrData) => {
   try {
     return `${method.toUpperCase()} ${url} :: ${JSON.stringify(paramsOrData || {})}`;
