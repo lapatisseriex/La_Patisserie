@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
@@ -16,7 +16,6 @@ import productLiveCache from '../../utils/productLiveCache';
 const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
-  const [lastQuantityChangeTime, setLastQuantityChangeTime] = useState(0);
   const [refreshedProduct, setRefreshedProduct] = useState(product);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -52,6 +51,12 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const currentQuantity = useMemo(() => {
     return getItemQuantity(currentProduct._id);
   }, [currentProduct._id, getItemQuantity, cartItems]);
+
+  const quantityRef = useRef(currentQuantity);
+
+  useEffect(() => {
+    quantityRef.current = currentQuantity;
+  }, [currentQuantity]);
   
   // Memoize button state to prevent unnecessary re-renders
   const buttonState = useMemo(() => ({
@@ -175,8 +180,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       await addToCart(currentProduct, 1, variantIndex);
       
       // Trigger a targeted refresh soon after add to cart to reflect stock
-      const API_BASE = import.meta.env.VITE_API_URL;
-  setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
+    setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
     } catch (error) {
       console.error('Error adding to cart:', error);
       const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
@@ -206,7 +210,6 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         await addToCart(currentProduct, 1, variantIndex);
         
   // Immediately refresh stock data after adding to cart
-  const API_BASE = import.meta.env.VITE_API_URL;
   setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
         
         navigate('/cart');
@@ -242,7 +245,6 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         await addToCart(currentProduct, 1, variantIndex);
         
   // Immediately refresh stock data after adding to cart
-  const API_BASE = import.meta.env.VITE_API_URL;
   setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
       }
       
@@ -254,28 +256,28 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     }
   };
 
-  const handleQuantityChange = useCallback(async (newQuantity) => {
-    if (newQuantity < 0) return;
-    
-    // Prevent only genuine rapid clicking (very fast consecutive clicks)
-    const now = Date.now();
-    const timeSinceLastClick = now - lastQuantityChangeTime;
-    
-    if (timeSinceLastClick < 50) {
-      return; // Silently ignore super rapid clicks
+  const handleQuantityDelta = useCallback((delta) => {
+    if (delta === 0) {
+      return;
     }
-    
-    setLastQuantityChangeTime(now);
-    
-    // Fire and forget - no loading states for smooth experience
-    updateQuantity(currentProduct._id, newQuantity).then(() => {
-      // Immediately refresh stock data after quantity change
-      const API_BASE = import.meta.env.VITE_API_URL;
+
+    const latestQuantity = quantityRef.current;
+    const nextQuantity = Math.max(0, latestQuantity + delta);
+
+    if (nextQuantity === latestQuantity) {
+      return;
+    }
+
+    quantityRef.current = nextQuantity;
+
+    updateQuantity(currentProduct._id, nextQuantity)
+      .then(() => {
   setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
-    }).catch(error => {
-      console.error('Error updating quantity:', error);
-    });
-  }, [updateQuantity, currentProduct._id, lastQuantityChangeTime]);
+      })
+      .catch((error) => {
+        console.error('Error updating quantity:', error);
+      });
+  }, [currentProduct._id, updateQuantity]);
 
 
 
@@ -436,7 +438,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleQuantityChange(currentQuantity - 1);
+                    handleQuantityDelta(-1);
                   }}
                   disabled={!isProductAvailable || isOutOfStockTracked}
                   className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-light ${
@@ -460,7 +462,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleQuantityChange(currentQuantity + 1);
+                    handleQuantityDelta(1);
                   }}
                   disabled={isOutOfStockTracked || (tracks && currentQuantity >= totalStock) || !isProductAvailable}
                   className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light ${
