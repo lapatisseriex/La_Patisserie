@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 // (removed duplicate import of useFavorites)
 import { useCart } from '../hooks/useCart';
@@ -41,6 +42,8 @@ const ProfilePage = () => {
   // Add dispatch for manual favorites refresh
   const dispatch = useDispatch();
   const [favoritesRetryCount, setFavoritesRetryCount] = useState(0);
+  const [jellyAnimations, setJellyAnimations] = useState({});
+  const [animationDirections, setAnimationDirections] = useState({});
   
   // Force refresh favorites function
   const refreshFavorites = useCallback(() => {
@@ -63,6 +66,10 @@ const ProfilePage = () => {
   // Cart quantity update handlers
   const handleQuantityIncrease = async (productId, currentQuantity, product) => {
     try {
+      // Trigger jelly animation
+      setAnimationDirections(prev => ({ ...prev, [productId]: 'up' }));
+      setJellyAnimations(prev => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
+      
       await updateQuantity(productId, currentQuantity + 1);
     } catch (error) {
       console.error('Error increasing quantity:', error);
@@ -77,6 +84,9 @@ const ProfilePage = () => {
       return;
     }
     try {
+      // Trigger jelly animation
+      setAnimationDirections(prev => ({ ...prev, [productId]: 'down' }));
+      setJellyAnimations(prev => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
       await updateQuantity(productId, currentQuantity - 1);
     } catch (error) {
       console.error('Error decreasing quantity:', error);
@@ -707,9 +717,29 @@ const ProfilePage = () => {
                                         '-'
                                       )}
                                     </button>
-                                    <span className="w-12 h-8 flex items-center justify-center text-sm font-medium border-x border-gray-300">
+                                    <motion.span 
+                                      key={`jelly-profile-${productId}-${jellyAnimations[productId] || 0}`}
+                                      initial={{ 
+                                        scaleX: 1, 
+                                        scaleY: 1,
+                                        y: animationDirections[productId] === 'up' ? -10 : animationDirections[productId] === 'down' ? 10 : 0,
+                                        opacity: animationDirections[productId] ? 0.7 : 1
+                                      }}
+                                      animate={{
+                                        scaleX: [1, 1.15, 0.95, 1.03, 1],
+                                        scaleY: [1, 0.85, 1.05, 0.98, 1],
+                                        y: 0,
+                                        opacity: 1
+                                      }}
+                                      transition={{
+                                        duration: 0.5,
+                                        times: [0, 0.2, 0.5, 0.8, 1],
+                                        ease: "easeInOut"
+                                      }}
+                                      className="w-12 h-8 flex items-center justify-center text-sm font-medium border-x border-gray-300"
+                                    >
                                       {quantity}
-                                    </span>
+                                    </motion.span>
                                     <button 
                                       onClick={() => handleQuantityIncrease(productId, quantity, product)}
                                       className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

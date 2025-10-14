@@ -52,6 +52,7 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'https://la-patisserie-cqyo.vercel.app',
   'https://la-patisserie-nine.vercel.app',
+  'https://thelapatisserie.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean); // Remove any undefined values
 

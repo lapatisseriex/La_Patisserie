@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaShoppingCart, FaExclamationTriangle } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
@@ -26,6 +27,8 @@ const Cart = () => {
   const [stockError, setStockError] = useState('');
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState('');
+  const [jellyAnimations, setJellyAnimations] = useState({});
+  const [animationDirections, setAnimationDirections] = useState({});
   
   const navigate = useNavigate();
 
@@ -116,6 +119,18 @@ const Cart = () => {
       setStockError(error?.message || 'Failed to update quantity');
       setTimeout(() => setStockError(''), 3000);
     }
+  };
+
+  // Enhanced quantity handler with animation
+  const handleQuantityChangeWithAnimation = async (productId, currentQuantity, delta, maxStock) => {
+    const newQuantity = Math.max(0, currentQuantity + delta);
+    
+    // Set animation direction and trigger animation
+    setAnimationDirections(prev => ({ ...prev, [productId]: delta > 0 ? 'up' : 'down' }));
+    setJellyAnimations(prev => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
+    
+    // Call the original handler
+    await handleQuantityChange(productId, newQuantity, maxStock);
   };
 
   // Handle location change
@@ -291,13 +306,31 @@ const Cart = () => {
                         <div className="flex items-center">
                           <button 
                             onClick={() => {
-                              handleQuantityChange(item.productId, item.quantity - 1, stock);
+                              handleQuantityChangeWithAnimation(item.productId, item.quantity, -1, stock);
                             }}
                             className={`w-7 h-7 md:w-8 md:h-8 rounded-l-md flex items-center justify-center border text-sm bg-gray-100 border-gray-200`}
                           >
                             -
                           </button>
-                          <input
+                          <motion.input
+                            key={`jelly-cart-${item.productId}-${jellyAnimations[item.productId] || 0}`}
+                            initial={{ 
+                              scaleX: 1, 
+                              scaleY: 1,
+                              y: animationDirections[item.productId] === 'up' ? -10 : animationDirections[item.productId] === 'down' ? 10 : 0,
+                              opacity: animationDirections[item.productId] ? 0.7 : 1
+                            }}
+                            animate={{
+                              scaleX: [1, 1.15, 0.95, 1.03, 1],
+                              scaleY: [1, 0.85, 1.05, 0.98, 1],
+                              y: 0,
+                              opacity: 1
+                            }}
+                            transition={{
+                              duration: 0.5,
+                              times: [0, 0.2, 0.5, 0.8, 1],
+                              ease: "easeInOut"
+                            }}
                             type="text"
                             className="w-8 h-7 md:w-10 md:h-8 text-center text-xs md:text-sm border-t border-b border-gray-200"
                             value={item.quantity}
@@ -312,7 +345,7 @@ const Cart = () => {
                                 setTimeout(() => setStockError(''), 3000);
                                 return;
                               }
-                              handleQuantityChange(item.productId, nextQty, stock);
+                              handleQuantityChangeWithAnimation(item.productId, item.quantity, 1, stock);
                             }}
                             disabled={!canIncrease}
                             className={`w-7 h-7 md:w-8 md:h-8 rounded-r-md flex items-center justify-center border text-sm ${

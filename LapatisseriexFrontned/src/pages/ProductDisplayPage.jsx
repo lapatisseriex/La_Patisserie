@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { fetchProductById, fetchProducts, makeSelectListByKey } from '../redux/productsSlice';
 import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
@@ -67,6 +68,8 @@ const ProductDisplayPage = () => {
   const [isDeliveryInfoOpen, setIsDeliveryInfoOpen] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [lastQuantityChangeTime, setLastQuantityChangeTime] = useState(0);
+  const [jellyAnimationKey, setJellyAnimationKey] = useState(0);
+  const [animationDirection, setAnimationDirection] = useState('none'); // 'up', 'down', 'none'
   
   // References to the main "Reserve Yours" buttons (mobile & desktop) to determine when to show sticky bars
   const reserveButtonMobileRef = useRef(null);
@@ -418,11 +421,19 @@ const ProductDisplayPage = () => {
     
     setLastQuantityChangeTime(now);
     
+    // Calculate direction based on quantity change
+    const currentQuantity = getItemQuantity(product._id);
+    const delta = newQuantity - currentQuantity;
+    setAnimationDirection(delta > 0 ? 'up' : delta < 0 ? 'down' : 'none');
+    
+    // Trigger jelly animation
+    setJellyAnimationKey(prev => prev + 1);
+    
     // Fire and forget - no loading states for smooth experience
     updateQuantity(product._id, newQuantity).catch(error => {
       console.error('Error updating quantity:', error);
     });
-  }, [updateQuantity, product?._id, lastQuantityChangeTime]);
+  }, [updateQuantity, product?._id, lastQuantityChangeTime, getItemQuantity]);
 
   // Calculate derived properties that may be needed in early returns
   // Use centralized pricing utility for consistency across all components
@@ -634,9 +645,41 @@ const ProductDisplayPage = () => {
                     >
                       <Minus className="w-3 h-3 sm:w-4 sm:h-4 text-[#733857]" />
                     </button>
-                    <span className="px-2 sm:px-3 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-semibold text-sm min-w-[2rem] text-center">
+                    <motion.span 
+                      key={`jelly-${jellyAnimationKey}`}
+                      initial={{ 
+                        scaleX: 1, 
+                        scaleY: 1,
+                        y: animationDirection === 'up' ? -10 : animationDirection === 'down' ? 10 : 0,
+                        opacity: animationDirection !== 'none' ? 0.7 : 1
+                      }}
+                      animate={{
+                        scaleX: [1, 1.15, 0.95, 1.03, 1],
+                        scaleY: [1, 0.85, 1.05, 0.98, 1],
+                        y: [
+                          animationDirection === 'up' ? -10 : animationDirection === 'down' ? 10 : 0,
+                          animationDirection === 'up' ? -5 : animationDirection === 'down' ? 5 : 0,
+                          0,
+                          0,
+                          0
+                        ],
+                        opacity: [
+                          animationDirection !== 'none' ? 0.7 : 1,
+                          1,
+                          1,
+                          1,
+                          1
+                        ]
+                      }}
+                      transition={{
+                        duration: 0.6,
+                        times: [0, 0.2, 0.5, 0.8, 1],
+                        ease: "easeInOut"
+                      }}
+                      className="px-2 sm:px-3 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-semibold text-sm min-w-[2rem] text-center inline-block"
+                    >
                       {isAddingToCart ? '...' : currentCartQuantity}
-                    </span>
+                    </motion.span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1136,7 +1179,41 @@ const ProductDisplayPage = () => {
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent min-w-[2rem] text-center">{currentCartQuantity}</span>
+                    <motion.span 
+                      key={`jelly-mobile-${jellyAnimationKey}`}
+                      initial={{ 
+                        scaleX: 1, 
+                        scaleY: 1,
+                        y: animationDirection === 'up' ? -8 : animationDirection === 'down' ? 8 : 0,
+                        opacity: animationDirection !== 'none' ? 0.7 : 1
+                      }}
+                      animate={{
+                        scaleX: [1, 1.15, 0.95, 1.03, 1],
+                        scaleY: [1, 0.85, 1.05, 0.98, 1],
+                        y: [
+                          animationDirection === 'up' ? -8 : animationDirection === 'down' ? 8 : 0,
+                          animationDirection === 'up' ? -4 : animationDirection === 'down' ? 4 : 0,
+                          0,
+                          0,
+                          0
+                        ],
+                        opacity: [
+                          animationDirection !== 'none' ? 0.7 : 1,
+                          1,
+                          1,
+                          1,
+                          1
+                        ]
+                      }}
+                      transition={{
+                        duration: 0.6,
+                        times: [0, 0.2, 0.5, 0.8, 1],
+                        ease: "easeInOut"
+                      }}
+                      className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent min-w-[2rem] text-center inline-block"
+                    >
+                      {currentCartQuantity}
+                    </motion.span>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
                       disabled={(tracks && currentCartQuantity >= totalStock)}
@@ -1251,7 +1328,41 @@ const ProductDisplayPage = () => {
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="px-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-semibold text-sm min-w-[2rem] text-center">{currentCartQuantity}</span>
+                    <motion.span 
+                      key={`jelly-sticky-${jellyAnimationKey}`}
+                      initial={{ 
+                        scaleX: 1, 
+                        scaleY: 1,
+                        y: animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0,
+                        opacity: animationDirection !== 'none' ? 0.7 : 1
+                      }}
+                      animate={{
+                        scaleX: [1, 1.15, 0.95, 1.03, 1],
+                        scaleY: [1, 0.85, 1.05, 0.98, 1],
+                        y: [
+                          animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0,
+                          animationDirection === 'up' ? -3 : animationDirection === 'down' ? 3 : 0,
+                          0,
+                          0,
+                          0
+                        ],
+                        opacity: [
+                          animationDirection !== 'none' ? 0.7 : 1,
+                          1,
+                          1,
+                          1,
+                          1
+                        ]
+                      }}
+                      transition={{
+                        duration: 0.6,
+                        times: [0, 0.2, 0.5, 0.8, 1],
+                        ease: "easeInOut"
+                      }}
+                      className="px-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-semibold text-sm min-w-[2rem] text-center inline-block"
+                    >
+                      {currentCartQuantity}
+                    </motion.span>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
                       disabled={(tracks && currentCartQuantity >= totalStock)}
@@ -1790,7 +1901,41 @@ const ProductDisplayPage = () => {
                         >
                           <Minus className="w-4 h-4 text-[#733857]" />
                         </button>
-                        <span className="text-base font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent min-w-[2.25rem] text-center">{currentCartQuantity}</span>
+                        <motion.span 
+                          key={`jelly-desktop-${jellyAnimationKey}`}
+                          initial={{ 
+                            scaleX: 1, 
+                            scaleY: 1,
+                            y: animationDirection === 'up' ? -12 : animationDirection === 'down' ? 12 : 0,
+                            opacity: animationDirection !== 'none' ? 0.7 : 1
+                          }}
+                          animate={{
+                            scaleX: [1, 1.15, 0.95, 1.03, 1],
+                            scaleY: [1, 0.85, 1.05, 0.98, 1],
+                            y: [
+                              animationDirection === 'up' ? -12 : animationDirection === 'down' ? 12 : 0,
+                              animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0,
+                              0,
+                              0,
+                              0
+                            ],
+                            opacity: [
+                              animationDirection !== 'none' ? 0.7 : 1,
+                              1,
+                              1,
+                              1,
+                              1
+                            ]
+                          }}
+                          transition={{
+                            duration: 0.6,
+                            times: [0, 0.2, 0.5, 0.8, 1],
+                            ease: "easeInOut"
+                          }}
+                          className="text-base font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent min-w-[2.25rem] text-center inline-block"
+                        >
+                          {currentCartQuantity}
+                        </motion.span>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
                           disabled={(currentCartQuantity >= totalStock)}
