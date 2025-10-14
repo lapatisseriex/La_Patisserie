@@ -141,6 +141,14 @@ const favoritesSlice = createSlice({
         console.error('fetchFavorites rejected:', action.payload, action.error);
       })
       // Add to favorites
+      .addCase(addToFavorites.pending, (state, action) => {
+        // Optimistic: immediately reflect the new favorite in UI
+        const productId = action.meta.arg;
+        if (productId && !state.favoriteIds.includes(productId)) {
+          state.favoriteIds.push(productId);
+          state.count = state.favoriteIds.length;
+        }
+      })
       .addCase(addToFavorites.fulfilled, (state, action) => {
         const { productId, response } = action.payload;
         
@@ -164,14 +172,40 @@ const favoritesSlice = createSlice({
           }
         }
       })
+      .addCase(addToFavorites.rejected, (state, action) => {
+        // Rollback optimistic add
+        const productId = action.meta?.arg;
+        if (productId) {
+          state.favoriteIds = state.favoriteIds.filter(id => id !== productId);
+          state.count = state.favoriteIds.length;
+        }
+      })
       // Remove from favorites
+      .addCase(removeFromFavorites.pending, (state, action) => {
+        // Optimistic: immediately remove from UI
+        const productId = action.meta.arg;
+        if (productId) {
+          state.favoriteIds = state.favoriteIds.filter(id => id !== productId);
+          state.favorites = state.favorites.filter(item => (item._id || item.productId) !== productId);
+          state.count = state.favoriteIds.length;
+        }
+      })
       .addCase(removeFromFavorites.fulfilled, (state, action) => {
-        const { productId, response } = action.payload;
-        
-        // Remove from favorites arrays
+        const { productId } = action.payload;
+        // Already optimistically removed in pending; ensure consistency (idempotent)
         state.favoriteIds = state.favoriteIds.filter(id => id !== productId);
-        state.favorites = state.favorites.filter(item => item.productId !== productId);
+        state.favorites = state.favorites.filter(item => (item._id || item.productId) !== productId);
         state.count = state.favoriteIds.length;
+      })
+      .addCase(removeFromFavorites.rejected, (state, action) => {
+        // Rollback optimistic remove: if productId is not present, re-add it
+        const productId = action.meta?.arg;
+        if (productId) {
+          if (!state.favoriteIds.includes(productId)) {
+            state.favoriteIds.push(productId);
+            state.count = state.favoriteIds.length;
+          }
+        }
       });
   }
 });
