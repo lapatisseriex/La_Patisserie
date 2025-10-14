@@ -12,13 +12,22 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
     // Get orders with 'placed', 'confirmed', and 'out_for_delivery' status (ready for dispatch or partially dispatched)
     const orders = await Order.find({
       orderStatus: { $in: ['placed', 'confirmed', 'out_for_delivery'] }
-    }).populate({
+    })
+    .populate({
       path: 'cartItems.productId',
       populate: {
         path: 'category',
         model: 'Category'
       }
-    }).lean();
+    })
+    .populate({
+      path: 'hostelId',
+      populate: {
+        path: 'locationId',
+        model: 'Location'
+      }
+    })
+    .lean();
     
     if (orders.length === 0) {
       return res.status(200).json([]);
@@ -28,12 +37,18 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
     const hostelGroups = {};
     
     orders.forEach(order => {
-      const hostelName = order.hostelName || 'Unknown Hostel';
+      // Get hostel information from populated data or fallback to stored strings
+      const hostelName = order.hostelId?.name || order.hostelName || 'Unknown Hostel';
+      const hostelLocation = order.hostelId?.locationId ? 
+        `${order.hostelId.locationId.area}, ${order.hostelId.locationId.city} - ${order.hostelId.locationId.pincode}` :
+        order.deliveryLocation || 'Unknown Location';
       
       // Initialize hostel group if not exists
       if (!hostelGroups[hostelName]) {
         hostelGroups[hostelName] = {
           hostel: hostelName,
+          hostelId: order.hostelId?._id || null,
+          locationInfo: order.hostelId?.locationId || null,
           deliveryLocations: [], // Store all delivery locations
           categories: {},
           totalOrders: 0
@@ -41,7 +56,8 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
       }
       
       // Add delivery location to the list if not already present
-      const location = order.deliveryLocation?.trim();
+      // Use the constructed hostel location if available, otherwise use the stored delivery location
+      const location = hostelLocation || order.deliveryLocation?.trim();
       if (location && location !== '' && !hostelGroups[hostelName].deliveryLocations.includes(location)) {
         hostelGroups[hostelName].deliveryLocations.push(location);
       }
@@ -99,6 +115,8 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
     const result = Object.values(hostelGroups)
       .map(hostelGroup => ({
         hostel: hostelGroup.hostel,
+        hostelId: hostelGroup.hostelId,
+        locationInfo: hostelGroup.locationInfo,
         deliveryLocation: hostelGroup.deliveryLocations.length > 0 
           ? hostelGroup.deliveryLocations[0]
           : 'Unknown Location',
@@ -163,6 +181,13 @@ export const getIndividualPendingOrders = asyncHandler(async (req, res) => {
       }
     })
     .populate('userId', 'name email phone')
+    .populate({
+      path: 'hostelId',
+      populate: {
+        path: 'locationId',
+        model: 'Location'
+      }
+    })
     .sort({ createdAt: 1 }) // Oldest first
     .lean();
     
@@ -215,6 +240,9 @@ export const getIndividualPendingOrders = asyncHandler(async (req, res) => {
         userDetails: order.userDetails,
         deliveryLocation: order.deliveryLocation,
         hostelName: order.hostelName,
+        hostelId: order.hostelId?._id || null,
+        hostelInfo: order.hostelId || null,
+        locationInfo: order.hostelId?.locationId || null,
         orderStatus: order.orderStatus,
         paymentStatus: order.paymentStatus,
         amount: order.amount,

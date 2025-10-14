@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaShoppingCart, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaShoppingCart, FaExclamationTriangle, FaBuilding } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
@@ -31,6 +31,22 @@ const Cart = () => {
   const [animationDirections, setAnimationDirections] = useState({});
   
   const navigate = useNavigate();
+
+  // Helper function to check if user can proceed to checkout
+  const canProceedToCheckout = () => {
+    return hasValidDeliveryLocation() && user?.hostel && user.hostel._id && user.hostel.name;
+  };
+
+  // Helper function to get checkout button text
+  const getCheckoutButtonText = () => {
+    if (!hasValidDeliveryLocation()) {
+      return 'Select Delivery Location';
+    }
+    if (!user?.hostel || !user.hostel._id || !user.hostel.name) {
+      return 'Select Hostel';
+    }
+    return 'Proceed to Checkout';
+  };
 
   // Helper to derive availability from product data stored in cart item
   const getItemAvailability = (item) => {
@@ -150,6 +166,19 @@ const Cart = () => {
         toast.error('Some items are out of stock. Please remove them before checkout.');
         return;
       }
+      
+      // Validate location selection
+      if (!user?.location || !user.location._id) {
+        toast.error('Please select your delivery location from your profile before proceeding to checkout.');
+        return;
+      }
+      
+      // Validate hostel selection
+      if (!user?.hostel || !user.hostel._id || !user.hostel.name) {
+        toast.error('Please select your hostel from your profile before proceeding to checkout.');
+        return;
+      }
+      
       // Check shop status before proceeding
       const currentStatus = await checkShopStatusNow();
       
@@ -417,6 +446,37 @@ const Cart = () => {
               <h2 className="font-semibold text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent pb-4 border-b border-gray-200 mb-4">
                 Order Summary
               </h2>
+
+              {/* Delivery Information */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Delivery Information</h3>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 text-sm">
+                    <FaMapMarkerAlt className="text-[#733857] mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="text-gray-600">Location: </span>
+                      <span className="text-gray-800 font-medium">
+                        {user?.location?.name || getCurrentLocationName() || 'Not set'}
+                      </span>
+                      {!user?.location && (
+                        <div className="text-red-600 text-xs mt-1">Please set your delivery location</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <FaBuilding className="text-[#733857] mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="text-gray-600">Hostel: </span>
+                      <span className="text-gray-800 font-medium">
+                        {user?.hostel?.name || 'Not set'}
+                      </span>
+                      {!user?.hostel && (
+                        <div className="text-red-600 text-xs mt-1">Please set your hostel</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
               
               {/* Price Breakdown */}
               <div className="space-y-3">
@@ -485,30 +545,30 @@ const Cart = () => {
               <div className="mt-6">
                 <button 
                   onClick={handleCheckout}
-                  disabled={!hasValidDeliveryLocation()}
+                  disabled={!canProceedToCheckout()}
                   className={`group relative w-full rounded-lg overflow-hidden transition-all duration-300 font-semibold py-3 px-5 text-sm ${
-                    hasValidDeliveryLocation()
+                    canProceedToCheckout()
                       ? 'bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:border-[#733857] transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation'
                       : 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
                   }`}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-1.5">
                     <svg className={`w-3 h-3 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-12 group-active:scale-110 ${
-                      hasValidDeliveryLocation() 
+                      canProceedToCheckout() 
                         ? 'text-[#733857] group-hover:text-white' 
                         : 'text-gray-400'
                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13v6a1 1 0 001 1h9a1 1 0 001-1v-6M17 13v6a1 1 0 01-1 1H8a1 1 0 01-1-1v-6" />
                     </svg>
                     <span className={`transform transition-all duration-300 group-hover:tracking-wider group-active:tracking-wider ${
-                      hasValidDeliveryLocation() 
+                      canProceedToCheckout() 
                         ? 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent group-hover:text-white' 
                         : 'text-gray-400'
                     }`}>
-                      {hasValidDeliveryLocation() ? 'Proceed to Checkout' : 'Select Delivery Location'}
+                      {getCheckoutButtonText()}
                     </span>
                     <svg className={`w-3 h-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:translate-x-1 group-active:scale-110 ${
-                      hasValidDeliveryLocation() 
+                      canProceedToCheckout() 
                         ? 'text-[#733857] group-hover:text-white' 
                         : 'text-gray-400'
                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -517,10 +577,19 @@ const Cart = () => {
                   </span>
                 </button>
                 
-                {!hasValidDeliveryLocation() && (
-                  <p className="text-amber-600 text-xs text-center mb-3">
-                    Select a valid delivery location to continue
-                  </p>
+                {!canProceedToCheckout() && (
+                  <div className="mt-3 space-y-1">
+                    {!hasValidDeliveryLocation() && (
+                      <p className="text-amber-600 text-xs text-center">
+                        Select a valid delivery location to continue
+                      </p>
+                    )}
+                    {hasValidDeliveryLocation() && (!user?.hostel || !user.hostel._id || !user.hostel.name) && (
+                      <p className="text-amber-600 text-xs text-center">
+                        Select your hostel from your profile to continue
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

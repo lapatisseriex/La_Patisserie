@@ -120,6 +120,10 @@ const orderSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  hostelId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Hostel'
+  },
   orderSummary: orderSummarySchema,
   notes: {
     type: String,

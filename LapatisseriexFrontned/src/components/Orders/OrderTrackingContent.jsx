@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard, Building } from 'lucide-react';
 import { calculatePricing } from '../../utils/pricingUtils';
 
 const OrderTrackingContent = ({ order }) => {
@@ -250,6 +250,12 @@ const OrderTrackingContent = ({ order }) => {
             <MapPin className="h-4 w-4 mt-0.5" style={{ color: '#733857' }} />
             <span style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{order.deliveryLocation}</span>
           </div>
+          {order.hostelName && (
+            <div className="flex items-start gap-2 text-sm mt-2">
+              <Building className="h-4 w-4 mt-0.5" style={{ color: '#733857' }} />
+              <span style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{order.hostelName}</span>
+            </div>
+          )}
           {order.estimatedDeliveryTime && (
             <div className="mt-2 text-sm">
               <span className="font-medium" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Estimated Delivery: </span>

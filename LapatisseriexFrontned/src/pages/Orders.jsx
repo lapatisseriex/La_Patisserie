@@ -460,6 +460,11 @@ const Orders = () => {
                         <p className="text-gray-700 mb-2 text-sm md:text-base">
                           <span className="font-medium">Location:</span> {order.deliveryLocation}
                         </p>
+                        {order.hostelName && (
+                          <p className="text-gray-700 mb-2 text-sm md:text-base">
+                            <span className="font-medium">Hostel:</span> {order.hostelName}
+                          </p>
+                        )}
                         {order.estimatedDeliveryTime && (
                           <p className="text-gray-700 text-sm md:text-base">
                             <span className="font-medium">Estimated Delivery:</span> {' '}

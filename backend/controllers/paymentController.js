@@ -5,6 +5,8 @@ import Order from '../models/orderModel.js';
 import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
 import Location from '../models/locationModel.js';
+import Hostel from '../models/hostelModel.js';
+import DeliveryLocationMapping from '../models/deliveryLocationMappingModel.js';
 import mongoose from 'mongoose';
 import Payment from '../models/paymentModel.js';
 import Notification from '../models/notificationModel.js';
@@ -277,6 +279,40 @@ export const createOrder = asyncHandler(async (req, res) => {
       });
     }
 
+    // Try to find hostel ID based on hostelName or deliveryLocation
+    let hostelId = null;
+    if (hostelName) {
+      try {
+        // First try to find hostel by exact name match
+        const hostel = await Hostel.findOne({ 
+          name: { $regex: new RegExp(`^${hostelName.trim()}$`, 'i') },
+          isActive: true 
+        });
+        
+        if (hostel) {
+          hostelId = hostel._id;
+          console.log('Found hostel by name:', hostel.name, 'ID:', hostelId);
+        } else {
+          // Try to find using delivery location mapping
+          const mapping = await DeliveryLocationMapping.findOne({
+            $or: [
+              { hostelName: { $regex: new RegExp(`^${hostelName.trim()}$`, 'i') } },
+              { deliveryLocation: { $regex: new RegExp(`^${deliveryLocation.trim()}$`, 'i') } }
+            ],
+            isActive: true
+          });
+          
+          if (mapping && mapping.hostelId) {
+            hostelId = mapping.hostelId;
+            console.log('Found hostel through mapping:', mapping.hostelName, 'ID:', hostelId);
+          }
+        }
+      } catch (error) {
+        console.log('Error finding hostel:', error.message);
+        // Don't throw error as this shouldn't break the order process
+      }
+    }
+
     // Create order in database
     const order = new Order({
       orderNumber,
@@ -291,6 +327,7 @@ export const createOrder = asyncHandler(async (req, res) => {
       userDetails,
       deliveryLocation,
       hostelName,
+      hostelId,
       orderSummary: {
         cartTotal: orderSummary.cartTotal,
         discountedTotal: orderSummary.discountedTotal,
@@ -693,6 +730,13 @@ export const getAllOrders = asyncHandler(async (req, res) => {
     
     const orders = await Order.find(filter)
       .populate('userId', 'name email phone')
+      .populate({
+        path: 'hostelId',
+        populate: {
+          path: 'locationId',
+          model: 'Location'
+        }
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -725,7 +769,14 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
     const { orderNumber } = req.params;
 
     const order = await Order.findOne({ orderNumber })
-      .populate('userId', 'name email phone city pincode country');
+      .populate('userId', 'name email phone city pincode country')
+      .populate({
+        path: 'hostelId',
+        populate: {
+          path: 'locationId',
+          model: 'Location'
+        }
+      });
 
     if (!order) {
       return res.status(404).json({
@@ -798,6 +849,13 @@ export const getUserOrders = asyncHandler(async (req, res) => {
       userId,
       orderStatus: { $in: ['placed', 'out_for_delivery', 'delivered'] }
     })
+      .populate({
+        path: 'hostelId',
+        populate: {
+          path: 'locationId',
+          model: 'Location'
+        }
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));

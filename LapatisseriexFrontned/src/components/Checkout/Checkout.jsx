@@ -12,6 +12,7 @@ import {
   AlertCircle,
   ShoppingBag,
   Package,
+  Building,
 } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -37,6 +38,24 @@ const Checkout = () => {
       setError('Please enter your email address before proceeding');
       return;
     }
+    
+    // Debug logging
+    console.log('Validation check - User object:', user);
+    console.log('User location:', user?.location);
+    console.log('User hostel:', user?.hostel);
+    
+    // Validate location selection
+    if (!user?.location || !user.location._id) {
+      setError('Please select your delivery location from your profile before proceeding');
+      return;
+    }
+    
+    // Validate hostel selection - check for both existence and valid data
+    if (!user?.hostel || !user.hostel._id || !user.hostel.name) {
+      setError('Please select your hostel from your profile before proceeding to payment');
+      return;
+    }
+    
     setError('');
     setStep(2);
   };
@@ -225,9 +244,35 @@ const Checkout = () => {
                         type="text"
                         value={user?.location?.name || 'Not set'}
                         readOnly
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
+                        className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 ${!user?.location ? 'border-red-300' : ''}`}
                       />
                     </div>
+                    {!user?.location && (
+                      <p className="text-sm text-red-600">
+                        Please set your delivery location in your profile before proceeding
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Hostel */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+                      Hostel/Residence <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={user?.hostel?.name || 'Not set'}
+                        readOnly
+                        className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 ${!user?.hostel ? 'border-red-300' : ''}`}
+                      />
+                    </div>
+                    {!user?.hostel && (
+                      <p className="text-sm text-red-600">
+                        Please set your hostel in your profile before proceeding
+                      </p>
+                    )}
                   </div>
                 </div>
 

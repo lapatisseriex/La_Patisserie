@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import Hostel from '../models/hostelModel.js';
 import Location from '../models/locationModel.js';
+import Order from '../models/orderModel.js';
 
 // @desc    Get all hostels for a specific location
 // @route   GET /api/hostels/:locationId
@@ -159,5 +160,44 @@ export const toggleHostelStatus = asyncHandler(async (req, res) => {
   res.status(200).json({ 
     id: hostel._id, 
     isActive: hostel.isActive 
+  });
+});
+
+// @desc    Get hostel details with order statistics
+// @route   GET /api/admin/hostels/:id/details
+// @access  Admin
+export const getHostelDetails = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  const hostel = await Hostel.findById(id).populate('locationId');
+  
+  if (!hostel) {
+    res.status(404);
+    throw new Error('Hostel not found');
+  }
+
+  // Get order statistics for this hostel
+  const orderStats = await Order.aggregate([
+    { $match: { hostelId: hostel._id } },
+    {
+      $group: {
+        _id: '$orderStatus',
+        count: { $sum: 1 },
+        totalAmount: { $sum: '$amount' }
+      }
+    }
+  ]);
+
+  // Get recent orders for this hostel
+  const recentOrders = await Order.find({ hostelId: hostel._id })
+    .populate('userId', 'name email phone')
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .select('orderNumber orderStatus paymentStatus amount createdAt userDetails');
+
+  res.status(200).json({
+    hostel,
+    orderStats,
+    recentOrders
   });
 });

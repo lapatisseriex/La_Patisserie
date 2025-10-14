@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheckCircle, FaMapMarkerAlt, FaCreditCard, FaWallet, FaExclamationTriangle } from 'react-icons/fa';
 import { BsCashCoin } from 'react-icons/bs';
+import { Building } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
@@ -475,15 +476,26 @@ const Payment = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-center flex-grow bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Checkout</h1>
         </div>
         
-        {/* Delivery Location Info */}
+        {/* Delivery Information */}
         {user && hasValidDeliveryLocation() && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-            <div className="flex items-center">
-              <FaMapMarkerAlt className="text-green-600 mr-2" />
-              <div>
-                <p className="text-green-800 font-medium text-sm sm:text-base">Delivering to:</p>
-                <p className="text-green-700 text-sm sm:text-base">{getCurrentLocationName()}</p>
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <FaMapMarkerAlt className="text-green-600 mr-2" />
+                <div>
+                  <p className="text-green-800 font-medium text-sm sm:text-base">Delivering to:</p>
+                  <p className="text-green-700 text-sm sm:text-base">{getCurrentLocationName()}</p>
+                </div>
               </div>
+              {user.hostel && (
+                <div className="flex items-center">
+                  <Building className="text-green-600 mr-2 h-4 w-4" />
+                  <div>
+                    <p className="text-green-800 font-medium text-sm sm:text-base">Hostel:</p>
+                    <p className="text-green-700 text-sm sm:text-base">{user.hostel.name}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

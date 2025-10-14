@@ -393,6 +393,11 @@ const AdminOrders = () => {
                         <div className="text-xs text-gray-400">
                           {order.deliveryLocation}
                         </div>
+                        {order.hostelName && (
+                          <div className="text-xs text-blue-600 font-medium">
+                            🏠 {order.hostelName}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -556,6 +561,9 @@ const AdminOrders = () => {
                     </div>
                     <div>
                       <span className="font-medium">Location:</span> {selectedOrder.deliveryLocation}
+                    </div>
+                    <div>
+                      <span className="font-medium">Hostel:</span> {selectedOrder.hostelName || 'N/A'}
                     </div>
                   </div>
                 </div>

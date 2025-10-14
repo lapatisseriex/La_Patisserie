@@ -6,7 +6,8 @@ import {
   createHostel,
   updateHostel,
   deleteHostel,
-  toggleHostelStatus
+  toggleHostelStatus,
+  getHostelDetails
 } from '../controllers/hostelController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -19,6 +20,7 @@ router.get('/location/:locationId', getHostelsByLocation);
 router.use(protect); // Apply auth middleware to all routes below
 
 router.get('/', getAllHostels);
+router.get('/:id/details', getHostelDetails);
 router.get('/location/:locationId/admin', getHostelsByLocationAdmin);
 router.post('/', createHostel);
 router.put('/:id', updateHostel);
