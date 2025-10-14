@@ -1,4 +1,4 @@
-import api, { apiGet } from './apiService';
+import api, { apiGet, invalidateGetCacheExact } from './apiService';
 
 class FavoriteService {
   // Get all favorites
@@ -54,7 +54,9 @@ class FavoriteService {
       }
       
       const response = await api.post(`/users/favorites/${productId}`);
-      return response.data.data;
+      // Invalidate cached favorites so next fetch is fresh
+      invalidateGetCacheExact('GET', '/users/favorites');
+      return response.data; // Return full response so slice can access .data and .count
     } catch (error) {
       console.error('Error adding to favorites:', error);
       throw error;
@@ -70,7 +72,9 @@ class FavoriteService {
       }
       
       const response = await api.delete(`/users/favorites/${productId}`);
-      return response.data.data;
+      // Invalidate cached favorites so next fetch is fresh
+      invalidateGetCacheExact('GET', '/users/favorites');
+      return response.data; // Return full response so slice can access .data and .count
     } catch (error) {
       console.error('Error removing from favorites:', error);
       throw error;

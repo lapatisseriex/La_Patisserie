@@ -50,8 +50,10 @@ favoriteSchema.statics.addToFavorites = async function(userId, productId) {
   }
   
   // Check if product already exists in favorites
-  if (!favorites.productIds.includes(productId)) {
-    favorites.productIds.push(productId);
+  // Need to compare ObjectIds to string param safely
+  const exists = favorites.productIds.some(id => id.toString() === productId.toString());
+  if (!exists) {
+    favorites.productIds.push(productId); // Will be cast to ObjectId by Mongoose
     favorites.updatedAt = Date.now();
     await favorites.save();
   }

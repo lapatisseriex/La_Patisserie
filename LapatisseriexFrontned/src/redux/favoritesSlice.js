@@ -7,7 +7,8 @@ const initialState = {
   favoriteIds: [],
   count: 0,
   status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: null
+  error: null,
+  needsIntegrityCheck: false
 };
 
 // Async thunks
@@ -97,9 +98,20 @@ const favoritesSlice = createSlice({
     setFavoriteDetails: (state, action) => {
       state.favorites = action.payload;
       state.status = 'succeeded';
+      state.needsIntegrityCheck = false;
+    },
+    clearIntegrityFlag: (state) => {
+      state.needsIntegrityCheck = false;
     }
   },
   extraReducers: (builder) => {
+    // Utility inside builder scope
+    const dedupeIds = (ids) => Array.from(new Set(ids.filter(Boolean)));
+    const normalizeFavoritesArray = (favorites, favoriteIds) => {
+      if (!Array.isArray(favorites) || favorites.length === 0) return favorites;
+      const idSet = new Set(favoriteIds);
+      return favorites.filter(item => idSet.has(item._id) || idSet.has(item.productId));
+    };
     builder
       // Fetch favorites
       .addCase(fetchFavorites.pending, (state) => {
@@ -108,32 +120,29 @@ const favoritesSlice = createSlice({
       .addCase(fetchFavorites.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.error = null;
-        
-        console.log('fetchFavorites.fulfilled payload:', action.payload);
-        
-        // Handle different response structures - now backend returns array of products directly
-        const responseData = action.payload;
-        
-        if (Array.isArray(responseData)) {
-          // New format: array of products directly
-          state.favorites = responseData;
-          state.favoriteIds = responseData.map(product => product._id);
-          state.count = responseData.length;
-        } else if (responseData && responseData.items) {
-          // Legacy format: wrapped in items
-          state.favorites = responseData.items;
-          state.favoriteIds = responseData.items.map(item => item._id || item.productId || item.id);
-          state.count = responseData.count || responseData.items.length;
-        } else {
-          // Fallback for unexpected response structure
-          console.warn('Unexpected favorites response structure:', responseData);
-          state.favorites = [];
-          state.favoriteIds = [];
-          state.count = 0;
+
+        const payload = action.payload;
+        let list = [];
+        // Accept several shapes: array, {data: []}, {items: []}
+        if (Array.isArray(payload)) {
+          list = payload;
+        } else if (payload && Array.isArray(payload.data)) {
+          list = payload.data;
+        } else if (payload && Array.isArray(payload.items)) {
+          list = payload.items;
+        } else if (payload && typeof payload === 'object') {
+          // Some services may return { success, data: [], count }
+          if (Array.isArray(payload.results)) list = payload.results; // fallback alias
         }
-        
-        // Save to localStorage for persistence
+
+        if (!Array.isArray(list)) list = [];
+
+        state.favorites = list;
+        state.favoriteIds = dedupeIds(list.map(p => p && (p._id || p.id || p.productId)).filter(Boolean));
+        state.count = state.favoriteIds.length;
+
         localStorage.setItem('lapatisserie_favorites', JSON.stringify(state.favoriteIds));
+        state.needsIntegrityCheck = false;
       })
       .addCase(fetchFavorites.rejected, (state, action) => {
         state.status = 'failed';
@@ -148,28 +157,31 @@ const favoritesSlice = createSlice({
           state.favoriteIds.push(productId);
           state.count = state.favoriteIds.length;
         }
+        state.favoriteIds = dedupeIds(state.favoriteIds);
       })
       .addCase(addToFavorites.fulfilled, (state, action) => {
         const { productId, response } = action.payload;
         
-        // Update favorites list with full data from the response
-        if (response && response.data && Array.isArray(response.data.productIds)) {
-          state.favoriteIds = response.data.productIds.map(id => id.toString());
-          state.count = state.favoriteIds.length;
+        // Backend now returns populated products in response.data (not productIds)
+        if (response && response.data && Array.isArray(response.data)) {
+          // Authoritative response: replace entire state with server data
+          state.favorites = response.data;
+          state.favoriteIds = dedupeIds(response.data.map(p => p._id || p.id || p.productId).filter(Boolean));
+          state.count = response.count || state.favoriteIds.length;
           
-          // If we already had this product in our favorites list, make sure it's still there
-          if (!state.favoriteIds.includes(productId)) {
-            state.favoriteIds.push(productId);
-          }
-          
-          // Force a refetch to get full product details
-          state.status = 'idle'; // This will trigger a refetch in the useEffect
+          // Store in localStorage for consistency
+          localStorage.setItem('lapatisserie_favorites', JSON.stringify(state.favoriteIds));
+          state.needsIntegrityCheck = false; // We have fresh populated data
         } else {
-          // Fallback if response doesn't contain expected data
+          // Fallback: ensure productId is in our local state
           if (!state.favoriteIds.includes(productId)) {
             state.favoriteIds.push(productId);
             state.count = state.favoriteIds.length;
+            state.favoriteIds = dedupeIds(state.favoriteIds);
+            localStorage.setItem('lapatisserie_favorites', JSON.stringify(state.favoriteIds));
           }
+          // No authoritative data; request integrity check
+          state.needsIntegrityCheck = true;
         }
       })
       .addCase(addToFavorites.rejected, (state, action) => {
@@ -182,28 +194,61 @@ const favoritesSlice = createSlice({
       })
       // Remove from favorites
       .addCase(removeFromFavorites.pending, (state, action) => {
-        // Optimistic: immediately remove from UI
+        // Don't set loading status during optimistic updates to prevent UI flicker
+        // state.status remains as is to maintain smooth UX
         const productId = action.meta.arg;
         if (productId) {
           state.favoriteIds = state.favoriteIds.filter(id => id !== productId);
           state.favorites = state.favorites.filter(item => (item._id || item.productId) !== productId);
           state.count = state.favoriteIds.length;
+          // Update localStorage immediately for consistency
+          localStorage.setItem('lapatisserie_favorites', JSON.stringify(state.favoriteIds));
         }
       })
       .addCase(removeFromFavorites.fulfilled, (state, action) => {
-        const { productId } = action.payload;
-        // Already optimistically removed in pending; ensure consistency (idempotent)
-        state.favoriteIds = state.favoriteIds.filter(id => id !== productId);
-        state.favorites = state.favorites.filter(item => (item._id || item.productId) !== productId);
-        state.count = state.favoriteIds.length;
+        const { productId, response } = action.payload;
+        
+        // Ensure we maintain 'succeeded' status after successful removal
+        state.status = 'succeeded';
+        state.error = null;
+        
+        // Backend now returns populated products in response.data (not productIds)
+        if (response && response.data && Array.isArray(response.data)) {
+          // Authoritative response: replace entire state with server data
+          state.favorites = response.data;
+          state.favoriteIds = dedupeIds(response.data.map(p => p._id || p.id || p.productId).filter(Boolean));
+          state.count = response.count !== undefined ? response.count : state.favoriteIds.length;
+          
+          // Store in localStorage for consistency
+          localStorage.setItem('lapatisserie_favorites', JSON.stringify(state.favoriteIds));
+          state.needsIntegrityCheck = false; // We have fresh populated data
+        } else {
+          // Fallback: ensure productId is removed from local state
+          state.favoriteIds = state.favoriteIds.filter(id => id !== productId);
+          state.favorites = state.favorites.filter(item => (item._id || item.productId) !== productId);
+          state.count = state.favoriteIds.length;
+          localStorage.setItem('lapatisserie_favorites', JSON.stringify(state.favoriteIds));
+        }
+        
+        // Ensure consistency when count reaches 0
+        if (state.count === 0) {
+          state.favorites = [];
+          state.favoriteIds = [];
+          state.needsIntegrityCheck = false;
+        }
       })
       .addCase(removeFromFavorites.rejected, (state, action) => {
-        // Rollback optimistic remove: if productId is not present, re-add it
+        // Handle error and rollback optimistic remove
+        state.status = 'failed';
+        state.error = action.payload || 'Failed to remove from favorites';
+        
         const productId = action.meta?.arg;
         if (productId) {
           if (!state.favoriteIds.includes(productId)) {
             state.favoriteIds.push(productId);
             state.count = state.favoriteIds.length;
+            // Update localStorage to reflect rollback
+            localStorage.setItem('lapatisserie_favorites', JSON.stringify(state.favoriteIds));
           }
         }
       });
@@ -216,7 +261,8 @@ export const {
   localRemoveFromFavorites, 
   loadLocalFavorites, 
   clearFavorites,
-  setFavoriteDetails
+  setFavoriteDetails,
+  clearIntegrityFlag
 } = favoritesSlice.actions;
 
 export default favoritesSlice.reducer;
