@@ -52,7 +52,11 @@ const NotificationBell = () => {
           className="relative p-2 transition-colors"
           style={{color: '#281c20'}}
         >
-          <FaBell className="text-xl" />
+          <img 
+            src="/birthday.png" 
+            alt="Notification Bell" 
+            className="w-5 h-5 transition-all duration-300" 
+          />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#733857] to-[#281c20] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {unreadCount > 9 ? '9+' : unreadCount}

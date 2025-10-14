@@ -8,12 +8,12 @@ const WhatsAppFloat = () => {
   return (
     <button
       onClick={handleWhatsAppClick}
-      className="fixed bottom-20 right-4 z-50 lg:hidden bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 animate-pulse"
+      className="fixed bottom-32 md:bottom-5 right-4 z-40 bg-green-500 hover:bg-green-600 text-white w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110"
       style={{ backgroundColor: '#25D366' }}
       aria-label="Contact us on WhatsApp"
     >
       <svg 
-        className="w-7 h-7" 
+        className="w-6 h-6 md:w-7 md:h-7" 
         fill="currentColor" 
         viewBox="0 0 24 24"
       >

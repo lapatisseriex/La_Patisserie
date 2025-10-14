@@ -31,7 +31,7 @@ const ProductDisplaySkeleton = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
+    <div className="min-h-scree">
       {/* Mobile Back Button Skeleton */}
       <div className="md:hidden">
         <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-pink-100 p-4">

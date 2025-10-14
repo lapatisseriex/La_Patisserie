@@ -34,6 +34,7 @@ const BottomNavigation = () => {
       id: 'home',
       label: 'Home',
       icon: Home,
+      imageSrc: '/homemobile.png',
       path: '/',
       isActive: location.pathname === '/'
     },
@@ -58,6 +59,7 @@ const BottomNavigation = () => {
       id: 'orders',
       label: 'Orders',
       icon: Package,
+      imageSrc: '/cupcake.png',
       path: '/orders',
       isActive: location.pathname === '/orders',
       requiresAuth: !user,
@@ -70,6 +72,7 @@ const BottomNavigation = () => {
       id: 'profile',
       label: user ? 'Profile' : 'Login',
       icon: User,
+      imageSrc: '/yummy.png',
       path: user ? '/profile' : '/',
       isActive: location.pathname === '/profile',
       requiresAuth: !user,

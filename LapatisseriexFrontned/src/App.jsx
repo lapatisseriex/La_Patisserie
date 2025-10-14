@@ -26,6 +26,9 @@ import FAQ from './pages/FAQ';
 // Error Boundary for Product Pages
 import ProductErrorBoundary from './components/common/ProductErrorBoundary';
 
+// WhatsApp Float
+import WhatsAppFloat from './components/common/WhatsAppFloat';
+
 // Home Components
 import Home from './components/Home/Home';
 import Products from './components/Products/Products';
@@ -211,6 +214,10 @@ function App() {
                           {/* Catch-all route for any undefined paths */}
                           <Route path="*" element={<Navigate to="/" replace />} />
                         </Routes>
+                        
+                        {/* Global WhatsApp Float Button */}
+                        <WhatsAppFloat />
+                        
                       </Router>
                     </SparkAnimationProvider>
                   </FavoritesProvider>

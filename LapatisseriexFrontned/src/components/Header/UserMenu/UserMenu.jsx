@@ -74,14 +74,12 @@ const UserMenu = memo(() => {
       {/* Dropdown Menu */}
       {isMenuOpen && (
         <div 
-          className="absolute right-0 mt-1 w-56 rounded-lg shadow-xl border border-gray-200 z-50 transform origin-top-right transition-all duration-200"
+          className="absolute right-0 mt-1 w-56 rounded-lg border border-gray-100 z-50 transform origin-top-right transition-all duration-200 bg-white backdrop-blur-sm"
           style={{ 
-            background: 'linear-gradient(135deg, #040404 0%, #281c20 50%, #412434 100%)',
             animation: 'fadeIn 0.3s ease-out forwards',
             maxWidth: 'calc(100vw - 20px)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            border: '1px solid rgba(115, 56, 87, 0.2)'
+            boxShadow: '0 8px 32px rgba(40, 28, 32, 0.15), 0 4px 16px rgba(40, 28, 32, 0.1)',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
           }}
           onMouseEnter={() => {
             // Clear timeout when user mouses over the menu
@@ -94,15 +92,15 @@ const UserMenu = memo(() => {
             }, 150); // Match the 150ms delay on the parent
           }}
         >
-          <div className="p-3 border-b border-gray-200">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: 'white' }}>MY ACCOUNT</p>
+          <div className="p-3 border-b border-gray-100">
+            <p className="text-xs font-medium tracking-[0.25em] uppercase" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20', opacity: 0.7 }}>MY ACCOUNT</p>
           </div>
           
           <div className="py-1">
             <Link 
               to="/profile" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-700/50"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: 'white' }}
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling
@@ -113,14 +111,19 @@ const UserMenu = memo(() => {
                 }, 100);
               }}
             >
-              <User className="h-4 w-4" style={{color: 'white'}} />
-              <span className="font-light">My Profile</span>
+              <img 
+                src="/yummy.png" 
+                alt="Profile Icon" 
+                className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+              />
+              <span className="font-light relative z-10">My Profile</span>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
             </Link>
             
             <Link 
               to="/orders" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-700/50"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: 'white' }}
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling
@@ -131,19 +134,52 @@ const UserMenu = memo(() => {
                 }, 100);
               }}
             >
-              <Package className="h-4 w-4" style={{color: 'white'}} />
-              <span className="font-light">My Orders</span>
+              <img 
+                src="/cupcake.png" 
+                alt="Orders Icon" 
+                className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+              />
+              <span className="font-light relative z-10">My Orders</span>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+            </Link>
+            
+            <Link 
+              to="/favorites" 
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20' }}
+              onClick={(e) => {
+                // Don't close the menu immediately on click to prevent accidental misclicks
+                e.stopPropagation(); // Prevent event bubbling
+                // Navigate first, then close with a slight delay
+                setTimeout(() => {
+                  if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                  setIsMenuOpen(false);
+                }, 100);
+              }}
+            >
+              <img 
+                src="/cakefavorites.png" 
+                alt="Favorites Icon" 
+                className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+              />
+              <span className="font-light relative z-10">My Favorites</span>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
             </Link>
           </div>
           
-          <div className="p-2 border-t border-gray-200">
+          <div className="p-2 border-t border-gray-100">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-md user-menu-item transition-all duration-300 hover:bg-gray-700/50"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: 'white' }}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) relative group backdrop-filter backdrop-blur-sm"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20' }}
             >
-              <LogOut className="h-4 w-4" style={{color: 'white'}} />
-              <span className="font-light">Sign Out</span>
+              <img 
+                src="/signout.png" 
+                alt="Logout Icon" 
+                className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+              />
+              <span className="font-light relative z-10">Sign Out</span>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
             </button>
           </div>
         </div>
