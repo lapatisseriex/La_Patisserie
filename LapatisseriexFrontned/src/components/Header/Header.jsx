@@ -559,15 +559,15 @@ const Header = ({ isAdminView = false }) => {
 
   return (
     <>
-    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] transition-all duration-300" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-all duration-300" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
       
       {/* Mobile Location Bar - Display only, no dropdown */}
       {!isAdminView && (
-        <div className={`mobile-location-bar md:hidden bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-b border-[#733857]/20 z-[56] transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
+        <div className={`mobile-location-bar md:hidden bg-white border-b border-gray-200 z-[56] transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
           <div className="px-3">
             <div className="flex justify-between items-center">
-              <div className="flex items-center text-xs text-white py-1 px-2 rounded-md" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <MapPin className="h-3 w-3 mr-2 text-[#A855F7]" />
+              <div className="flex items-center text-xs py-1 px-2 rounded-md" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: 'rgba(40, 28, 32, 0.7)'}}>
+                <img src="/compass.png" alt="Location" className="h-4 w-4 mr-2" />
                 <span className="truncate max-w-[120px] font-light">{memoizedUserLocationDisplay}</span>
                 {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                   <AlertTriangle className="h-3 w-3 ml-1 text-amber-400" />
@@ -584,14 +584,13 @@ const Header = ({ isAdminView = false }) => {
       )}
       
       {/* Middle Bar - Logo and Profile/Login - Hidden on mobile */}
-      <div className="hidden md:block py-2 sm:py-3 px-2 sm:px-4 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-b border-[#733857]/20">
+      <div className="hidden md:block py-2 sm:py-3 px-2 sm:px-4 bg-white border-b border-gray-200">
         <div className="container mx-auto flex justify-between items-center">
-          {/* Responsive Logo and Navigation */}
-          <div className="hidden md:flex items-center min-w-0 flex-shrink flex-grow">
-            <div className="flex items-center min-w-0 flex-shrink flex-grow">
-              <Link to="/" className="flex items-center header-logo-text min-w-0 flex-shrink flex-grow">
-                {/* If you want to use an image logo, replace the span below with an <img> and adjust classes */}
-                <span className="text-white hover:text-[#A855F7] transition-colors duration-300 font-light text-bold sm:text-xl md:text-2xl truncate min-w-0 max-w-full block" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+          {/* Logo Text on Left with Navigation Links beside it - Hidden on mobile */}
+          <div className="hidden md:flex items-center">
+            <div className="flex items-center">
+              <Link to="/" className="flex items-center header-logo-text">
+                <span className="transition-colors duration-300 font-light text-bold sm:text-xl md:text-2xl truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}>
                   La Patisserie
                   <div className="sugar-sprinkles">
                     {[...Array(15)].map((_, i) => (
@@ -619,10 +618,10 @@ const Header = ({ isAdminView = false }) => {
                 onMouseEnter={handleMegaMenuEnter}
                 onMouseLeave={handleMegaMenuLeave}
               >
-                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <Utensils className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
+                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}>
+                  <img src="/food.png" alt="Menu" className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
                   <span className="relative z-10">Menu</span>
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#A855F7] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </Link>
                 
                 {/* Invisible bridge to prevent hover gap */}
@@ -724,19 +723,19 @@ const Header = ({ isAdminView = false }) => {
                 onMouseLeave={handleLocationHoverLeave}
               >
                 <button 
-                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group"
+                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base rounded-lg transition-all duration-300 relative group"
                   onClick={toggleLocationDropdown}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                  style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
                 >
-                  <MapPin className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-all duration-300 group-hover:scale-110" />
+                  <img src="/compass.png" alt="Location" className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
                   <span className="truncate max-w-[120px] sm:max-w-[140px] font-light relative z-10">{memoizedUserLocationDisplay}</span>
-                  <ChevronDown className="h-4 w-4 text-white transition-all duration-300 group-hover:rotate-180 group-hover:text-[#A855F7]" />
+                  <ChevronDown className="h-4 w-4 transition-all duration-300 group-hover:rotate-180" style={{color: '#281c20'}} />
                   {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                     <div className="absolute -top-1 -right-1">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#A855F7] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </button>
                 
                 {/* Invisible bridge to prevent hover gap */}
@@ -805,13 +804,13 @@ const Header = ({ isAdminView = false }) => {
                   </div>
                   <Link 
                     to="/cart" 
-                    className="flex items-center px-3 py-2 text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" 
-                    style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                    className="flex items-center px-3 py-2 rounded-lg transition-all duration-300 relative group" 
+                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
                     data-cart-icon="true"
                   >
-                    <ShoppingBag className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
+                    <img src="/ice-cream-cart.png" alt="Cart" className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
                     {memoizedCartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#A855F7] to-[#9333EA] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-light shadow-lg">
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#733857] to-[#281c20] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-light shadow-lg">
                         {memoizedCartCount}
                       </span>
                     )}
@@ -838,17 +837,17 @@ const Header = ({ isAdminView = false }) => {
             {!user && (
               <button 
                 onClick={toggleAuthPanel}
-                className="flex items-center gap-2 px-3 py-2 text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 group"
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 group"
+                style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
               >
-                <User className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
+                <User className="h-4 w-4 transition-colors duration-300" style={{color: '#281c20'}} />
                 <span className="text-sm font-light">Login</span>
               </button>
             )}
             
             {/* Logo image on right */}
             <Link to="/" className="flex items-center ml-4 header-logo-image">
-              <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-12 sm:h-14 brightness-0 invert opacity-90" />
+              <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-12 sm:h-14 opacity-90" />
             </Link>
           </div>
         </div>

@@ -49,11 +49,12 @@ const NotificationBell = () => {
       <div className="relative">
         <button
           onClick={togglePanel}
-          className="relative p-2 text-white hover:text-[#A855F7] transition-colors"
+          className="relative p-2 transition-colors"
+          style={{color: '#281c20'}}
         >
           <FaBell className="text-xl" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#A855F7] to-[#9333EA] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#733857] to-[#281c20] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}

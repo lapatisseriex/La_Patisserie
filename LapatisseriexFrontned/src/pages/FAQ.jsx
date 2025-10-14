@@ -156,49 +156,54 @@ const FAQ = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] py-20 px-4">
+    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-light text-white mb-4">
+        <div className="text-center mb-12 pb-8 border-b border-gray-200">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-wide mb-4" style={{ color: '#281c20' }}>
             Frequently Asked Questions
           </h1>
-          <p className="text-gray-300 text-lg">
+          <p className="text-base text-gray-600 tracking-wide">
             Find answers to common questions about our products and services
           </p>
         </div>
 
         {/* FAQ Categories */}
-        <div className="space-y-8">
-          {faqs.map((category, catIndex) => (
-            <div key={catIndex} className="border border-white/10 p-6 md:p-8">
-              <h2 className="text-xl font-medium text-white mb-6 border-b border-white/10 pb-2">
+        <div className="space-y-10">
+          {faqs.map((category, categoryIndex) => (
+            <div key={categoryIndex} className="border-b border-gray-200 pb-10 last:border-0">
+              <h2 className="text-2xl font-light mb-6" style={{ color: '#281c20' }}>
                 {category.category}
               </h2>
               
-              <div className="space-y-3">
-                {category.questions.map((faq, qIndex) => {
-                  const index = `${catIndex}-${qIndex}`;
+              <div className="space-y-4">
+                {category.questions.map((faq, questionIndex) => {
+                  const index = `${categoryIndex}-${questionIndex}`;
                   const isOpen = openIndex === index;
                   
                   return (
-                    <div 
-                      key={qIndex}
-                      className="border border-white/10"
-                    >
+                    <div key={questionIndex} className="border border-gray-200">
                       <button
-                        onClick={() => toggleFAQ(catIndex, qIndex)}
-                        className="w-full px-6 py-4 text-left flex justify-between items-center hover:bg-white/5 transition-colors"
+                        onClick={() => toggleFAQ(categoryIndex, questionIndex)}
+                        className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                       >
-                        <span className="text-white font-medium pr-4">{faq.q}</span>
-                        <span className="text-white text-2xl flex-shrink-0">
-                          {isOpen ? '−' : '+'}
+                        <span className="font-medium pr-8" style={{ color: '#281c20' }}>
+                          {faq.q}
+                        </span>
+                        <span 
+                          className="text-2xl font-light transition-transform flex-shrink-0"
+                          style={{ 
+                            color: '#733857',
+                            transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)'
+                          }}
+                        >
+                          +
                         </span>
                       </button>
                       
                       {isOpen && (
-                        <div className="px-6 pb-4 pt-2">
-                          <p className="text-gray-300 leading-relaxed">
+                        <div className="px-6 pb-4 pt-2 bg-gray-50">
+                          <p className="text-gray-700 leading-relaxed">
                             {faq.a}
                           </p>
                         </div>
@@ -212,46 +217,41 @@ const FAQ = () => {
         </div>
 
         {/* Still Have Questions */}
-        <div className="mt-12 border border-white/10 p-8 text-center">
-          <h3 className="text-xl font-medium text-white mb-3">
-            Still have questions?
-          </h3>
-          <p className="text-gray-300 mb-6">
-            Can't find the answer you're looking for? Get in touch with our support team.
+        <div className="mt-16 text-center bg-gray-50 p-10 border border-gray-200">
+          <h2 className="text-2xl font-light mb-4" style={{ color: '#281c20' }}>
+            Still Have Questions?
+          </h2>
+          <p className="text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto">
+            Can't find the answer you're looking for? Our customer support team is here to help.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a 
-              href="tel:+917845712388"
-              className="inline-block bg-white text-black px-8 py-3 hover:bg-gray-100 transition-colors"
-            >
-              CALL US
-            </a>
-            <a 
-              href="mailto:lapatisserielapatisserie@gmail.com"
-              className="inline-block bg-white text-black px-8 py-3 hover:bg-gray-100 transition-colors"
-            >
-              EMAIL US
-            </a>
+          <div className="space-y-4 mb-8">
+            <p className="text-gray-700">
+              <span className="font-medium" style={{ color: '#733857' }}>Phone:</span>{' '}
+              <a href="tel:+917845712388" className="hover:opacity-70 transition-opacity" style={{ color: '#733857' }}>
+                +91 7845712388
+              </a>
+              {' / '}
+              <a href="tel:+919362166816" className="hover:opacity-70 transition-opacity" style={{ color: '#733857' }}>
+                +91 9362166816
+              </a>
+            </p>
+            <p className="text-gray-700">
+              <span className="font-medium" style={{ color: '#733857' }}>Email:</span>{' '}
+              <a href="mailto:lapatisserielapatisserie@gmail.com" className="hover:opacity-70 transition-opacity" style={{ color: '#733857' }}>
+                lapatisserielapatisserie@gmail.com
+              </a>
+            </p>
           </div>
-        </div>
-
-        {/* Footer Section */}
-        <div className="mt-16 bg-[#0a0a0a] py-12 border-t border-[#733857]/30">
-          <div className="max-w-4xl mx-auto text-center px-4">
-            <h3 className="text-2xl font-light bg-gradient-to-r from-[#A855F7] via-[#ec4899] to-[#A855F7] bg-clip-text text-transparent mb-4">La Pâtisserie</h3>
-            <p className="text-gray-300 mb-6">The Authentic Tiramisu Experience</p>
-            <div className="space-y-2 text-gray-400 mb-8">
-              <p>LIG 208 Gandhi Nagar, Peelamedu, Coimbatore</p>
-              <p>Phone: <a href="tel:+917845712388" className="text-[#A855F7] hover:text-white transition-colors">+91 7845712388</a></p>
-              <p>Email: <a href="mailto:lapatisserielapatisserie@gmail.com" className="text-[#A855F7] hover:text-white transition-colors">lapatisserielapatisserie@gmail.com</a></p>
-            </div>
-            <Link 
-              to="/contact" 
-              className="inline-block bg-white text-black px-8 py-3 hover:bg-gray-100 transition-colors"
-            >
-              CONTACT US
-            </Link>
-          </div>
+          <Link 
+            to="/contact" 
+            className="inline-block px-10 py-4 text-sm tracking-wider transition-all hover:opacity-80"
+            style={{ 
+              backgroundColor: '#281c20',
+              color: 'white'
+            }}
+          >
+            CONTACT US
+          </Link>
         </div>
       </div>
     </div>
