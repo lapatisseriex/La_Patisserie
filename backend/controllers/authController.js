@@ -110,9 +110,10 @@ export const verifyToken = asyncHandler(async (req, res) => {
     }
     
     console.log(`Token successfully verified for UID: ${decodedToken.uid}`);
+    console.log('Decoded token info:', { uid: decodedToken.uid, email: decodedToken.email, email_verified: decodedToken.email_verified });
     
     // Get email and other info from token
-    const { uid, email, name, picture } = decodedToken;
+    const { uid, email, name, picture, email_verified } = decodedToken;
     
     // Check if this user exists but is inactive
     const inactiveUser = await User.findOne({ uid, isActive: false });
@@ -157,7 +158,10 @@ export const verifyToken = asyncHandler(async (req, res) => {
           location: locationId || null,
           lastLogin: new Date(),
           lastActive: new Date(),
-          isActive: true
+          isActive: true,
+          // Set email verification based on Firebase token
+          emailVerified: email_verified || false,
+          emailVerifiedAt: email_verified ? new Date() : null
         });
         
         console.log(`New user created successfully: ${user._id} (${email})`);
@@ -209,17 +213,29 @@ export const verifyToken = asyncHandler(async (req, res) => {
       user = await User.findOne({ uid }).populate('location').populate('hostel');
     } else {
       // User already exists, update user data
+      // Check if we need to update email verification from Firebase
+      const updateFields = {
+        lastLogin: new Date(), 
+        lastActive: new Date(),
+        isActive: true
+      };
+      
+      // If Firebase says email is verified but our DB doesn't reflect this, update it
+      if (email_verified && !user.emailVerified) {
+        console.log(`Updating email verification for existing user ${user.email} based on Firebase token`);
+        updateFields.emailVerified = true;
+        updateFields.emailVerifiedAt = new Date();
+      }
+      
+      // Add location if provided
+      if (locationId) {
+        updateFields.location = locationId;
+      }
+      
       // Update lastLogin and ensure the user is active
       await User.updateOne(
         { _id: user._id },
-        { 
-          $set: { 
-            lastLogin: new Date(), 
-            lastActive: new Date(),
-            isActive: true 
-          },
-          ...(locationId ? { location: locationId } : {})
-        }
+        { $set: updateFields }
       );
 
 
