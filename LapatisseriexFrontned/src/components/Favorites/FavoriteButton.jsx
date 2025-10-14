@@ -1,19 +1,20 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Heart } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 
 const FavoriteButton = ({ productId, size = 'md', className = '' }) => {
-  const { toggleFavorite, isFavorite, loading } = useFavorites();
+  const { toggleFavorite, isFavorite, loading, isPending } = useFavorites();
   
   // Check if product is in favorites
   const isFavorited = isFavorite(productId);
   
   // Handle click
-  const handleClick = (e) => {
+  const handleClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFavorite(productId);
+    if (isPending(productId)) return;
+    await toggleFavorite(productId);
   };
   
   // Determine size of heart icon
@@ -23,11 +24,13 @@ const FavoriteButton = ({ productId, size = 'md', className = '' }) => {
     'lg': 'h-6 w-6'
   };
   
+  const pending = isPending(productId);
+
   return (
     <button
       type="button"
       onClick={handleClick}
-      disabled={loading}
+  disabled={pending}
       className={`
         relative z-10 
         transition-all duration-300 
@@ -36,19 +39,25 @@ const FavoriteButton = ({ productId, size = 'md', className = '' }) => {
           ? 'text-rose-500 hover:text-rose-600 drop-shadow-sm' 
           : 'text-gray-400 hover:text-rose-500'
         }
-        ${loading ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'}
+  ${pending ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'}
         ${className}
       `}
-      aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-      title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+      aria-label={pending ? 'Saving…' : (isFavorited ? 'Remove from favorites' : 'Add to favorites')}
+      title={pending ? 'Saving…' : (isFavorited ? 'Remove from favorites' : 'Add to favorites')}
     >
-      <Heart 
-        className={`
-          ${iconSize[size]} 
-          transition-all duration-300
-          ${isFavorited ? 'fill-current animate-pulse' : 'stroke-2 hover:stroke-1'}
-        `} 
-      />
+      <span className={`inline-flex items-center justify-center ${iconSize[size]}`}>
+        {pending ? (
+          <Loader2 className="h-full w-full animate-spin" />
+        ) : (
+          <Heart 
+            className={`
+              h-full w-full 
+              transition-all duration-300
+              ${isFavorited ? 'fill-current animate-pulse' : 'stroke-2 hover:stroke-1'}
+            `} 
+          />
+        )}
+      </span>
     </button>
   );
 };

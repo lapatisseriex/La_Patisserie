@@ -1,16 +1,17 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { Heart, ShoppingCart, X, Plus, Minus } from 'lucide-react';
+import { Heart, ShoppingCart, X, Plus, Minus, Loader2 } from 'lucide-react';
 import { 
-  fetchFavorites, 
-  removeFromFavorites 
+  fetchFavorites
 } from '../../redux/favoritesSlice';
+import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import { addToCart, updateCartQuantity, removeFromCart } from '../../redux/cartSlice';
 import { useAuth } from '../../hooks/useAuth';
 
 const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
   const dispatch = useDispatch();
+  const { toggleFavorite, isPending } = useFavorites();
   const { user } = useAuth();
 
   // Redux state
@@ -41,8 +42,10 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
     }
   }, [dispatch, user, status]);
 
-  const handleRemoveFromFavorites = (productId) => {
-    dispatch(removeFromFavorites(productId));
+  const handleRemoveFromFavorites = async (productId) => {
+    if (!productId) return;
+    if (isPending(productId)) return;
+    await toggleFavorite(productId);
   };
 
   // Helper functions for cart management
@@ -210,13 +213,24 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
                 )}
                 
                 {/* Remove from Favorites Button */}
-                <button
-                  onClick={() => handleRemoveFromFavorites(productId)}
-                  className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
-                  title="Remove from favorites"
-                >
-                  <X className="h-4 w-4 text-gray-600" />
-                </button>
+                {(() => {
+                  const pending = isPending(productId);
+                  return (
+                    <button
+                      onClick={() => handleRemoveFromFavorites(productId)}
+                      disabled={pending}
+                      className={`absolute top-2 right-2 p-2 bg-white rounded-full shadow-md transition-colors ${pending ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+                      title={pending ? 'Removing…' : 'Remove from favorites'}
+                      aria-label={pending ? 'Removing…' : 'Remove from favorites'}
+                    >
+                      {pending ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+                      ) : (
+                        <X className="h-4 w-4 text-gray-600" />
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
 
               {/* Product Details */}

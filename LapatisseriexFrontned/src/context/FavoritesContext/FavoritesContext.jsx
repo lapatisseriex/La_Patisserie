@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../hooks/useAuth';
 import { fetchProductById } from '../../redux/productsSlice';
@@ -28,6 +28,11 @@ export const useFavorites = () => {
 export const FavoritesProvider = ({ children }) => {
   const dispatch = useDispatch();
   const { user } = useAuth();
+  const [pendingIds, setPendingIds] = useState(new Set());
+  // Track the desired target state for each pending productId (true = should be favorited, false = should be removed)
+  const [pendingTargets, setPendingTargets] = useState(new Map());
+  // Track timeouts to avoid permanent locks if something goes wrong
+  const pendingTimeoutsRef = useRef(new Map());
   
   // Get data from Redux store
   const favorites = useSelector(state => state.favorites.favorites);
@@ -37,6 +42,35 @@ export const FavoritesProvider = ({ children }) => {
   const error = useSelector(state => state.favorites.error);
   
   const isLoading = status === 'loading';
+
+  // Helpers to manage per-product pending state
+  const setPending = useCallback((id, value) => {
+    if (!id) return;
+    setPendingIds(prev => {
+      const next = new Set(prev);
+      if (value) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const isPending = useCallback((id) => {
+    if (!id) return false;
+    return pendingIds.has(id);
+  }, [pendingIds]);
+
+  const setPendingTarget = useCallback((id, target) => {
+    if (!id) return;
+    setPendingTargets(prev => {
+      const next = new Map(prev);
+      if (target === null || target === undefined) {
+        next.delete(id);
+      } else {
+        next.set(id, !!target);
+      }
+      return next;
+    });
+  }, []);
   
   // Load favorites when component mounts and user is properly authenticated
   useEffect(() => {
@@ -130,35 +164,72 @@ export const FavoritesProvider = ({ children }) => {
   }, [user, favoriteIds, dispatch]);
   
   // Toggle favorite
-  const toggleFavorite = useCallback((productId) => {
+  const toggleFavorite = useCallback(async (productId) => {
     if (!productId) return;
-    
+    if (isPending(productId)) return; // lock while pending
+
     const isCurrentlyFavorite = favoriteIds.includes(productId);
-    
-    if (isCurrentlyFavorite) {
-      // Remove from favorites
-      if (user) {
-        dispatch(removeFromFavoritesThunk(productId))
-          .then(() => {
-            // Refresh favorites data after removing
-            dispatch(fetchFavorites());
-          });
+    // Mark as pending and record the target state we expect the UI to reach
+    setPending(productId, true);
+    setPendingTarget(productId, !isCurrentlyFavorite);
+    // Keep a snapshot to optionally roll back if API fails (simple optimistic UI)
+    const prevWasFavorite = isCurrentlyFavorite;
+    const prevIds = favoriteIds;
+    try {
+      if (isCurrentlyFavorite) {
+        if (user) {
+          await dispatch(removeFromFavoritesThunk(productId));
+          // No extra fetch needed; slice updates favoriteIds immediately
+        } else {
+          dispatch(localRemoveFromFavorites(productId));
+        }
       } else {
-        dispatch(localRemoveFromFavorites(productId));
+        if (user) {
+          // Optimistic: mark as favorite locally so icon flips faster
+          // Caution: we don't directly mutate Redux here; we rely on thunk to fulfill quickly
+          await dispatch(addToFavoritesThunk(productId));
+          // Avoid immediate fetch to prevent global loading; slice updates favoriteIds
+        } else {
+          dispatch(localAddToFavorites(productId));
+        }
       }
-    } else {
-      // Add to favorites
-      if (user) {
-        dispatch(addToFavoritesThunk(productId))
-          .then(() => {
-            // Refresh favorites data after adding
-            dispatch(fetchFavorites());
-          });
-      } else {
-        dispatch(localAddToFavorites(productId));
+    } catch (e) {
+      // Minimal rollback hint: if add failed, clear pending so user can retry
+      console.warn('toggleFavorite error', e);
+    } finally {
+      // Do not clear pending here; wait until UI state (favoriteIds) reflects the target
+      // Set a fallback timeout to avoid permanent lock (e.g., network error)
+      if (!pendingTimeoutsRef.current.has(productId)) {
+        const t = setTimeout(() => {
+          setPending(productId, false);
+          setPendingTarget(productId, null);
+          pendingTimeoutsRef.current.delete(productId);
+        }, 5000);
+        pendingTimeoutsRef.current.set(productId, t);
       }
     }
-  }, [dispatch, favoriteIds, user]);
+  }, [dispatch, favoriteIds, user, isPending, setPending, setPendingTarget]);
+
+  // When favoriteIds changes, clear pending for items that reached their target state
+  useEffect(() => {
+    if (pendingIds.size === 0) return;
+    pendingIds.forEach((id) => {
+      const target = pendingTargets.get(id);
+      if (target === undefined) return; // no target, skip
+      const currentlyFav = favoriteIds.includes(id);
+      const reached = (target === true && currentlyFav) || (target === false && !currentlyFav);
+      if (reached) {
+        setPending(id, false);
+        setPendingTarget(id, null);
+        // clear timeout if any
+        const t = pendingTimeoutsRef.current.get(id);
+        if (t) {
+          clearTimeout(t);
+          pendingTimeoutsRef.current.delete(id);
+        }
+      }
+    });
+  }, [favoriteIds, pendingIds, pendingTargets, setPending, setPendingTarget]);
   
   // Check if a product is in favorites
   const isFavorite = useCallback((productId) => {
@@ -198,7 +269,8 @@ export const FavoritesProvider = ({ children }) => {
     error,
     toggleFavorite,
     isFavorite,
-    clearUserFavorites
+    clearUserFavorites,
+    isPending
   };
   
   return (
