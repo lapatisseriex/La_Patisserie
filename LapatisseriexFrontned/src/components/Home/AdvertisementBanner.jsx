@@ -25,19 +25,20 @@ const AdvertisementBanner = () => {
   }, [advertisements.length]);
 
   return (
-    <div className="sticky top-[72px] z-40 w-full h-[320px] sm:h-[350px] md:h-[300px] lg:h-[450px] xl:h-[500px] overflow-hidden">
+  <div className="w-full max-w-full overflow-x-hidden p-0 m-0 block">
       {/* Carousel Container */}
       <div 
-        className="flex transition-transform duration-500 ease-in-out h-full"
+        className="flex transition-transform duration-500 ease-in-out w-full overflow-hidden"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         {advertisements.map((ad, index) => (
-          <div key={ad.id} className="w-full h-full flex-shrink-0 relative">
+          <div key={ad.id} className="w-full flex-shrink-0 relative aspect-[3/1] sm:aspect-[3/1] md:aspect-[3/1] lg:aspect-[3/1] xl:aspect-[3/1] overflow-hidden p-0 m-0">
             {ad.type === 'image' ? (
               <img
                 src={ad.src}
                 alt={ad.alt}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center rounded-lg"
+                style={{ aspectRatio: '3/1', minHeight: 0, maxHeight: '100vw' }}
                 loading={index === 0 ? 'eager' : 'lazy'}
                 onError={(e) => {
                   // Fallback to placeholder if image fails to load
@@ -47,7 +48,8 @@ const AdvertisementBanner = () => {
             ) : ad.type === 'video' ? (
               <video
                 src={ad.src}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center rounded-lg"
+                style={{ aspectRatio: '3/1', minHeight: 0, maxHeight: '100vw' }}
                 autoPlay
                 muted
                 loop

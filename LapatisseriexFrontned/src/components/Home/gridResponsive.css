@@ -1,0 +1,13 @@
+/* Custom grid breakpoint: 3 columns at viewport >= 976px */
+.grid-3-at-976 {
+  /* placeholder to satisfy linters - real rules live in the media query below */
+  --tw-gap: 1rem;
+}
+
+@media (min-width: 976px) {
+  .grid-3-at-976 {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: var(--tw-gap, 1rem) !important;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts, makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
 import ProductCard from '../Products/ProductCard';
+import './gridResponsive.css';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 
 const HandpickedForYou = () => {
@@ -46,10 +47,10 @@ const HandpickedForYou = () => {
           </h2>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full min-w-0 grid-3-at-976">
           {handpickedProducts.map(product => (
-            <div key={product._id}>
-              <ProductCard product={product} />
+            <div key={product._id} className="min-w-0 w-full flex">
+              <ProductCard product={product} className="min-w-0 w-full" />
             </div>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import { useSelector } from 'react-redux';
 import { makeSelectListByKey, makeSelectLoadingByKey, selectHasBestSellers } from '../../redux/productsSlice';
 import ProductCard from "../Products/ProductCard";
+import './gridResponsive.css';
 import DessertLoader from "../common/DessertLoader";
 
 // BestSellers.jsx
@@ -39,10 +40,10 @@ const BestSellers = () => {
           </h2>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {products.map(product => (
-            <div key={product._id}>
-              <ProductCard product={product} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full min-w-0 grid-3-at-976">
+          {products.slice(0, 3).map(product => (
+            <div key={product._id} className="min-w-0 w-full flex">
+              <ProductCard product={product} className="min-w-0 w-full" />
             </div>
           ))}
         </div>

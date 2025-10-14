@@ -586,11 +586,12 @@ const Header = ({ isAdminView = false }) => {
       {/* Middle Bar - Logo and Profile/Login - Hidden on mobile */}
       <div className="hidden md:block py-2 sm:py-3 px-2 sm:px-4 bg-gradient-to-br from-[#040404] via-[#281c20] to-[#412434] border-b border-[#733857]/20">
         <div className="container mx-auto flex justify-between items-center">
-          {/* Logo Text on Left with Navigation Links beside it - Hidden on mobile */}
-          <div className="hidden md:flex items-center">
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center header-logo-text">
-                <span className="text-white hover:text-[#A855F7] transition-colors duration-300 font-light text-bold sm:text-xl md:text-2xl  truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+          {/* Responsive Logo and Navigation */}
+          <div className="hidden md:flex items-center min-w-0 flex-shrink flex-grow">
+            <div className="flex items-center min-w-0 flex-shrink flex-grow">
+              <Link to="/" className="flex items-center header-logo-text min-w-0 flex-shrink flex-grow">
+                {/* If you want to use an image logo, replace the span below with an <img> and adjust classes */}
+                <span className="text-white hover:text-[#A855F7] transition-colors duration-300 font-light text-bold sm:text-xl md:text-2xl truncate min-w-0 max-w-full block" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   La Patisserie
                   <div className="sugar-sprinkles">
                     {[...Array(15)].map((_, i) => (

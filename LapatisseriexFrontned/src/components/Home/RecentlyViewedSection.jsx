@@ -3,6 +3,7 @@ import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyV
 import { useAuth } from '../../hooks/useAuth';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ProductCard from '../Products/ProductCard';
+import './gridResponsive.css';
 import PremiumSectionSkeleton from '../common/PremiumSectionSkeleton';
 import { Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -56,15 +57,15 @@ const RecentlyViewedSection = () => {
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full min-w-0 grid-3-at-976">
               {validRecentlyViewed.map((item) => {
                 // Ensure item has valid productId
                 if (!item.productId || !item.productId._id) {
                   return null;
                 }
                 return (
-                  <div key={item.productId._id}>
-                    <ProductCard product={item.productId} />
+                  <div key={item.productId._id} className="min-w-0 w-full flex">
+                    <ProductCard product={item.productId} className="min-w-0 w-full" />
                   </div>
                 );
               })}
