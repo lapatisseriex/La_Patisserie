@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { motion } from 'framer-motion';
 
 import MediaDisplay from '../common/MediaDisplay';
 import { useCart } from '../../hooks/useCart';
@@ -19,6 +20,8 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const [refreshedProduct, setRefreshedProduct] = useState(product);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [jellyAnimationKey, setJellyAnimationKey] = useState(0);
+  const [animationDirection, setAnimationDirection] = useState('none'); // 'up', 'down', 'none'
 
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
   const { addToCart, getItemQuantity, updateQuantity, cartItems } = useCart();
@@ -270,6 +273,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
     quantityRef.current = nextQuantity;
 
+    // Set animation direction based on delta and trigger jelly animation
+    setAnimationDirection(delta > 0 ? 'up' : 'down');
+    setJellyAnimationKey(prev => prev + 1);
+
     updateQuantity(currentProduct._id, nextQuantity)
       .then(() => {
   setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
@@ -450,7 +457,38 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                 >
                   −
                 </button>
-                <span className={`px-3 py-1 font-light text-xs min-w-[1.5rem] text-center border-l border-r ${
+                <motion.span 
+                  key={`jelly-${jellyAnimationKey}`}
+                  initial={{ 
+                    scaleX: 1, 
+                    scaleY: 1,
+                    y: animationDirection === 'up' ? -10 : animationDirection === 'down' ? 10 : 0,
+                    opacity: animationDirection !== 'none' ? 0.7 : 1
+                  }}
+                  animate={{
+                    scaleX: [1, 1.15, 0.95, 1.03, 1],
+                    scaleY: [1, 0.85, 1.05, 0.98, 1],
+                    y: [
+                      animationDirection === 'up' ? -10 : animationDirection === 'down' ? 10 : 0,
+                      animationDirection === 'up' ? -5 : animationDirection === 'down' ? 5 : 0,
+                      0,
+                      0,
+                      0
+                    ],
+                    opacity: [
+                      animationDirection !== 'none' ? 0.7 : 1,
+                      1,
+                      1,
+                      1,
+                      1
+                    ]
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    times: [0, 0.2, 0.5, 0.8, 1],
+                    ease: "easeInOut"
+                  }}
+                  className={`px-3 py-1 font-light text-xs min-w-[1.5rem] text-center border-l border-r inline-block ${
                   !isProductAvailable || isOutOfStockTracked
                     ? 'text-gray-400 border-gray-300'
                     : 'text-[#733857] border-[#733857]'
@@ -458,7 +496,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                 style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   {currentQuantity}
-                </span>
+                </motion.span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
