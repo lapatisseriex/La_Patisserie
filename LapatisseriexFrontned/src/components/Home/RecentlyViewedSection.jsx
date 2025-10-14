@@ -81,11 +81,28 @@ const RecentlyViewedSection = () => {
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">No Recently Viewed Products</h3>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">Start exploring our delicious cakes and desserts to see them here!</p>
+            <style>{`
+              .browse-products-btn span {
+                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+                transition: all 0.3s ease;
+              }
+              .browse-products-btn:hover span {
+                color: white !important;
+                background: none !important;
+                -webkit-background-clip: unset !important;
+                background-clip: unset !important;
+              }
+            `}</style>
             <button
               onClick={() => navigate('/products')}
-              className="bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 text-white font-medium px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="browse-products-btn bg-white border-2 border-[#733857] font-medium px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              Browse Products
+              <span className="transition-all duration-300">
+                Browse Products
+              </span>
             </button>
           </div>
         )}

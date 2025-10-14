@@ -837,11 +837,13 @@ const Header = ({ isAdminView = false }) => {
             {!user && (
               <button 
                 onClick={toggleAuthPanel}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 group"
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 group text-white hover:bg-white/5 profile-icon-btn"
+                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               >
-                <User className="h-4 w-4 transition-colors duration-300" style={{color: '#281c20'}} />
-                <span className="text-sm font-light">Login</span>
+                <User className="h-4 w-4 transition-all duration-300 text-white" />
+                <span className="text-sm font-light text-white transition-all duration-300">
+                  Login
+                </span>
               </button>
             )}
             

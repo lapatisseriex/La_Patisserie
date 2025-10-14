@@ -179,26 +179,49 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          />
-          
-          {/* Side Panel */}
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 flex flex-col"
-          >
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999, pointerEvents: isOpen ? 'auto' : 'none' }}>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 999998
+              }}
+            />
+            
+            {/* Side Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              style={{
+                position: 'fixed',
+                right: 0,
+                top: 0,
+                height: '100vh',
+                width: '100vw',
+                maxWidth: '384px',
+                backgroundColor: 'white',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                zIndex: 999999,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}
+              className="sm:w-96"
+            >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center gap-2">
@@ -288,13 +311,31 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                                   {(notification.type === 'order_placed' || 
                                     notification.type === 'order_dispatched' || 
                                     notification.type === 'order_delivered') && (
-                                    <button
-                                      onClick={() => handleViewOrderStatus(notification)}
-                                      className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors duration-200"
-                                    >
-                                      <FaEye className="text-xs" />
-                                      View Order Status
-                                    </button>
+                                    <>
+                                      <style>{`
+                                        .view-order-btn:hover span {
+                                          color: white !important;
+                                          background: none !important;
+                                          -webkit-background-clip: unset !important;
+                                          background-clip: unset !important;
+                                        }
+                                        .view-order-btn:hover .icon {
+                                          color: white !important;
+                                        }
+                                      `}</style>
+                                      <button
+                                        onClick={() => handleViewOrderStatus(notification)}
+                                        className="view-order-btn flex items-center gap-1 px-3 py-1.5 bg-white border-2 rounded transition-all duration-200 font-medium hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] border-[#733857] transform hover:scale-[1.02] active:scale-[0.98]"
+                                      >
+                                        <FaEye className="text-xs icon" style={{ color: '#733857' }} />
+                                        <span style={{
+                                          background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
+                                          WebkitBackgroundClip: 'text',
+                                          backgroundClip: 'text',
+                                          color: 'transparent'
+                                        }}>View Order Status</span>
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -346,7 +387,8 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                style={{ zIndex: 9999999 }}
                 onClick={cancelDelete}
               >
                 <motion.div
@@ -388,6 +430,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
         </>
       )}
     </AnimatePresence>
+    </div>
   );
 };
 

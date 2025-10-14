@@ -123,9 +123,10 @@ const CartComponent = ({ showHeader = true, showActions = true, isProfileTab = f
         {!isProfileTab && (
           <Link 
             to="/products" 
-            className="inline-flex items-center bg-rose-500 text-white px-6 py-3 rounded-lg hover:bg-rose-600 transition-colors"
+            className="inline-flex items-center bg-white border-2 border-[#733857] px-6 py-3 rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:text-white transition-colors font-medium"
+            style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}
           >
-            <ShoppingCart className="h-5 w-5 mr-2" />
+            <ShoppingCart className="h-5 w-5 mr-2" style={{ color: '#733857' }} />
             Start Shopping
           </Link>
         )}

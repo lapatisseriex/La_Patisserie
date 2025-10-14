@@ -40,11 +40,28 @@ const Favorites = () => {
             <p className="text-gray-600 mb-6 text-center">
               Add your favorite cakes & desserts here to view them later.
             </p>
+            <style>{`
+              .browse-products-btn span {
+                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+                transition: all 0.3s ease;
+              }
+              .browse-products-btn:hover span {
+                color: white !important;
+                background: none !important;
+                -webkit-background-clip: unset !important;
+                background-clip: unset !important;
+              }
+            `}</style>
             <Link
               to="/products"
-              className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 font-medium transition duration-300"
+              className="browse-products-btn bg-white border-2 border-[#733857] px-6 py-3 font-medium hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition duration-300 rounded-md shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              Browse Products
+              <span className="transition-all duration-300">
+                Browse Products
+              </span>
             </Link>
           </div>
         </div>

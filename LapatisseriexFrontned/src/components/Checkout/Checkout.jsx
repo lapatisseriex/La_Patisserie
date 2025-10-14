@@ -80,11 +80,28 @@ const Checkout = () => {
           <p className="text-gray-600 mb-4">
             Add some delicious items to your cart before proceeding to checkout.
           </p>
+          <style>{`
+            .browse-products-btn span {
+              background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
+              -webkit-background-clip: text;
+              background-clip: text;
+              color: transparent;
+              transition: all 0.3s ease;
+            }
+            .browse-products-btn:hover span {
+              color: white !important;
+              background: none !important;
+              -webkit-background-clip: unset !important;
+              background-clip: unset !important;
+            }
+          `}</style>
           <button
             onClick={() => (window.location.href = '/products')}
-            className="py-2 px-6 bg-black text-white rounded-md hover:bg-gray-800"
+            className="browse-products-btn py-2 px-6 bg-white border-2 border-[#733857] rounded-md hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-md"
           >
-            Browse Products
+            <span className="transition-all duration-300">
+              Browse Products
+            </span>
           </button>
         </div>
       ) : (

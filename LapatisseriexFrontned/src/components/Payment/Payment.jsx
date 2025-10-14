@@ -392,11 +392,24 @@ const Payment = () => {
             </p>
             
             <div className="flex flex-col md:flex-row justify-center gap-4">
+              <style>{`
+                .return-home-btn:hover span {
+                  color: white !important;
+                  background: none !important;
+                  -webkit-background-clip: unset !important;
+                  background-clip: unset !important;
+                }
+              `}</style>
               <Link 
                 to="/" 
-                className="px-8 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
+                className="return-home-btn px-8 py-3 bg-white border-2 border-[#733857] font-medium rounded-md hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                Return to Homepage
+                <span style={{
+                  background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent'
+                }}>Return to Homepage</span>
               </Link>
               <Link 
                 to="/products" 

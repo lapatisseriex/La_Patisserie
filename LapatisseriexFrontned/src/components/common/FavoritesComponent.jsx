@@ -128,13 +128,32 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
         <h3 className="text-xl font-semibold text-gray-700 mb-2">No favorites yet</h3>
         <p className="text-gray-500 mb-6">Start adding products to your favorites!</p>
         {!isProfileTab && (
-          <Link 
-            to="/products" 
-            className="inline-flex items-center bg-rose-500 text-white px-6 py-3 rounded-lg hover:bg-rose-600 transition-colors"
-          >
-            <ShoppingCart className="h-5 w-5 mr-2" />
-            Browse Products
-          </Link>
+          <>
+            <style>{`
+              .browse-products-btn span {
+                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+                transition: all 0.3s ease;
+              }
+              .browse-products-btn:hover span {
+                color: white !important;
+                background: none !important;
+                -webkit-background-clip: unset !important;
+                background-clip: unset !important;
+              }
+            `}</style>
+            <Link 
+              to="/products" 
+              className="browse-products-btn inline-flex items-center bg-white border-2 border-[#733857] px-6 py-3 rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors transform hover:scale-[1.02] active:scale-[0.98] shadow-md"
+            >
+              <ShoppingCart className="h-5 w-5 mr-2" />
+              <span className="transition-all duration-300">
+                Browse Products
+              </span>
+            </Link>
+          </>
         )}
       </div>
     );
@@ -220,11 +239,11 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
                 <div className="flex gap-2">
                   {isInCart(productId) ? (
                     /* Quantity Controls when item is in cart */
-                    <div className="flex-1 flex items-center justify-between bg-rose-500 text-white rounded-lg p-2">
+                    <div className="flex-1 flex items-center justify-between bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] text-white rounded-lg p-2">
                       <button
                         onClick={() => handleUpdateQuantity(productId, getCartQuantity(productId) - 1)}
                         disabled={cartLoading}
-                        className="p-1 hover:bg-rose-600 rounded disabled:opacity-50"
+                        className="p-1 hover:bg-white/20 rounded disabled:opacity-50 transition-colors"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
@@ -236,28 +255,48 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
                       <button
                         onClick={() => handleUpdateQuantity(productId, getCartQuantity(productId) + 1)}
                         disabled={cartLoading}
-                        className="p-1 hover:bg-rose-600 rounded disabled:opacity-50"
+                        className="p-1 hover:bg-white/20 rounded disabled:opacity-50 transition-colors"
                       >
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
                   ) : (
                     /* Add to Cart button when item is not in cart */
-                    <button
-                      onClick={() => handleAddToCart(productData)}
-                      disabled={cartLoading}
-                      className="flex-1 bg-rose-500 text-white py-2 px-4 rounded-lg hover:bg-rose-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add to Cart
-                    </button>
+                    <>
+                      <style>{`
+                        .gradient-btn span {
+                          background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
+                          -webkit-background-clip: text;
+                          background-clip: text;
+                          color: transparent;
+                          transition: all 0.3s ease;
+                        }
+                        .gradient-btn:hover span {
+                          color: white !important;
+                          background: none !important;
+                          -webkit-background-clip: unset !important;
+                          background-clip: unset !important;
+                        }
+                        .gradient-btn:hover .icon {
+                          color: white !important;
+                        }
+                      `}</style>
+                      <button
+                        onClick={() => handleAddToCart(productData)}
+                        disabled={cartLoading}
+                        className="gradient-btn flex-1 bg-white border-2 border-[#733857] py-2 px-4 rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 transform hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <Plus className="h-4 w-4 icon transition-all duration-300" style={{ color: '#733857' }} />
+                        <span className="transition-all duration-300">Add to Cart</span>
+                      </button>
+                    </>
                   )}
                   
                   <Link
                     to={`/product/${productId}`}
-                    className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-center"
+                    className="gradient-btn flex-1 bg-white border-2 border-[#733857] py-2 px-4 rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors text-center transform hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    View Details
+                    <span className="transition-all duration-300">View Details</span>
                   </Link>
                 </div>
               </div>

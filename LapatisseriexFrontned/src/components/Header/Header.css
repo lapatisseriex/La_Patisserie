@@ -1090,3 +1090,15 @@ body {
     display: none !important;
   }
 }
+
+/* Gradient hover effect for profile icon */
+.profile-icon-btn:hover span {
+  background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.profile-icon-btn:hover svg {
+  filter: brightness(0) saturate(100%) invert(27%) sepia(40%) saturate(2090%) hue-rotate(304deg) brightness(91%) contrast(91%);
+}
