@@ -13,13 +13,13 @@ const FavoritesIcon = () => {
       </div>
       <Link 
         to="/favorites" 
-        className="flex items-center px-3 py-2 text-white hover:text-[#A855F7] backdrop-blur-sm rounded-lg transition-all duration-300 relative group" 
-        style={{fontFamily: 'sans-serif'}}
+        className="flex items-center px-3 py-2 rounded-lg transition-all duration-300 relative group" 
+        style={{fontFamily: 'sans-serif', color: '#281c20'}}
         data-favorites-icon="true"
       >
-        <Heart className="h-4 w-4 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
+        <Heart className="h-4 w-4 transition-colors duration-300" style={{color: '#281c20'}} />
         {count > 0 && (
-          <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#A855F7] to-[#9333EA] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium shadow-lg">
+          <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#733857] to-[#281c20] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-medium shadow-lg">
             {count}
           </span>
         )}
