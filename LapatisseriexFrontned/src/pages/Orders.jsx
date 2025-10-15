@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowLeft, FaBoxOpen, FaClock, FaTruck, FaCheckCircle, FaTimesCircle, FaReceipt, FaEye, FaCalendarAlt, FaMapMarkerAlt, FaShoppingBag } from 'react-icons/fa';
+import { Package, Clock, Truck, CheckCircle, XCircle, Eye, Calendar, MapPin, ShoppingBag, ChevronRight, CreditCard, Banknote } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { calculatePricing } from '../utils/pricingUtils';
 
@@ -24,6 +24,7 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all');
   const { user } = useAuth();
 
   useEffect(() => {
@@ -57,434 +58,423 @@ const Orders = () => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      'placed': <FaReceipt className="w-4 h-4" />,
-      'out_for_delivery': <FaTruck className="w-4 h-4" />,
-      'delivered': <FaCheckCircle className="w-4 h-4" />
+  const getStatusConfig = (status) => {
+    const configs = {
+      'placed': {
+        icon: Package,
+        color: '#733857',
+        label: 'ORDER PLACED'
+      },
+      'out_for_delivery': {
+        icon: Truck,
+        color: '#8d4466',
+        label: 'OUT FOR DELIVERY'
+      },
+      'delivered': {
+        icon: CheckCircle,
+        color: '#059669',
+        label: 'DELIVERED'
+      }
     };
-    return icons[status] || <FaClock className="w-4 h-4" />;
+    return configs[status] || configs['placed'];
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      'placed': 'bg-gradient-to-r from-blue-500 to-blue-600',
-      'out_for_delivery': 'bg-gradient-to-r from-purple-500 to-purple-600',
-      'delivered': 'bg-gradient-to-r from-green-500 to-green-600'
-    };
-    return colors[status] || 'bg-gradient-to-r from-gray-500 to-gray-600';
+  const filterOrders = (status) => {
+    if (status === 'all') return orders;
+    return orders.filter(order => order.orderStatus === status);
   };
 
-  const getStatusText = (status) => {
-    const texts = {
-      'placed': 'Order Placed',
-      'out_for_delivery': 'Out for Delivery',
-      'delivered': 'Delivered'
-    };
-    return texts[status] || status;
-  };
-
-  const getPaymentStatusColor = (status) => {
-    const colors = {
-      'pending': 'bg-gradient-to-r from-yellow-500 to-yellow-600',
-      'created': 'bg-gradient-to-r from-blue-500 to-blue-600',
-      'paid': 'bg-gradient-to-r from-green-500 to-green-600',
-      'failed': 'bg-gradient-to-r from-red-500 to-red-600',
-      'refunded': 'bg-gradient-to-r from-gray-500 to-gray-600'
-    };
-    return colors[status] || 'bg-gradient-to-r from-gray-500 to-gray-600';
-  };
-
-  const StatusTimeline = ({ orderStatus, paymentStatus, createdAt }) => {
-    const steps = [
-      { key: 'placed', label: 'Order Placed', icon: FaReceipt },
-      { key: 'out_for_delivery', label: 'Out for Delivery', icon: FaTruck },
-      { key: 'delivered', label: 'Delivered', icon: FaCheckCircle }
-    ];
-
-    const currentStepIndex = steps.findIndex(step => step.key === orderStatus);
-    
-    return (
-      <div className="relative px-2 md:px-4 py-4 md:py-6">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isCompleted = index <= currentStepIndex;
-            const isActive = index === currentStepIndex;
-            
-            return (
-              <div key={step.key} className="flex flex-col items-center relative z-10">
-                <div className={`
-                  w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2 md:mb-3 relative transition-all duration-300 transform border-2 md:border-4
-                  ${isCompleted 
-                    ? isActive 
-                      ? 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] border-white text-white shadow-lg scale-110' 
-                      : 'bg-gradient-to-r from-green-500 to-green-600 border-white text-white shadow-md'
-                    : 'bg-white border-gray-300 text-gray-400'
-                  }
-                `}>
-                  <Icon className="w-4 h-4 md:w-5 md:h-5" />
-                </div>
-                <span style={{
-                  background: isCompleted ? 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)' : '',
-                  WebkitBackgroundClip: isCompleted ? 'text' : '',
-                  backgroundClip: isCompleted ? 'text' : '',
-                  color: isCompleted ? 'transparent' : '#9CA3AF'
-                }} className={`text-xs md:text-sm text-center font-medium transition-colors duration-300 px-1`}>
-                  {step.label}
-                </span>
-                {isActive && (
-                  <span className="text-xs mt-1 px-2 py-1 rounded-full bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] text-white font-medium animate-pulse">
-                    Current
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        
-        {/* Progress line */}
-        <div className="absolute top-8 md:top-10 left-0 right-0 h-1 bg-gray-200 rounded-full" style={{ margin: '0 2.5rem md:0 3rem' }}>
-          <div 
-            className="h-full bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] rounded-full transition-all duration-700 ease-in-out"
-            style={{ 
-              width: currentStepIndex >= 0 ? `${(currentStepIndex / (steps.length - 1)) * 100}%` : '0%' 
-            }}
-          />
-        </div>
-      </div>
-    );
-  };
+  const filteredOrders = filterOrders(activeFilter);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center bg-white rounded-2xl shadow-xl p-12">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 mx-auto mb-6">
-              <div className="border-4 border-transparent border-t-4 rounded-full h-full w-full" style={{ borderTopColor: '#733857' }}></div>
-            </div>
-            <FaShoppingBag className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative inline-block mb-6">
+            <div className="w-16 h-16 border-2 border-gray-100 rounded-full"></div>
+            <div 
+              className="w-16 h-16 border-2 border-t-[#733857] rounded-full animate-spin absolute top-0 left-0"
+              style={{ animationDuration: '0.8s' }}
+            ></div>
           </div>
-          <h3 className="text-xl font-semibold mb-2" style={{
-            background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent'
-          }}>
-            Loading Your Orders
-          </h3>
-          <p className="text-gray-600">Please wait while we fetch your order history...</p>
+          <p className="text-sm" style={{ color: '#1a1a1a' }}>Loading your orders...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Enhanced Header */}
-      <div className="bg-white shadow-lg border-b-4 border-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434]">
-        <div className="container mx-auto px-4 py-4 md:py-8">
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2" style={{
-                background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent'
-              }}>
+              <h1 
+                className="text-3xl font-light tracking-wide mb-2"
+                style={{ 
+                  color: '#1a1a1a',
+                  letterSpacing: '0.02em'
+                }}
+              >
                 My Orders
               </h1>
-              <p className="text-gray-600 text-sm md:text-base">Track and manage your orders</p>
-            </div>
-            <div className="flex md:hidden items-center space-x-2">
-              <div className="text-right">
-                <p className="text-xs text-gray-500">Total</p>
-                <p className="text-lg font-bold" style={{
-                  background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent'
-                }}>
-                  {orders.length}
-                </p>
-              </div>
-            </div>
-            <div className="hidden md:flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Total Orders</p>
-                <p className="text-2xl font-bold" style={{
-                  background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent'
-                }}>
-                  {orders.length}
-                </p>
-              </div>
+              <p className="text-sm tracking-wide" style={{ 
+                color: 'rgba(26, 26, 26, 0.5)',
+                letterSpacing: '0.05em'
+              }}>
+                {orders.length} {orders.length === 1 ? 'ORDER' : 'ORDERS'} PLACED
+              </p>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Filter Tabs */}
+      <div className="border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8 overflow-x-auto no-scrollbar py-4">
+            {[
+              { key: 'all', label: 'ALL ORDERS' },
+              { key: 'placed', label: 'PROCESSING' },
+              { key: 'out_for_delivery', label: 'IN TRANSIT' },
+              { key: 'delivered', label: 'DELIVERED' }
+            ].map((filter) => (
+              <button
+                key={filter.key}
+                onClick={() => setActiveFilter(filter.key)}
+                className="relative pb-2 text-xs font-semibold whitespace-nowrap transition-colors duration-200 tracking-widest"
+                style={{ 
+                  color: activeFilter === filter.key ? '#733857' : 'rgba(26, 26, 26, 0.4)',
+                  letterSpacing: '0.08em'
+                }}
+              >
+                {filter.label}
+                {activeFilter === filter.key && (
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434]"
+                    style={{ animation: 'slideIn 0.3s ease-out' }}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg mb-8 shadow-md">
-            <div className="flex items-center">
-              <FaTimesCircle className="text-red-500 mr-3" />
+          <div 
+            className="mb-6 p-4 border-l-2 border-red-500 bg-red-50"
+            style={{ animation: 'fadeIn 0.3s ease-out' }}
+          >
+            <div className="flex items-start">
+              <XCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
               <div>
-                <h3 className="text-lg font-semibold text-red-800">Error Loading Orders</h3>
-                <p className="text-red-700">{error}</p>
+                <p className="text-sm font-medium text-red-800">Unable to load orders</p>
+                <p className="text-xs text-red-600 mt-1">{error}</p>
               </div>
             </div>
           </div>
         )}
 
-        {orders.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-            <div className="mb-8">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] flex items-center justify-center">
-                <FaBoxOpen className="text-4xl text-white" />
-              </div>
-              <h2 className="text-3xl font-bold mb-4" style={{
-                background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent'
-              }}>
-                No Orders Yet
-              </h2>
-              <p className="text-gray-600 text-lg mb-8">Start exploring our delicious collection of cakes and pastries!</p>
-              <Link 
-                to="/"
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] text-white font-semibold rounded-full hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-              >
-                <FaShoppingBag className="mr-2" />
-                Start Shopping
-              </Link>
+        {filteredOrders.length === 0 ? (
+          <div 
+            className="text-center py-20"
+            style={{ animation: 'fadeIn 0.5s ease-out' }}
+          >
+            <div 
+              className="w-16 h-16 mx-auto mb-6 flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)' }}
+            >
+              <ShoppingBag className="w-8 h-8 text-white" />
             </div>
+            <h2 className="text-xl font-light mb-3" style={{ 
+              color: '#1a1a1a',
+              letterSpacing: '0.03em'
+            }}>
+              {activeFilter === 'all' ? 'No orders yet' : 'No orders in this category'}
+            </h2>
+            <p className="text-sm mb-8 tracking-wide" style={{ 
+              color: 'rgba(26, 26, 26, 0.5)',
+              letterSpacing: '0.05em'
+            }}>
+              {activeFilter === 'all' 
+                ? 'START EXPLORING OUR DELICIOUS COLLECTION' 
+                : 'CHECK OTHER ORDER CATEGORIES'}
+            </p>
+            <Link 
+              to="/"
+              className="inline-flex items-center px-6 py-3 text-sm font-medium text-white transition-all duration-300 hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)' }}
+            >
+              Browse Products
+              <ChevronRight className="ml-2 w-4 h-4" />
+            </Link>
           </div>
         ) : (
-          <div className="space-y-8">
-            {orders.map((order) => (
-              <div key={order._id} className="bg-white rounded-lg md:rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-100">
-                {/* Enhanced Order Header */}
-                <div className="bg-white p-4 md:p-6 border-b border-gray-200">
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-start space-y-3 md:space-y-0">
-                    <div className="flex-1">
-                      <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2" style={{
-                        background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                        WebkitBackgroundClip: 'text',
-                        backgroundClip: 'text',
-                        color: 'transparent'
-                      }}>
-                        Order #{order.orderNumber}
-                      </h3>
-                      <div className="flex items-center text-gray-600">
-                        <FaCalendarAlt className="mr-2 text-sm" />
-                        <span className="text-xs md:text-sm">
-                          {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-left md:text-right">
-                      <p className="text-xl md:text-2xl font-bold mb-1" style={{
-                        background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                        WebkitBackgroundClip: 'text',
-                        backgroundClip: 'text',
-                        color: 'transparent'
-                      }}>
-                        ₹{order.orderSummary?.grandTotal || order.amount}
-                      </p>
-                      <p className="text-gray-600 text-xs md:text-sm">
-                        {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Enhanced Status Badges */}
-                  <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between mt-4">
-                    <div className="flex flex-wrap gap-2 md:gap-3">
-                      <span className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold text-white flex items-center gap-2 ${getStatusColor(order.orderStatus)} shadow-lg`}>
-                        {getStatusIcon(order.orderStatus)}
-                        {getStatusText(order.orderStatus)}
-                      </span>
-                      <span className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold text-white ${getPaymentStatusColor(order.paymentStatus)} shadow-lg`}>
-                        Payment: {order.paymentStatus}
-                      </span>
-                    </div>
-                    
-                    {/* Enhanced Track Order Button */}
-                    <Link
-                      to={`/orders/${order.orderNumber}`}
-                      className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] hover:shadow-lg text-white font-semibold rounded-full transition-all duration-200 transform hover:scale-105 w-full md:w-auto"
-                    >
-                      <FaEye className="text-sm" />
-                      <span className="text-sm md:text-base">Track Order</span>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Enhanced Status Timeline */}
-                <div className="p-6 bg-gray-50">
-                  <h4 className="text-lg font-semibold mb-4" style={{
-                    background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent'
-                  }}>
-                    Order Progress
-                  </h4>
-                  <StatusTimeline 
-                    orderStatus={order.orderStatus}
-                    paymentStatus={order.paymentStatus}
-                    createdAt={order.createdAt}
-                  />
-                </div>
-
-                {/* Enhanced Order Items with Images */}
-                <div className="p-6">
-                  <h4 className="text-lg font-semibold mb-4" style={{
-                    background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent'
-                  }}>
-                    Items ({order.cartItems?.length || 0})
-                  </h4>
-                  <div className="space-y-3 md:space-y-4">
-                    {order.cartItems?.map((item, index) => (
-                      <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 md:p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200 space-y-3 sm:space-y-0">
-                        <div className="flex items-center space-x-3 md:space-x-4">
-                          {/* Product Image */}
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-white border-2 border-gray-200 flex-shrink-0 relative">
-                            {(() => {
-                              const imageUrl = getProductImageUrl(item);
-                              return imageUrl ? (
-                                <img 
-                                  src={imageUrl} 
-                                  alt={item.productName}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    // Hide the image and show fallback
-                                    e.target.style.display = 'none';
-                                    const fallback = e.target.parentNode.querySelector('.fallback-placeholder');
-                                    if (fallback) fallback.style.display = 'flex';
-                                  }}
-                                />
-                              ) : null;
-                            })()}
-                            {/* Fallback gradient placeholder */}
-                            <div 
-                              className="fallback-placeholder absolute inset-0 w-full h-full bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] flex items-center justify-center text-white font-bold text-lg md:text-xl"
-                              style={{ 
-                                display: getProductImageUrl(item) ? 'none' : 'flex' 
-                              }}
-                            >
-                              {item.productName.charAt(0).toUpperCase()}
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h5 className="font-semibold text-gray-900 text-base md:text-lg truncate">{item.productName}</h5>
-                            <p className="text-sm md:text-base text-gray-600">Quantity: <span className="font-medium">{item.quantity}</span></p>
-                            {item.variant?.name && (
-                              <p className="text-xs md:text-sm text-gray-500">Variant: {item.variant.name}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-left sm:text-right flex-shrink-0">
-                          {(() => {
-                            // Use centralized pricing calculation if variant data is available
-                            if (item.variant) {
-                              const pricing = calculatePricing(item.variant);
-                              const itemTotal = pricing.finalPrice * item.quantity;
-                              return (
-                                <>
-                                  <p className="font-bold text-lg md:text-xl" style={{
-                                    background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                                    WebkitBackgroundClip: 'text',
-                                    backgroundClip: 'text',
-                                    color: 'transparent'
-                                  }}>
-                                    ₹{Math.round(itemTotal)}
-                                  </p>
-                                  <p className="text-sm md:text-base text-gray-600">₹{Math.round(pricing.finalPrice)} each</p>
-                                </>
-                              );
-                            } else {
-                              // Fallback to stored price for older orders without variant data
-                              return (
-                                <>
-                                  <p className="font-bold text-lg md:text-xl" style={{
-                                    background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                                    WebkitBackgroundClip: 'text',
-                                    backgroundClip: 'text',
-                                    color: 'transparent'
-                                  }}>
-                                    ₹{Math.round(item.price * item.quantity)}
-                                  </p>
-                                  <p className="text-sm md:text-base text-gray-600">₹{Math.round(item.price)} each</p>
-                                </>
-                              );
-                            }
-                          })()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Enhanced Delivery Info */}
-                {order.deliveryLocation && (
-                  <div className="p-4 md:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-t">
-                    <div className="flex flex-col sm:flex-row sm:items-start space-y-3 sm:space-y-0 sm:space-x-4">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] flex items-center justify-center flex-shrink-0">
-                        <FaMapMarkerAlt className="text-white text-sm md:text-base" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h5 className="font-semibold mb-2 text-sm md:text-base" style={{
-                          background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                          WebkitBackgroundClip: 'text',
-                          backgroundClip: 'text',
-                          color: 'transparent'
-                        }}>
-                          Delivery Information
-                        </h5>
-                        <p className="text-gray-700 mb-2 text-sm md:text-base">
-                          <span className="font-medium">Location:</span> {order.deliveryLocation}
-                        </p>
-                        {order.hostelName && (
-                          <p className="text-gray-700 mb-2 text-sm md:text-base">
-                            <span className="font-medium">Hostel:</span> {order.hostelName}
-                          </p>
-                        )}
-                        {order.estimatedDeliveryTime && (
-                          <p className="text-gray-700 text-sm md:text-base">
-                            <span className="font-medium">Estimated Delivery:</span> {' '}
-                            {new Date(order.estimatedDeliveryTime).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+          <div className="grid gap-4">
+            {filteredOrders.map((order, index) => (
+              <OrderCard key={order._id} order={order} index={index} />
             ))}
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes slideIn {
+          from {
+            transform: scaleX(0);
+            transform-origin: left;
+          }
+          to {
+            transform: scaleX(1);
+            transform-origin: left;
+          }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// OrderCard Component
+const OrderCard = ({ order, index }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const getStatusConfig = (status) => {
+    const configs = {
+      'placed': {
+        icon: Package,
+        color: '#733857',
+        label: 'ORDER PLACED'
+      },
+      'out_for_delivery': {
+        icon: Truck,
+        color: '#8d4466',
+        label: 'OUT FOR DELIVERY'
+      },
+      'delivered': {
+        icon: CheckCircle,
+        color: '#059669',
+        label: 'DELIVERED'
+      }
+    };
+    return configs[status] || configs['placed'];
+  };
+
+  const statusConfig = getStatusConfig(order.orderStatus);
+  const StatusIcon = statusConfig.icon;
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  return (
+    <div 
+      className="bg-white border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-lg group"
+      style={{ 
+        animation: `fadeIn 0.4s ease-out ${index * 0.1}s both`,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+      }}
+    >
+      <div className="p-5">
+        {/* Top Row: Order Number & Status */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="text-base font-medium mb-1 tracking-wide" style={{ 
+              color: '#1a1a1a',
+              letterSpacing: '0.03em'
+            }}>
+              ORDER #{order.orderNumber}
+            </h3>
+            <div className="flex items-center text-xs tracking-wider" style={{ 
+              color: 'rgba(26, 26, 26, 0.5)',
+              letterSpacing: '0.05em'
+            }}>
+              <Calendar className="w-3.5 h-3.5 mr-1.5" />
+              {formatDate(order.createdAt).toUpperCase()} • {formatTime(order.createdAt)}
+            </div>
+          </div>
+          
+          {/* Clean Flat Status Badge - No Background, No Rounded Corners */}
+          <div className="flex items-center gap-2.5 px-3 py-1.5">
+            <StatusIcon 
+              className="w-4 h-4" 
+              style={{ 
+                color: statusConfig.color,
+                strokeWidth: 2.5
+              }} 
+            />
+            <span 
+              className="text-xs font-bold tracking-widest"
+              style={{ 
+                color: statusConfig.color,
+                letterSpacing: '0.12em'
+              }}
+            >
+              {statusConfig.label}
+            </span>
+          </div>
+        </div>
+
+        {/* Product Preview */}
+        <div className="flex items-center mb-4 pb-4 border-b border-gray-100">
+          <div className="flex -space-x-2 mr-4">
+            {order.cartItems?.slice(0, 3).map((item, idx) => {
+              const imageUrl = getProductImageUrl(item);
+              return (
+                <div 
+                  key={idx}
+                  className="w-12 h-12 bg-gray-100 border-2 border-white overflow-hidden"
+                  style={{ zIndex: 3 - idx }}
+                >
+                  {imageUrl ? (
+                    <img 
+                      src={imageUrl} 
+                      alt={item.productName || item.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="w-5 h-5" style={{ color: 'rgba(26, 26, 26, 0.3)' }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {order.cartItems?.length > 3 && (
+              <div 
+                className="w-12 h-12 border-2 border-white flex items-center justify-center text-xs font-medium"
+                style={{ 
+                  backgroundColor: 'rgba(115, 56, 87, 0.08)',
+                  color: '#733857',
+                  zIndex: 0
+                }}
+              >
+                +{order.cartItems.length - 3}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-1">
+            <p className="text-sm font-medium mb-1 tracking-wide" style={{ 
+              color: '#1a1a1a',
+              letterSpacing: '0.03em'
+            }}>
+              {order.cartItems?.length || 0} {order.cartItems?.length === 1 ? 'ITEM' : 'ITEMS'}
+            </p>
+            <p className="text-xs tracking-wider" style={{ 
+              color: 'rgba(26, 26, 26, 0.5)',
+              letterSpacing: '0.05em'
+            }}>
+              {order.paymentMethod === 'cod' ? (
+                <span className="inline-flex items-center">
+                  <Banknote className="w-3.5 h-3.5 mr-1" />
+                  CASH ON DELIVERY
+                </span>
+              ) : (
+                <span className="inline-flex items-center">
+                  <CreditCard className="w-3.5 h-3.5 mr-1" />
+                  ONLINE PAYMENT
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom Row: Total & Action */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs mb-1 tracking-widest" style={{ 
+              color: 'rgba(26, 26, 26, 0.5)',
+              letterSpacing: '0.08em'
+            }}>
+              TOTAL AMOUNT
+            </p>
+            <p className="text-xl font-medium tracking-wide" style={{ 
+              color: '#733857',
+              letterSpacing: '0.02em'
+            }}>
+              ₹{order.orderSummary?.grandTotal || order.amount}
+            </p>
+          </div>
+          
+          <Link
+            to={`/orders/${order.orderNumber}`}
+            className="inline-flex items-center px-5 py-2.5 text-xs font-semibold tracking-widest text-white transition-all duration-300 hover:opacity-90 group"
+            style={{ 
+              background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)',
+              letterSpacing: '0.08em'
+            }}
+          >
+            VIEW DETAILS
+            <Eye className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
+
+        {/* Delivery Address */}
+        {order.deliveryAddress && (
+          <div 
+            className="mt-4 pt-4 border-t border-gray-100 flex items-start"
+          >
+            <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: 'rgba(26, 26, 26, 0.4)' }} />
+            <div>
+              <p className="text-xs font-medium mb-1" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                Delivery Location
+              </p>
+              <p className="text-xs leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
+                {order.deliveryAddress.hostelName && `${order.deliveryAddress.hostelName}, `}
+                {order.deliveryAddress.area}, {order.deliveryAddress.city}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

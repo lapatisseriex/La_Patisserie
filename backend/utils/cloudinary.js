@@ -9,7 +9,8 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true
+  secure: true,
+  timeout: 60000 // 60 seconds timeout (increased from default 60s)
 });
 
 /**
@@ -92,9 +93,15 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
       throw new Error('Cloudinary authentication failed - check API credentials');
     } else if (error.http_code === 400) {
       throw new Error(`Cloudinary request error: ${error.message}`);
+    } else if (error.http_code === 499 || error.name === 'TimeoutError' || error.error?.name === 'TimeoutError') {
+      throw new Error('Cloudinary upload timeout - file may be too large or network is slow. Try a smaller image or check your internet connection.');
+    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+      throw new Error('Network timeout while uploading to Cloudinary. Please check your internet connection and try again.');
+    } else if (!error.http_code && error.message?.includes('timeout')) {
+      throw new Error('Upload timeout. Please try with a smaller image or check your network connection.');
     }
     
-    throw new Error(`Failed to upload file: ${error.message}`);
+    throw new Error(`Failed to upload file: ${error.message || 'Unknown error'}`);
   }
 };
 

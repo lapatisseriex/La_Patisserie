@@ -247,10 +247,16 @@ export const useProfileImageUpload = () => {
         setError('File too large. Please choose a smaller image.');
       } else if (error.response?.status === 400) {
         setError(error.response.data?.message || 'Invalid file format.');
-      } else if (error.response?.status === 500) {
-        setError(UPLOAD_CONFIG.ERROR_MESSAGES.SERVER_ERROR);
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        setError('Session expired. Please log in again and try uploading.');
+      } else if (error.response?.status === 408) {
+        setError('Upload timed out after multiple attempts. Try using a smaller image (under 1MB) or check your internet connection.');
+      } else if (error.response?.status === 503) {
+        setError('Upload service temporarily unavailable. Please try again in a few moments.');
+      } else if (error.response?.status === 500 || error.response?.status === 502 || error.response?.status === 504) {
+        setError('Server error. Please try again later or contact support if the problem persists.');
       } else if (!error.response) {
-        setError(UPLOAD_CONFIG.ERROR_MESSAGES.NETWORK_ERROR);
+        setError('Network error. Please check your internet connection and try again.');
       } else {
         setError(error.response?.data?.message || error.message || UPLOAD_CONFIG.ERROR_MESSAGES.GENERIC_ERROR);
       }

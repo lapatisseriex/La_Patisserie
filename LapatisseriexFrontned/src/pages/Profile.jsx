@@ -23,7 +23,8 @@ import {
   CreditCard,
   Edit3,
   MoreVertical,
-  Eye
+  Eye,
+  Calendar,
 } from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';
 import OrderCard from '../components/Orders/OrderCard';
@@ -163,23 +164,31 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[60vh]">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-black"></div>
+      <div className="flex flex-col justify-center items-center min-h-[60vh] bg-white" style={{ paddingTop: '65px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <div className="relative mb-6">
+          <div className="animate-spin h-16 w-16 border-2 border-gray-200 border-t-[#733857]"></div>
           <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-            <img src="/images/logo.png" alt="Cake Logo" className="h-8 w-8 rounded-full bg-white" />
+            <img src="/images/logo.png" alt="Logo" className="h-8 w-8 bg-white" />
           </div>
         </div>
-        <p className="mt-4 text-lg font-medium text-black">Loading your profile...</p>
+        <p className="text-sm font-light text-gray-500 tracking-wide" style={{ letterSpacing: '0.05em' }}>Loading your profile...</p>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-[60vh] pt-8 flex flex-col justify-center items-center">
-        <h2 className="text-xl font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2">Please log in to view your account</h2>
-        <p className="text-black">You need to be logged in to access this page.</p>
+      <div className="min-h-[60vh] flex flex-col justify-center items-center bg-white" style={{ paddingTop: '65px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <User className="h-16 w-16 text-gray-300 mb-6" strokeWidth={1} />
+        <h2 className="text-2xl font-light text-gray-900 mb-2 tracking-wide" style={{ letterSpacing: '0.02em' }}>Account Access Required</h2>
+        <p className="text-sm text-gray-500 font-light mb-8">Please sign in to view your profile</p>
+        <button
+          onClick={toggleAuthPanel}
+          className="px-6 py-3 border border-[#733857] text-[#733857] text-xs font-bold uppercase tracking-widest hover:bg-[#733857] hover:text-white transition-all duration-300"
+          style={{ letterSpacing: '0.12em' }}
+        >
+          Sign In
+        </button>
       </div>
     );
   }
@@ -188,9 +197,7 @@ const ProfilePage = () => {
 
   const tabs = [
     { id: 'profile', label: 'My Profile', icon: User },
-    { id: 'orders', label: 'My Orders', icon: Package },
     { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
-    { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart },
     { id: 'favorites', label: 'Favorites', icon: Heart },
   ];
 
@@ -198,65 +205,143 @@ const ProfilePage = () => {
     switch (activeTab) {
       case 'main':
         return (
-          <div className="space-y-3 md:space-y-6">
-            <h3 className="text-xl md:text-2xl font-serif font-semibold text-black mb-3 md:mb-6 border-b border-gray-200 pb-2">My Account</h3>
+          <div className="space-y-8">
+            {/* Elegant Section Header */}
+            <div className="pb-4" style={{ borderBottom: '2px solid rgba(115, 56, 87, 0.1)' }}>
+              <h3 className="text-3xl font-light tracking-wide mb-2" style={{ 
+                color: '#281c20',
+                letterSpacing: '0.03em'
+              }}>My Account</h3>
+              <p className="text-sm" style={{ 
+                color: 'rgba(40, 28, 32, 0.5)',
+                letterSpacing: '0.02em'
+              }}>Access and manage your personal information</p>
+            </div>
             
-            {/* Mobile view - Square buttons in 2 columns */}
-            <div className="grid grid-cols-2 gap-3 md:hidden">
+            {/* Mobile view - Beautiful Cards */}
+            <div className="grid grid-cols-2 gap-4 md:hidden">
               {[
-                { id: 'profile', label: 'My Profile', icon: User, color: 'bg-blue-50' },
-                { id: 'orders', label: 'My Orders', icon: Package, color: 'bg-amber-50' },
-                { id: 'addresses', label: 'Saved Addresses', icon: MapPin, color: 'bg-purple-50' },
-                { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart, color: 'bg-rose-50', count: cartCount },
-                { id: 'favorites', label: 'Favorites', icon: Heart, color: 'bg-gray-50', count: favorites?.length || 0 },
+                { id: 'profile', label: 'My Profile', icon: User, color: '#733857', gradient: 'linear-gradient(135deg, rgba(115, 56, 87, 0.05), rgba(115, 56, 87, 0.02))' },
+                { id: 'addresses', label: 'Addresses', icon: MapPin, color: '#412434', gradient: 'linear-gradient(135deg, rgba(65, 36, 52, 0.05), rgba(65, 36, 52, 0.02))' },
+                { id: 'favorites', label: 'Favorites', icon: Heart, color: '#8d4466', count: favorites?.length || 0, gradient: 'linear-gradient(135deg, rgba(141, 68, 102, 0.05), rgba(141, 68, 102, 0.02))' },
               ].map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className="flex flex-col items-center justify-center p-3 border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm no-scrollbar aspect-square relative"
+                  className="relative group overflow-hidden transition-all duration-300 aspect-square"
+                  style={{
+                    border: '1px solid rgba(115, 56, 87, 0.15)',
+                    backgroundColor: 'white',
+                    boxShadow: '0 2px 8px rgba(115, 56, 87, 0.06)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(115, 56, 87, 0.15)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(115, 56, 87, 0.06)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
                 >
-                  <div className={`p-3 rounded-full ${item.color} mb-2 relative`}>
-                    <item.icon className="h-5 w-5 text-gray-700" />
-                    {item.count > 0 && (
-                      <span className="absolute -top-2 -right-2 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)' }}>
-                        {item.count > 99 ? '99+' : item.count}
-                      </span>
-                    )}
+                  {/* Background gradient */}
+                  <div className="absolute inset-0 opacity-100 transition-opacity duration-300" style={{ 
+                    background: item.gradient
+                  }}></div>
+                  
+                  <div className="relative flex flex-col items-center justify-center h-full p-4">
+                    <div className="relative mb-4">
+                      <item.icon className="h-8 w-8 transition-all duration-300" 
+                        style={{ color: item.color }} 
+                        strokeWidth={1.5} 
+                      />
+                      {item.count > 0 && (
+                        <span className="absolute -top-2 -right-2 text-white text-xs px-2 py-0.5 font-bold min-w-[20px] text-center" style={{ 
+                          backgroundColor: item.color,
+                          boxShadow: '0 2px 6px rgba(115, 56, 87, 0.3)'
+                        }}>
+                          {item.count > 99 ? '99' : item.count}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-medium text-center transition-all duration-300" style={{ 
+                      color: 'rgba(40, 28, 32, 0.85)',
+                      letterSpacing: '0.01em'
+                    }}>{item.label}</h4>
                   </div>
-                  <h4 className="font-medium text-gray-900 text-center text-sm">{item.label}</h4>
                 </button>
               ))}
             </div>
 
-            {/* Desktop/tablet view - Rectangular bars */}
-            <div className="hidden md:grid md:grid-cols-2 gap-4">
+            {/* Desktop/tablet view - Elegant Cards */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
-                { id: 'profile', label: 'My Profile', icon: User, description: 'View/Edit Profile', color: 'bg-blue-50' },
-                { id: 'orders', label: 'My Orders', icon: Package, description: 'Track Orders, Returns, Buy Again', color: 'bg-amber-50' },
-                { id: 'addresses', label: 'Saved Addresses', icon: MapPin, description: 'Manage your saved addresses', color: 'bg-purple-50' },
-                { id: 'cart', label: 'Shopping Cart', icon: ShoppingCart, description: 'View items in your cart', color: 'bg-rose-50', count: cartCount },
-                { id: 'favorites', label: 'Favorites', icon: Heart, description: 'View your favorite products', color: 'bg-gray-50', count: favorites?.length || 0 },
+                { id: 'profile', label: 'My Profile', icon: User, description: 'View and edit your personal information', color: '#733857', gradient: 'linear-gradient(135deg, rgba(115, 56, 87, 0.04), rgba(115, 56, 87, 0.01))' },
+                { id: 'addresses', label: 'Saved Addresses', icon: MapPin, description: 'Manage your delivery locations', color: '#412434', gradient: 'linear-gradient(135deg, rgba(65, 36, 52, 0.04), rgba(65, 36, 52, 0.01))' },
+                { id: 'favorites', label: 'My Favorites', icon: Heart, description: 'Your favorite desserts & pastries', color: '#8d4466', count: favorites?.length || 0, gradient: 'linear-gradient(135deg, rgba(141, 68, 102, 0.04), rgba(141, 68, 102, 0.01))' },
               ].map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className="flex items-center justify-between gap-3 px-5 py-4 border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm rounded-md relative"
+                  className="relative group overflow-hidden transition-all duration-300"
+                  style={{
+                    border: '1px solid rgba(115, 56, 87, 0.15)',
+                    backgroundColor: 'white',
+                    boxShadow: '0 2px 8px rgba(115, 56, 87, 0.06)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(115, 56, 87, 0.15)';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(115, 56, 87, 0.06)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${item.color} flex-shrink-0 relative`}>
-                      <item.icon className="h-5 w-5 text-gray-700" />
-                      {item.count > 0 && (
-                        <span className="absolute -top-2 -right-2 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)' }}>
-                          {item.count > 99 ? '99+' : item.count}
-                        </span>
-                      )}
+                  {/* Background gradient */}
+                  <div className="absolute inset-0 transition-opacity duration-300" style={{ 
+                    background: item.gradient
+                  }}></div>
+                  
+                  <div className="relative p-6">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="relative flex-shrink-0">
+                        <item.icon className="h-7 w-7 transition-all duration-300" 
+                          style={{ color: item.color }} 
+                          strokeWidth={1.5} 
+                        />
+                        {item.count > 0 && (
+                          <span className="absolute -top-2 -right-2 text-white text-xs px-2 py-0.5 font-bold min-w-[20px] text-center" style={{ 
+                            backgroundColor: item.color,
+                            boxShadow: '0 2px 6px rgba(115, 56, 87, 0.3)'
+                          }}>
+                            {item.count > 99 ? '99+' : item.count}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <h4 className="text-lg font-medium mb-1 transition-all duration-300" style={{ 
+                          color: '#281c20',
+                          letterSpacing: '0.01em'
+                        }}>{item.label}</h4>
+                        <p className="text-sm transition-all duration-300" style={{ 
+                          color: 'rgba(40, 28, 32, 0.55)',
+                          letterSpacing: '0.01em'
+                        }}>{item.description}</p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <h4 className="font-medium text-gray-900">{item.label}</h4>
-                      <p className="text-gray-500 text-sm">{item.description}</p>
+                    
+                    {/* Arrow indicator */}
+                    <div className="flex justify-end">
+                      <span className="text-xl transition-transform duration-300 group-hover:translate-x-2" style={{ color: item.color }}>→</span>
                     </div>
                   </div>
-                  <span className="text-gray-400">›</span>
+                  
+                  {/* Decorative corner */}
+                  <div className="absolute top-0 right-0 w-0 h-0 transition-all duration-300 opacity-0 group-hover:opacity-100" style={{
+                    borderTop: `24px solid ${item.color}`,
+                    borderLeft: '24px solid transparent',
+                    opacity: 0.08
+                  }}></div>
                 </button>
               ))}
             </div>
@@ -267,7 +352,7 @@ const ProfilePage = () => {
         return (
           <div className="space-y-6">
             <div className="mb-4">
-              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">Profile Information</h3>
+              <h3 className="text-2xl font-light tracking-wide text-black border-b border-gray-200 pb-3" style={{ letterSpacing: '0.02em' }}>Profile Information</h3>
             </div>
             <Profile />
           </div>
@@ -277,65 +362,85 @@ const ProfilePage = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">My Orders</h3>
-              <style>{`
-                .browse-products-btn span {
-                  background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                  -webkit-background-clip: text;
-                  background-clip: text;
-                  color: transparent;
-                  transition: all 0.3s ease;
-                }
-                .browse-products-btn:hover span {
-                  color: white !important;
-                  background: none !important;
-                  -webkit-background-clip: unset !important;
-                  background-clip: unset !important;
-                }
-              `}</style>
+              <h3 className="text-2xl font-light tracking-wide text-black border-b border-gray-200 pb-3" style={{ letterSpacing: '0.02em' }}>My Orders</h3>
               <Link 
                 to="/products" 
-                className="browse-products-btn bg-white border-2 border-[#733857] px-5 py-2 rounded-md hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-all duration-300 shadow-md font-medium transform hover:scale-[1.02] active:scale-[0.98]"
+                className="px-5 py-2 border text-xs font-bold tracking-widest transition-all duration-300"
+                style={{ 
+                  borderColor: '#733857',
+                  color: '#733857',
+                  letterSpacing: '0.08em'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#733857';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = '#733857';
+                }}
               >
-                <span className="transition-all duration-300">
-                  Browse Products
-                </span>
+                BROWSE PRODUCTS
               </Link>
             </div>
             
             {ordersLoading ? (
-              <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                  <Package className="h-10 w-10 text-gray-500 animate-pulse" />
+              <div className="bg-white border border-gray-100 p-12 text-center">
+                <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center mx-auto mb-6">
+                  <Package className="h-8 w-8 animate-pulse" style={{ color: '#733857' }} />
                 </div>
-                <h4 className="text-xl font-serif font-medium text-black mb-3">Loading Orders...</h4>
-                <p className="text-gray-600">Please wait while we fetch your order history</p>
+                <h4 className="text-lg font-medium mb-2" style={{ color: '#1a1a1a' }}>Loading Orders...</h4>
+                <p className="text-sm tracking-wide" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>Please wait while we fetch your order history</p>
               </div>
             ) : ordersError ? (
-              <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center shadow-md">
-                <h4 className="text-lg font-medium mb-2" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Error Loading Orders</h4>
-                <p className="mb-4" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{ordersError}</p>
+              <div className="bg-white border border-gray-100 p-8 text-center">
+                <h4 className="text-lg font-medium mb-2" style={{ color: '#733857' }}>Error Loading Orders</h4>
+                <p className="mb-6 text-sm" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>{ordersError}</p>
                 <button
                   onClick={fetchUserOrders}
-                  className="px-4 py-2 bg-white border-2 border-[#733857] rounded-md hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:text-white transition-colors font-medium"
-                  style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}
+                  className="px-6 py-2.5 border text-xs font-bold tracking-widest transition-all duration-300"
+                  style={{ 
+                    borderColor: '#733857',
+                    color: '#733857',
+                    letterSpacing: '0.08em'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#733857';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#733857';
+                  }}
                 >
-                  Try Again
+                  TRY AGAIN
                 </button>
               </div>
             ) : orders.length === 0 ? (
-              <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                  <Package className="h-10 w-10 text-gray-500" />
+              <div className="bg-white border border-gray-100 p-12 text-center">
+                <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center mx-auto mb-6">
+                  <Package className="h-8 w-8" style={{ color: 'rgba(26, 26, 26, 0.3)' }} />
                 </div>
-                <h4 className="text-xl font-serif font-medium text-black mb-3">No Orders Yet</h4>
-                <p className="text-gray-600 mb-6">Discover our delicious cakes and pastries to place your first order</p>
+                <h4 className="text-xl font-light mb-3 tracking-wide" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>No Orders Yet</h4>
+                <p className="text-sm mb-8 tracking-wide" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>Discover our delicious cakes and pastries to place your first order</p>
                 <Link 
                   to="/products" 
-                  className="inline-flex items-center px-6 py-3 bg-white border-2 border-[#733857] rounded-md hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg font-medium"
-                  style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}
+                  className="inline-flex items-center px-6 py-3 border text-xs font-bold tracking-widest transition-all duration-300"
+                  style={{ 
+                    borderColor: '#733857',
+                    color: '#733857',
+                    letterSpacing: '0.08em'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#733857';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#733857';
+                  }}
                 >
-                  Start Shopping
+                  START SHOPPING
                 </Link>
               </div>
             ) : (
@@ -427,139 +532,146 @@ const ProfilePage = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">
+              <h3 className="text-2xl font-light tracking-wide text-black border-b border-gray-200 pb-3" style={{ letterSpacing: '0.02em' }}>
                 Shopping Cart
                 {cartCount > 0 && (
-                  <span className="ml-2 px-3 py-1 bg-rose-500 text-white text-sm rounded-full">
-                    {cartCount} items
+                  <span className="ml-3 px-2.5 py-1 text-white text-xs font-bold tracking-wider" style={{ backgroundColor: '#733857', letterSpacing: '0.05em' }}>
+                    {cartCount} ITEMS
                   </span>
                 )}
               </h3>
-              <style>{`
-                .gradient-btn span {
-                  background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                  -webkit-background-clip: text;
-                  background-clip: text;
-                  color: transparent;
-                  transition: all 0.3s ease;
-                }
-                .gradient-btn:hover span {
-                  color: white !important;
-                  background: none !important;
-                  -webkit-background-clip: unset !important;
-                  background-clip: unset !important;
-                }
-              `}</style>
               <Link 
                 to="/cart" 
-                className="gradient-btn px-5 py-2 bg-white border-2 border-[#733857] rounded-md hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors shadow-md font-medium transform hover:scale-[1.02] active:scale-[0.98]"
+                className="px-5 py-2 border text-xs font-bold tracking-widest transition-all duration-300"
+                style={{ 
+                  borderColor: '#733857',
+                  color: '#733857',
+                  letterSpacing: '0.08em'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#733857';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = '#733857';
+                }}
               >
-                <span className="transition-all duration-300">
-                  View Full Cart
-                </span>
+                VIEW FULL CART
               </Link>
             </div>
             
             {cartLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading your cart...</p>
+              <div className="bg-white border border-gray-100 p-12 text-center">
+                <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center mx-auto mb-6">
+                  <ShoppingCart className="h-8 w-8 animate-pulse" style={{ color: '#733857' }} />
+                </div>
+                <p className="text-sm tracking-wide" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>Loading your cart...</p>
               </div>
             ) : cartError ? (
-              <div className="bg-gray-50 border border-gray-200 p-6 rounded-xl">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)' }}>
-                    <ShoppingCart className="w-3 h-3 text-white" />
-                  </div>
-                  <p className="font-medium text-lg" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Error loading cart</p>
+              <div className="bg-white border border-gray-100 p-8 text-center">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <ShoppingCart className="w-5 h-5" style={{ color: '#733857' }} />
+                  <p className="font-medium text-lg" style={{ color: '#733857' }}>Error loading cart</p>
                 </div>
-                <p className="text-sm mb-4" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{cartError}</p>
-                <div className="flex gap-3">
-                  <style>{`
-                    .gradient-btn span {
-                      background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                      -webkit-background-clip: text;
-                      background-clip: text;
-                      color: transparent;
-                      transition: all 0.3s ease;
-                    }
-                    .gradient-btn:hover span {
-                      color: white !important;
-                      background: none !important;
-                      -webkit-background-clip: unset !important;
-                      background-clip: unset !important;
-                    }
-                  `}</style>
+                <p className="text-sm mb-6" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>{cartError}</p>
+                <div className="flex gap-3 justify-center">
                   <button 
                     onClick={() => window.location.reload()} 
-                    className="gradient-btn px-4 py-2 bg-white border-2 border-[#733857] rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors text-sm font-medium transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="px-5 py-2 border text-xs font-bold tracking-widest transition-all duration-300"
+                    style={{ 
+                      borderColor: '#733857',
+                      color: '#733857',
+                      letterSpacing: '0.08em'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#733857';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#733857';
+                    }}
                   >
-                    <span className="transition-all duration-300">
-                      Retry Loading
-                    </span>
+                    RETRY LOADING
                   </button>
                   <Link 
                     to="/products" 
-                    className="gradient-btn px-4 py-2 bg-white border-2 border-[#733857] rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors text-sm font-medium transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="px-5 py-2 border text-xs font-bold tracking-widest transition-all duration-300"
+                    style={{ 
+                      borderColor: '#733857',
+                      color: '#733857',
+                      letterSpacing: '0.08em'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#733857';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#733857';
+                    }}
                   >
-                    <span className="transition-all duration-300">
-                      Continue Shopping
-                    </span>
+                    CONTINUE SHOPPING
                   </Link>
                 </div>
               </div>
             ) : cartItems.length === 0 ? (
-              <div className="bg-gradient-to-br from-gray-50 to-rose-50 rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center shadow-sm">
-                <div className="w-24 h-24 bg-gradient-to-br from-rose-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-lg">
-                  <ShoppingCart className="h-12 w-12 text-rose-400" />
+              <div className="bg-white border border-gray-100 p-12 text-center">
+                <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center mx-auto mb-6">
+                  <ShoppingCart className="h-8 w-8" style={{ color: 'rgba(26, 26, 26, 0.3)' }} />
                 </div>
-                <h4 className="text-2xl font-serif font-medium text-black mb-4">Your Cart is Empty</h4>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+                <h4 className="text-xl font-light mb-3 tracking-wide" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>Your Cart is Empty</h4>
+                <p className="text-sm mb-8 tracking-wide max-w-md mx-auto" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                   Discover our delicious collection of cakes, pastries, and sweet treats. 
                   Add your favorites to get started!
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <style>{`
-                    .gradient-btn span {
-                      background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                      -webkit-background-clip: text;
-                      background-clip: text;
-                      color: transparent;
-                      transition: all 0.3s ease;
-                    }
-                    .gradient-btn:hover span {
-                      color: white !important;
-                      background: none !important;
-                      -webkit-background-clip: unset !important;
-                      background-clip: unset !important;
-                    }
-                    .gradient-btn:hover .icon {
-                      color: white !important;
-                    }
-                  `}</style>
                   <Link 
                     to="/products" 
-                    className="gradient-btn inline-flex items-center justify-center px-8 py-4 bg-white border-2 border-[#733857] rounded-xl hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-all duration-300 shadow-lg hover:shadow-xl font-medium text-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-flex items-center justify-center px-6 py-3 border text-xs font-bold tracking-widest transition-all duration-300"
+                    style={{ 
+                      borderColor: '#733857',
+                      color: '#733857',
+                      letterSpacing: '0.08em'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#733857';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#733857';
+                    }}
                   >
-                    <ShoppingCart className="w-5 h-5 mr-2 icon transition-all duration-300" style={{ color: '#733857' }} />
-                    <span className="transition-all duration-300">
-                      Start Shopping
-                    </span>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    START SHOPPING
                   </Link>
                   <Link 
                     to="/favorites" 
-                    className="gradient-btn inline-flex items-center justify-center px-8 py-4 bg-white border-2 border-[#733857] rounded-xl hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-all duration-300 shadow-md font-medium text-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-flex items-center justify-center px-6 py-3 border text-xs font-bold tracking-widest transition-all duration-300"
+                    style={{ 
+                      borderColor: '#733857',
+                      color: '#733857',
+                      letterSpacing: '0.08em'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#733857';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#733857';
+                    }}
                   >
-                    <Heart className="w-5 h-5 mr-2 icon transition-all duration-300" style={{ color: '#733857' }} />
-                    <span className="transition-all duration-300">
-                      View Favorites
-                    </span>
+                    <Heart className="w-4 h-4 mr-2" />
+                    VIEW FAVORITES
                   </Link>
                 </div>
                 
                 {/* Quick suggestions */}
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <p className="text-sm text-gray-500 mb-3">Popular categories:</p>
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                  <p className="text-xs mb-3 tracking-wider" style={{ color: 'rgba(26, 26, 26, 0.5)', letterSpacing: '0.08em' }}>POPULAR CATEGORIES:</p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {['Cakes', 'Pastries', 'Desserts', 'Cookies'].map((category) => (
                       <Link
@@ -855,7 +967,7 @@ const ProfilePage = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-2xl font-serif font-semibold text-black border-b border-gray-200 pb-2">
+              <h3 className="text-2xl font-medium text-black border-b border-gray-200 pb-2">
                 My Favorites
                 {favorites?.length > 0 && (
                   <span className="ml-2 px-3 py-1 text-white text-sm rounded-full" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)' }}>
@@ -906,7 +1018,7 @@ const ProfilePage = () => {
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
                   <Heart className="h-10 w-10 text-gray-500" />
                 </div>
-                <h4 className="text-xl font-serif font-medium text-black mb-3">No Favorites Yet</h4>
+                <h4 className="text-xl font-medium text-black mb-3">No Favorites Yet</h4>
                 <p className="text-gray-600 mb-6">Add your favorite cakes and pastries here</p>
                 <style>{`
                   .browse-products-btn span {
@@ -1012,87 +1124,121 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100" style={{ paddingTop: '65px' }}>
-      {/* Compact Header Section - Only show on main tab */}
+    <div className="min-h-screen" style={{ paddingTop: '65px', fontFamily: 'system-ui, -apple-system, sans-serif', background: 'linear-gradient(to bottom, #fdfbf9 0%, #ffffff 40%, #fdfbf9 100%)' }}>
+      {/* Beautiful Profile Hero - Only show on main tab */}
       {activeTab === 'main' && (
-        <div className="bg-white shadow-md border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              {/* User Profile Info */}
-              <div className="flex items-center space-x-3 sm:space-x-4">
-                <div className="relative">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-white shadow-lg bg-gradient-to-br from-gray-100 to-gray-200">
-                    {user && user.profilePhoto && user.profilePhoto.url ? (
-                      <img 
-                        src={user.profilePhoto.url} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = '/images/default-avatar.svg';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
-                      </div>
-                    )}
+        <div className="relative overflow-hidden" style={{ 
+          background: 'linear-gradient(135deg, #fdfbf9 0%, #fff5f0 50%, #fdfbf9 100%)',
+          borderBottom: '1px solid rgba(115, 56, 87, 0.1)'
+        }}>
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 opacity-5" style={{
+            background: 'radial-gradient(circle, #733857 0%, transparent 70%)',
+          }}></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 opacity-5" style={{
+            background: 'radial-gradient(circle, #8d4466 0%, transparent 70%)',
+          }}></div>
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+              {/* User Profile Info with Beautiful Layout */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div className="relative group">
+                  {/* Profile Photo with Elegant Frame */}
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28" style={{
+                    boxShadow: '0 8px 24px rgba(115, 56, 87, 0.12)'
+                  }}>
+                    <div className="absolute inset-0 border-2" style={{ 
+                      borderColor: '#733857',
+                      background: 'linear-gradient(135deg, rgba(253, 251, 249, 0.9), rgba(255, 245, 240, 0.9))'
+                    }}></div>
+                    <div className="absolute inset-2 bg-white overflow-hidden">
+                      {user && user.profilePhoto && user.profilePhoto.url ? (
+                        <img 
+                          src={user.profilePhoto.url} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/images/default-avatar.svg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                          <User className="h-10 w-10 sm:h-12 sm:w-12" style={{ color: '#733857', opacity: 0.4 }} />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] rounded-full border border-white flex items-center justify-center">
-                    <Crown className="w-2 h-2 text-white" />
+                  {/* Premium Badge */}
+                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 text-white text-xs font-bold uppercase tracking-widest whitespace-nowrap" 
+                    style={{ 
+                      backgroundColor: '#733857',
+                      letterSpacing: '0.12em',
+                      boxShadow: '0 4px 12px rgba(115, 56, 87, 0.3)'
+                    }}>
+                    Member
                   </div>
                 </div>
                 
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-                    Welcome back, <span style={{
-                      background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                      WebkitBackgroundClip: 'text',
-                      backgroundClip: 'text',
-                      color: 'transparent'
-                    }}>{user?.name || 'Guest'}</span>
+                <div className="flex-1 text-center sm:text-left">
+                  <h1 className="text-3xl sm:text-4xl font-light mb-2" style={{ 
+                    color: '#281c20',
+                    letterSpacing: '0.03em'
+                  }}>
+                    {user?.name || 'Guest'}
                   </h1>
-                  <p className="text-gray-600 text-xs sm:text-sm truncate">{user?.email || 'guest@example.com'}</p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] text-white">
-                      Premium Member
-                    </span>
-                    <span className="text-xs text-gray-500 hidden sm:inline">
-                      Member since {new Date(user?.createdAt || Date.now()).getFullYear()}
-                    </span>
+                  <p className="text-sm mb-4" style={{ 
+                    color: 'rgba(40, 28, 32, 0.6)',
+                    letterSpacing: '0.02em'
+                  }}>
+                    {user?.email || 'guest@example.com'}
+                  </p>
+                  <div className="flex items-center justify-center sm:justify-start gap-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" style={{ color: '#733857', opacity: 0.7 }} strokeWidth={1.5} />
+                      <span className="text-xs" style={{ 
+                        color: 'rgba(40, 28, 32, 0.6)',
+                        letterSpacing: '0.05em'
+                      }}>
+                        Joined {new Date(user?.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-4">
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold" style={{
-                    background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent'
-                  }}>{orders?.length || 0}</div>
-                  <div className="text-xs text-gray-600">Orders</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold" style={{
-                    background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent'
-                  }}>{favorites?.length || 0}</div>
-                  <div className="text-xs text-gray-600">Favorites</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold" style={{
-                    background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent'
-                  }}>{cartCount || 0}</div>
-                  <div className="text-xs text-gray-600">Cart Items</div>
-                </div>
+              {/* Elegant Stats Cards */}
+              <div className="grid grid-cols-3 gap-4 sm:gap-6">
+                {[
+                  { icon: Package, value: orders?.length || 0, label: 'Orders', color: '#733857' },
+                  { icon: Heart, value: favorites?.length || 0, label: 'Favorites', color: '#8d4466' },
+                  { icon: ShoppingCart, value: cartCount || 0, label: 'In Cart', color: '#412434' }
+                ].map((stat, index) => (
+                  <div key={index} className="relative group">
+                    <div className="bg-white p-4 sm:p-6 text-center transition-all duration-300 hover:shadow-lg" style={{
+                      border: '1px solid rgba(115, 56, 87, 0.15)',
+                      boxShadow: '0 2px 8px rgba(115, 56, 87, 0.05)'
+                    }}>
+                      <stat.icon className="h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-3 transition-transform duration-300 group-hover:scale-110" 
+                        style={{ color: stat.color, opacity: 0.8 }} 
+                        strokeWidth={1.5} 
+                      />
+                      <div className="text-3xl sm:text-4xl font-light mb-2" style={{ 
+                        color: stat.color,
+                        letterSpacing: '0.02em'
+                      }}>
+                        {stat.value}
+                      </div>
+                      <div className="text-xs uppercase tracking-wider font-medium" style={{ 
+                        color: 'rgba(40, 28, 32, 0.6)',
+                        letterSpacing: '0.08em'
+                      }}>
+                        {stat.label}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -1101,79 +1247,109 @@ const ProfilePage = () => {
 
       {/* Back Button for specific sections */}
       {activeTab !== 'main' && (
-        <div className="bg-white border-b border-gray-200 px-3 sm:px-4 py-3">
-          <div className="max-w-7xl mx-auto">
+        <div className="bg-white border-b border-gray-200 py-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <button 
               onClick={() => setActiveTab('main')}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+              className="flex items-center gap-2 text-gray-500 hover:text-[#733857] transition-colors duration-200"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="font-medium">Back to Profile</span>
+              <span className="text-sm font-medium uppercase tracking-wider" style={{ letterSpacing: '0.08em' }}>Back</span>
             </button>
           </div>
         </div>
       )}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {activeTab === 'main' ? (
           /* Desktop: Show sidebar + content, Mobile: Show menu grid */
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-6">
-            {/* Desktop Sidebar Navigation */}
+          <div className="hidden lg:grid lg:grid-cols-5 lg:gap-8">
+            {/* Beautiful Desktop Sidebar Navigation */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden sticky top-20">
-                <div className="p-4">
-                  <h2 className="text-lg font-semibold mb-3" style={{
-                    background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent'
-                  }}>Account Menu</h2>
+              <div className="bg-white sticky top-24" style={{
+                border: '1px solid rgba(115, 56, 87, 0.15)',
+                boxShadow: '0 2px 12px rgba(115, 56, 87, 0.06)'
+              }}>
+                <div className="p-6">
+                  {/* Elegant Header */}
+                  <div className="mb-6 pb-4" style={{ borderBottom: '2px solid rgba(115, 56, 87, 0.1)' }}>
+                    <h2 className="text-lg font-light tracking-wide" style={{ 
+                      color: '#281c20',
+                      letterSpacing: '0.03em'
+                    }}>Your Account</h2>
+                    <p className="text-xs mt-1" style={{ 
+                      color: 'rgba(40, 28, 32, 0.5)',
+                      letterSpacing: '0.02em'
+                    }}>Manage your profile & preferences</p>
+                  </div>
                   
                   <nav className="space-y-2">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                        className="w-full group relative overflow-hidden transition-all duration-300"
                       >
-                        <tab.icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="font-medium text-sm">{tab.label}</span>
-                        {tab.id === 'cart' && cartCount > 0 && (
-                          <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
-                            {cartCount}
-                          </span>
-                        )}
-                        {tab.id === 'favorites' && favorites?.length > 0 && (
-                          <span className="ml-auto bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5">
-                            {favorites.length}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-3 px-4 py-3 relative z-10 transition-all duration-300" style={{
+                          backgroundColor: 'transparent',
+                          borderLeft: '2px solid transparent'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderLeftColor = '#733857';
+                          e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.04)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderLeftColor = 'transparent';
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}>
+                          <tab.icon className="h-5 w-5 flex-shrink-0 transition-all duration-300" 
+                            style={{ color: 'rgba(115, 56, 87, 0.7)' }} 
+                            strokeWidth={1.5} 
+                          />
+                          <span className="font-medium text-sm transition-all duration-300" style={{ 
+                            color: 'rgba(40, 28, 32, 0.8)',
+                            letterSpacing: '0.02em'
+                          }}>{tab.label}</span>
+                          {tab.id === 'favorites' && favorites?.length > 0 && (
+                            <span className="ml-auto text-white text-xs px-2 py-1 font-bold" style={{ 
+                              backgroundColor: '#733857',
+                              letterSpacing: '0.08em',
+                              boxShadow: '0 2px 6px rgba(115, 56, 87, 0.25)'
+                            }}>
+                              {favorites.length}
+                            </span>
+                          )}
+                        </div>
                       </button>
                     ))}
                   </nav>
 
-                  {/* Logout Button */}
-                  <div className="mt-6 pt-4 border-t border-gray-200">
-                    <style>{`
-                      .logout-btn:hover span {
-                        color: white !important;
-                        background: none !important;
-                        -webkit-background-clip: unset !important;
-                        background-clip: unset !important;
-                      }
-                      .logout-btn:hover .icon {
-                        color: white !important;
-                      }
-                    `}</style>
+                  {/* Elegant Logout Button */}
+                  <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(115, 56, 87, 0.1)' }}>
                     <button
                       onClick={logout}
-                      className="logout-btn w-full flex items-center space-x-2 px-3 py-2.5 bg-white border-2 border-red-500 text-red-600 rounded-lg hover:bg-red-500 transition-all duration-200"
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 transition-all duration-300"
+                      style={{
+                        border: '1px solid rgba(115, 56, 87, 0.3)',
+                        color: '#733857',
+                        backgroundColor: 'transparent'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#733857';
+                        e.currentTarget.style.color = 'white';
+                        e.currentTarget.style.borderColor = '#733857';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#733857';
+                        e.currentTarget.style.borderColor = 'rgba(115, 56, 87, 0.3)';
+                      }}
                     >
-                      <LogOut className="h-4 w-4 icon" />
-                      <span className="font-medium text-sm">Sign Out</span>
+                      <LogOut className="h-4 w-4" strokeWidth={1.5} />
+                      <span className="font-medium text-sm uppercase tracking-wider" style={{ letterSpacing: '0.08em' }}>Sign Out</span>
                     </button>
                   </div>
                 </div>
@@ -1195,67 +1371,105 @@ const ProfilePage = () => {
           </div>
         ) : (
           /* Content view for specific sections */
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 min-h-[400px]">
-            <div className="p-4 sm:p-6">
+          <div className="bg-white border border-gray-200 min-h-[400px]">
+            <div className="p-6 sm:p-8">
               {renderContent()}
             </div>
           </div>
         )}
 
-        {/* Mobile Account Menu Grid - Only show on main tab */}
+        {/* Beautiful Mobile Account Menu - Only show on main tab */}
         {activeTab === 'main' && (
           <div className="lg:hidden">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="p-4">
-                <h2 className="text-lg font-semibold mb-4" style={{
-                  background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent'
-                }}>Account Menu</h2>
+            <div className="bg-white" style={{
+              border: '1px solid rgba(115, 56, 87, 0.15)',
+              boxShadow: '0 2px 12px rgba(115, 56, 87, 0.06)'
+            }}>
+              <div className="p-6">
+                {/* Elegant Mobile Header */}
+                <div className="mb-6 pb-4" style={{ borderBottom: '2px solid rgba(115, 56, 87, 0.1)' }}>
+                  <h2 className="text-lg font-light tracking-wide" style={{ 
+                    color: '#281c20',
+                    letterSpacing: '0.03em'
+                  }}>Your Account</h2>
+                  <p className="text-xs mt-1" style={{ 
+                    color: 'rgba(40, 28, 32, 0.5)',
+                    letterSpacing: '0.02em'
+                  }}>Manage your profile & preferences</p>
+                </div>
                 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className="relative flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300"
+                      className="relative group overflow-hidden transition-all duration-300"
+                      style={{
+                        border: '1px solid rgba(115, 56, 87, 0.2)',
+                        backgroundColor: 'white'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#733857';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(115, 56, 87, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(115, 56, 87, 0.2)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
                     >
-                      <tab.icon className="h-6 w-6 text-gray-600 mb-2" />
-                      <span className="font-medium text-sm text-gray-900">{tab.label}</span>
-                      {tab.id === 'cart' && cartCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                          {cartCount}
-                        </span>
-                      )}
-                      {tab.id === 'favorites' && favorites?.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                          {favorites.length}
-                        </span>
-                      )}
+                      <div className="flex flex-col items-center justify-center p-6 relative z-10">
+                        <div className="relative mb-3">
+                          <tab.icon className="h-7 w-7 transition-all duration-300" 
+                            style={{ color: 'rgba(115, 56, 87, 0.7)' }} 
+                            strokeWidth={1.5} 
+                          />
+                          {tab.id === 'favorites' && favorites?.length > 0 && (
+                            <span className="absolute -top-2 -right-2 text-white text-xs px-2 py-0.5 font-bold min-w-[20px] text-center" style={{ 
+                              backgroundColor: '#733857',
+                              letterSpacing: '0.08em',
+                              boxShadow: '0 2px 6px rgba(115, 56, 87, 0.3)'
+                            }}>
+                              {favorites.length}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-medium text-xs text-center transition-all duration-300" style={{ 
+                          color: 'rgba(40, 28, 32, 0.8)',
+                          letterSpacing: '0.02em'
+                        }}>{tab.label}</span>
+                      </div>
+                      {/* Decorative corner accent */}
+                      <div className="absolute top-0 right-0 w-0 h-0 transition-all duration-300 opacity-0 group-hover:opacity-100" style={{
+                        borderTop: '20px solid rgba(115, 56, 87, 0.08)',
+                        borderLeft: '20px solid transparent'
+                      }}></div>
                     </button>
                   ))}
                 </div>
 
-                {/* Mobile Logout Button */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <style>{`
-                    .mobile-logout-btn:hover span {
-                      color: white !important;
-                      background: none !important;
-                      -webkit-background-clip: unset !important;
-                      background-clip: unset !important;
-                    }
-                    .mobile-logout-btn:hover .icon {
-                      color: white !important;
-                    }
-                  `}</style>
+                {/* Elegant Mobile Logout Button */}
+                <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(115, 56, 87, 0.1)' }}>
                   <button
                     onClick={logout}
-                    className="mobile-logout-btn w-full flex items-center justify-center space-x-2 px-4 py-3 bg-white border-2 border-red-500 text-red-600 rounded-lg hover:bg-red-500 transition-all duration-200"
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 transition-all duration-300"
+                    style={{
+                      border: '1px solid rgba(115, 56, 87, 0.3)',
+                      color: '#733857',
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#733857';
+                      e.currentTarget.style.color = 'white';
+                      e.currentTarget.style.borderColor = '#733857';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#733857';
+                      e.currentTarget.style.borderColor = 'rgba(115, 56, 87, 0.3)';
+                    }}
                   >
-                    <LogOut className="h-5 w-5 icon" />
-                    <span className="font-medium">Sign Out</span>
+                    <LogOut className="h-5 w-5" strokeWidth={1.5} />
+                    <span className="font-medium text-sm uppercase tracking-wider" style={{ letterSpacing: '0.08em' }}>Sign Out</span>
                   </button>
                 </div>
               </div>

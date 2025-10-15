@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import OrderTrackingContent from '../components/Orders/OrderTrackingContent';
 
@@ -52,10 +52,16 @@ const OrderDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading order details...</p>
+          <div className="relative inline-block mb-6">
+            <div className="w-16 h-16 border-2 border-gray-100 rounded-full"></div>
+            <div 
+              className="w-16 h-16 border-2 border-t-[#733857] rounded-full animate-spin absolute top-0 left-0"
+              style={{ animationDuration: '0.8s' }}
+            ></div>
+          </div>
+          <p className="text-sm" style={{ color: '#1a1a1a' }}>Loading order details...</p>
         </div>
       </div>
     );
@@ -63,32 +69,43 @@ const OrderDetail = () => {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center mb-6">
-            <Link 
-              to="/profile"
-              state={{ activeTab: 'orders' }}
-              className="flex items-center text-gray-600 hover:text-gray-800 mr-4"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to My Orders
-            </Link>
-          </div>
-          <div className="bg-red-50 rounded-lg border border-red-200 p-8 text-center">
-            <h2 className="text-xl font-semibold text-red-800 mb-2">
-              {error || 'Order Not Found'}
-            </h2>
-            <p className="text-red-600 mb-4">
-              We couldn't find the order you're looking for.
-            </p>
-            <Link 
-              to="/profile"
-              state={{ activeTab: 'orders' }}
-              className="inline-block bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors"
-            >
-              View All Orders
-            </Link>
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Back Button */}
+          <Link 
+            to="/orders"
+            className="inline-flex items-center mb-8 text-sm font-medium transition-colors duration-200"
+            style={{ color: 'rgba(26, 26, 26, 0.6)' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#733857'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(26, 26, 26, 0.6)'}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Orders
+          </Link>
+
+          {/* Error State */}
+          <div 
+            className="border-l-2 border-red-500 bg-red-50 p-6"
+            style={{ animation: 'fadeIn 0.3s ease-out' }}
+          >
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <h2 className="text-lg font-medium text-red-800 mb-2">
+                  {error || 'Order Not Found'}
+                </h2>
+                <p className="text-sm text-red-600 mb-4">
+                  We couldn't find the order you're looking for.
+                </p>
+                <Link 
+                  to="/orders"
+                  className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)' }}
+                >
+                  View All Orders
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -96,39 +113,49 @@ const OrderDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center mb-6">
-          <Link 
-            to="/profile"
-            className="flex items-center text-gray-600 hover:text-gray-800 mr-4"
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <Link 
+          to="/orders"
+          className="inline-flex items-center mb-8 text-sm font-medium transition-colors duration-200"
+          style={{ color: 'rgba(26, 26, 26, 0.6)' }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#733857'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(26, 26, 26, 0.6)'}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Orders
+        </Link>
+
+        {/* Page Title */}
+        <div className="mb-8">
+          <h1 
+            className="text-3xl font-light tracking-tight mb-2"
+            style={{ color: '#1a1a1a' }}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Profile
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Order Tracking</h1>
+            Order Tracking
+          </h1>
+          <p className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
+            Track your order and view details
+          </p>
         </div>
         
-        {/* Render order details directly */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">
-              Order #{order.orderNumber}
-            </h2>
-            <p className="text-sm text-gray-500">
-              Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
-          </div>
-          
-          <OrderTrackingContent order={order} />
-        </div>
+        {/* Order Tracking Content */}
+        <OrderTrackingContent order={order} />
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

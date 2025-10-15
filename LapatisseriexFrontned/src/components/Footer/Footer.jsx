@@ -149,6 +149,13 @@ const Footer = () => {
                 Privacy Policy
               </Link>
               <Link 
+                to="/shipping-policy" 
+                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                Shipping Policy
+              </Link>
+              <Link 
                 to="/refund-policy" 
                 className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
@@ -325,6 +332,9 @@ const Footer = () => {
           <p className="text-white/40 text-xs font-light tracking-wider mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             © {new Date().getFullYear()} La Pâtisserie. All rights reserved.
           </p>
+          
+          {/* Payment Security Badge */}
+         
           
         </div>
       </div>

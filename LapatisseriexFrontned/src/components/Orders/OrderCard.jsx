@@ -23,31 +23,25 @@ import './OrderCard.css';
 const OrderCard = ({ order }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      'placed': <Clock className="h-4 w-4 text-blue-500" />,
-      'out_for_delivery': <Truck className="h-4 w-4 text-purple-500" />,
-      'delivered': <CheckCircle className="h-4 w-4 text-green-600" />
+  const getStatusConfig = (status) => {
+    const configs = {
+      'placed': {
+        icon: Package,
+        color: '#733857',
+        label: 'ORDER PLACED'
+      },
+      'out_for_delivery': {
+        icon: Truck,
+        color: '#8d4466',
+        label: 'OUT FOR DELIVERY'
+      },
+      'delivered': {
+        icon: CheckCircle,
+        color: '#059669',
+        label: 'DELIVERED'
+      }
     };
-    return icons[status] || <Clock className="h-4 w-4 text-gray-500" />;
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      'placed': 'bg-blue-50 text-blue-700 border-blue-200',
-      'out_for_delivery': 'bg-purple-50 text-purple-700 border-purple-200',
-      'delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200'
-    };
-    return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
-  };
-
-  const getStatusText = (status) => {
-    const texts = {
-      'placed': 'Order Placed',
-      'out_for_delivery': 'Out for Delivery',
-      'delivered': 'Delivered'
-    };
-    return texts[status] || status;
+    return configs[status] || configs['placed'];
   };
 
   const formatDate = (dateString) => {
@@ -69,39 +63,56 @@ const OrderCard = ({ order }) => {
   };
 
   const defaultProductImage = "/placeholder-image.jpg";
+  
+  const statusConfig = getStatusConfig(order.orderStatus);
+  const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="order-card-hover elevated-card bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden mb-6 relative z-10 mt-4">
+    <div className="bg-white border border-gray-100 transition-all duration-300 hover:shadow-lg mb-6">
       {/* Header Section */}
       <div className="p-6 pb-4">
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h4 className="font-bold text-lg text-gray-900">
-                Order #{order.orderNumber}
+              <h4 className="font-medium text-base tracking-wide" style={{ color: '#1a1a1a', letterSpacing: '0.03em' }}>
+                ORDER #{order.orderNumber}
               </h4>
-              <span className={`status-badge inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(order.orderStatus)}`}>
-                <span className={`status-icon status-${order.orderStatus}`}>
-                  {getStatusIcon(order.orderStatus)}
+              
+              {/* Clean Flat Status Badge - No Background, No Rounded Corners */}
+              <div className="flex items-center gap-2 px-2.5 py-1">
+                <StatusIcon 
+                  className="w-3.5 h-3.5" 
+                  style={{ 
+                    color: statusConfig.color,
+                    strokeWidth: 2.5
+                  }} 
+                />
+                <span 
+                  className="text-xs font-bold tracking-widest"
+                  style={{ 
+                    color: statusConfig.color,
+                    letterSpacing: '0.12em'
+                  }}
+                >
+                  {statusConfig.label}
                 </span>
-                {getStatusText(order.orderStatus)}
-              </span>
+              </div>
             </div>
             
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-4 text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
               <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-3.5 w-3.5" />
                 <span>{formatDate(order.createdAt)}</span>
               </div>
               <div className="flex items-center gap-1">
-                <ShoppingBag className="h-4 w-4" />
+                <ShoppingBag className="h-3.5 w-3.5" />
                 <span>{order.cartItems?.length || 0} item{(order.cartItems?.length || 0) !== 1 ? 's' : ''}</span>
               </div>
               {/* Dispatch Progress Indicator */}
               {order.cartItems && order.cartItems.length > 1 && order.orderStatus === 'out_for_delivery' && (
                 <div className="flex items-center gap-1">
-                  <Truck className="h-4 w-4 text-purple-500" />
-                  <span className="text-purple-600 font-medium">
+                  <Truck className="h-3.5 w-3.5" style={{ color: '#8d4466' }} />
+                  <span className="font-medium" style={{ color: '#8d4466' }}>
                     {order.cartItems.filter(item => item.dispatchStatus === 'dispatched').length}/{order.cartItems.length} dispatched
                   </span>
                 </div>
@@ -110,10 +121,10 @@ const OrderCard = ({ order }) => {
           </div>
           
           <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900 mb-1">
+            <p className="text-2xl font-medium mb-1" style={{ color: '#733857' }}>
               ₹{order.orderSummary?.grandTotal || order.amount}
             </p>
-            <div className="flex items-center gap-1 text-sm text-gray-600">
+            <div className="flex items-center gap-1 text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
               {getPaymentIcon(order.paymentMethod)}
               <span>{order.paymentMethod === 'razorpay' ? 'Online' : 'Cash on Delivery'}</span>
             </div>
@@ -125,25 +136,25 @@ const OrderCard = ({ order }) => {
           <div className="mb-4">
             <div className="flex items-center gap-3 overflow-x-auto pb-2">
               {order.cartItems.slice(0, 4).map((item, index) => (
-                <Link key={index} to={`/product/${item.productId}`} className="flex-shrink-0 relative group interactive-element">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border-2 border-white shadow-sm cursor-pointer hover:border-blue-300 transition-colors">
+                <Link key={index} to={`/product/${item.productId}`} className="flex-shrink-0 relative group">
+                  <div className="w-14 h-14 overflow-hidden bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors">
                     <img
                       src={item.productImage || defaultProductImage}
                       alt={item.productName}
-                      className="w-full h-full object-cover product-image-hover"
+                      className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.src = defaultProductImage;
                       }}
                     />
                   </div>
-                  <div className="quantity-badge absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                  <div className="absolute -top-1 -right-1 text-white text-[10px] w-4 h-4 flex items-center justify-center font-bold" style={{ backgroundColor: statusConfig.color }}>
                     {item.quantity}
                   </div>
                 </Link>
               ))}
               {order.cartItems.length > 4 && (
-                <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <span className="text-xs font-semibold text-gray-500">
+                <div className="flex-shrink-0 w-14 h-14 bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center">
+                  <span className="text-[10px] font-semibold" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                     +{order.cartItems.length - 4}
                   </span>
                 </div>
@@ -158,20 +169,21 @@ const OrderCard = ({ order }) => {
         <div className="border-t border-gray-100">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="interactive-element w-full px-6 py-3 flex items-center justify-between text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full px-6 py-3 flex items-center justify-between text-xs font-medium hover:bg-gray-50 transition-colors tracking-wider"
+            style={{ color: 'rgba(26, 26, 26, 0.7)', letterSpacing: '0.05em' }}
           >
-            <span>Order Details</span>
+            <span>ORDER DETAILS</span>
             <div className="transform transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-3.5 w-3.5" />
             </div>
           </button>
           
           {isExpanded && (
-            <div className="expandable-enter px-6 pb-4 space-y-3 bg-gray-50">
+            <div className="px-6 pb-4 space-y-3 bg-gray-50">
               {/* Delivery Location */}
               {order.deliveryLocation && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 text-gray-400" />
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
+                  <MapPin className="h-3.5 w-3.5" />
                   <span>{order.deliveryLocation}</span>
                 </div>
               )}
@@ -179,8 +191,8 @@ const OrderCard = ({ order }) => {
               {/* Product List */}
               <div className="space-y-2">
                 {order.cartItems.map((item, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div key={index} className="flex items-center gap-3 p-3 bg-white border border-gray-100">
+                    <div className="w-12 h-12 overflow-hidden bg-gray-50 flex-shrink-0">
                       <img
                         src={item.productImage || defaultProductImage}
                         alt={item.productName}
@@ -191,7 +203,7 @@ const OrderCard = ({ order }) => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h5 className="font-medium text-gray-900 truncate">
+                      <h5 className="font-medium text-sm truncate" style={{ color: '#1a1a1a' }}>
                         {item.productName}
                       </h5>
                       {(() => {
@@ -199,14 +211,14 @@ const OrderCard = ({ order }) => {
                         if (item.variant) {
                           const pricing = calculatePricing(item.variant);
                           return (
-                            <p className="text-sm text-gray-500">
+                            <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                               Qty: {item.quantity} × ₹{Math.round(pricing.finalPrice)}
                             </p>
                           );
                         } else {
                           // Fallback to stored price for older orders
                           return (
-                            <p className="text-sm text-gray-500">
+                            <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                               Qty: {item.quantity} × ₹{Math.round(item.price)}
                             </p>
                           );
@@ -220,14 +232,14 @@ const OrderCard = ({ order }) => {
                           const pricing = calculatePricing(item.variant);
                           const itemTotal = pricing.finalPrice * item.quantity;
                           return (
-                            <p className="font-semibold text-gray-900">
+                            <p className="font-medium text-sm" style={{ color: '#733857' }}>
                               ₹{Math.round(itemTotal)}
                             </p>
                           );
                         } else {
                           // Fallback to stored price for older orders
                           return (
-                            <p className="font-semibold text-gray-900">
+                            <p className="font-medium text-sm" style={{ color: '#733857' }}>
                               ₹{Math.round(item.quantity * item.price)}
                             </p>
                           );
@@ -245,16 +257,16 @@ const OrderCard = ({ order }) => {
       {/* Action Footer */}
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-xs" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
             {order.orderStatus === 'delivered' && (
-              <div className="flex items-center gap-1 text-sm text-green-600">
-                <CheckCircle className="h-4 w-4" />
+              <div className="flex items-center gap-1">
+                <CheckCircle className="h-3.5 w-3.5" style={{ color: '#059669' }} />
                 <span>Order Completed</span>
               </div>
             )}
             {order.orderStatus === 'out_for_delivery' && (
-              <div className="flex items-center gap-1 text-sm text-purple-600">
-                <Truck className="h-4 w-4 animate-pulse" />
+              <div className="flex items-center gap-1">
+                <Truck className="h-3.5 w-3.5" style={{ color: '#8d4466' }} />
                 <span>On the Way</span>
               </div>
             )}
@@ -262,10 +274,23 @@ const OrderCard = ({ order }) => {
           
           <Link 
             to={`/orders/${order.orderNumber}`}
-            className="btn-track-order inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors group interactive-element"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest transition-all duration-300 border"
+            style={{ 
+              color: '#733857',
+              borderColor: '#733857',
+              letterSpacing: '0.08em'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#733857';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = '#733857';
+            }}
           >
-            <Eye className="h-4 w-4" />
-            <span>Track Order</span>
+            <Eye className="h-3.5 w-3.5" />
+            <span>TRACK ORDER</span>
             <ExternalLink className="h-3 w-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </Link>
         </div>

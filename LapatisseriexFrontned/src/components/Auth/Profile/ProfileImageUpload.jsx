@@ -84,14 +84,21 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
 
 
   return (
-    <div className="flex flex-col items-center space-y-4">
-      <div className="relative">
-        <div className={`rounded-full overflow-hidden border-2 border-pink-300 ${size === 'small' ? 'w-16 h-16' : 'w-32 h-32'}`}>
+    <div className="flex flex-col items-center space-y-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div className="relative group">
+        <div 
+          className={`overflow-hidden border-4 transition-all duration-300 ${size === 'small' ? 'w-16 h-16' : 'w-36 h-36'}`}
+          style={{ 
+            borderColor: isEditMode ? '#BE185D' : '#E5E7EB',
+            borderRadius: '8px',
+            boxShadow: isEditMode ? '0 8px 24px rgba(190, 24, 93, 0.15)' : '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}
+        >
           <img 
-            key={profilePhoto} // Add key to force re-render when the source changes
+            key={profilePhoto}
             src={profilePhoto} 
             alt="Profile" 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = UPLOAD_CONFIG.DEFAULT_IMAGES.PROFILE_AVATAR_FALLBACK;
@@ -101,14 +108,14 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
         
         {/* Upload progress overlay */}
         {isUploading && (
-          <div className="absolute inset-0 bg-black bg-opacity-60 rounded-full flex flex-col items-center justify-center text-white">
-            <div className="w-20 h-2 bg-gray-500 rounded-full overflow-hidden">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white" style={{ backgroundColor: 'rgba(40, 28, 32, 0.85)' }}>
+            <div className="w-20 h-2 bg-gray-600 overflow-hidden">
               <div 
-                className="h-full bg-pink-500 transition-all duration-300" 
-                style={{ width: `${uploadProgress}%` }} 
+                className="h-full transition-all duration-300" 
+                style={{ width: `${uploadProgress}%`, backgroundColor: '#BE185D' }} 
               />
             </div>
-            <span className="text-xs mt-1">{uploadProgress}%</span>
+            <span className="text-xs mt-2 font-semibold">{uploadProgress}%</span>
           </div>
         )}
         
@@ -117,10 +124,13 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="absolute bottom-0 right-0 p-2 bg-pink-500 text-white rounded-full hover:bg-pink-600 disabled:bg-gray-400 transition-colors"
+            className="absolute -bottom-2 -right-2 p-3 text-white transition-all duration-300 shadow-lg disabled:opacity-50"
+            style={{ backgroundColor: '#BE185D', borderRadius: '8px' }}
+            onMouseEnter={(e) => !isUploading && (e.currentTarget.style.backgroundColor = '#9F1239')}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#BE185D'}
             title="Upload new profile photo"
           >
-            <Camera size={16} />
+            <Camera size={18} />
           </button>
         )}
       </div>
@@ -137,24 +147,30 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
       
       {/* Action buttons - only shown in edit mode */}
       {isEditMode && (
-        <div className="flex space-x-2">
+        <div className="flex space-x-3">
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="flex items-center px-3 py-2 bg-gray-100 text-sm rounded-md hover:bg-gray-200 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+            className="flex items-center px-4 py-2 text-sm font-medium transition-all disabled:opacity-50 shadow-sm"
+            style={{ backgroundColor: '#281c20', color: '#FFFFFF' }}
+            onMouseEnter={(e) => !isUploading && (e.currentTarget.style.backgroundColor = '#1f1719')}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#281c20'}
             title={`Max size: ${config.maxSize / (1024 * 1024)}MB`}
           >
-            <Upload size={14} className="mr-1" /> Change Photo
+            <Upload size={14} className="mr-2" /> Change Photo
           </button>
           
           {user?.profilePhoto?.url && (
             <button
               onClick={handleDeletePhoto}
               disabled={isUploading}
-              className="flex items-center px-3 py-2 bg-red-100 text-sm text-red-600 rounded-md hover:bg-red-200 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+              className="flex items-center px-4 py-2 text-sm font-medium border transition-all disabled:opacity-50"
+              style={{ backgroundColor: '#FEF2F2', color: '#DC2626', borderColor: '#FCA5A5' }}
+              onMouseEnter={(e) => !isUploading && (e.currentTarget.style.backgroundColor = '#FEE2E2')}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
               title="Remove profile photo"
             >
-              <Trash2 size={14} className="mr-1" /> Remove
+              <Trash2 size={14} className="mr-2" /> Remove
             </button>
           )}
         </div>
@@ -162,31 +178,53 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
       
       {/* Upload status info */}
       {isEditMode && isUploading && (
-        <div className="text-xs text-gray-600 text-center">
-          Uploading... Please don't navigate away from this page.
+        <div className="text-xs text-center font-medium px-4 py-2 border" style={{ color: '#BE185D', backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }}>
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-3 h-3 border-2 border-pink-600 border-t-transparent animate-spin" style={{ borderRadius: '50%' }}></div>
+            Uploading... Please don't navigate away
+          </div>
         </div>
       )}
       
       {/* Error and success messages - only shown in edit mode */}
       {isEditMode && error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md flex items-start justify-between max-w-sm">
-          <span className="text-sm flex-1">{error}</span>
-          <button 
-            onClick={() => resetUpload()}
-            className="ml-2 text-red-500 hover:text-red-700 transition-colors"
-            title="Dismiss error"
-          >
-            <X size={16} />
-          </button>
+        <div className="border px-4 py-3 max-w-sm shadow-sm" style={{ backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }}>
+          <div className="flex items-start justify-between mb-2">
+            <span className="text-sm flex-1" style={{ color: '#DC2626' }}>{error}</span>
+            <button 
+              onClick={() => resetUpload()}
+              className="ml-2 transition-colors flex-shrink-0"
+              style={{ color: '#DC2626' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#991B1B'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#DC2626'}
+              title="Dismiss error"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          {error.includes('503') || error.includes('unavailable') || error.includes('Server error') ? (
+            <div className="text-xs mt-2 pt-2 border-t border-red-200" style={{ color: '#991B1B' }}>
+              <p className="font-medium mb-1">Troubleshooting tips:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Wait a few moments and try again</li>
+                <li>Check if backend server is running</li>
+                <li>Verify upload endpoint is accessible</li>
+                <li>Contact support if issue persists</li>
+              </ul>
+            </div>
+          ) : null}
         </div>
       )}
       
       {isEditMode && success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-md flex items-start justify-between max-w-sm">
-          <span className="text-sm flex-1">{success}</span>
+        <div className="border px-4 py-3 flex items-start justify-between max-w-sm shadow-sm" style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }}>
+          <span className="text-sm flex-1" style={{ color: '#166534' }}>{success}</span>
           <button 
             onClick={() => resetUpload()}
-            className="ml-2 text-green-500 hover:text-green-700 transition-colors"
+            className="ml-2 transition-colors"
+            style={{ color: '#16A34A' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#15803D'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#16A34A'}
             title="Dismiss message"
           >
             <X size={16} />

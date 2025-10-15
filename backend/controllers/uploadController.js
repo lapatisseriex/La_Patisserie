@@ -202,16 +202,48 @@ export const uploadProfilePhotoComplete = asyncHandler(async (req, res) => {
       oldPublicId = user.profilePhoto.public_id;
     }
 
-    // Upload new image to Cloudinary
-    const result = await uploadToCloudinary(fileData, { 
-      folder: 'la_patisserie/profile_photos',
-      resource_type: 'image',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp']
-    });
-
-    console.log('=== CLOUDINARY UPLOAD SUCCESS ===');
-    console.log('New image URL:', result.url);
-    console.log('New image public_id:', result.public_id);
+    // Upload new image to Cloudinary with retry logic for timeouts
+    let result;
+    let uploadAttempts = 0;
+    const maxAttempts = 3;
+    
+    while (uploadAttempts < maxAttempts) {
+      try {
+        uploadAttempts++;
+        console.log(`=== CLOUDINARY UPLOAD ATTEMPT ${uploadAttempts}/${maxAttempts} ===`);
+        
+        result = await uploadToCloudinary(fileData, { 
+          folder: 'la_patisserie/profile_photos',
+          resource_type: 'image',
+          allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp']
+        });
+        
+        // If successful, break out of retry loop
+        console.log('=== CLOUDINARY UPLOAD SUCCESS ===');
+        console.log('New image URL:', result.url);
+        console.log('New image public_id:', result.public_id);
+        break;
+        
+      } catch (uploadError) {
+        console.error(`=== UPLOAD ATTEMPT ${uploadAttempts} FAILED ===`);
+        console.error('Error:', uploadError.message);
+        
+        // Check if it's a timeout error
+        const isTimeout = uploadError.message.includes('timeout') || 
+                         uploadError.message.includes('Timeout') ||
+                         uploadError.message.includes('499');
+        
+        // If timeout and we have more attempts, retry
+        if (isTimeout && uploadAttempts < maxAttempts) {
+          console.log(`⏳ Timeout detected. Retrying in 2 seconds... (Attempt ${uploadAttempts + 1}/${maxAttempts})`);
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+          continue;
+        }
+        
+        // If not a timeout or we're out of attempts, throw the error
+        throw uploadError;
+      }
+    }
 
     // Update user profile with new photo
     user.profilePhoto = { url: result.url, public_id: result.public_id };
@@ -258,6 +290,12 @@ export const uploadProfilePhotoComplete = asyncHandler(async (req, res) => {
     } else if (error.message.includes('User not found')) {
       res.status(404);
       throw new Error('User not found');
+    } else if (error.message.includes('timeout') || error.message.includes('Timeout') || error.message.includes('499')) {
+      res.status(408); // Request Timeout
+      throw new Error('Upload timed out. Please try with a smaller image or check your internet connection. If the problem persists, contact support.');
+    } else if (error.message.includes('ETIMEDOUT') || error.message.includes('ECONNABORTED')) {
+      res.status(408);
+      throw new Error('Network timeout. Please check your internet connection and try again.');
     } else {
       res.status(500);
       throw new Error(`Profile photo upload failed: ${error.message}`);

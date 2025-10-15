@@ -70,6 +70,13 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       // Get the auth token
       const authToken = localStorage.getItem('authToken');
       
+      // Check if user is authenticated
+      if (!authToken) {
+        setStatus('error');
+        setMessage('Session expired. Please log in again.');
+        return;
+      }
+      
       // Call Twilio API to send OTP with auth token
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/twilio/send-otp`, 
@@ -83,7 +90,12 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       setExpiresAt(Date.now() + 180000);
     } catch (err) {
       setStatus('error');
-      setMessage(err?.response?.data?.error || err.message || 'Failed to send OTP');
+      // Check for authentication errors
+      if (err?.response?.status === 401 || err?.response?.status === 403) {
+        setMessage('Session expired. Please log in again to continue.');
+      } else {
+        setMessage(err?.response?.data?.error || err.message || 'Failed to send OTP');
+      }
     }
   };
 
@@ -101,6 +113,13 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       
       // Get the auth token
       const authToken = localStorage.getItem('authToken');
+      
+      // Check if user is authenticated
+      if (!authToken) {
+        setStatus('error');
+        setMessage('Session expired. Please log in again.');
+        return;
+      }
       
       // Call Twilio API to verify OTP with auth token
       const response = await axios.post(
@@ -147,7 +166,12 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       setExpiresAt(null);
     } catch (err) {
       setStatus('error');
-      setMessage(err?.response?.data?.error || err.message || 'Invalid OTP');
+      // Check for authentication errors
+      if (err?.response?.status === 401 || err?.response?.status === 403) {
+        setMessage('Session expired. Please log in again to continue.');
+      } else {
+        setMessage(err?.response?.data?.error || err.message || 'Invalid OTP');
+      }
     }
   };
 
@@ -188,39 +212,46 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   });
   
   return (
-    <div className="mt-8 rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 flex items-center gap-3">
-        <ShieldCheck className="text-blue-600" size={22} />
+    <div className="mt-8 border border-gray-200 overflow-hidden" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center gap-3" style={{ backgroundColor: '#DBEAFE' }}>
+        <div className="p-2 border border-blue-300" style={{ backgroundColor: '#EFF6FF' }}>
+          <ShieldCheck size={22} style={{ color: '#2563EB' }} />
+        </div>
         <div>
-          <h4 className="text-base sm:text-lg font-semibold text-gray-900">Phone verification</h4>
-          <p className="text-xs sm:text-sm text-gray-600">Verify your phone number to receive order updates and delivery notifications</p>
+          <h4 className="text-base sm:text-lg font-semibold" style={{ color: '#281c20' }}>Phone verification</h4>
+          <p className="text-xs sm:text-sm" style={{ color: '#6B7280' }}>Verify your phone number to receive order updates and delivery notifications</p>
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4" style={{ backgroundColor: '#F0F9FF' }}>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-start">
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone number</label>
+            <label className="text-sm font-medium mb-1" style={{ color: '#2563EB', display: 'block' }}>Phone number</label>
             <div className="relative">
-              <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#9CA3AF' }} />
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Enter phone number"
                 disabled={status === 'sending' || status === 'verifying' || (user?.phoneVerified && !isEditingNumber)}
-                className={`w-full pl-10 pr-3 py-3 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent ${(user?.phoneVerified && !isEditingNumber) ? 'bg-gray-50 text-gray-700' : ''}`}
+                className="w-full pl-10 pr-3 py-3 border"
+                style={{ 
+                  borderColor: '#93C5FD',
+                  color: '#281c20',
+                  backgroundColor: (user?.phoneVerified && !isEditingNumber) || status === 'sending' || status === 'verifying' ? '#F9FAFB' : '#FFFFFF'
+                }}
               />
             </div>
             {((user?.phoneVerified && !isEditingNumber) || status === 'verified') && (
               <div className="mt-2 flex items-start gap-1 flex-col">
-                <div className="inline-flex items-center text-green-600 text-sm">
+                <div className="inline-flex items-center text-sm" style={{ color: '#10B981' }}>
                   <CheckCircle2 size={16} className="mr-1"/> 
                   {status === 'verified' && !user?.phoneVerified 
                     ? 'Verified - Click "Save Profile" to complete' 
                     : `Verified on ${user?.phoneVerifiedAt ? new Date(user.phoneVerifiedAt).toLocaleDateString() : '—'}`}
                 </div>
-                <div className="text-sm text-gray-700">
+                <div className="text-sm" style={{ color: '#374151' }}>
                   {status === 'verified' && !user?.phoneVerified 
                     ? <span>Phone number <span className="font-medium">{phone}</span> is verified. Save your profile to complete the process.</span>
                     : <span>Your verified phone number: <span className="font-medium">{user.phone}</span></span>}
@@ -228,7 +259,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
               </div>
             )}
             {isEditingNumber && (
-              <div className="mt-2 text-sm text-blue-600">
+              <div className="mt-2 text-sm" style={{ color: '#2563EB' }}>
                 Enter your new phone number and click "Send OTP" to verify it.
               </div>
             )}
@@ -239,59 +270,66 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
                 type="button"
                 onClick={onSend}
                 disabled={!phoneValid || (!canResend && status === 'sent') || status === 'sending' || status === 'verifying'}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-md text-white bg-black hover:bg-gray-800 disabled:opacity-60"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 text-white disabled:opacity-60 transition-colors"
+                style={{ backgroundColor: '#2563EB' }}
+                onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#1D4ED8')}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
               >
                 <Send size={16}/> {status === 'sending' ? 'Sending…' : canResend ? 'Send OTP' : 'Resend in ' + formatTime(remaining)}
               </button>
             )}
             {(status === 'verified' && !user?.phoneVerified) && (
               <div className="text-center">
-                <div className="inline-flex items-center text-green-600 text-sm font-medium mb-1">
+                <div className="inline-flex items-center text-sm font-medium mb-1" style={{ color: '#10B981' }}>
                   <CheckCircle2 size={16} className="mr-1"/> Phone Verified!
                 </div>
-                <div className="text-xs text-orange-600 font-medium">Profile is now in edit mode - scroll down to "Save Profile"</div>
+                <div className="text-xs font-medium" style={{ color: '#EA580C' }}>Profile is now in edit mode - scroll down to "Save Profile"</div>
               </div>
             )}
             {user?.phoneVerified && !isEditingNumber && (
-              <div className="px-4 py-3 bg-gray-100 border border-gray-200 text-gray-700 rounded-md flex items-center">
-                <CheckCircle2 size={16} className="mr-2 text-green-600"/> Verified
+              <div className="px-4 py-3 border flex items-center" style={{ backgroundColor: '#F0F9FF', borderColor: '#93C5FD', color: '#1E40AF' }}>
+                <CheckCircle2 size={16} className="mr-2" style={{ color: '#10B981' }}/> Verified
               </div>
             )}
           </div>
         </div>
 
         {status === 'sent' && (
-          <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+          <div className="border p-4" style={{ borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' }}>
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-gray-700">
-                <Timer size={18} className="text-gray-500"/>
-                <span className="text-sm">OTP expires in</span>
+              <div className="flex items-center gap-2" style={{ color: '#1E40AF' }}>
+                <Timer size={18} style={{ color: '#3B82F6' }}/>
+                <span className="text-sm font-medium">OTP expires in</span>
               </div>
-              <span className="font-mono text-sm bg-white px-2 py-1 rounded border">{formatTime(remaining)}</span>
+              <span className="font-mono text-sm px-3 py-1 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#93C5FD', color: '#2563EB' }}>{formatTime(remaining)}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Enter 6-digit code</label>
+                <label className="text-sm font-medium mb-1" style={{ color: '#2563EB', display: 'block' }}>Enter 6-digit code</label>
                 <input
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   inputMode="numeric"
                   pattern="[0-9]*"
                   placeholder="••••••"
-                  className="w-full px-3 py-3 border rounded-md focus:ring-2 focus:ring-black focus:border-transparent tracking-widest text-center font-semibold text-lg"
+                  className="w-full px-3 py-3 border tracking-widest text-center font-semibold text-lg"
+                  style={{ borderColor: '#93C5FD', color: '#281c20', backgroundColor: '#FFFFFF' }}
                 />
               </div>
               <button
                 type="button"
                 onClick={onVerify}
                 disabled={!otpValid || remaining <= 0 || status === 'verifying'}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-60"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 text-white disabled:opacity-60 transition-colors"
+                style={{ backgroundColor: '#10B981' }}
+                onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#059669')}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#10B981'}
               >
                 <ShieldCheck size={16}/> {status === 'verifying' ? 'Verifying…' : 'Verify'}
               </button>
             </div>
             {remaining <= 0 && (
-              <div className="mt-2 flex items-center text-amber-700 text-sm">
+              <div className="mt-2 flex items-center text-sm" style={{ color: '#D97706' }}>
                 <XCircle size={16} className="mr-1"/> The code has expired. Please resend a new OTP.
               </div>
             )}
@@ -299,7 +337,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
         )}
 
         {message && (
-          <div className={`flex items-center gap-2 text-sm ${status === 'error' ? 'text-red-700' : 'text-green-700'}`}>
+          <div className="flex items-center gap-2 text-sm" style={{ color: status === 'error' ? '#B91C1C' : '#059669' }}>
             {status === 'error' ? <XCircle size={16}/> : <CheckCircle2 size={16}/>} {message}
           </div>
         )}
@@ -309,7 +347,10 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
             <button
               type="button"
               onClick={handleChangeNumber}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50"
+              className="inline-flex items-center gap-2 px-3 py-2 border transition-colors"
+              style={{ borderColor: '#93C5FD', color: '#2563EB' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#DBEAFE'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <RefreshCcw size={16}/> Change Number
             </button>
@@ -328,7 +369,10 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
                 setOtp('');
                 setExpiresAt(null);
               }}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-50 text-gray-700"
+              className="inline-flex items-center gap-2 px-3 py-2 border transition-colors"
+              style={{ borderColor: '#D1D5DB', color: '#374151' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               Cancel
             </button>

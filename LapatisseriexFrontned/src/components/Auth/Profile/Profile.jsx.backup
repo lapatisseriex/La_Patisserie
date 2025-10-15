@@ -16,16 +16,7 @@ import {
   Flag,
   Check,
   ChevronDown,
-  Building,
-  Edit3,
-  Save,
-  X,
-  Mail,
-  Cake,
-  MapPinned,
-  Shield,
-  Award,
-  Sparkles
+  Building
 } from 'lucide-react';
 import EmailVerification from './EmailVerification';
 import PhoneVerification from './PhoneVerification';
@@ -739,214 +730,147 @@ const Profile = () => {
         </>
       )}
       
-      {/* Hero Section - Header Style */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Profile Image */}
-            <div className="relative">
-              <div className="relative">
-                <ProfileImageUpload isEditMode={isEditMode} />
-              </div>
-              {user?.phoneVerified && (
-                <div className="absolute -bottom-1 -right-1 bg-black p-1.5 shadow-lg">
-                  <Shield className="h-4 w-4 text-white" />
-                </div>
-              )}
-            </div>
-            
-            {/* User Info & Actions */}
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  {formData.name || 'Welcome Back'}
-                </h1>
-                {user?.phoneVerified && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-black text-xs font-semibold" style={{color: '#281c20'}}>
-                    <Shield className="h-3 w-3" />
-                    Verified
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-600 mb-4" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Manage your sweet preferences & delivery details</p>
-              
-              {/* Quick Stats */}
-              <div className="flex items-center justify-center md:justify-start gap-4 text-sm">
-                <div className="flex items-center gap-1 text-gray-500" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <MapPinned className="h-4 w-4" />
-                  <span>{formData.location ? 'Location Set' : 'Set Location'}</span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-500" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <Cake className="h-4 w-4" />
-                  <span>{formData.dob ? 'Birthday Added' : 'Add Birthday'}</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Edit Button - Header Style */}
-            {!isEditMode && (
-              <button
-                onClick={handleEditProfile}
-                className="group relative px-8 py-3 bg-black text-white overflow-hidden shadow-sm hover:shadow-md transition-all duration-300" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
-              >
-                <span className="relative flex items-center gap-2 font-semibold">
-                  <Edit3 className="h-4 w-4" />
-                  Edit Profile
-                </span>
-              </button>
-            )}
+      <div className="max-w-4xl mx-auto p-6 relative">
+      
+      <div className="mb-6 flex flex-col md:flex-row items-center gap-6">
+        <div className="mb-4 md:mb-0">
+          {/* Profile Image Upload Component */}
+          <ProfileImageUpload isEditMode={isEditMode} />
+        </div>
+        <div className="flex flex-1 justify-between items-center w-full">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">My Profile</h2>
+            <p className="text-gray-600">Update your personal information</p>
           </div>
+          {!isEditMode && (
+            <button
+              onClick={handleEditProfile}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            >
+              Edit Profile
+            </button>
+          )}
         </div>
       </div>
-      
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
 
-      <form onSubmit={handleSubmit} className="profile-form-mobile space-y-8 pb-20 md:pb-6">
-        {/* Loading Indicator - Header Style */}
+      <form onSubmit={handleSubmit} className="profile-form-mobile space-y-6 pb-20 md:pb-6">
+        {/* Loading Indicator - More prominent and fixed positioned */}
         {isSaving && (
-          <div className="fixed top-0 left-0 right-0 z-50 bg-black py-4 shadow-lg animate-fadeIn">
-            <div className="container mx-auto px-4">
+          <div className="fixed top-0 left-0 right-0 z-50 bg-black bg-opacity-80 py-3 shadow-lg animate-fadeIn">
+            <div className="container mx-auto">
               <div className="flex items-center justify-center">
-                <div className="relative mr-4">
-                  <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                <div className="mr-3 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-lg" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Updating Your Profile...</p>
-                  <p className="text-gray-300 text-sm" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Please wait</p>
+                  <p className="text-white font-medium">Saving your profile... Please wait while we update your information</p>
                 </div>
               </div>
             </div>
           </div>
         )}
         
-        {/* Success Message - Header Style */}
+        {/* Secondary Loading Indicator (in-form) */}
+        {isSaving && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 animate-fadeIn relative overflow-hidden mb-4 shadow-md">
+            <div className="absolute bottom-0 left-0 h-1 bg-blue-500 animate-growWidth"></div>
+            <div className="flex items-center">
+              <div className="mr-3 flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div>
+                <p className="text-blue-800 font-medium">Saving your profile...</p>
+                <p className="text-blue-600 text-sm">Please wait while we update your information</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Success/Error Messages */}
         {successMessage && (
-          <div className="bg-gray-100 border-l-4 border-black p-6 shadow-sm animate-fadeIn">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 bg-white border border-gray-200 flex items-center justify-center">
-                  <Check className="h-6 w-6 text-black" />
-                </div>
+          <div className="bg-green-50 border border-green-200 rounded-md p-4 animate-fadeIn relative overflow-hidden">
+            <div className="absolute bottom-0 left-0 h-1 bg-green-500 animate-growWidth"></div>
+            <div className="flex items-center">
+              <div className="bg-green-100 p-1.5 rounded-full mr-3">
+                <Check className="h-5 w-5 text-green-600" />
               </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>{successMessage}</h3>
-                <p className="text-gray-600 text-sm mt-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Your profile has been updated successfully!</p>
+              <div>
+                <p className="text-green-800 font-medium">{successMessage}</p>
+                <p className="text-green-600 text-sm">Your profile has been updated successfully</p>
               </div>
             </div>
           </div>
         )}
         
-        {/* Error Message - Header Style */}
         {localError && (
-          <div className="bg-gray-100 border-l-4 border-black p-6 shadow-sm animate-fadeIn">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 bg-white border border-gray-200 flex items-center justify-center">
-                  <X className="h-6 w-6 text-black" />
-                </div>
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 animate-fadeIn relative overflow-hidden">
+            <div className="absolute bottom-0 left-0 h-1 bg-red-500 animate-growWidth"></div>
+            <div className="flex items-center">
+              <div className="bg-red-100 p-1.5 rounded-full mr-3 flex items-center justify-center">
+                <span className="text-red-600 font-bold text-lg leading-none">!</span>
               </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Error</h3>
-                <p className="text-gray-700 text-sm mt-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{localError}</p>
-              </div>
+              <p className="text-red-800 font-medium">{localError}</p>
             </div>
           </div>
         )}
 
-        {/* Personal Information Section - Header Style */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-white border border-gray-200 flex items-center justify-center">
-                <User className="h-5 w-5 text-black" style={{color: '#281c20'}} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Personal Information</h2>
-                <p className="text-sm text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Your basic details</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Name Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Name <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Arun"
+                required
+                readOnly={!isEditMode}
+                disabled={isSaving}
+                className={inputClasses}
+              />
             </div>
           </div>
-          
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Name Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <User className="h-4 w-4 text-gray-500" />
-                Full Name <span className="text-black">*</span>
-              </label>
-              <div className="relative group">
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                  required
-                  readOnly={!isEditMode}
-                  disabled={isSaving}
-                  className={`w-full px-4 py-3 border ${
-                    isEditMode 
-                      ? 'border-gray-300 focus:border-black bg-white' 
-                      : 'border-gray-200 bg-gray-50'
-                  } focus:ring-2 focus:ring-black transition-all duration-300 outline-none ${
-                    !isEditMode ? 'text-gray-700' : 'text-black'
-                  }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
-                />
-              </div>
-            </div>
 
-            {/* Gender Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <User className="h-4 w-4 text-gray-500" />
-                Gender <span className="text-black">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  disabled={!isEditMode || isSaving}
-                  className={`w-full px-4 py-3 border ${
-                    isEditMode 
-                      ? 'border-gray-300 focus:border-black bg-white' 
-                      : 'border-gray-200 bg-gray-50'
-                  } focus:ring-2 focus:ring-black transition-all duration-300 outline-none appearance-none ${
-                    !isEditMode ? 'text-gray-700' : 'text-black'
-                  }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
-                >
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Verification Section - Header Style */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-white border border-gray-200 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-black" style={{color: '#281c20'}} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Verification & Security</h2>
-                <p className="text-sm text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Verify your contact details</p>
-              </div>
+          {/* Gender Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Gender <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                disabled={!isEditMode || isSaving}
+                className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                  !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                }`}
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
           
-          <div className="p-6 space-y-6">
-            {/* Email verification section */}
+          {/* Email verification section */}
+          <div className="md:col-span-2">
             <EmailVerification />
-            
-            {/* Phone verification section */}
+          </div>
+          
+          {/* Phone verification section */}
+          <div className="md:col-span-2">
             <PhoneVerification 
               key={`phone-${user?.phoneVerified}-${user?.phoneVerifiedAt}`}
               onVerificationSuccess={() => {
@@ -958,269 +882,218 @@ const Profile = () => {
               }}
             />
           </div>
-        </div>
-        
-        {/* Special Dates Section - Pink Shade */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200" style={{backgroundColor: '#FFF1F2'}}>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-white border border-pink-200 flex items-center justify-center">
-                <Cake className="h-5 w-5" style={{color: '#BE185D'}} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold" style={{color: '#BE185D', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Special Dates</h2>
-                <p className="text-sm" style={{color: '#9F1239', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Get special treats on your special days!</p>
-              </div>
+          
+          {/* Date of Birth Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Date of Birth <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="date"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+                max={today}
+                readOnly={!isEditMode}
+                disabled={isSaving}
+                className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                  !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                }`}
+              />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
-          
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6" style={{backgroundColor: '#FFFBFC'}}>
-            {/* Date of Birth Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#BE185D', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <Calendar className="h-4 w-4" style={{color: '#EC4899'}} />
-                Date of Birth <span style={{color: '#BE185D'}}>*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  name="dob"
-                  value={formData.dob}
-                  onChange={handleChange}
-                  max={today}
-                  readOnly={!isEditMode}
-                  disabled={isSaving}
-                  className={`w-full px-4 py-3 border ${
-                    isEditMode 
-                      ? 'border-pink-300 focus:border-pink-600 bg-white' 
-                      : 'border-pink-200 bg-pink-50'
-                  } focus:ring-2 transition-all duration-300 outline-none ${
-                    !isEditMode ? 'text-gray-700' : 'text-black'
-                  }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif', '--tw-ring-color': '#EC4899'}}
-                />
-              </div>
-              <p className="text-xs" style={{color: '#9F1239', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                We'll send you special birthday treats!
-              </p>
-            </div>
 
-            {/* Date of Anniversary Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#BE185D', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <Heart className="h-4 w-4" style={{color: '#EC4899'}} />
-                Anniversary Date
-              </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  name="anniversary"
-                  value={formData.anniversary}
-                  onChange={handleChange}
-                  max={today}
-                  readOnly={!isEditMode}
-                  disabled={isSaving}
-                  className={`w-full px-4 py-3 border ${
-                    isEditMode 
-                      ? 'border-pink-300 focus:border-pink-600 bg-white' 
-                      : 'border-pink-200 bg-pink-50'
-                  } focus:ring-2 transition-all duration-300 outline-none ${
-                    !isEditMode ? 'text-gray-700' : 'text-black'
-                  }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif', '--tw-ring-color': '#EC4899'}}
-                />
-              </div>
-              <p className="text-xs" style={{color: '#9F1239', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                Celebrate with special anniversary offers!
-              </p>
+
+
+          {/* Date of Anniversary Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Date of Anniversary</label>
+            <div className="relative">
+              <Heart className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="date"
+                name="anniversary"
+                value={formData.anniversary}
+                onChange={handleChange}
+                max={today}
+                readOnly={!isEditMode}
+                disabled={isSaving}
+                className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                  !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                }`}
+              />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
         </div>
 
-        {/* Delivery Information Section - Chocolate Shade */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200" style={{backgroundColor: '#F5F3F0'}}>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-white border flex items-center justify-center" style={{borderColor: '#8B7355'}}>
-                <MapPin className="h-5 w-5" style={{color: '#6B4423'}} />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Delivery Location */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Delivery Location <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  name="location"
+                  value={formData.location || ''}
+                  onChange={handleChange}
+                  disabled={isSaving || locationsLoading || !isEditMode}
+                  required
+                  className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                    !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                  }`}
+                >
+                  <option value="">Select delivery location</option>
+                  {locations && locations.length > 0 ? (
+                    locations.map(location => (
+                      <option key={location._id} value={location._id}>
+                        {location.area}, {location.city} - {location.pincode}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>Loading locations...</option>
+                  )}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
-              <div>
-                <h2 className="text-lg font-bold" style={{color: '#6B4423', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Delivery Information</h2>
-                <p className="text-sm" style={{color: '#8B7355', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Where should we deliver your treats?</p>
+            </div>
+
+            {/* Country Field */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  disabled={loading || !isEditMode}
+                  className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none ${
+                    !isEditMode ? 'bg-gray-50 text-gray-700' : ''
+                  }`}
+                >
+                  <option value="India">India</option>
+                  <option value="USA">USA</option>
+                  <option value="UK">UK</option>
+                  <option value="Canada">Canada</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
           </div>
-          
-          <div className="p-6 space-y-6" style={{backgroundColor: '#FAFAF9'}}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Delivery Location */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <MapPinned className="h-4 w-4" style={{color: '#8B7355'}} />
-                  Delivery Location <span style={{color: '#6B4423'}}>*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    name="location"
-                    value={formData.location || ''}
-                    onChange={handleChange}
-                    disabled={isSaving || locationsLoading || !isEditMode}
-                    required
-                    className={`w-full px-4 py-3 border ${
-                      isEditMode 
-                        ? 'bg-white focus:border-black' 
-                        : 'bg-stone-50'
-                    } focus:ring-2 transition-all duration-300 outline-none appearance-none ${
-                      !isEditMode ? 'text-gray-700' : 'text-black'
-                    }`}
-                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
-                  >
-                    <option value="">Select delivery location</option>
-                    {locations && locations.length > 0 ? (
-                      locations.map(location => (
-                        <option key={location._id} value={location._id}>
-                          {location.area}, {location.city} - {location.pincode}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>Loading locations...</option>
-                    )}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{color: '#8B7355'}} />
-                </div>
-              </div>
 
-              {/* Country Field */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <Flag className="h-4 w-4" style={{color: '#8B7355'}} />
-                  Country <span style={{color: '#6B4423'}}>*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    disabled={loading || !isEditMode}
-                    className={`w-full px-4 py-3 border ${
-                      isEditMode 
-                        ? 'bg-white focus:border-black' 
-                        : 'bg-stone-50'
-                    } focus:ring-2 transition-all duration-300 outline-none appearance-none ${
-                      !isEditMode ? 'text-gray-700' : 'text-black'
-                    }`}
-                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
-                  >
-                    <option value="India">India</option>
-                    <option value="USA">USA</option>
-                    <option value="UK">UK</option>
-                    <option value="Canada">Canada</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{color: '#8B7355'}} />
-                </div>
-              </div>
-            </div>
-
-            {/* Hostel Selection */}
-            {formData.location && (
-              <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <Building className="h-4 w-4" style={{color: '#8B7355'}} />
-                  Hostel/Residence
-                  <span className="text-xs font-normal ml-2" style={{color: '#8B7355'}}>(Optional)</span>
-                </label>
-                <div className="relative">
-                  {!isEditMode ? (
-                    <div className={`w-full px-4 py-3 border bg-stone-50 text-gray-700`} style={{fontFamily: 'system-ui, -apple-system, sans-serif', borderColor: '#8B7355'}}>
+          {/* Hostel Selection */}
+          {formData.location && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Hostel/Residence</label>
+              <div className="relative">
+                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                {!isEditMode ? (
+                  // Read-only display showing the selected hostel name
+                  // Try to get name from user context (cached data with full objects) first, then context lookup
+                  <div className={`${inputClasses} cursor-not-allowed flex items-center justify-between`}>
+                    <span>
                       {(() => {
                         if (!formData.hostel) return 'No hostel selected';
+
+                        // First, try to get name from user's hostel object (in cached user data)
                         if (user?.hostel && typeof user.hostel === 'object' && user.hostel._id === formData.hostel) {
-                          return `${user.hostel.name || 'Unknown Hostel'}`;
+                          return user.hostel.name || 'Unknown Hostel';
                         }
+
+                        // Then try context lookup if hostels are loaded
                         if (hostels && hostels.length > 0) {
                           const hostelObj = hostels.find(h => h._id === formData.hostel);
                           if (hostelObj) return hostelObj.name;
                         }
+
+                        // Finally, show loading state if we have an ID but haven't found the name yet
                         return 'Loading hostel details...';
                       })()}
-                    </div>
-                  ) : (
-                    <select
-                      name="hostel"
-                      value={formData.hostel || ''}
-                      onChange={handleChange}
-                      disabled={isSaving || hostelsLoading}
-                      className={`w-full px-4 py-3 border bg-white focus:border-black focus:ring-2 transition-all duration-300 outline-none appearance-none text-black`}
-                      style={{fontFamily: 'system-ui, -apple-system, sans-serif', borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
-                    >
-                      <option value="">Select hostel/residence (Optional)</option>
-                      {hostels && hostels.length > 0 ? (
-                        hostels.map(hostel => (
-                          <option key={hostel._id} value={hostel._id}>
-                            {hostel.name}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>
-                          {hostelsLoading ? 'Loading hostels...' : 'No hostels available'}
+                    </span>
+                  </div>
+                ) : (
+                  // Edit mode with select dropdown
+                  <select
+                    name="hostel"
+                    value={formData.hostel || ''}
+                    onChange={handleChange}
+                    disabled={isSaving || hostelsLoading}
+                    className={`w-full pl-10 pr-10 py-3 border border-gray-300 rounded-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none`}
+                  >
+                    <option value="">Select hostel/residence (Optional)</option>
+                    {hostels && hostels.length > 0 ? (
+                      hostels.map(hostel => (
+                        <option key={hostel._id} value={hostel._id}>
+                          {hostel.name}
                         </option>
-                      )}
-                    </select>
-                  )}
-                  {isEditMode && (
-                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{color: '#8B7355'}} />
-                  )}
-                </div>
-                <p className="text-xs" style={{color: '#8B7355', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  Help us deliver faster
-                </p>
+                      ))
+                    ) : (
+                      <option value="" disabled>
+                        {hostelsLoading ? 'Loading hostels...' : 'No hostels available'}
+                      </option>
+                    )}
+                  </select>
+                )}
+                {isEditMode && (
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Action Buttons - Header Style */}
+        {/* Action Buttons - only show in edit mode */}
         {isEditMode && (
-          <div className="profile-save-buttons sticky bottom-16 md:bottom-0 z-[60] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 bg-white border-t border-gray-200">
-            <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={isSaving}
-                className="flex-1 px-6 py-4 border-2 border-gray-300 hover:border-black transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <X className="h-5 w-5" />
-                  Cancel
-                </span>
-              </button>
-              <button
-                type="submit"
-                disabled={isSaving || !formData.name.trim()}
-                className="flex-1 relative px-8 py-4 bg-black text-white overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
-              >
-                <span className={`relative flex items-center justify-center gap-2 transition-opacity duration-300 ${isSaving ? 'opacity-0' : 'opacity-100'}`}>
-                  <Save className="h-5 w-5" />
-                  Save Profile
-                </span>
-                {isSaving && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="flex items-center gap-2">
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent animate-spin"></div>
-                      <span className="text-sm font-semibold">Saving...</span>
-                    </div>
+          <div className="profile-save-buttons flex items-center justify-center space-x-4 pt-6 pb-4 sticky bottom-16 md:bottom-0 bg-white border-t border-gray-200 mt-6 -mx-6 px-6 py-4 shadow-lg z-[60]">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isSaving}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              CANCEL
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving || !formData.name.trim()}
+              className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden min-w-[140px]"
+            >
+              <span className={`flex items-center justify-center gap-2 transition-opacity duration-300 ${isSaving ? 'opacity-0' : 'opacity-100'}`}>
+                SAVE PROFILE
+              </span>
+              {isSaving && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src="/images/logo.png" 
+                      alt="Loading" 
+                      className="h-5 w-5 animate-spin"
+                      style={{
+                        filter: 'brightness(0) invert(1)', // Makes logo white
+                        animation: 'spin 1s linear infinite'
+                      }}
+                    />
+                    <span className="text-sm font-medium">SAVING PROFILE...</span>
                   </div>
-                )}
-              </button>
-            </div>
+                </div>
+              )}
+            </button>
           </div>
         )}
       </form>
+
       </div>
     </>
   );
 };
 
 export default Profile;
-
