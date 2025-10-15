@@ -1659,7 +1659,7 @@ const ProfilePage = () => {
 
             {/* Desktop Main Content */}
             <div className="lg:col-span-3">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 min-h-[400px]">
+              <div className="bg-white shadow-lg border border-gray-200 min-h-[400px]">
                 <div className="p-6 sm:p-8">
                   {activeTab === 'main' ? (
                     <div className="text-center py-12">

@@ -12,6 +12,11 @@ import {
   FaCheckDouble,
   FaEye
 } from 'react-icons/fa';
+import { 
+  ShoppingCart, 
+  Package, 
+  Heart
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import notificationService from '../../services/notificationService';
 
@@ -21,7 +26,6 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, notificationId: null, title: '' });
   const navigate = useNavigate();
 
   const fetchNotifications = async (page = 1, append = false) => {
@@ -52,7 +56,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
       setCurrentPage(1);
     }
   }, [isOpen]);
-
+  console.log("Notifications:", notifications);
   const loadMore = () => {
     if (!loading && hasMore) {
       const nextPage = currentPage + 1;
@@ -95,16 +99,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
     }
   };
 
-  const showDeleteConfirmation = (notificationId, title) => {
-    setDeleteConfirm({ 
-      show: true, 
-      notificationId, 
-      title: title.length > 30 ? title.substring(0, 30) + '...' : title 
-    });
-  };
-
-  const confirmDelete = async () => {
-    const { notificationId } = deleteConfirm;
+  const deleteNotification = async (notificationId) => {
     try {
       await notificationService.deleteNotification(notificationId);
       const deletedNotification = notifications.find(n => n._id === notificationId);
@@ -122,13 +117,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
     } catch (error) {
       console.error('Error deleting notification:', error);
       toast.error('Failed to delete notification');
-    } finally {
-      setDeleteConfirm({ show: false, notificationId: null, title: '' });
     }
-  };
-
-  const cancelDelete = () => {
-    setDeleteConfirm({ show: false, notificationId: null, title: '' });
   };
 
   const handleViewOrderStatus = async (notification) => {
@@ -148,14 +137,47 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'order_placed':
-        return <FaBox className="text-green-500" />;
+        return <ShoppingCart className="w-4 h-4" style={{ color: '#733857' }} />;
       case 'order_dispatched':
-        return <FaTruck className="text-blue-500" />;
+        return <FaTruck className="text-orange-500" />;
       case 'order_delivered':
         return <FaCheck className="text-green-500" />;
       default:
-        return <FaBox className="text-gray-500" />;
+        return <Package className="w-4 h-4" style={{ color: '#8d4466' }} />;
     }
+  };
+
+  const getDisplayText = (notification) => {
+    // For order_placed, just show "New Order Placed"
+    if (notification.type === 'order_placed') {
+      return { text: 'New Order Placed', price: extractPrice(notification) };
+    }
+    
+    // For other types, try to extract product name from message
+    const message = notification.message || notification.title || '';
+    
+    // Look for product names in bold (between **)
+    const productMatch = message.match(/\*\*(.*?)\*\*/);
+    if (productMatch) {
+      const productName = productMatch[1].trim();
+      if (productName && !productName.includes('#') && productName.length > 2) {
+        return { text: productName, price: extractPrice(notification) };
+      }
+    }
+    
+    // Fallback based on type
+    const fallbacks = {
+      'order_dispatched': 'Order Dispatched',
+      'order_delivered': 'Order Delivered',
+    };
+    
+    return { text: fallbacks[notification.type] || 'Order Update', price: extractPrice(notification) };
+  };
+  
+  const extractPrice = (notification) => {
+    const combinedText = `${notification.title} ${notification.message}`;
+    const priceMatch = combinedText.match(/₹\s*([\d,]+(?:\.\d{2})?)/);
+    return priceMatch ? `₹${priceMatch[1]}` : null;
   };
 
   const formatDate = (dateString) => {
@@ -225,10 +247,10 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center gap-2">
-                <FaBell className="text-gray-600" />
-                <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+                <FaBell style={{ color: '#733857' }} />
+                <h3 className="text-lg font-semibold" style={{ color: '#733857' }}>Notifications</h3>
                 {unreadCount > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                  <span className="text-white text-xs px-2 py-1 rounded-full font-bold" style={{ backgroundColor: '#733857' }}>
                     {unreadCount}
                   </span>
                 )}
@@ -237,7 +259,19 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    className="text-xs font-medium flex items-center gap-1 px-2 py-1 rounded transition-colors"
+                    style={{ 
+                      color: '#8d4466',
+                      backgroundColor: 'rgba(141, 68, 102, 0.1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#8d4466';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(141, 68, 102, 0.1)';
+                      e.currentTarget.style.color = '#8d4466';
+                    }}
                   >
                     <FaCheckDouble className="text-xs" />
                     Mark all read
@@ -245,7 +279,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                 )}
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded transition-colors"
                 >
                   <FaTimes />
                 </button>
@@ -256,105 +290,113 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
             <div className="flex-1 overflow-y-auto">
               {loading && notifications.length === 0 ? (
                 <div className="flex items-center justify-center p-6">
-                  <FaSpinner className="animate-spin text-blue-600 mr-2" />
-                  <span>Loading notifications...</span>
+                  <FaSpinner className="animate-spin mr-2" style={{ color: '#733857' }} />
+                  <span style={{ color: '#733857' }}>Loading notifications...</span>
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="text-center p-8 text-gray-500">
-                  <FaBell className="mx-auto text-4xl mb-4 text-gray-300" />
-                  <h4 className="text-lg font-medium mb-2">No notifications yet</h4>
-                  <p className="text-sm">We'll notify you when there's something new!</p>
+                <div className="text-center p-8">
+                  <Package className="mx-auto text-4xl mb-4" style={{ color: 'rgba(115, 56, 87, 0.3)' }} />
+                  <h4 className="text-lg font-medium mb-2" style={{ color: '#733857' }}>No notifications yet</h4>
+                  <p className="text-sm" style={{ color: 'rgba(115, 56, 87, 0.6)' }}>We'll notify you when there's something new!</p>
                 </div>
               ) : (
                 <div>
-                  {notifications.map((notification) => (
-                    <motion.div
-                      key={notification._id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`p-4 border-b border-gray-100 transition-colors ${
-                        !notification.read ? 'bg-blue-50 border-l-4 border-l-blue-400' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-1">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 
-                                className={`text-sm font-medium ${
-                                  !notification.read ? 'text-gray-900' : 'text-gray-700'
-                                }`}
-                                dangerouslySetInnerHTML={{ 
-                                  __html: formatMessageWithBold(notification.title) 
-                                }}
-                              />
-                              <p 
-                                className={`text-sm mt-1 ${
-                                  !notification.read ? 'text-gray-700' : 'text-gray-500'
-                                }`}
-                                dangerouslySetInnerHTML={{ 
-                                  __html: formatMessageWithBold(notification.message) 
-                                }}
-                              />
-                              <div className="flex items-center justify-between mt-3">
+                  {notifications.map((notification) => {
+                    const { text, price } = getDisplayText(notification);
+                    
+                    return (
+                      <motion.div
+                        key={notification._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-3 border-b border-gray-100 transition-colors ${
+                          !notification.read ? 'bg-gradient-to-r from-rose-50 via-pink-50 to-rose-50 border-l-2 border-l-[#733857]' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0">
+                            {getNotificationIcon(notification.type)}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className={`text-sm font-medium truncate ${
+                                !notification.read ? 'text-gray-900' : 'text-gray-700'
+                              }`}>
+                                {text}
+                              </h4>
+                              {price && (
+                                <span className="text-sm font-semibold ml-2 shrink-0" style={{ color: '#733857' }}>
+                                  {price}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center justify-between mt-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  notification.type === 'order_placed' ? 'bg-green-100 text-green-700' :
+                                  notification.type === 'order_dispatched' ? 'bg-orange-100 text-orange-700' :
+                                  notification.type === 'order_delivered' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {notification.type === 'order_placed' ? 'Placed' :
+                                   notification.type === 'order_dispatched' ? 'Dispatched' :
+                                   notification.type === 'order_delivered' ? 'Delivered' : 'Update'}
+                                </span>
                                 <span className="text-xs text-gray-400">
                                   {formatDate(notification.createdAt)}
                                 </span>
-                                <div className="flex items-center gap-2">
-                                  {!notification.read && (
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                  )}
-                                  {/* View Order Status Button for order-related notifications */}
-                                  {(notification.type === 'order_placed' || 
-                                    notification.type === 'order_dispatched' || 
-                                    notification.type === 'order_delivered') && (
-                                    <>
-                                      <style>{`
-                                        .view-order-btn:hover span {
-                                          color: white !important;
-                                          background: none !important;
-                                          -webkit-background-clip: unset !important;
-                                          background-clip: unset !important;
-                                        }
-                                        .view-order-btn:hover .icon {
-                                          color: white !important;
-                                        }
-                                      `}</style>
-                                      <button
-                                        onClick={() => handleViewOrderStatus(notification)}
-                                        className="view-order-btn flex items-center gap-1 px-3 py-1.5 bg-white border-2 rounded transition-all duration-200 font-medium hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] border-[#733857] transform hover:scale-[1.02] active:scale-[0.98]"
-                                      >
-                                        <FaEye className="text-xs icon" style={{ color: '#733857' }} />
-                                        <span style={{
-                                          background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-                                          WebkitBackgroundClip: 'text',
-                                          backgroundClip: 'text',
-                                          color: 'transparent'
-                                        }}>View Order Status</span>
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-1">
+                                {!notification.read && (
+                                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#733857' }}></span>
+                                )}
+                                
+                                {/* Compact View Button */}
+                                {(notification.type === 'order_placed' || 
+                                  notification.type === 'order_dispatched' || 
+                                  notification.type === 'order_delivered') && (
+                                  <button
+                                    onClick={() => handleViewOrderStatus(notification)}
+                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-all duration-200 hover:scale-105 active:scale-95"
+                                    style={{
+                                      backgroundColor: 'rgba(115, 56, 87, 0.1)',
+                                      color: '#733857',
+                                      border: '1px solid rgba(115, 56, 87, 0.2)'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#733857';
+                                      e.currentTarget.style.color = 'white';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.1)';
+                                      e.currentTarget.style.color = '#733857';
+                                    }}
+                                  >
+                                    <FaEye className="text-xs" />
+                                    View
+                                  </button>
+                                )}
+                                
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(notification._id);
+                                  }}
+                                  className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors"
+                                  title="Delete"
+                                >
+                                  <FaTrash className="text-xs" />
+                                </button>
                               </div>
                             </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showDeleteConfirmation(notification._id, notification.title);
-                              }}
-                              className="text-gray-400 hover:text-red-500 ml-2 p-1"
-                              title="Delete notification"
-                            >
-                              <FaTrash className="text-xs" />
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                   
                   {/* Load More Button */}
                   {hasMore && (
@@ -362,7 +404,20 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                       <button
                         onClick={loadMore}
                         disabled={loading}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50"
+                        className="font-medium text-sm px-4 py-2 rounded transition-all duration-200 disabled:opacity-50"
+                        style={{ 
+                          color: '#733857',
+                          backgroundColor: 'rgba(115, 56, 87, 0.1)',
+                          border: '1px solid rgba(115, 56, 87, 0.2)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#733857';
+                          e.currentTarget.style.color = 'white';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.1)';
+                          e.currentTarget.style.color = '#733857';
+                        }}
                       >
                         {loading ? (
                           <>
@@ -380,53 +435,6 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
             </div>
           </motion.div>
 
-          {/* Delete Confirmation Dialog */}
-          <AnimatePresence>
-            {deleteConfirm.show && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-                style={{ zIndex: 9999999 }}
-                onClick={cancelDelete}
-              >
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl"
-                >
-                  <div className="text-center">
-                    <div className="text-red-500 mb-4">
-                      <FaTrash className="text-3xl mx-auto" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Delete Notification
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Are you sure you want to delete "{deleteConfirm.title}"? This action cannot be undone.
-                    </p>
-                    <div className="flex gap-3 justify-center">
-                      <button
-                        onClick={cancelDelete}
-                        className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={confirmDelete}
-                        className="px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </>
       )}
     </AnimatePresence>
