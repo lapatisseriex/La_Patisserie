@@ -306,8 +306,26 @@ const Payment = () => {
           color: '#EAB308', // Yellow theme color
         },
         modal: {
-          ondismiss: () => {
+          ondismiss: async () => {
+            console.log('Razorpay popup dismissed/cancelled by user');
             setIsProcessing(false);
+            
+            // Cancel the order on backend since payment was not completed
+            try {
+              await fetch(`${import.meta.env.VITE_API_URL}/payments/cancel-order`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${user?.token || localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: orderData.orderId,
+                }),
+              });
+              console.log('Order cancelled successfully');
+            } catch (error) {
+              console.error('Failed to cancel order:', error);
+            }
           },
         },
       };

@@ -578,6 +578,84 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   }
 });
 
+// Cancel Order (when Razorpay popup is dismissed/cancelled)
+export const cancelOrder = asyncHandler(async (req, res) => {
+  try {
+    const { razorpay_order_id } = req.body;
+    const userId = req.user?._id;
+
+    console.log('Cancelling order for Razorpay Order ID:', razorpay_order_id);
+
+    if (!razorpay_order_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Razorpay order ID is required'
+      });
+    }
+
+    // Find the order
+    const order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+
+    if (!order) {
+      console.log('Order not found for cancellation:', razorpay_order_id);
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Verify the order belongs to the requesting user
+    if (order.userId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to cancel this order'
+      });
+    }
+
+    // Only cancel orders that are in 'created' payment status (not paid/failed)
+    if (order.paymentStatus !== 'created') {
+      console.log('Order already processed, cannot cancel. Payment status:', order.paymentStatus);
+      return res.status(400).json({
+        success: false,
+        message: 'Order cannot be cancelled',
+        currentStatus: order.paymentStatus
+      });
+    }
+
+    // Update order status to cancelled
+    order.orderStatus = 'cancelled';
+    order.paymentStatus = 'cancelled';
+    await order.save();
+
+    console.log('Order cancelled successfully:', order.orderNumber);
+
+    // Delete the "Order Placed" notification if it exists
+    try {
+      await Notification.deleteMany({
+        userId: order.userId,
+        orderNumber: order.orderNumber,
+        type: 'order_placed'
+      });
+      console.log('Order placed notification deleted for cancelled order');
+    } catch (notifError) {
+      console.error('Error deleting notification:', notifError.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully',
+      orderNumber: order.orderNumber
+    });
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel order',
+      error: error.message
+    });
+  }
+});
+
 // Razorpay Webhook Handler
 export const handleWebhook = asyncHandler(async (req, res) => {
   try {
@@ -844,10 +922,11 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 
     const skip = (page - 1) * limit;
     
-    // Only show orders with specific statuses for users
+    // Only show orders with specific statuses for users (exclude cancelled and payment pending)
     const orders = await Order.find({ 
       userId,
-      orderStatus: { $in: ['placed', 'out_for_delivery', 'delivered'] }
+      orderStatus: { $in: ['placed', 'confirmed', 'ready', 'out_for_delivery', 'delivered'] },
+      paymentStatus: { $ne: 'cancelled' }
     })
       .populate({
         path: 'hostelId',
@@ -890,7 +969,8 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 
     const total = await Order.countDocuments({ 
       userId,
-      orderStatus: { $in: ['placed', 'out_for_delivery', 'delivered'] }
+      orderStatus: { $in: ['placed', 'confirmed', 'ready', 'out_for_delivery', 'delivered'] },
+      paymentStatus: { $ne: 'cancelled' }
     });
 
     res.json({

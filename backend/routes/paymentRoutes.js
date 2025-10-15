@@ -2,6 +2,7 @@ import express from 'express';
 import { 
   createOrder, 
   verifyPayment, 
+  cancelOrder,
   handleWebhook, 
   getPaymentDetails,
   getAllOrders,
@@ -21,6 +22,9 @@ router.post('/create-order', protect, createOrder);
 
 // Verify Razorpay payment
 router.post('/verify', verifyPayment);
+
+// Cancel order (when payment popup is dismissed)
+router.post('/cancel-order', protect, cancelOrder);
 
 // Razorpay webhook (no auth required)
 router.post('/webhook', handleWebhook);
