@@ -6,7 +6,7 @@ const initialState = {
   favorites: [],
   favoriteIds: [],
   count: 0,
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  status: 'idle', 
   error: null,
   needsIntegrityCheck: false
 };

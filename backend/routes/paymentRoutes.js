@@ -8,6 +8,7 @@ import {
   getAllOrders,
   getOrderDetails,
   getUserOrders,
+  getUserPayments,
   listPayments,
   getPaymentById,
   createPaymentRecord
@@ -36,6 +37,9 @@ router.get('/payment/:paymentId', protect, getPaymentDetails);
 router.get('/orders', protect, getAllOrders); // Admin: Get all orders
 router.get('/orders/user', protect, getUserOrders); // User: Get user's orders
 router.get('/orders/:orderNumber', protect, getOrderDetails); // Get specific order details
+
+// User payments route  
+router.get('/user/payments', protect, getUserPayments); // User: Get user's payments/transactions
 
 // Admin Payment Management endpoints
 router.get('/', protect, admin, listPayments); // GET /api/payments

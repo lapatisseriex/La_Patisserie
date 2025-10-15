@@ -59,7 +59,26 @@ const UserMenu = memo(() => {
         style={{fontFamily: 'sans-serif', color: '#281c20'}}
         aria-label="My Account"
       >
-        <User className="h-4 w-4 transition-colors duration-300" style={{color: '#281c20'}} />
+        {user?.profilePhoto?.url ? (
+          <div className="relative">
+            <img 
+              src={user.profilePhoto.url} 
+              alt="Profile" 
+              className="h-10 w-10 rounded-full object-cover transition-all duration-300 group-hover:scale-110 border border-gray-200"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+                e.target.nextElementSibling.style.display = 'block';
+              }}
+            />
+            <User 
+              className="h-4 w-4 transition-colors duration-300 hidden" 
+              style={{color: '#281c20'}} 
+            />
+          </div>
+        ) : (
+          <User className="h-4 w-4 transition-colors duration-300" style={{color: '#281c20'}} />
+        )}
         
         {isProfileIncomplete && (
           <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 animate-pulse rounded-none" />

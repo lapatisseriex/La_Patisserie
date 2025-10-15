@@ -1203,3 +1203,71 @@ export const updatePaymentStatus = asyncHandler(async (req, res) => {
 
   res.json({ success: true, payment, previousStatus: prev });
 });
+
+// User: Get user's payments/transactions
+export const getUserPayments = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, status, method, startDate, endDate } = req.query;
+  const userId = req.user._id;
+  
+  const filter = { userId };
+  
+  if (status) filter.paymentStatus = status;
+  if (method) filter.paymentMethod = method;
+  if (startDate || endDate) {
+    filter.date = {};
+    if (startDate) filter.date.$gte = new Date(startDate);
+    if (endDate) filter.date.$lte = new Date(endDate);
+  }
+  
+  const skip = (Number(page) - 1) * Number(limit);
+  
+  const [payments, total] = await Promise.all([
+    Payment.find(filter)
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .select('orderId amount paymentMethod paymentStatus date gatewayPaymentId gatewayOrderId meta timestamps'),
+    Payment.countDocuments(filter)
+  ]);
+  
+  // Enrich payments with order information
+  const enrichedPayments = await Promise.all(payments.map(async (payment) => {
+    let orderInfo = null;
+    if (payment.orderId) {
+      const order = await Order.findOne({ orderNumber: payment.orderId })
+        .select('orderNumber orderStatus cartItems deliveryLocation userDetails');
+      if (order) {
+        orderInfo = {
+          orderNumber: order.orderNumber,
+          orderStatus: order.orderStatus,
+          itemCount: order.cartItems?.length || 0
+        };
+      }
+    }
+    
+    return {
+      _id: payment._id,
+      orderId: payment.orderId,
+      amount: payment.amount,
+      paymentMethod: payment.paymentMethod,
+      paymentStatus: payment.paymentStatus,
+      date: payment.date,
+      createdAt: payment.createdAt,
+      gatewayPaymentId: payment.gatewayPaymentId,
+      gatewayOrderId: payment.gatewayOrderId,
+      orderInfo
+    };
+  }));
+  
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.json({ 
+    success: true, 
+    payments: enrichedPayments, 
+    pagination: { 
+      page: Number(page), 
+      limit: Number(limit), 
+      total, 
+      pages: Math.ceil(total / Number(limit)) 
+    } 
+  });
+});

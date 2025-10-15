@@ -6,6 +6,7 @@ import cartReducer from './cartSlice';
 import productsReducer from './productsSlice';
 import authReducer from './authSlice';
 import userReducer from './userSlice';
+import paymentsReducer from './paymentsSlice';
 import cartMiddleware from './cartMiddleware';
 
 // Root persist config - persist both auth and user for compatibility
@@ -13,7 +14,7 @@ const persistConfig = {
   key: 'root',
   storage,
   whitelist: ['cart', 'favorites', 'auth', 'user'],
-  blacklist: ['products'],
+  blacklist: ['products', 'payments'],
 };
 
 // Slice-level persist configs
@@ -35,6 +36,7 @@ const combinedReducers = combineReducers({
   favorites: persistedFavoritesReducer,
   cart: persistedCartReducer,
   products: productsReducer,
+  payments: paymentsReducer,
 });
 
 // Synchronization middleware to keep auth and user slices in sync
