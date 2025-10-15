@@ -115,6 +115,7 @@ const orderSchema = new mongoose.Schema({
   deliveryLocation: {
     type: String,
     required: true
+    // Removed index: true to avoid duplicate index warning
   },
   hostelName: {
     type: String,

@@ -471,6 +471,24 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 
     console.log('Verifying payment:', { razorpay_order_id, razorpay_payment_id });
 
+    // ✅ IDEMPOTENCY CHECK: Prevent duplicate payment processing
+    // Check if this payment has already been processed
+    const existingPayment = await Payment.findOne({
+      gatewayPaymentId: razorpay_payment_id
+    });
+
+    if (existingPayment) {
+      console.log('⚠️ Payment already processed:', razorpay_payment_id);
+      const order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+      return res.json({
+        success: true,
+        message: 'Payment already verified',
+        orderNumber: order?.orderNumber,
+        paymentId: razorpay_payment_id,
+        orderId: razorpay_order_id,
+      });
+    }
+
     // Create signature
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
@@ -482,9 +500,12 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (isAuthentic) {
-      // Update order status in database
+      // ✅ ATOMIC UPDATE: Use findOneAndUpdate with conditions to prevent race conditions
       const order = await Order.findOneAndUpdate(
-        { razorpayOrderId: razorpay_order_id },
+        { 
+          razorpayOrderId: razorpay_order_id,
+          paymentStatus: { $in: ['created', 'pending'] } // Only update if not already paid
+        },
         { 
           paymentStatus: 'paid',
           razorpayPaymentId: razorpay_payment_id,
@@ -494,6 +515,19 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       );
 
       if (!order) {
+        // Check if order exists but already paid
+        const existingOrder = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+        if (existingOrder && existingOrder.paymentStatus === 'paid') {
+          console.log('⚠️ Order already paid:', existingOrder.orderNumber);
+          return res.json({
+            success: true,
+            message: 'Payment already verified',
+            orderNumber: existingOrder.orderNumber,
+            paymentId: razorpay_payment_id,
+            orderId: razorpay_order_id,
+          });
+        }
+        
         return res.status(404).json({
           success: false,
           message: 'Order not found',

@@ -261,6 +261,14 @@ const Payment = () => {
         description: 'Payment for your delicious order',
         order_id: orderData.orderId,
         handler: async (response) => {
+          // ✅ Prevent multiple simultaneous verification calls
+          if (window.__paymentVerifying) {
+            console.log('⚠️ Payment verification already in progress, skipping duplicate call');
+            return;
+          }
+          
+          window.__paymentVerifying = true;
+          
           try {
             // Verify payment on backend
             const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/payments/verify`, {
@@ -294,6 +302,7 @@ const Payment = () => {
             console.error('Payment verification error:', error);
             alert('Payment verification failed. Please contact support.');
           } finally {
+            window.__paymentVerifying = false;
             setIsProcessing(false);
           }
         },
