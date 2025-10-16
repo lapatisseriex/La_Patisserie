@@ -2,23 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FaBell, 
-  FaTimes, 
-  FaCheck, 
-  FaTruck,
-  FaBox,
-  FaTrash,
-  FaSpinner,
-  FaCheckDouble,
-  FaEye
-} from 'react-icons/fa';
-import { 
-  ShoppingCart, 
-  Package, 
-  Heart
+  Bell,
+  X, 
+  Check, 
+  Truck,
+  Package,
+  Trash2,
+  Loader2,
+  CheckCheck,
+  Eye,
+  ShoppingCart,
+  Heart,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import notificationService from '../../services/notificationService';
+import './NotificationPanel.css';
 
 const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
   const [notifications, setNotifications] = useState([]);
@@ -137,13 +137,13 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'order_placed':
-        return <ShoppingCart className="w-4 h-4" style={{ color: '#733857' }} />;
+        return <img src="/checkout.png" alt="Order Placed" className="w-4 h-4" />;
       case 'order_dispatched':
-        return <FaTruck className="text-orange-500" />;
+        return <img src="/market-capitalization.png" alt="Order Dispatched" className="w-4 h-4" />;
       case 'order_delivered':
-        return <FaCheck className="text-green-500" />;
+        return <img src="/delivery-box.png" alt="Order Delivered" className="w-4 h-4" />;
       default:
-        return <Package className="w-4 h-4" style={{ color: '#8d4466' }} />;
+        return <img src="/market-capitalization.png" alt="Order Update" className="w-4 h-4" />;
     }
   };
 
@@ -202,7 +202,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999, pointerEvents: isOpen ? 'auto' : 'none' }}>
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isOpen && (
           <>
             {/* Backdrop */}
@@ -210,6 +210,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
               onClick={onClose}
               style={{
                 position: 'fixed',
@@ -217,7 +218,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                backgroundColor: 'rgba(40, 28, 32, 0.5)',
                 zIndex: 999998
               }}
             />
@@ -227,169 +228,337 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              transition={{ 
+                type: 'tween',
+                duration: 0.3,
+                ease: "easeInOut"
+              }}
               style={{
                 position: 'fixed',
                 right: 0,
                 top: 0,
                 height: '100vh',
-                width: '100vw',
-                maxWidth: '384px',
-                backgroundColor: 'white',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 32px 64px -12px rgba(40, 28, 32, 0.25), 0 0 0 1px rgba(115, 56, 87, 0.1)',
                 zIndex: 999999,
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
               }}
-              className="sm:w-96"
+              className="w-full sm:w-96 md:w-1/2 lg:w-2/5 xl:w-1/3"
             >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-              <div className="flex items-center gap-2">
-                <FaBell style={{ color: '#733857' }} />
-                <h3 className="text-lg font-semibold" style={{ color: '#733857' }}>Notifications</h3>
-                {unreadCount > 0 && (
-                  <span className="text-white text-xs px-2 py-1 rounded-full font-bold" style={{ backgroundColor: '#733857' }}>
-                    {unreadCount}
-                  </span>
-                )}
+            <div 
+              className="flex items-center justify-between p-6"
+              style={{ 
+                borderBottom: '2px solid rgba(115, 56, 87, 0.1)'
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(115, 56, 87, 0.1)' }}>
+                  <Bell 
+                    className="w-5 h-5" 
+                    style={{ color: '#733857' }}
+                    strokeWidth={1.5}
+                  />
+                </div>
+                <div>
+                  <h3 
+                    className="text-lg font-light tracking-wide uppercase luxury-text-shimmer" 
+                    style={{ 
+                      letterSpacing: '0.08em',
+                      fontSize: '14px'
+                    }}
+                  >
+                    NOTIFICATIONS
+                  </h3>
+                  {unreadCount > 0 && (
+                    <p 
+                      className="text-xs font-medium mt-0.5"
+                      style={{ 
+                        color: 'rgba(40, 28, 32, 0.6)',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      {unreadCount} unread update{unreadCount !== 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
-                  <button
+                  <span
                     onClick={markAllAsRead}
-                    className="text-xs font-medium flex items-center gap-1 px-2 py-1 rounded transition-colors"
+                    className="text-xs font-bold tracking-widest flex items-center gap-2 transition-all duration-300 group cursor-pointer"
                     style={{ 
-                      color: '#8d4466',
-                      backgroundColor: 'rgba(141, 68, 102, 0.1)'
+                      color: '#733857',
+                      letterSpacing: '0.08em'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#8d4466';
-                      e.currentTarget.style.color = 'white';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(141, 68, 102, 0.1)';
                       e.currentTarget.style.color = '#8d4466';
                     }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#733857';
+                    }}
                   >
-                    <FaCheckDouble className="text-xs" />
-                    Mark all read
-                  </button>
+                    <CheckCheck className="w-3 h-3 group-hover:scale-110 transition-transform" strokeWidth={2} />
+                    MARK ALL READ
+                  </span>
                 )}
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded transition-colors"
+                  className="p-2 transition-all duration-300 group"
+                  style={{ 
+                    color: 'rgba(40, 28, 32, 0.4)',
+                    backgroundColor: 'transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.1)';
+                    e.currentTarget.style.color = '#dc2626';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'rgba(40, 28, 32, 0.4)';
+                  }}
                 >
-                  <FaTimes />
+                  <X className="w-5 h-5 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
                 </button>
               </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div 
+              className="flex-1 overflow-y-auto scrollbar-hidden" 
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                WebkitScrollbar: 'none'
+              }}
+            >
               {loading && notifications.length === 0 ? (
-                <div className="flex items-center justify-center p-6">
-                  <FaSpinner className="animate-spin mr-2" style={{ color: '#733857' }} />
-                  <span style={{ color: '#733857' }}>Loading notifications...</span>
+                <div className="flex flex-col items-center justify-center p-12">
+                  <div className="p-4 mb-4 rounded-xl" style={{ backgroundColor: 'rgba(115, 56, 87, 0.1)' }}>
+                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#733857' }} strokeWidth={1.5} />
+                  </div>
+                  <h4 
+                    className="text-sm font-light tracking-wide mb-2"
+                    style={{ 
+                      color: '#281c20',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    LOADING NOTIFICATIONS
+                  </h4>
+                  <p 
+                    className="text-xs tracking-wide"
+                    style={{ 
+                      color: 'rgba(40, 28, 32, 0.5)',
+                      letterSpacing: '0.03em'
+                    }}
+                  >
+                    Please wait while we fetch your updates
+                  </p>
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="text-center p-8">
-                  <Package className="mx-auto text-4xl mb-4" style={{ color: 'rgba(115, 56, 87, 0.3)' }} />
-                  <h4 className="text-lg font-medium mb-2" style={{ color: '#733857' }}>No notifications yet</h4>
-                  <p className="text-sm" style={{ color: 'rgba(115, 56, 87, 0.6)' }}>We'll notify you when there's something new!</p>
+                <div className="text-center p-12">
+                  <div className="p-6 mb-6 mx-auto rounded-2xl" style={{ 
+                    backgroundColor: 'rgba(115, 56, 87, 0.05)',
+                    width: 'fit-content'
+                  }}>
+                    <Bell className="w-12 h-12" style={{ color: 'rgba(115, 56, 87, 0.3)' }} strokeWidth={1} />
+                  </div>
+                  <h4 
+                    className="text-lg font-light tracking-wide mb-3"
+                    style={{ 
+                      color: '#281c20',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    ALL CAUGHT UP
+                  </h4>
+                  <p 
+                    className="text-sm tracking-wide"
+                    style={{ 
+                      color: 'rgba(40, 28, 32, 0.5)',
+                      letterSpacing: '0.03em'
+                    }}
+                  >
+                    No new notifications at this time
+                  </p>
+                  <div 
+                    className="mt-6 pt-4"
+                    style={{ borderTop: '1px solid rgba(115, 56, 87, 0.1)' }}
+                  >
+                    <p 
+                      className="text-xs tracking-wider"
+                      style={{ 
+                        color: 'rgba(40, 28, 32, 0.4)',
+                        letterSpacing: '0.08em'
+                      }}
+                    >
+                      WE'LL NOTIFY YOU WHEN SOMETHING NEW ARRIVES
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div>
-                  {notifications.map((notification) => {
+                  {notifications.map((notification, index) => {
                     const { text, price } = getDisplayText(notification);
                     
                     return (
                       <motion.div
                         key={notification._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`p-3 border-b border-gray-100 transition-colors ${
-                          !notification.read ? 'bg-gradient-to-r from-rose-50 via-pink-50 to-rose-50 border-l-2 border-l-[#733857]' : ''
-                        }`}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05, duration: 0.4 }}
+                        className="transition-all duration-500 group cursor-pointer notification-item relative overflow-hidden"
+                        style={{
+                          backgroundColor: !notification.read 
+                            ? 'rgba(115, 56, 87, 0.02)' 
+                            : '#ffffff',
+                          borderBottom: '1px solid rgba(115, 56, 87, 0.08)',
+                          borderLeft: 'none'
+                        }}
+                        whileHover={{
+                          scale: 1.02,
+                          boxShadow: '0 8px 25px rgba(115, 56, 87, 0.15)',
+                          backgroundColor: 'rgba(115, 56, 87, 0.08)',
+                          borderLeft: 'none'
+                        }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0">
-                            {getNotificationIcon(notification.type)}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <h4 className={`text-sm font-medium truncate ${
-                                !notification.read ? 'text-gray-900' : 'text-gray-700'
-                              }`}>
-                                {text}
-                              </h4>
-                              {price && (
-                                <span className="text-sm font-semibold ml-2 shrink-0" style={{ color: '#733857' }}>
-                                  {price}
-                                </span>
-                              )}
+                        <div className="p-5">
+                          <div className="flex items-start gap-4">
+                            {/* Icon Container */}
+                            <div className="flex-shrink-0">
+                              {getNotificationIcon(notification.type)}
                             </div>
                             
-                            <div className="flex items-center justify-between mt-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  notification.type === 'order_placed' ? 'bg-green-100 text-green-700' :
-                                  notification.type === 'order_dispatched' ? 'bg-orange-100 text-orange-700' :
-                                  notification.type === 'order_delivered' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {notification.type === 'order_placed' ? 'Placed' :
-                                   notification.type === 'order_dispatched' ? 'Dispatched' :
-                                   notification.type === 'order_delivered' ? 'Delivered' : 'Update'}
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  {formatDate(notification.createdAt)}
-                                </span>
-                              </div>
-                              
-                              <div className="flex items-center gap-1">
-                                {!notification.read && (
-                                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#733857' }}></span>
-                                )}
-                                
-                                {/* Compact View Button */}
-                                {(notification.type === 'order_placed' || 
-                                  notification.type === 'order_dispatched' || 
-                                  notification.type === 'order_delivered') && (
-                                  <button
-                                    onClick={() => handleViewOrderStatus(notification)}
-                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-all duration-200 hover:scale-105 active:scale-95"
-                                    style={{
-                                      backgroundColor: 'rgba(115, 56, 87, 0.1)',
-                                      color: '#733857',
-                                      border: '1px solid rgba(115, 56, 87, 0.2)'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = '#733857';
-                                      e.currentTarget.style.color = 'white';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.1)';
-                                      e.currentTarget.style.color = '#733857';
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              {/* Header */}
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex-1 pr-2">
+                                  <h4 
+                                    className="text-sm font-medium truncate tracking-wide"
+                                    style={{ 
+                                      color: !notification.read ? '#281c20' : 'rgba(40, 28, 32, 0.8)',
+                                      letterSpacing: '0.02em'
                                     }}
                                   >
-                                    <FaEye className="text-xs" />
-                                    View
-                                  </button>
-                                )}
+                                    {text}
+                                  </h4>
+                                  {price && (
+                                    <p 
+                                      className="text-sm font-bold mt-0.5"
+                                      style={{ 
+                                        color: '#733857',
+                                        letterSpacing: '0.03em'
+                                      }}
+                                    >
+                                      {price}
+                                    </p>
+                                  )}
+                                </div>
                                 
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteNotification(notification._id);
-                                  }}
-                                  className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors"
-                                  title="Delete"
-                                >
-                                  <FaTrash className="text-xs" />
-                                </button>
+                                {/* Unread Indicator */}
+                                {!notification.read && (
+                                  <div 
+                                    className="w-2 h-2 mt-1 flex-shrink-0 status-glow"
+                                    style={{ 
+                                      backgroundColor: '#733857'
+                                    }}
+                                  ></div>
+                                )}
+                              </div>
+                              
+                              {/* Status & Actions */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  {/* Status PNG Icon */}
+                                  <div className="flex items-center">
+                                    {(() => {
+                                      switch (notification.type) {
+                                        case 'order_placed':
+                                          return <img src="/checkout.png" alt="Order Placed" className="w-3 h-3" />;
+                                        case 'order_dispatched':
+                                          return <img src="/market-capitalization.png" alt="Order Dispatched" className="w-3 h-3" />;
+                                        case 'order_delivered':
+                                          return <img src="/delivery-box.png" alt="Order Delivered" className="w-3 h-3" />;
+                                        default:
+                                          return <img src="/images/status/order-update.png" alt="Order Update" className="w-3 h-3" />;
+                                      }
+                                    })()}
+                                  </div>
+                                  
+                                  {/* Time */}
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" style={{ color: 'rgba(40, 28, 32, 0.4)' }} strokeWidth={1.5} />
+                                    <span 
+                                      className="text-xs tracking-wide"
+                                      style={{ 
+                                        color: 'rgba(40, 28, 32, 0.5)',
+                                        letterSpacing: '0.02em'
+                                      }}
+                                    >
+                                      {formatDate(notification.createdAt)}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-1">
+                                  {/* View Text Link */}
+                                  {(notification.type === 'order_placed' || 
+                                    notification.type === 'order_dispatched' || 
+                                    notification.type === 'order_delivered') && (
+                                    <span
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewOrderStatus(notification);
+                                      }}
+                                      className="flex items-center gap-1 text-xs font-bold tracking-widest transition-all duration-300 group-hover:scale-105 cursor-pointer"
+                                      style={{
+                                        color: '#733857',
+                                        letterSpacing: '0.05em'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = '#8d4466';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = '#733857';
+                                      }}
+                                    >
+                                      <Eye className="w-3 h-3" strokeWidth={2} />
+                                      VIEW
+                                    </span>
+                                  )}
+                                  
+                                  {/* Delete Button */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notification._id);
+                                    }}
+                                    className="p-1.5 transition-all duration-300 group-hover:scale-105"
+                                    style={{ 
+                                      color: 'rgba(40, 28, 32, 0.4)',
+                                      backgroundColor: 'transparent'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.1)';
+                                      e.currentTarget.style.color = '#dc2626';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'transparent';
+                                      e.currentTarget.style.color = 'rgba(40, 28, 32, 0.4)';
+                                    }}
+                                    title="Remove notification"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -398,41 +567,66 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                     );
                   })}
                   
-                  {/* Load More Button */}
+                  {/* Load More Text Link */}
                   {hasMore && (
-                    <div className="p-4 text-center">
-                      <button
+                    <div className="p-6 text-center">
+                      <span
                         onClick={loadMore}
-                        disabled={loading}
-                        className="font-medium text-sm px-4 py-2 rounded transition-all duration-200 disabled:opacity-50"
+                        className={`font-bold text-xs tracking-widest transition-all duration-300 group cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}
                         style={{ 
                           color: '#733857',
-                          backgroundColor: 'rgba(115, 56, 87, 0.1)',
-                          border: '1px solid rgba(115, 56, 87, 0.2)'
+                          letterSpacing: '0.1em'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#733857';
-                          e.currentTarget.style.color = 'white';
+                          if (!loading) {
+                            e.currentTarget.style.color = '#8d4466';
+                          }
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.1)';
-                          e.currentTarget.style.color = '#733857';
+                          if (!loading) {
+                            e.currentTarget.style.color = '#733857';
+                          }
                         }}
                       >
                         {loading ? (
-                          <>
-                            <FaSpinner className="animate-spin inline mr-1" />
-                            Loading...
-                          </>
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-3 h-3 animate-spin" strokeWidth={2} />
+                            <span>LOADING</span>
+                          </span>
                         ) : (
-                          'Load More'
+                          <span className="flex items-center gap-2">
+                            <span>LOAD MORE UPDATES</span>
+                            <Package className="w-3 h-3 group-hover:scale-110 transition-transform" strokeWidth={2} />
+                          </span>
                         )}
-                      </button>
+                      </span>
                     </div>
                   )}
                 </div>
               )}
             </div>
+            
+            {/* Luxury Footer */}
+            {notifications.length > 0 && (
+              <div 
+                className="p-4"
+                style={{ 
+                  borderTop: '2px solid rgba(115, 56, 87, 0.1)'
+                }}
+              >
+                <div className="flex items-center justify-center">
+                  <p 
+                    className="text-xs font-light tracking-widest text-center"
+                    style={{ 
+                      color: 'rgba(40, 28, 32, 0.4)',
+                      letterSpacing: '0.1em'
+                    }}
+                  >
+                    LA PATISSERIE NOTIFICATIONS
+                  </p>
+                </div>
+              </div>
+            )}
           </motion.div>
 
         </>

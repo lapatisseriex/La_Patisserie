@@ -138,6 +138,7 @@ const Header = ({ isAdminView = false }) => {
   // Get user's location display name
   const [userLocationDisplay, setUserLocationDisplay] = useState('Select Location');
   const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
+  const [isCartHovered, setIsCartHovered] = useState(false);
   
   // Memoize location display to prevent unnecessary re-calculations and ensure it updates properly
   const memoizedUserLocationDisplay = useMemo(() => {
