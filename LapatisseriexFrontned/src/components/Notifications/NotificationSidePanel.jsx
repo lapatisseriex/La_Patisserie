@@ -462,14 +462,41 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                                   )}
                                 </div>
                                 
-                                {/* Unread Indicator */}
+                                {/* Elegant Unread Indicator */}
                                 {!notification.read && (
-                                  <div 
-                                    className="w-2 h-2 mt-1 flex-shrink-0 status-glow"
-                                    style={{ 
-                                      backgroundColor: '#733857'
-                                    }}
-                                  ></div>
+                                  <div className="relative flex-shrink-0 mt-1">
+                                    {/* Subtle pulsing glow */}
+                                    <div 
+                                      className="absolute inset-0 animate-pulse opacity-40"
+                                      style={{
+                                        background: 'radial-gradient(circle, rgba(115, 56, 87, 0.6) 0%, transparent 70%)',
+                                        width: '8px',
+                                        height: '8px',
+                                        borderRadius: '50%'
+                                      }}
+                                    />
+                                    {/* Main elegant dot */}
+                                    <div 
+                                      className="relative transition-all duration-300"
+                                      style={{
+                                        background: 'linear-gradient(135deg, rgba(115, 56, 87, 0.9) 0%, rgba(141, 68, 102, 0.8) 100%)',
+                                        width: '6px',
+                                        height: '6px',
+                                        borderRadius: '50%',
+                                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                                        boxShadow: '0 1px 3px rgba(115, 56, 87, 0.3)'
+                                      }}
+                                    >
+                                      {/* Subtle inner shine */}
+                                      <div 
+                                        className="absolute top-0 left-0 w-2 h-2 opacity-60"
+                                        style={{
+                                          background: 'radial-gradient(circle at top left, rgba(255, 255, 255, 0.7) 0%, transparent 60%)',
+                                          borderRadius: '50%'
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                               
