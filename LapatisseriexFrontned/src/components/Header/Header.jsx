@@ -138,6 +138,7 @@ const Header = ({ isAdminView = false }) => {
   // Get user's location display name
   const [userLocationDisplay, setUserLocationDisplay] = useState('Select Location');
   const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
+  const [isCartHovered, setIsCartHovered] = useState(false);
   
   // Memoize location display to prevent unnecessary re-calculations and ensure it updates properly
   const memoizedUserLocationDisplay = useMemo(() => {
@@ -565,13 +566,24 @@ const Header = ({ isAdminView = false }) => {
         <div className={`mobile-location-bar md:hidden bg-white border-b border-gray-200 z-[56] transition-all duration-300 ${hideLocationBar ? 'max-h-0 py-0' : 'max-h-20 py-2'}`}>
           <div className="px-3">
             <div className="flex justify-between items-center">
-              <div className="flex items-center text-xs py-1 px-2 rounded-md" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: 'rgba(40, 28, 32, 0.7)'}}>
+              <button 
+                onClick={() => {
+                  if (user) {
+                    navigate('/profile');
+                  } else {
+                    toggleAuthPanel();
+                  }
+                }}
+                className="flex items-center text-xs py-1 px-2 rounded-md hover:bg-gray-50 transition-colors duration-200 active:bg-gray-100" 
+                style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: 'rgba(40, 28, 32, 0.7)'}}
+              >
                 <img src="/compass.png" alt="Location" className="h-4 w-4 mr-2" />
                 <span className="truncate max-w-[120px] font-light">{memoizedUserLocationDisplay}</span>
                 {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                   <AlertTriangle className="h-3 w-3 ml-1 text-amber-400" />
                 )}
-              </div>
+                <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
+              </button>
               
               {/* Mobile Notification Bell - Right Side */}
               <div className="flex items-center">

@@ -17,8 +17,10 @@ const BottomNavigation = () => {
   const { user, toggleAuthPanel } = useAuth();
   const { cartCount } = useCart();
 
-  // Don't show on admin pages
-  if (location.pathname.startsWith('/admin')) {
+  // Don't show on admin, profile, or payment pages
+  if (location.pathname.startsWith('/admin') || 
+      location.pathname === '/profile' || 
+      location.pathname === '/payment') {
     return null;
   }
 

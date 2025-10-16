@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheckCircle, FaMapMarkerAlt, FaCreditCard, FaWallet, FaExclamationTriangle } from 'react-icons/fa';
 import { BsCashCoin } from 'react-icons/bs';
-import { Building } from 'lucide-react';
+import { Building, ChevronLeft } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
@@ -526,6 +526,22 @@ const Payment = () => {
 
   return (
     <ShopClosureOverlay overlayType="page" showWhenClosed={!isOpen}>
+      {/* Simple Navigation Bar */}
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/cart" className="flex items-center gap-3 text-gray-600 hover:text-[#733857] transition-colors">
+              <ChevronLeft className="h-5 w-5" />
+              <span className="font-medium">Back to Cart</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <img src="/images/logo.png" alt="La Patisserie" className="h-8 w-auto" />
+              <span className="font-semibold text-[#733857]">La Patisserie</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 min-h-screen">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center mb-4 sm:mb-6">

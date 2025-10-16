@@ -81,7 +81,69 @@ const UserMenu = memo(() => {
         )}
         
         {isProfileIncomplete && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 animate-pulse rounded-none" />
+          <div 
+            className="absolute -top-1 -right-1 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate('/profile');
+            }}
+            title="Complete your profile for better experience"
+          >
+            {/* Elegant Notification Badge */}
+            <div className="relative">
+              {/* Pulsing outer ring */}
+              <div 
+                className="absolute inset-0 rounded-full animate-ping opacity-75"
+                style={{
+                  background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)',
+                  width: '14px',
+                  height: '14px'
+                }}
+              />
+              {/* Main badge */}
+              <div 
+                className="relative flex items-center justify-center rounded-full shadow-lg transform transition-all duration-300 hover:scale-125 cursor-pointer"
+                style={{
+                  background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)',
+                  width: '14px',
+                  height: '14px',
+                  animation: 'profileBadgePulse 2s ease-in-out infinite'
+                }}
+              >
+                {/* Inner glow effect */}
+                <div 
+                  className="absolute inset-0 rounded-full opacity-70 animate-pulse"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, transparent 70%)',
+                  }}
+                />
+                {/* Exclamation mark */}
+                <div 
+                  className="text-white text-xs font-bold leading-none"
+                  style={{ fontSize: '8px' }}
+                >
+                  !
+                </div>
+                {/* Multiple sparkles */}
+                <div 
+                  className="absolute w-0.5 h-0.5 bg-white rounded-full opacity-90 animate-pulse"
+                  style={{
+                    top: '1px',
+                    right: '1px',
+                    animationDelay: '0.5s'
+                  }}
+                />
+                <div 
+                  className="absolute w-0.5 h-0.5 bg-white rounded-full opacity-80 animate-pulse"
+                  style={{
+                    bottom: '1px',
+                    left: '1px',
+                    animationDelay: '1s'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
       

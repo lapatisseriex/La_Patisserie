@@ -1437,7 +1437,8 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ paddingTop: '0px', fontFamily: 'system-ui, -apple-system, sans-serif', background: 'linear-gradient(to bottom, #fdfbf9 0%, #ffffff 40%, #fdfbf9 100%)' }}>
+    <div className="min-h-screen" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', background: 'linear-gradient(to bottom, #fdfbf9 0%, #ffffff 40%, #fdfbf9 100%)' }}>
+      
       {/* Beautiful Profile Hero - Only show on main tab */}
       {activeTab === 'main' && (
         <div className="relative overflow-hidden" style={{ 
