@@ -1426,6 +1426,22 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen" style={{ paddingTop: '0px', fontFamily: 'system-ui, -apple-system, sans-serif', background: 'linear-gradient(to bottom, #fdfbf9 0%, #ffffff 40%, #fdfbf9 100%)' }}>
+      {/* Simple Navigation Bar */}
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center gap-3 text-gray-600 hover:text-[#733857] transition-colors">
+              <ChevronLeft className="h-5 w-5" />
+              <span className="font-medium">Back to Home</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <img src="/images/logo.png" alt="La Patisserie" className="h-8 w-auto" />
+              <span className="font-semibold text-[#733857]">La Patisserie</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       {/* Beautiful Profile Hero - Only show on main tab */}
       {activeTab === 'main' && (
         <div className="relative overflow-hidden" style={{ 

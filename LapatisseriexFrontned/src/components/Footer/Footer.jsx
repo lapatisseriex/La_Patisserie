@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const Footer = () => {
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+
+  // Only show footer on profile and payment pages
+  if (location.pathname !== '/profile' && location.pathname !== '/payment') {
+    return null;
+  }
 
   const handleNewsletterSubscribe = async (e) => {
     e.preventDefault();

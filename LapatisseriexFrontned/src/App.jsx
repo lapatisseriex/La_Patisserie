@@ -9,6 +9,7 @@ import 'react-toastify/dist/ReactToastify.css';
 // Layout
 import Layout from './components/Layout/Layout';
 import AdminLayout from './components/Layout/AdminLayout';
+import FooterOnlyLayout from './components/Layout/FooterOnlyLayout';
 
 // Pages
 import ProfilePage from './pages/Profile';
@@ -163,12 +164,12 @@ function App() {
                             } />
                             <Route path="cart" element={<Cart />} />
                             <Route path="favorites" element={<Favorites />} />
-                            <Route path="payment" element={<Payment />} />
                             {/* Demo Analytics Dashboard - Public Route */}
                             
                           </Route>
-                          {/* Profile and Orders with regular Layout */}
-                          <Route path="/" element={<Layout />}>
+                          {/* Profile and Payment with Footer Only Layout */}
+                          <Route path="/" element={<FooterOnlyLayout />}>
+                            <Route path="payment" element={<Payment />} />
                             <Route path="profile" element={
                               <PrivateRoute>
                                 <React.Suspense fallback={<div>Loading...</div>}>
@@ -176,6 +177,9 @@ function App() {
                                 </React.Suspense>
                               </PrivateRoute>
                             } />
+                          </Route>
+                          {/* Orders with regular Layout */}
+                          <Route path="/" element={<Layout />}>
                             <Route path="orders" element={
                               <PrivateRoute>
                                 <Orders />
