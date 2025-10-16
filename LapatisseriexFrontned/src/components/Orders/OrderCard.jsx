@@ -25,10 +25,20 @@ const OrderCard = ({ order }) => {
 
   const getStatusConfig = (status) => {
     const configs = {
+      'pending': {
+        icon: Package,
+        color: '#6b7280',
+        label: 'PAYMENT PENDING'
+      },
       'placed': {
         icon: Package,
         color: '#733857',
         label: 'ORDER PLACED'
+      },
+      'confirmed': {
+        icon: CheckCircle,
+        color: '#10b981',
+        label: 'CONFIRMED'
       },
       'out_for_delivery': {
         icon: Truck,
@@ -39,6 +49,11 @@ const OrderCard = ({ order }) => {
         icon: CheckCircle,
         color: '#059669',
         label: 'DELIVERED'
+      },
+      'cancelled': {
+        icon: Package,
+        color: '#dc2626',
+        label: 'CANCELLED'
       }
     };
     return configs[status] || configs['placed'];

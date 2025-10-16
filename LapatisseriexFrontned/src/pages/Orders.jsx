@@ -49,7 +49,15 @@ const Orders = () => {
       }
 
       const data = await response.json();
-      setOrders(data.orders || []);
+      
+      // ✅ ADDITIONAL CLIENT-SIDE FILTER: Only show completed orders
+      // Filter out pending (payment not completed) and cancelled orders
+      const validOrders = (data.orders || []).filter(order => 
+        order.orderStatus !== 'pending' && 
+        order.orderStatus !== 'cancelled'
+      );
+      
+      setOrders(validOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError(error.message);
@@ -60,10 +68,20 @@ const Orders = () => {
 
   const getStatusConfig = (status) => {
     const configs = {
+      'pending': {
+        icon: Package,
+        color: '#6b7280',
+        label: 'PAYMENT PENDING'
+      },
       'placed': {
         icon: Package,
         color: '#733857',
         label: 'ORDER PLACED'
+      },
+      'confirmed': {
+        icon: CheckCircle,
+        color: '#10b981',
+        label: 'CONFIRMED'
       },
       'out_for_delivery': {
         icon: Truck,
@@ -74,6 +92,11 @@ const Orders = () => {
         icon: CheckCircle,
         color: '#059669',
         label: 'DELIVERED'
+      },
+      'cancelled': {
+        icon: Package,
+        color: '#dc2626',
+        label: 'CANCELLED'
       }
     };
     return configs[status] || configs['placed'];
@@ -264,10 +287,20 @@ const OrderCard = ({ order, index }) => {
   
   const getStatusConfig = (status) => {
     const configs = {
+      'pending': {
+        icon: Package,
+        color: '#6b7280',
+        label: 'PAYMENT PENDING'
+      },
       'placed': {
         icon: Package,
         color: '#733857',
         label: 'ORDER PLACED'
+      },
+      'confirmed': {
+        icon: CheckCircle,
+        color: '#10b981',
+        label: 'CONFIRMED'
       },
       'out_for_delivery': {
         icon: Truck,
@@ -278,6 +311,11 @@ const OrderCard = ({ order, index }) => {
         icon: CheckCircle,
         color: '#059669',
         label: 'DELIVERED'
+      },
+      'cancelled': {
+        icon: Package,
+        color: '#dc2626',
+        label: 'CANCELLED'
       }
     };
     return configs[status] || configs['placed'];

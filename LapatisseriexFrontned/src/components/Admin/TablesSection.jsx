@@ -253,11 +253,15 @@ const RecentOrdersTable = ({ data, loading }) => {
     const colors = {
       paid: 'bg-green-100 text-green-800',
       pending: 'bg-yellow-100 text-yellow-800',
+      created: 'bg-blue-100 text-blue-800',
       failed: 'bg-red-100 text-red-800',
+      cancelled: 'bg-red-100 text-red-800',
       placed: 'bg-blue-100 text-blue-800',
       confirmed: 'bg-indigo-100 text-indigo-800',
       delivered: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800'
+      out_for_delivery: 'bg-purple-100 text-purple-800',
+      preparing: 'bg-yellow-100 text-yellow-800',
+      ready: 'bg-green-100 text-green-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };

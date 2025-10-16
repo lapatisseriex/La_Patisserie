@@ -270,6 +270,7 @@ const Payment = () => {
           window.__paymentVerifying = true;
           
           try {
+            console.log('✅ Payment successful, verifying...');
             // Verify payment on backend
             const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/payments/verify`, {
               method: 'POST',
@@ -286,21 +287,38 @@ const Payment = () => {
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
+              console.log('✅ Payment verified successfully');
               setIsOrderComplete(true);
               setOrderNumber(verifyData.orderNumber);
               // Clear cart - no stock restoration needed since stock is decremented on payment success
               try {
                 await clearCart();
+                console.log('🧹 Cart cleared after successful payment');
               } catch (cartError) {
                 console.error('❌ Failed to clear cart after payment:', cartError);
                 // Don't fail the order, just log the error
               }
             } else {
-              alert('Payment verification failed. Please contact support.');
+              console.error('❌ Payment verification failed:', verifyData.message);
+              alert('Payment verification failed. Please contact support with your order details.');
+              
+              // Refresh cart to show items are still there
+              try {
+                await refreshCart();
+              } catch (refreshError) {
+                console.error('❌ Failed to refresh cart:', refreshError);
+              }
             }
           } catch (error) {
-            console.error('Payment verification error:', error);
-            alert('Payment verification failed. Please contact support.');
+            console.error('❌ Payment verification error:', error);
+            alert('Payment verification failed. Please contact support if amount was debited.');
+            
+            // Refresh cart in case of error
+            try {
+              await refreshCart();
+            } catch (refreshError) {
+              console.error('❌ Failed to refresh cart:', refreshError);
+            }
           } finally {
             window.__paymentVerifying = false;
             setIsProcessing(false);
@@ -316,12 +334,12 @@ const Payment = () => {
         },
         modal: {
           ondismiss: async () => {
-            console.log('Razorpay popup dismissed/cancelled by user');
+            console.log('🚫 Razorpay popup dismissed/cancelled by user');
             setIsProcessing(false);
             
             // Cancel the order on backend since payment was not completed
             try {
-              await fetch(`${import.meta.env.VITE_API_URL}/payments/cancel-order`, {
+              const cancelResponse = await fetch(`${import.meta.env.VITE_API_URL}/payments/cancel-order`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -331,9 +349,24 @@ const Payment = () => {
                   razorpay_order_id: orderData.orderId,
                 }),
               });
-              console.log('Order cancelled successfully');
+              
+              const cancelData = await cancelResponse.json();
+              
+              if (cancelData.success) {
+                console.log('✅ Order cancelled successfully on backend');
+                
+                // Refresh cart to show items are still there
+                try {
+                  await refreshCart();
+                  console.log('🔄 Cart refreshed after cancellation');
+                } catch (refreshError) {
+                  console.error('❌ Failed to refresh cart:', refreshError);
+                }
+              } else {
+                console.warn('⚠️ Order cancellation response:', cancelData.message);
+              }
             } catch (error) {
-              console.error('Failed to cancel order:', error);
+              console.error('❌ Failed to cancel order:', error);
             }
           },
         },

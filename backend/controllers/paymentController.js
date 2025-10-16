@@ -314,6 +314,8 @@ export const createOrder = asyncHandler(async (req, res) => {
     }
 
     // Create order in database
+    // For online payments: Set orderStatus to 'pending' until payment is verified
+    // For COD: Set orderStatus to 'placed' immediately since payment is guaranteed
     const order = new Order({
       orderNumber,
       userId,
@@ -322,7 +324,7 @@ export const createOrder = asyncHandler(async (req, res) => {
       currency,
       paymentMethod,
       paymentStatus: paymentMethod === 'cod' ? 'pending' : 'created',
-      orderStatus: 'placed',
+      orderStatus: paymentMethod === 'cod' ? 'placed' : 'pending', // ✅ Don't mark as 'placed' until payment verified
       cartItems,
       userDetails,
       deliveryLocation,
@@ -344,45 +346,51 @@ export const createOrder = asyncHandler(async (req, res) => {
     console.log('Order hostelName stored:', order.hostelName);
     console.log('Starting notification creation for user:', userId, 'order:', orderNumber);
 
-    // Create "Order Placed" notification for the user
-    try {
-      // Check if notification already exists for this order
-      const existingNotification = await Notification.findOne({
-        userId,
-        orderNumber,
-        type: 'order_placed'
-      });
-
-      if (!existingNotification) {
-        await createNotification(
+    // ⚠️ DO NOT CREATE NOTIFICATION FOR ONLINE PAYMENTS YET
+    // For online payments, we'll send notification only after successful payment verification
+    // For COD, send notification immediately since payment is confirmed at placement
+    if (paymentMethod === 'cod') {
+      try {
+        // Check if notification already exists for this order
+        const existingNotification = await Notification.findOne({
           userId,
           orderNumber,
-          'order_placed',
-          '**Order Placed** Successfully',
-          `Your order **#${orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`
-        );
+          type: 'order_placed'
+        });
 
-        // Emit real-time notification via WebSocket if user is connected
-        const io = global.io;
-        const connectedUsers = global.connectedUsers;
-        if (io && connectedUsers && connectedUsers.has(userId.toString())) {
-          const socketId = connectedUsers.get(userId.toString());
-          io.to(socketId).emit('newNotification', {
-            type: 'order_placed',
-            title: '**Order Placed** Successfully',
-            message: `Your order **#${orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`,
-            orderNumber
-          });
-          console.log('Order placed notification sent via WebSocket to user:', userId);
+        if (!existingNotification) {
+          await createNotification(
+            userId,
+            orderNumber,
+            'order_placed',
+            '**Order Placed** Successfully',
+            `Your order **#${orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`
+          );
+
+          // Emit real-time notification via WebSocket if user is connected
+          const io = global.io;
+          const connectedUsers = global.connectedUsers;
+          if (io && connectedUsers && connectedUsers.has(userId.toString())) {
+            const socketId = connectedUsers.get(userId.toString());
+            io.to(socketId).emit('newNotification', {
+              type: 'order_placed',
+              title: '**Order Placed** Successfully',
+              message: `Your order **#${orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`,
+              orderNumber
+            });
+            console.log('Order placed notification sent via WebSocket to user:', userId);
+          } else {
+            console.log('User not connected via WebSocket, notification saved to database only');
+          }
         } else {
-          console.log('User not connected via WebSocket, notification saved to database only');
+          console.log('Order placed notification already exists for order:', orderNumber);
         }
-      } else {
-        console.log('Order placed notification already exists for order:', orderNumber);
+      } catch (notificationError) {
+        console.error('Error creating order placed notification:', notificationError);
+        // Don't fail the order creation if notification fails
       }
-    } catch (notificationError) {
-      console.error('Error creating order placed notification:', notificationError);
-      // Don't fail the order creation if notification fails
+    } else {
+      console.log('⏳ Online payment - notification will be sent after payment verification');
     }
 
     // For COD orders, decrement stock immediately since payment is guaranteed
@@ -509,7 +517,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         { 
           paymentStatus: 'paid',
           razorpayPaymentId: razorpay_payment_id,
-          orderStatus: 'confirmed'
+          orderStatus: 'placed' // ✅ NOW mark as 'placed' after payment is verified
         },
         { new: true }
       );
@@ -535,6 +543,41 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       }
       
       console.log('Payment verified successfully for order:', order.orderNumber);
+
+      // ✅ NOW SEND "ORDER PLACED" NOTIFICATION for successful online payment
+      try {
+        const existingNotification = await Notification.findOne({
+          userId: order.userId,
+          orderNumber: order.orderNumber,
+          type: 'order_placed'
+        });
+
+        if (!existingNotification) {
+          await createNotification(
+            order.userId,
+            order.orderNumber,
+            'order_placed',
+            '**Order Placed** Successfully',
+            `Your order **#${order.orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`
+          );
+
+          // Emit real-time notification via WebSocket
+          const io = global.io;
+          const connectedUsers = global.connectedUsers;
+          if (io && connectedUsers && connectedUsers.has(order.userId.toString())) {
+            const socketId = connectedUsers.get(order.userId.toString());
+            io.to(socketId).emit('newNotification', {
+              type: 'order_placed',
+              title: '**Order Placed** Successfully',
+              message: `Your order **#${order.orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`,
+              orderNumber: order.orderNumber
+            });
+            console.log('✅ Order placed notification sent after payment verification');
+          }
+        }
+      } catch (notificationError) {
+        console.error('Error creating order placed notification:', notificationError);
+      }
 
       // Persist payment record for admin reporting
       try {
@@ -618,7 +661,7 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     const { razorpay_order_id } = req.body;
     const userId = req.user?._id;
 
-    console.log('Cancelling order for Razorpay Order ID:', razorpay_order_id);
+    console.log('🚫 Cancelling order for Razorpay Order ID:', razorpay_order_id);
 
     if (!razorpay_order_id) {
       return res.status(400).json({
@@ -646,9 +689,10 @@ export const cancelOrder = asyncHandler(async (req, res) => {
       });
     }
 
-    // Only cancel orders that are in 'created' payment status (not paid/failed)
-    if (order.paymentStatus !== 'created') {
-      console.log('Order already processed, cannot cancel. Payment status:', order.paymentStatus);
+    // Allow cancellation for 'created', 'pending', and 'failed' payment statuses
+    // Do NOT allow cancellation if payment is 'paid' or already 'cancelled'
+    if (['paid', 'cancelled'].includes(order.paymentStatus)) {
+      console.log('⚠️ Order already processed/cancelled. Payment status:', order.paymentStatus);
       return res.status(400).json({
         success: false,
         message: 'Order cannot be cancelled',
@@ -656,21 +700,23 @@ export const cancelOrder = asyncHandler(async (req, res) => {
       });
     }
 
-    // Update order status to cancelled
+    // Update order status to cancelled, keep payment as pending
     order.orderStatus = 'cancelled';
-    order.paymentStatus = 'cancelled';
+    order.paymentStatus = 'pending'; // ✅ Show as PENDING when user cancels
     await order.save();
 
-    console.log('Order cancelled successfully:', order.orderNumber);
+    console.log('✅ Order cancelled successfully:', order.orderNumber);
 
-    // Delete the "Order Placed" notification if it exists
+    // Delete any "Order Placed" notifications if they exist
     try {
-      await Notification.deleteMany({
+      const deletedCount = await Notification.deleteMany({
         userId: order.userId,
         orderNumber: order.orderNumber,
         type: 'order_placed'
       });
-      console.log('Order placed notification deleted for cancelled order');
+      if (deletedCount.deletedCount > 0) {
+        console.log('🗑️ Order placed notification(s) deleted for cancelled order');
+      }
     } catch (notifError) {
       console.error('Error deleting notification:', notifError.message);
     }
@@ -722,7 +768,7 @@ export const handleWebhook = asyncHandler(async (req, res) => {
           { 
             paymentStatus: 'paid',
             razorpayPaymentId: capturedPayment.id,
-            orderStatus: 'confirmed'
+            orderStatus: 'placed' // ✅ Mark as 'placed' when payment is captured
           }
         );
         // Save payment record as success
@@ -748,14 +794,33 @@ export const handleWebhook = asyncHandler(async (req, res) => {
       case 'payment.failed':
         // Payment failed
         const failedPayment = event.payload.payment.entity;
-        console.log('Payment failed:', failedPayment.id);
+        console.log('❌ Payment failed:', failedPayment.id);
         
-        await Order.findOneAndUpdate(
+        // Update order to failed status and DO NOT mark as placed/confirmed
+        const failedOrder = await Order.findOneAndUpdate(
           { razorpayOrderId: failedPayment.order_id },
           { 
-            paymentStatus: 'failed'
-          }
+            paymentStatus: 'failed',
+            orderStatus: 'cancelled' // Mark order as cancelled when payment fails
+          },
+          { new: true }
         );
+
+        // Delete any "Order Placed" notifications for failed payments
+        if (failedOrder) {
+          try {
+            await Notification.deleteMany({
+              userId: failedOrder.userId,
+              orderNumber: failedOrder.orderNumber,
+              type: 'order_placed'
+            });
+            console.log('🗑️ Removed order placed notification for failed payment');
+          } catch (notifErr) {
+            console.error('Error deleting notification for failed payment:', notifErr.message);
+          }
+        }
+
+        // Record failed payment for admin tracking
         try {
           const linkedOrder = await Order.findOne({ razorpayOrderId: failedPayment.order_id });
           await Payment.create({
@@ -764,12 +829,13 @@ export const handleWebhook = asyncHandler(async (req, res) => {
             orderId: linkedOrder?.orderNumber || failedPayment.order_id,
             amount: (failedPayment.amount / 100),
             paymentMethod: 'razorpay',
-            paymentStatus: 'pending',
+            paymentStatus: 'failed', // Mark as failed, not pending
             date: new Date(failedPayment.created_at ? failedPayment.created_at * 1000 : Date.now()),
             gatewayPaymentId: failedPayment.id,
             gatewayOrderId: failedPayment.order_id,
             meta: { source: 'webhook', reason: failedPayment.error_reason }
           });
+          console.log('💾 Failed payment record saved');
         } catch (err) {
           console.error('Failed to save failed payment:', err.message);
         }
@@ -824,6 +890,12 @@ export const getAllOrders = asyncHandler(async (req, res) => {
     } = req.query;
 
     let filter = {};
+    
+    // ✅ FILTER OUT CANCELLED ORDERS from admin view (unless explicitly requested)
+    // Don't show orders where orderStatus is 'cancelled' (user cancelled or payment failed)
+    if (!status && !paymentStatus) {
+      filter.orderStatus = { $ne: 'cancelled' };
+    }
     
     if (status) filter.orderStatus = status;
     if (paymentMethod) filter.paymentMethod = paymentMethod;
@@ -956,11 +1028,15 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 
     const skip = (page - 1) * limit;
     
-    // Only show orders with specific statuses for users (exclude cancelled and payment pending)
+    // ✅ ONLY SHOW VALID ORDERS for users
+    // Exclude orders where:
+    // - orderStatus is 'pending' (payment not completed yet)
+    // - orderStatus is 'cancelled' (user cancelled or payment failed)
+    // - paymentStatus is 'cancelled' (payment was cancelled)
     const orders = await Order.find({ 
       userId,
-      orderStatus: { $in: ['placed', 'confirmed', 'ready', 'out_for_delivery', 'delivered'] },
-      paymentStatus: { $ne: 'cancelled' }
+      orderStatus: { $nin: ['pending', 'cancelled'] }, // Exclude pending and cancelled orders
+      paymentStatus: { $nin: ['cancelled', 'created'] } // Exclude cancelled and just-created payments
     })
       .populate({
         path: 'hostelId',
@@ -1204,6 +1280,59 @@ export const updatePaymentStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, payment, previousStatus: prev });
 });
 
+// Check Order Status by Razorpay Order ID (for frontend to verify order state)
+export const checkOrderStatus = asyncHandler(async (req, res) => {
+  try {
+    const { razorpay_order_id } = req.params;
+    const userId = req.user?._id;
+
+    if (!razorpay_order_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Razorpay order ID is required'
+      });
+    }
+
+    // Find the order
+    const order = await Order.findOne({ razorpayOrderId: razorpay_order_id })
+      .select('orderNumber orderStatus paymentStatus paymentMethod amount cartItems');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Verify the order belongs to the requesting user (if user is authenticated)
+    if (userId && order.userId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to view this order'
+      });
+    }
+
+    res.json({
+      success: true,
+      order: {
+        orderNumber: order.orderNumber,
+        orderStatus: order.orderStatus,
+        paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod,
+        amount: order.amount,
+        itemCount: order.cartItems?.length || 0
+      }
+    });
+  } catch (error) {
+    console.error('Error checking order status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check order status',
+      error: error.message
+    });
+  }
+});
+
 // User: Get user's payments/transactions
 export const getUserPayments = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, status, method, startDate, endDate } = req.query;
@@ -1211,7 +1340,14 @@ export const getUserPayments = asyncHandler(async (req, res) => {
   
   const filter = { userId };
   
-  if (status) filter.paymentStatus = status;
+  // ✅ ONLY SHOW COMPLETED PAYMENTS to users
+  // Exclude payments that were cancelled (user cancelled or payment failed)
+  if (!status) {
+    filter.paymentStatus = { $nin: ['cancelled', 'created'] }; // Exclude cancelled and pending creation
+  } else {
+    filter.paymentStatus = status;
+  }
+  
   if (method) filter.paymentMethod = method;
   if (startDate || endDate) {
     filter.date = {};

@@ -11,7 +11,8 @@ import {
   getUserPayments,
   listPayments,
   getPaymentById,
-  createPaymentRecord
+  createPaymentRecord,
+  checkOrderStatus
 } from '../controllers/paymentController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import { backfillPaymentsFromOrders, updatePaymentStatus } from '../controllers/paymentController.js';
@@ -26,6 +27,9 @@ router.post('/verify', verifyPayment);
 
 // Cancel order (when payment popup is dismissed)
 router.post('/cancel-order', protect, cancelOrder);
+
+// Check order status by Razorpay order ID
+router.get('/order-status/:razorpay_order_id', protect, checkOrderStatus);
 
 // Razorpay webhook (no auth required)
 router.post('/webhook', handleWebhook);

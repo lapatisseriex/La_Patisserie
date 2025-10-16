@@ -33,6 +33,7 @@ const AdminOrders = () => {
   // Status color mapping
   const getStatusColor = (status) => {
     const colors = {
+      'pending': 'bg-gray-100 text-gray-800', // ✅ Added pending status
       'placed': 'bg-blue-100 text-blue-800',
       'confirmed': 'bg-green-100 text-green-800',
       'preparing': 'bg-yellow-100 text-yellow-800',
@@ -48,6 +49,7 @@ const AdminOrders = () => {
     const colors = {
       'pending': 'bg-yellow-100 text-yellow-800',
       'created': 'bg-blue-100 text-blue-800',
+      'cancelled': 'bg-red-100 text-red-800', // ✅ Added cancelled status
       'paid': 'bg-green-100 text-green-800',
       'failed': 'bg-red-100 text-red-800',
       'refunded': 'bg-gray-100 text-gray-800'
