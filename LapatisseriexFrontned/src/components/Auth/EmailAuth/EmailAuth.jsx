@@ -102,7 +102,30 @@ const EmailAuth = ({ isSignUp = false }) => {
       }
     } catch (err) {
       console.error(`❌ ${isSignUp ? 'Sign up' : 'Sign in'} error:`, err);
-      setLocalError(err.message || (isSignUp ? 'Failed to create account' : 'Failed to sign in'));
+      
+      // Handle specific error cases
+      if (err.code === 'auth/cancelled-popup-request' || 
+          err.message.includes('cancelled') ||
+          err.message.includes('aborted')) {
+        console.log(`🚫 ${isSignUp ? 'Sign up' : 'Sign in'} cancelled by user`);
+        // Dispatch cancellation event
+        window.dispatchEvent(new CustomEvent('auth:cancelled', { 
+          detail: { provider: 'email', reason: 'user_cancelled' } 
+        }));
+        clearError(); // Don't show error for user cancellation
+        setLocalError(''); // Clear local error too
+      } else if (err.code === 'auth/network-request-failed' || 
+                 err.message.includes('network') || 
+                 err.message.includes('fetch') ||
+                 err.message.includes('timeout')) {
+        console.log(`🌐 ${isSignUp ? 'Sign up' : 'Sign in'} network error`);
+        window.dispatchEvent(new CustomEvent('network:error', { 
+          detail: { message: 'Network connection issue', critical: false } 
+        }));
+        setLocalError('Network issue. Please check your connection and try again.');
+      } else {
+        setLocalError(err.message || (isSignUp ? 'Failed to create account' : 'Failed to sign in'));
+      }
     } finally {
       setLoading(false);
     }
@@ -132,7 +155,7 @@ const EmailAuth = ({ isSignUp = false }) => {
             value={formData.email}
             onChange={handleChange}
             placeholder="Enter your email"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            className="w-full px-3 py-2 rounded-md focus:outline-none bg-gray-50"
             disabled={loading}
             required
           />
@@ -149,7 +172,7 @@ const EmailAuth = ({ isSignUp = false }) => {
             value={formData.password}
             onChange={handleChange}
             placeholder="Enter your password"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            className="w-full px-3 py-2 rounded-md focus:outline-none bg-gray-50"
             disabled={loading}
             required
             minLength="6"
@@ -168,7 +191,7 @@ const EmailAuth = ({ isSignUp = false }) => {
               value={formData.confirmPassword}
               onChange={handleChange}
               placeholder="Confirm your password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded-md focus:outline-none bg-gray-50"
               disabled={loading}
               required
             />
@@ -184,28 +207,18 @@ const EmailAuth = ({ isSignUp = false }) => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-pink-600 text-white py-2 px-4 rounded-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          style={{
+            backgroundColor: '#733857',
+            '&:hover': { backgroundColor: '#8d4466' },
+            '&:focus': { ringColor: '#733857' }
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#8d4466'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#733857'}
         >
           {loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')}
         </button>
         
-        {!isSignUp && (
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => {
-                if (!formData.email.trim()) {
-                  setLocalError('Please enter your email address first');
-                  return;
-                }
-                changeAuthType('forgot-password');
-              }}
-              className="text-sm text-pink-600 hover:text-pink-700 transition-colors duration-200"
-            >
-              Forgot your password?
-            </button>
-          </div>
-        )}
       </form>
     </div>
   );

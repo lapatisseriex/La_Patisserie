@@ -29,6 +29,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';
 import OrderCard from '../components/Orders/OrderCard';
@@ -522,7 +523,7 @@ const ProfilePage = () => {
 
       case 'recently-viewed':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-2xl font-medium text-black border-b border-gray-200 pb-2">
                 Recently Viewed
@@ -542,12 +543,12 @@ const ProfilePage = () => {
             </div>
             
             {recentlyViewedLoading ? (
-              <div className="text-center py-8">
+              <div className="text-center py-6 md:py-8">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
                 <p className="mt-4 text-gray-600">Loading recently viewed items...</p>
               </div>
             ) : validRecentlyViewed.length === 0 ? (
-              <div className="bg-gray-50 rounded-lg border border-gray-200 p-10 text-center shadow-md">
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 md:p-10 text-center shadow-md">
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
                   <Eye className="h-10 w-10 text-gray-500" />
                 </div>
@@ -1365,9 +1366,20 @@ const ProfilePage = () => {
                       
                       {payment.orderInfo && (
                         <div className="mt-4 pt-4 border-t border-gray-100">
-                          <p className="text-sm text-gray-600">
-                            Order #{payment.orderInfo.orderNumber} - Status: {payment.orderInfo.orderStatus}
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm text-gray-600">
+                              Status: {payment.orderInfo.orderStatus}
+                            </p>
+                            {payment.orderId && (
+                              <Link
+                                to={`/orders/${payment.orderId}`}
+                                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-[#733857] text-white hover:bg-[#8d4466] transition-colors rounded"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                View Order
+                              </Link>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1548,7 +1560,7 @@ const ProfilePage = () => {
 
       {/* Back Button for specific sections */}
       {activeTab !== 'main' && (
-        <div className="bg-white border-b border-gray-200 py-4">
+        <div className="bg-white border-b border-gray-200 py-3 md:py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <button 
               onClick={() => setActiveTab('main')}
@@ -1564,7 +1576,7 @@ const ProfilePage = () => {
       )}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {activeTab === 'main' ? (
           /* Desktop: Show sidebar + content, Mobile: Show menu grid */
           <div className="hidden lg:grid lg:grid-cols-4 lg:gap-8">
@@ -1773,7 +1785,7 @@ const ProfilePage = () => {
             {/* Desktop Main Content with Selected Component */}
             <div className="lg:col-span-3">
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 min-h-[400px]">
-                <div className="p-6 sm:p-8">
+                <div className="p-4 md:p-6 lg:p-8">
                   {renderContent()}
                 </div>
               </div>
@@ -1784,7 +1796,7 @@ const ProfilePage = () => {
         {/* Mobile Content view for specific sections */}
         {activeTab !== 'main' && (
           <div className="lg:hidden bg-white border border-gray-200 min-h-[400px]">
-            <div className="p-6 sm:p-8">
+            <div className="p-4 md:p-6 lg:p-8">
               {renderContent()}
             </div>
           </div>
@@ -1797,7 +1809,7 @@ const ProfilePage = () => {
               border: '1px solid rgba(115, 56, 87, 0.15)',
               boxShadow: '0 2px 12px rgba(115, 56, 87, 0.06)'
             }}>
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 {/* Elegant Mobile Header */}
                 <div className="mb-6 pb-4" style={{ borderBottom: '2px solid rgba(115, 56, 87, 0.1)' }}>
                   <h2 className="text-lg font-light tracking-wide" style={{ 

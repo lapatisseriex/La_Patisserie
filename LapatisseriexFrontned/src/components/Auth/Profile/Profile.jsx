@@ -741,7 +741,8 @@ const Profile = () => {
       
       {/* Hero Section - Header Style */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Reduced mobile padding: py-4 instead of py-8 for mobile, keeps py-8 for desktop */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Profile Image */}
             <div className="relative">
@@ -799,7 +800,8 @@ const Profile = () => {
         </div>
       </div>
       
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+      {/* Main content container - Reduced mobile padding: py-4 instead of py-8 for mobile */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 relative">
 
       <form onSubmit={handleSubmit} className="profile-form-mobile space-y-8 pb-20 md:pb-6">
         {/* Loading Indicator - Header Style */}

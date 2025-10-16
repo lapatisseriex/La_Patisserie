@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Handle authentication expiration events
+  // Handle authentication expiration events and cleanup
   useEffect(() => {
     const handleAuthExpired = (event) => {
       console.log('Auth expired event received');
@@ -65,6 +65,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('authToken');
       localStorage.removeItem('cachedUser');
       
+      // Clear any pending auth operations
+      setConfirmationResult(null);
+      setTempPhoneNumber('');
+      resetRecaptcha();
+      
       // Show login modal
       setAuthType('login');
       setIsAuthPanelOpen(true);
@@ -74,12 +79,42 @@ export const AuthProvider = ({ children }) => {
         setAuthError('Your session has expired. Please log in again.');
       }
     };
+
+    // Handle auth cancellation events
+    const handleAuthCancelled = () => {
+      console.log('Auth process cancelled by user');
+      
+      // Clear any pending auth operations
+      setConfirmationResult(null);
+      setTempPhoneNumber('');
+      resetRecaptcha();
+      setAuthError(null);
+      setLoading(false);
+      
+      // Reset to login state
+      setAuthType('login');
+    };
+
+    // Handle network errors
+    const handleNetworkError = (event) => {
+      console.log('Network error detected:', event.detail);
+      
+      // Don't show network errors in production unless they're critical
+      const isDevelopment = import.meta.env.MODE === 'development';
+      if (isDevelopment || event.detail?.critical) {
+        setAuthError(event.detail?.message || 'Network connection issue. Please try again.');
+      }
+    };
     
-    // Listen for auth expired events from apiService
+    // Listen for auth events
     window.addEventListener('auth:expired', handleAuthExpired);
+    window.addEventListener('auth:cancelled', handleAuthCancelled);
+    window.addEventListener('network:error', handleNetworkError);
     
     return () => {
       window.removeEventListener('auth:expired', handleAuthExpired);
+      window.removeEventListener('auth:cancelled', handleAuthCancelled);
+      window.removeEventListener('network:error', handleNetworkError);
     };
   }, []);
 
@@ -160,6 +195,9 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         try {
+          // Clear any previous errors
+          setAuthError(null);
+          
           // Get ID token (avoid forced refresh to reduce quota usage)
           const idToken = await firebaseUser.getIdToken();
           
@@ -167,9 +205,30 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('authToken', idToken);
           setToken(idToken);
           
-          // Verify with backend
+          // Verify with backend with retry logic
           console.log('AuthContext - Firebase user authenticated, verifying with backend...');
-          const response = await axios.post(`${API_URL}/auth/verify`, { idToken });
+          let response;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries) {
+            try {
+              response = await axios.post(`${API_URL}/auth/verify`, { idToken }, {
+                timeout: 10000 // 10 second timeout
+              });
+              break; // Success, exit retry loop
+            } catch (verifyError) {
+              retryCount++;
+              console.log(`Backend verification attempt ${retryCount} failed:`, verifyError.message);
+              
+              if (retryCount >= maxRetries) {
+                throw verifyError;
+              }
+              
+              // Wait before retrying (exponential backoff)
+              await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+            }
+          }
           
           // Get saved user data (if any) to restore fields like email and anniversary
           let savedUserData = {};
@@ -195,7 +254,6 @@ export const AuthProvider = ({ children }) => {
             // Always include phoneVerified fields
             phoneVerified: response.data.user.phoneVerified || false,
             phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
-            // email verification removed
           };
           
           console.log('Restored user data with saved fields:', userData);
@@ -214,12 +272,17 @@ export const AuthProvider = ({ children }) => {
           // If new user, show profile completion form
           if (response.data.isNewUser) {
             setAuthType('profile');
+          } else {
+            // Close auth panel for existing users
+            setIsAuthPanelOpen(false);
           }
           
           // Get fresh user data from /api/users/me to ensure we have the latest with populated fields
           try {
             // Use shared api instance so the interceptor attaches token and handles 401 refresh
-            const meResponse = await api.get(`/users/me`);
+            const meResponse = await api.get(`/users/me`, {
+              timeout: 8000 // 8 second timeout
+            });
             
             if (meResponse.data.success) {
               // Get saved user data (if any)
@@ -244,7 +307,6 @@ export const AuthProvider = ({ children }) => {
                 anniversary: meResponse.data.user.anniversary || savedUserData.anniversary || null,
                 phoneVerified: meResponse.data.user.phoneVerified || false,
                 phoneVerifiedAt: meResponse.data.user.phoneVerifiedAt || null,
-                // email verification removed
               };
               
               console.log('Fresh user data with populated location/hostel:', {
@@ -258,25 +320,52 @@ export const AuthProvider = ({ children }) => {
             }
           } catch (meError) {
             console.error("Error fetching fresh user data:", meError);
+            // Don't show error for /users/me failure if we already have user data
           }
         } catch (error) {
           console.error("Error verifying user with backend:", error);
+          
+          // Handle different types of errors
+          const isNetworkError = error.code === 'NETWORK_ERROR' || error.message.includes('Network Error');
+          const isTimeoutError = error.code === 'ECONNABORTED' || error.message.includes('timeout');
+          
           // If we hit quota or network issues, keep cached user so app remains usable
           if (!user) {
             const cached = localStorage.getItem('cachedUser');
             if (cached) {
-              try { setUser(JSON.parse(cached)); } catch {}
+              try { 
+                const cachedUser = JSON.parse(cached);
+                setUser(cachedUser);
+                console.log('Using cached user data due to network error');
+                // Don't show error if we successfully loaded cached user
+                return;
+              } catch {}
             }
           }
-          setAuthError("Failed to verify authentication with server");
+          
+          // Only show specific error messages in development
+          const isDevelopment = import.meta.env.MODE === 'development';
+          if (isNetworkError || isTimeoutError) {
+            if (isDevelopment) {
+              setAuthError("Network connection issue. Using cached data where available.");
+            }
+            // In production, silently use cached data if available
+          } else {
+            setAuthError(isDevelopment ? error.message : "Authentication error. Please try again.");
+          }
         }
       } else {
+        // User signed out
         setUser(null);
         setToken(null);
         // Clear cached user data when logged out but keep savedUserData
         localStorage.removeItem('cachedUser');
         localStorage.removeItem('profileFormData');
-        // Note: We're not removing 'savedUserData' so it can be restored on next login
+        // Clear any pending auth operations
+        setConfirmationResult(null);
+        setTempPhoneNumber('');
+        resetRecaptcha();
+        setAuthError(null);
       }
       setLoading(false);
     });
@@ -622,7 +711,6 @@ export const AuthProvider = ({ children }) => {
           email: user.email || '',
           name: user.name || '',
           anniversary: user.anniversary || '',
-          // email verification removed
           gender: user.gender || '',
           dob: user.dob || '',
           country: user.country || 'India',
@@ -632,13 +720,31 @@ export const AuthProvider = ({ children }) => {
 
         localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
         console.log('Saving user data before logout (IDs only for location/hostel):', savedUserData);
-        console.log('Hostel data type on save:', typeof savedUserData.hostel, 'value:', savedUserData.hostel);
       }
       
+      // Clear Firebase auth state
       await signOut(auth);
+      
+      // Clear application state
       setUser(null);
       setToken(null);
+      setAuthError(null);
+      setIsNewUser(false);
+      
+      // Clear auth operations
+      setConfirmationResult(null);
+      setTempPhoneNumber('');
+      resetRecaptcha();
+      
+      // Clear localStorage except savedUserData
+      const savedData = localStorage.getItem('savedUserData');
       localStorage.clear();
+      if (savedData) {
+        localStorage.setItem('savedUserData', savedData);
+      }
+      
+      // Close auth panel
+      setIsAuthPanelOpen(false);
       
       return true;
     } catch (error) {
@@ -696,10 +802,37 @@ export const AuthProvider = ({ children }) => {
   
   // Email verification helpers removed
 
+  // Clear authentication errors
+  const clearError = () => {
+    setAuthError(null);
+  };
+
   // Change auth type (login, signup, otp, profile)
   const changeAuthType = (type) => {
     setAuthType(type);
     setAuthError(null);
+  };
+
+  // Enhanced toggle auth panel with proper cleanup
+  const enhancedToggleAuthPanel = () => {
+    if (isAuthPanelOpen) {
+      // Clear any errors when closing
+      setAuthError(null);
+      // If closing, add a small delay to ensure the animation plays smoothly
+      document.body.classList.add('auth-panel-closing');
+      setTimeout(() => {
+        setIsAuthPanelOpen(false);
+        document.body.classList.remove('auth-panel-closing');
+      }, 50);
+    } else {
+      // Opening panel - reset to clean state
+      setIsAuthPanelOpen(true);
+      setAuthType('login');
+      setAuthError(null);
+      // Clear any stale confirmation results
+      setConfirmationResult(null);
+      setTempPhoneNumber('');
+    }
   };
 
   const value = {
@@ -716,8 +849,9 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     updateUser,
     logout,
-    toggleAuthPanel,
+    toggleAuthPanel: enhancedToggleAuthPanel,
     changeAuthType,
+    clearError,
     tempPhoneNumber,
     fetchFreshUserData
   };

@@ -56,7 +56,6 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
       setCurrentPage(1);
     }
   }, [isOpen]);
-  console.log("Notifications:", notifications);
   const loadMore = () => {
     if (!loading && hasMore) {
       const nextPage = currentPage + 1;

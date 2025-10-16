@@ -61,7 +61,352 @@
   box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
 }
 
-/* Auth Modal Styles */
+/* Sharp Auth Sidepanel Styles - Purple Theme */
+.auth-sidepanel-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  transition: opacity 0.3s ease;
+}
+
+/* Sharp Square Blue Scroller */
+.blue-scroller {
+  scrollbar-width: thin;
+  scrollbar-color: #2563eb #f3f4f6;
+}
+
+.blue-scroller::-webkit-scrollbar {
+  width: 6px;
+}
+
+.blue-scroller::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 0;
+  border: 1px solid #ddd6fe;
+}
+
+.blue-scroller::-webkit-scrollbar-thumb {
+  background: #2563eb;
+  border-radius: 0;
+  border: 1px solid #1d4ed8;
+}
+
+.blue-scroller::-webkit-scrollbar-thumb:hover {
+  background: #1d4ed8;
+}
+
+.auth-sidepanel-content {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 28rem; /* 448px */
+  background: white;
+  box-shadow: -10px 0 25px -3px rgba(0, 0, 0, 0.1), -4px 0 10px -2px rgba(0, 0, 0, 0.05);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  z-index: 51;
+}
+
+.auth-sidepanel-content.open {
+  transform: translateX(0);
+}
+
+.auth-sidepanel-content.closing {
+  transform: translateX(100%);
+}
+
+/* Profile Theme Header Styling */
+.auth-header-elegant {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.auth-header-elegant .brand-icon {
+  height: 3rem;
+  width: 3rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  margin: 0 auto 1.5rem auto;
+}
+
+.auth-header-elegant .main-title {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  color: #281c20;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin-bottom: 0.75rem;
+}
+
+.auth-header-elegant .subtitle {
+  color: #6b7280;
+  line-height: 1.625;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Elegant Tab Navigation - Profile Style */
+.auth-tabs-elegant {
+  display: flex;
+  background: #f3f4f6;
+  padding: 0.25rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e5e7eb;
+}
+
+.auth-tab-elegant {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.auth-tab-elegant.active {
+  background: white;
+  color: black;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.auth-tab-elegant.inactive {
+  color: #6b7280;
+}
+
+.auth-tab-elegant.inactive:hover {
+  color: #111827;
+}
+
+/* Elegant Content Area */
+.auth-content-elegant {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+/* Enhanced Divider - Profile Style */
+.auth-divider-elegant {
+  position: relative;
+  margin: 2rem 0;
+}
+
+.auth-divider-elegant .divider-line {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+}
+
+.auth-divider-elegant .divider-border {
+  width: 100%;
+  border-top: 1px solid #e5e7eb;
+}
+
+.auth-divider-elegant .divider-content {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-divider-elegant .divider-text {
+  padding: 0.5rem 1.5rem;
+  background: white;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Switch Button - Profile Style */
+.auth-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.875rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #281c20;
+}
+
+.auth-switch-btn:hover {
+  background: #e5e7eb;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Benefits Grid - Profile Style */
+.auth-benefits-elegant {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.auth-benefits-elegant .benefits-title {
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  color: #281c20;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.auth-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.auth-benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.auth-benefit-icon {
+  width: 2rem;
+  height: 2rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.auth-benefit-text {
+  font-weight: 500;
+  color: #374151;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Elegant Footer - Profile Style */
+.auth-footer-elegant {
+  border-top: 1px solid #e5e7eb;
+  padding: 1.5rem 2rem;
+  background: #f9fafb;
+}
+
+.auth-footer-security {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.auth-footer-security .security-icon {
+  width: 2rem;
+  height: 2rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.auth-footer-security .security-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  color: #281c20;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.auth-footer-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.auth-footer-brand .brand-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Sharp Square Blue Button Animations */
+.sharp-blue-btn {
+  background: #2563eb;
+  border: 2px solid #1d4ed8;
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  border-radius: 0;
+}
+
+.sharp-blue-btn:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
+}
+
+.sharp-blue-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+/* Sharp Square Icon Containers */
+.sharp-square-icon {
+  border: 2px solid;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  border-radius: 0;
+}
+
+.sharp-square-icon:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+/* Sharp Square Divider */
+.sharp-square-divider {
+  background: white;
+  border: 2px solid #3b82f6;
+  color: #2563eb;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 0;
+}
+
+/* Auth Modal Legacy Support */
 .auth-modal-overlay {
   position: fixed;
   top: 0;

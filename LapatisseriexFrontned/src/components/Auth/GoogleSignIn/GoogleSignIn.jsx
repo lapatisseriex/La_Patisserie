@@ -26,6 +26,26 @@ const GoogleSignIn = () => {
       }
     } catch (err) {
       console.error('❌ Google sign in error:', err);
+      
+      // Handle specific error cases
+      if (err.code === 'auth/cancelled-popup-request' || 
+          err.code === 'auth/popup-closed-by-user' ||
+          err.message.includes('cancelled') ||
+          err.message.includes('closed')) {
+        console.log('🚫 Google sign in cancelled by user');
+        // Dispatch cancellation event
+        window.dispatchEvent(new CustomEvent('auth:cancelled', { 
+          detail: { provider: 'google', reason: 'user_cancelled' } 
+        }));
+        clearError(); // Don't show error for user cancellation
+      } else if (err.code === 'auth/network-request-failed' || 
+                 err.message.includes('network') || 
+                 err.message.includes('fetch')) {
+        console.log('🌐 Google sign in network error');
+        window.dispatchEvent(new CustomEvent('network:error', { 
+          detail: { message: 'Network connection issue', critical: false } 
+        }));
+      }
     } finally {
       setLoading(false);
     }
