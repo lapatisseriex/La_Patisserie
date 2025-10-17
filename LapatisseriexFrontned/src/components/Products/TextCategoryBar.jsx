@@ -116,8 +116,8 @@ const TextCategoryBar = ({
             ref={(el) => categoryRefs.current['all'] = el}
             className={`flex-shrink-0 cursor-pointer transition-all duration-300 relative group ${
               selectedCategory === null 
-                ? 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium' 
-                : 'text-gray-500 hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:bg-clip-text hover:text-transparent'
+                ? 'text-[#733857] md:bg-gradient-to-r md:from-[#733857] md:via-[#8d4466] md:to-[#412434] md:bg-clip-text md:text-transparent font-medium' 
+                : 'text-gray-500 hover:text-[#733857] md:hover:bg-gradient-to-r md:hover:from-[#733857] md:hover:via-[#8d4466] md:hover:to-[#412434] md:hover:bg-clip-text md:hover:text-transparent'
             }`}
             onClick={handleAllCategories}
           >
@@ -156,8 +156,8 @@ const TextCategoryBar = ({
                 ref={(el) => categoryRefs.current[category._id || category.id] = el}
                 className={`flex-shrink-0 cursor-pointer transition-all duration-300 relative group ${
                   selectedCategory === (category._id || category.id) 
-                    ? 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium' 
-                    : 'text-gray-500 hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:bg-clip-text hover:text-transparent'
+                    ? 'text-[#733857] md:bg-gradient-to-r md:from-[#733857] md:via-[#8d4466] md:to-[#412434] md:bg-clip-text md:text-transparent font-medium' 
+                    : 'text-gray-500 hover:text-[#733857] md:hover:bg-gradient-to-r md:hover:from-[#733857] md:hover:via-[#8d4466] md:hover:to-[#412434] md:hover:bg-clip-text md:hover:text-transparent'
                 }`}
                 onClick={() => onSelectCategory(category._id || category.id)}
               >
