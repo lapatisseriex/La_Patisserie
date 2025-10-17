@@ -30,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  LayoutDashboard,
 } from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';
 import OrderCard from '../components/Orders/OrderCard';
@@ -1811,6 +1812,22 @@ const ProfilePage = () => {
               boxShadow: '0 2px 12px rgba(115, 56, 87, 0.06)'
             }}>
               <div className="p-4 md:p-6">
+                {/* Admin Dashboard quick access (mobile only) */}
+                {isAdmin && (
+                  <div className="mb-6">
+                    <Link
+                      to="/admin/dashboard"
+                      className="w-full flex items-center justify-between px-4 py-3 bg-black text-white shadow-sm hover:shadow-md transition-all duration-300"
+                      style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                    >
+                      <span className="flex items-center gap-2 font-semibold">
+                        <LayoutDashboard className="h-5 w-5" />
+                        Admin Dashboard
+                      </span>
+                      <span className="text-xs opacity-80">Open</span>
+                    </Link>
+                  </div>
+                )}
                 {/* Elegant Mobile Header */}
                 <div className="mb-6 pb-4" style={{ borderBottom: '2px solid rgba(115, 56, 87, 0.1)' }}>
                   <h2 className="text-lg font-light tracking-wide" style={{ 

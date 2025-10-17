@@ -38,29 +38,51 @@ export const ShopStatusProvider = ({ children }) => {
       console.log('ShopStatus: Fetching shop status from API...');
       
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://la-patisserie.onrender.com/api'}/time-settings/status`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      const data = await response.json();
-      
-      if (data.success) {
+
+      // Check content type first to avoid JSON parse errors on non-JSON responses
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        // Try to read text for better debugging
+        const text = await response.text();
+        console.error('ShopStatus: Expected JSON response but received:', text);
+        setShopStatus(prev => ({ ...prev, loading: false }));
+        return shopStatus;
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        // If parse fails, capture text and bail gracefully
+        const text = await response.text();
+        console.error('ShopStatus: Failed to parse JSON response:', err, text);
+        setShopStatus(prev => ({ ...prev, loading: false }));
+        return shopStatus;
+      }
+
+      // Defensive checks - ensure shape exists before accessing data.data
+      if (data && data.success && data.data && typeof data.data === 'object') {
         const newStatus = {
-          isOpen: data.data.isOpen,
-          nextOpeningTime: data.data.nextOpeningTime,
-          currentTime: data.data.currentTime,
-          timezone: data.data.timezone,
+          isOpen: !!data.data.isOpen,
+          nextOpeningTime: data.data.nextOpeningTime || null,
+          currentTime: data.data.currentTime || null,
+          timezone: data.data.timezone || shopStatus.timezone,
           loading: false
         };
-        
+
         setShopStatus(newStatus);
         setLastFetch(now);
-        
+
         console.log('ShopStatus: Updated shop status:', newStatus);
+        return newStatus;
       } else {
-        console.error('ShopStatus: API returned error:', data.message);
+        console.error('ShopStatus: API returned unexpected payload:', data);
         setShopStatus(prev => ({ ...prev, loading: false }));
+        return shopStatus;
       }
     } catch (error) {
       console.error('ShopStatus: Error fetching shop status:', error);
@@ -95,26 +117,40 @@ export const ShopStatusProvider = ({ children }) => {
       console.log('ShopStatus: Force checking shop status...');
       
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://la-patisserie.onrender.com/api'}/time-settings/status`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      const data = await response.json();
-      
-      if (data.success) {
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('ShopStatus (force): Expected JSON response but received:', text);
+        return shopStatus;
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        const text = await response.text();
+        console.error('ShopStatus (force): Failed to parse JSON response:', err, text);
+        return shopStatus;
+      }
+
+      if (data && data.success && data.data && typeof data.data === 'object') {
         const newStatus = {
-          isOpen: data.data.isOpen,
-          nextOpeningTime: data.data.nextOpeningTime,
-          currentTime: data.data.currentTime,
-          timezone: data.data.timezone,
+          isOpen: !!data.data.isOpen,
+          nextOpeningTime: data.data.nextOpeningTime || null,
+          currentTime: data.data.currentTime || null,
+          timezone: data.data.timezone || shopStatus.timezone,
           loading: false
         };
-        
+
         // Update immediately without cache
         setShopStatus(newStatus);
         setLastFetch(Date.now());
-        
+
         console.log('ShopStatus: Force updated shop status:', newStatus);
         return newStatus;
       }

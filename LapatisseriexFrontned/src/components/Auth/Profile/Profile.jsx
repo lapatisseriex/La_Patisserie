@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { useSelector } from 'react-redux';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useLocation as useRouterLocation } from 'react-router-dom';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
 import ProfileImageUpload from './ProfileImageUpload';
-import GlobalLoadingOverlay from '../../common/GlobalLoadingOverlay';
 import axios from 'axios';
 import { 
   User, 
@@ -30,6 +30,87 @@ import {
 import EmailVerification from './EmailVerification';
 import PhoneVerification from './PhoneVerification';
 
+// A portal-based overlay that renders at the document.body level so it always sits on top
+const LoadingOverlayPortal = ({ show }) => {
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (!show) return;
+    mountedRef.current = true;
+    console.log('🟢 LoadingOverlayPortal mounted');
+    return () => {
+      console.log('🔴 LoadingOverlayPortal unmounted');
+      mountedRef.current = false;
+    };
+  }, [show]);
+
+  if (!show || typeof document === 'undefined') return null;
+  return ReactDOM.createPortal(
+    (
+      <div
+        className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          pointerEvents: 'all',
+        }}
+      >
+        <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm mx-4 transform animate-scaleIn" style={{ textAlign: 'center' }}>
+          <div className="flex flex-col items-center justify-center space-y-4 text-center w-full">
+            {/* Animated Spinner with inline fallbacks */}
+            <div className="relative mx-auto" style={{ width: 64, height: 64 }}>
+              <div
+                className="rounded-full"
+                style={{ width: 64, height: 64, border: '4px solid #e5e7eb' }}
+              />
+              <div
+                className="rounded-full animate-spin"
+                style={{
+                  width: 64,
+                  height: 64,
+                  border: '4px solid #000',
+                  borderTopColor: 'transparent',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                }}
+              />
+            </div>
+            {/* Loading Text */}
+            <div className="text-center w-full">
+              <h3
+                className="text-xl font-bold text-black mb-2 text-center"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif', textAlign: 'center' }}
+              >
+                Updating Your Profile
+              </h3>
+              <p
+                className="text-gray-600 text-sm text-center"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif', textAlign: 'center' }}
+              >
+                Please wait while we save your changes...
+              </p>
+            </div>
+            {/* Animated Dots */}
+            <div className="flex space-x-2 justify-center mx-auto" style={{ justifyContent: 'center' }}>
+              <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '0ms', width: 8, height: 8 }} />
+              <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '150ms', width: 8, height: 8 }} />
+              <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '300ms', width: 8, height: 8 }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+    document.body
+  );
+};
+
 const Profile = () => {
   const { user, updateProfile, authError, loading, isNewUser, updateUser, getCurrentUser } = useAuth();
   const { locations, loading: locationsLoading, fetchLocations } = useLocation();
@@ -40,6 +121,7 @@ const Profile = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false); // Local saving state for more control
+  const savingRef = useRef(false); // Ref to track saving state across re-renders
   
   // Common CSS classes for form fields
   const inputClasses = `w-full pl-10 pr-4 py-3 border border-gray-300 rounded-none 
@@ -112,6 +194,21 @@ const Profile = () => {
   
   // Fetch locations only once on mount
   const hasRunLocationsFetch = useRef(false);
+
+  // Cleanup: Re-enable scrolling when component unmounts or isSaving changes
+  useEffect(() => {
+    // Cleanup function to ensure scrolling is re-enabled
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
+  // Additional cleanup when isSaving changes to false
+  useEffect(() => {
+    if (!isSaving) {
+      document.body.style.overflow = 'auto';
+    }
+  }, [isSaving]);
 
   // Effect to react to user state changes (especially phone verification)
   useEffect(() => {
@@ -501,18 +598,25 @@ const Profile = () => {
     
     if (!formData.name.trim()) {
       setLocalError('Please enter your full name');
+      // Scroll to error message smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     
     setLocalError('');
     setSuccessMessage('');
     
-    // Set loading state to show animations
+    // Set both state and ref to prevent re-render issues
+    console.log('🔄 Starting save - Setting isSaving to TRUE');
+    savingRef.current = true;
     setIsSaving(true);
-    console.log('🔄 Setting isSaving to TRUE'); // Debug log
     
-    // Scroll to the top to make loading indicator visible
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Force a small delay to ensure state updates
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Prevent any scroll behavior during save
+    document.body.style.overflow = 'hidden';
+    console.log('🔒 Body overflow set to hidden');
     
     // Create a clean copy of form data with date fields properly formatted
     const profileData = { 
@@ -565,16 +669,27 @@ const Profile = () => {
       const success = await updateProfile(profileDataWithoutEmail);
 
       if (success) {
-        // Show success message
+        // Keep loading for minimum 2 seconds, then show success
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Now turn off loading and show success
+        savingRef.current = false;
+        setIsSaving(false);
         setSuccessMessage('Profile updated successfully!');
+        
+        console.log('✅ Profile saved successfully - showing success message');
+        
+        // Re-enable scrolling
+        document.body.style.overflow = 'auto';
+        
+        // Scroll to top smoothly to show success message
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         
         // Wait a moment to show success, then exit edit mode
         setTimeout(() => {
           setIsEditMode(false);
           localStorage.removeItem('profileEditMode');
-          // Scroll to top to show success message
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 1000);
+        }, 2500); // Increased to 2.5 seconds to show success message longer
 
         // Save user data to localStorage
         const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
@@ -610,17 +725,34 @@ const Profile = () => {
           }
         }
       } else {
+        // Keep loading for minimum 2 seconds, then show error
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        savingRef.current = false;
+        setIsSaving(false);
         setLocalError('Failed to update profile. Please try again.');
+        // Re-enable scrolling
+        document.body.style.overflow = 'auto';
+        // Scroll to error message
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
       console.error('Error in profile update:', error);
+      
+      // Keep loading for minimum 2 seconds, then show error
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      savingRef.current = false;
+      setIsSaving(false);
       setLocalError('Failed to update profile. Please try again.');
+      // Re-enable scrolling
+      document.body.style.overflow = 'auto';
+      // Scroll to error message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
-      // Ensure loading state is visible for a minimum time
-      setTimeout(() => {
-        console.log('🛑 Setting isSaving to FALSE'); // Debug log
-        setIsSaving(false);
-      }, 1000); // Minimum 1 second to show loading animation
+      // Final safety check to ensure scrolling is re-enabled and loading is stopped
+      savingRef.current = false;
+      document.body.style.overflow = 'auto';
     }
   };
 
@@ -728,17 +860,6 @@ const Profile = () => {
 
   return (
     <>
-      {/* Global loading overlay - shown when saving */}
-      {isSaving && (
-        <>
-          {console.log('🎬 Rendering GlobalLoadingOverlay')}
-          <GlobalLoadingOverlay 
-            message="Saving Profile..." 
-            key={`loading-${Date.now()}`} // Force a fresh instance
-          />
-        </>
-      )}
-      
       {/* Hero Section - Header Style */}
       <div className="bg-white border-b border-gray-200">
         {/* Reduced mobile padding: py-4 instead of py-8 for mobile, keeps py-8 for desktop */}
@@ -804,52 +925,68 @@ const Profile = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 relative">
 
       <form onSubmit={handleSubmit} className="profile-form-mobile space-y-8 pb-20 md:pb-6">
-        {/* Loading Indicator - Header Style */}
-        {isSaving && (
-          <div className="fixed top-0 left-0 right-0 z-50 bg-black py-4 shadow-lg animate-fadeIn">
-            <div className="container mx-auto px-4">
-              <div className="flex items-center justify-center">
-                <div className="relative mr-4">
-                  <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-white"></div>
+        {/* Loading Overlay via Portal (always above everything) */}
+        <LoadingOverlayPortal show={isSaving || savingRef.current} />
+        
+        {/* Success Message - Fixed Position at Top */}
+        {successMessage && !isSaving && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998] w-full max-w-md mx-4 animate-slideDown">
+            <div className="bg-white border-2 border-green-500 rounded-lg shadow-2xl p-6 transform transition-all duration-300">
+              <div className="flex items-start space-x-4">
+                {/* Success Icon with Animation */}
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center animate-scaleIn">
+                    <Check className="h-7 w-7 text-white animate-checkmark" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-white font-semibold text-lg" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Updating Your Profile...</p>
-                  <p className="text-gray-300 text-sm" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Please wait</p>
+                {/* Success Text */}
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                    {successMessage}
+                  </h3>
+                  <p className="text-gray-600 text-sm" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                    Your profile has been updated successfully!
+                  </p>
                 </div>
+                {/* Close Button */}
+                <button
+                  onClick={() => setSuccessMessage('')}
+                  className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
           </div>
         )}
         
-        {/* Success Message - Header Style */}
-        {successMessage && (
-          <div className="bg-gray-100 border-l-4 border-black p-6 shadow-sm animate-fadeIn">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 bg-white border border-gray-200 flex items-center justify-center">
-                  <Check className="h-6 w-6 text-black" />
+        {/* Error Message - Fixed Position at Top */}
+        {localError && !isSaving && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998] w-full max-w-md mx-4 animate-slideDown">
+            <div className="bg-white border-2 border-red-500 rounded-lg shadow-2xl p-6 transform transition-all duration-300">
+              <div className="flex items-start space-x-4">
+                {/* Error Icon */}
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
+                    <X className="h-7 w-7 text-white" />
+                  </div>
                 </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>{successMessage}</h3>
-                <p className="text-gray-600 text-sm mt-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Your profile has been updated successfully!</p>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Error Message - Header Style */}
-        {localError && (
-          <div className="bg-gray-100 border-l-4 border-black p-6 shadow-sm animate-fadeIn">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 bg-white border border-gray-200 flex items-center justify-center">
-                  <X className="h-6 w-6 text-black" />
+                {/* Error Text */}
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                    Error
+                  </h3>
+                  <p className="text-gray-600 text-sm" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                    {localError}
+                  </p>
                 </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Error</h3>
-                <p className="text-gray-700 text-sm mt-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{localError}</p>
+                {/* Close Button */}
+                <button
+                  onClick={() => setLocalError('')}
+                  className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
           </div>

@@ -38,6 +38,10 @@ module.exports = {
         'pulse-subtle': 'pulse 2s infinite ease-in-out',
         'growWidth': 'growWidth 3s ease-in-out forwards',
         'spin': 'spin 1s linear infinite',
+        'scaleIn': 'scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'slideDown': 'slideDown 0.4s ease-out',
+        'checkmark': 'checkmark 0.5s ease-out',
+        'bounce': 'bounce 1s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -59,6 +63,23 @@ module.exports = {
         spin: {
           '0%': { transform: 'rotate(0deg)' },
           '100%': { transform: 'rotate(360deg)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.9)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        slideDown: {
+          '0%': { opacity: '0', transform: 'translateY(-20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        checkmark: {
+          '0%': { transform: 'scale(0)' },
+          '50%': { transform: 'scale(1.2)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        bounce: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
         },
       },
     },
