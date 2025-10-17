@@ -174,21 +174,97 @@ export const checkShopStatus = asyncHandler(async (req, res) => {
     const settingsPromise = TimeSettings.getCurrentSettings();
     const settings = await Promise.race([settingsPromise, timeoutPromise]);
     
+    const now = new Date();
     const isOpen = settings.isShopOpen();
-    const nextOpenTime = isOpen ? null : settings.getNextOpeningTime();
+    const currentDay = now.getDay();
+    const today = now.toLocaleDateString('en-CA', { timeZone: settings.timezone });
+    
+    // Check for special day hours
+    const specialDay = settings.specialDays.find(day => {
+      const specialDate = new Date(day.date).toLocaleDateString('en-CA');
+      return specialDate === today;
+    });
+    
+    // Get operating hours for today
+    const isWeekend = currentDay === 0 || currentDay === 6;
+    let operatingHours;
+    let closingTime = null;
+    let nextOpenTime = null;
+    let message = '';
+    
+    if (specialDay) {
+      if (specialDay.isClosed) {
+        operatingHours = null;
+        message = specialDay.description || 'Closed for special day';
+      } else {
+        operatingHours = {
+          startTime: specialDay.startTime || (isWeekend ? settings.weekend.startTime : settings.weekday.startTime),
+          endTime: specialDay.endTime || (isWeekend ? settings.weekend.endTime : settings.weekday.endTime)
+        };
+        message = specialDay.description || '';
+      }
+    } else {
+      const schedule = isWeekend ? settings.weekend : settings.weekday;
+      operatingHours = schedule.isActive ? {
+        startTime: schedule.startTime,
+        endTime: schedule.endTime
+      } : null;
+    }
+    
+    // Calculate closing time if shop is open
+    if (isOpen && operatingHours) {
+      const [hours, minutes] = operatingHours.endTime.split(':');
+      const closing = new Date(now);
+      closing.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      closingTime = closing.toISOString();
+    }
+    
+    // Calculate next opening time if shop is closed
+    if (!isOpen) {
+      if (operatingHours) {
+        const [hours, minutes] = operatingHours.startTime.split(':');
+        const opening = new Date(now);
+        opening.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        // If opening time has passed today, set to tomorrow
+        if (opening <= now) {
+          opening.setDate(opening.getDate() + 1);
+        }
+        
+        nextOpenTime = opening.toISOString();
+      } else {
+        // Find next available day
+        let daysToAdd = 1;
+        let foundNextDay = false;
+        
+        while (!foundNextDay && daysToAdd <= 7) {
+          const futureDate = new Date(now);
+          futureDate.setDate(futureDate.getDate() + daysToAdd);
+          const futureDayOfWeek = futureDate.getDay();
+          const futureSchedule = (futureDayOfWeek === 0 || futureDayOfWeek === 6) ? settings.weekend : settings.weekday;
+          
+          if (futureSchedule.isActive) {
+            const [hours, minutes] = futureSchedule.startTime.split(':');
+            futureDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            nextOpenTime = futureDate.toISOString();
+            foundNextDay = true;
+          } else {
+            daysToAdd++;
+          }
+        }
+      }
+    }
     
     res.status(200).json({
       success: true,
-      data: {
+      shopStatus: {
         isOpen,
-        nextOpeningTime: nextOpenTime,
-        currentTime: new Date().toLocaleTimeString('en-US', {
-          hour12: false,
-          timeZone: settings.timezone,
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        timezone: settings.timezone
+        nextOpenTime,
+        closingTime,
+        currentTime: now.toISOString(),
+        timezone: settings.timezone,
+        operatingHours,
+        message
       }
     });
   } catch (error) {
@@ -198,16 +274,17 @@ export const checkShopStatus = asyncHandler(async (req, res) => {
     const defaultTimezone = 'Asia/Kolkata';
     res.status(200).json({
       success: true,
-      data: {
+      shopStatus: {
         isOpen: true, // Default to open when database is unavailable
-        nextOpeningTime: null,
-        currentTime: new Date().toLocaleTimeString('en-US', {
-          hour12: false,
-          timeZone: defaultTimezone,
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        timezone: defaultTimezone
+        nextOpenTime: null,
+        closingTime: null,
+        currentTime: new Date().toISOString(),
+        timezone: defaultTimezone,
+        operatingHours: {
+          startTime: '09:00',
+          endTime: '21:00'
+        },
+        message: ''
       },
       warning: 'Using default shop status due to database connectivity issues'
     });

@@ -15,6 +15,7 @@ import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
 import ScrollManager from '../utils/scrollManager';
 import { calculatePricing } from '../utils/pricingUtils';
+import { WebsiteLiveTimerCompact } from '../components/WebsiteLiveTimer/index.js';
 import '../styles/ProductDisplayPageNew.css';
 
 const ProductDisplayPageNew = () => {
@@ -364,14 +365,37 @@ const ProductDisplayPageNew = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Website Live Timer - STICKY FOR ALL DEVICES */}
+      <div className="fixed top-0 left-0 right-0 z-[90] bg-white" style={{ 
+        willChange: 'transform',
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden'
+      }}>
+        {/* Timer */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-2.5">
+          <WebsiteLiveTimerCompact />
+        </div>
+        
+        {/* Mobile Back Button - Combined with timer */}
+        <div className="md:hidden">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1 text-gray-700 hover:text-gray-900 transition-colors px-3 py-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-light">Back</span>
+          </button>
+        </div>
+      </div>
+
       {/* Enhanced Sticky Mini Navbar - Desktop only */}
       {product && (
-        <div className={`hidden md:block fixed left-0 right-0 z-50 transition-all duration-300 ease-out ${
+        <div className={`hidden md:block fixed left-0 right-0 z-[95] transition-all duration-300 ease-out ${
           showStickyNavbar 
             ? 'translate-y-0 opacity-100' 
             : '-translate-y-full opacity-0'
         }`}
-        style={{ top: stickyTopOffset, zIndex: 100 }}>
+        style={{ top: '45px' }}>
         <div className="bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
             <div className="flex items-center justify-between gap-6">
@@ -506,7 +530,7 @@ const ProductDisplayPageNew = () => {
       )}
 
       {/* Mobile Layout */}
-      <div className="md:hidden min-h-screen bg-white">
+      <div className="md:hidden min-h-screen bg-white pt-[75px]">
         {/* Mobile Image Display */}
         <div className="relative w-full">
           <div className="relative w-full overflow-hidden">
@@ -520,20 +544,8 @@ const ProductDisplayPageNew = () => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               
-              {/* Navigation Controls */}
-              <div className="absolute top-3 left-3 z-10">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(-1);
-                  }}
-                  className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-gray-100 hover:bg-white transition-all duration-300"
-                >
-                  <ArrowLeft className="w-5 h-5" style={{ color: '#1a1a1a' }} />
-                </button>
-              </div>
-              
-              <div className="absolute top-3 right-3 flex gap-2 z-10">
+              {/* Share button only */}
+              <div className="absolute top-3 right-3 flex gap-2 z-30">
                 <button 
                   onClick={(e) => e.stopPropagation()}
                   className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-gray-100 hover:bg-white transition-all duration-300"
@@ -958,7 +970,42 @@ const ProductDisplayPageNew = () => {
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:block">
+      <div className="hidden md:block" style={{ paddingTop: '50px' }}>
+        {/* Breadcrumb Navigation - Desktop only */}
+        <div className="bg-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-6 py-3">
+            <div className="flex items-center gap-2 text-sm">
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="font-light">Back</span>
+              </button>
+              <span className="text-gray-400">/</span>
+              <button
+                onClick={() => navigate('/products')}
+                className="font-light text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Products
+              </button>
+              {product?.category && (
+                <>
+                  <span className="text-gray-400">/</span>
+                  <button
+                    onClick={() => navigate(`/products?category=${typeof product.category === 'object' ? product.category._id : product.category}`)}
+                    className="font-light text-gray-600 hover:text-gray-900 transition-colors capitalize"
+                  >
+                    {typeof product.category === 'object' ? product.category.name : product.category}
+                  </button>
+                </>
+              )}
+              <span className="text-gray-400">/</span>
+              <span className="font-light text-gray-900 truncate max-w-md">{product?.name}</span>
+            </div>
+          </div>
+        </div>
+        
         <div className="max-w-7xl mx-auto p-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           

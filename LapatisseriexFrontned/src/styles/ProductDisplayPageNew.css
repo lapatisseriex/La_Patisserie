@@ -15,28 +15,30 @@ body.product-display-page-new body {
   scroll-snap-type: none !important;
 }
 
-/* Hide header and breadcrumbs on mobile for ProductDisplayPageNew */
+/* Hide header and breadcrumbs on ALL devices for ProductDisplayPageNew */
+/* Hide main header */
+body.product-display-page-new header {
+  display: none !important;
+}
+
+/* Hide breadcrumbs */
+body.product-display-page-new .bg-gray-50.border-b.border-gray-200 {
+  display: none !important;
+}
+
+/* Remove padding at top that accounts for header space */
+body.product-display-page-new main {
+  padding-top: 0 !important;
+  background-color: #ffffff !important; /* Pure white background */
+}
+
+/* Ensure no spacing at the top of the container */
+body.product-display-page-new .max-w-7xl {
+  padding-top: 0 !important;
+}
+
 @media (max-width: 767px) {
-  /* Hide main header */
-  body.product-display-page-new header {
-    display: none !important;
-  }
-  
-  /* Hide breadcrumbs */
-  body.product-display-page-new .bg-gray-50.border-b.border-gray-200 {
-    display: none !important;
-  }
-  
-  /* Remove padding at top that accounts for header space */
-  body.product-display-page-new main {
-    padding-top: 0 !important;
-    background-color: #ffffff !important; /* Pure white background */
-  }
-  
-  /* Ensure no spacing at the top of the container */
-  body.product-display-page-new .max-w-7xl {
-    padding-top: 0 !important;
-  }
+  /* Additional mobile specific styles if needed */
 }
 
 /* Typography matching Orders page */
