@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
 import GoogleSignIn from '../GoogleSignIn/GoogleSignIn';
 import EmailAuth from '../EmailAuth/EmailAuth';
@@ -20,20 +21,38 @@ import '../auth.css';
 const NewAuthModal = () => {
   const { isAuthPanelOpen, toggleAuthPanel, authType, changeAuthType, clearError } = useAuth();
   const [activeTab, setActiveTab] = useState('login'); // 'login' or 'signup'
-  const [isClosing, setIsClosing] = useState(false);
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 
   useEffect(() => {
     if (isAuthPanelOpen) {
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
+      // Get current scroll position
+      const scrollY = window.scrollY;
+      
+      // Prevent body scroll when modal is open - preserve scroll position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflowY = 'scroll'; // Keep scrollbar space
     } else {
       // Restore body scroll when modal is closed
-      document.body.style.overflow = 'unset';
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflowY = '';
+      
+      // Restore scroll position without causing layout shift
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     }
 
     // Cleanup function to restore scroll when component unmounts
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflowY = '';
     };
   }, [isAuthPanelOpen]);
 
@@ -71,15 +90,17 @@ const NewAuthModal = () => {
     // Clear any errors before closing
     clearError();
     
-    setIsClosing(true);
+    // Start the exit animation
+    setIsAnimatingOut(true);
+    
+    // After animation duration, actually close the modal
     setTimeout(() => {
       toggleAuthPanel();
-      setIsClosing(false);
-      
+      setIsAnimatingOut(false);
       // Reset to default state
       setActiveTab('login');
       changeAuthType('login');
-    }, 300); // Match animation duration
+    }, 300); // Match the animation duration
   };
 
   const switchTab = (tab) => {
@@ -89,15 +110,68 @@ const NewAuthModal = () => {
   };
 
   return (
-    <>
-      {/* Elegant Backdrop - Profile Style */}
-      <div 
-        className={`fixed inset-0 z-50 bg-black bg-opacity-50 transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
-        onClick={handleClose}
-      />
-      
-      {/* Elegant Sidepanel - Profile Hero Styling */}
-      <div className={`fixed top-0 right-0 bottom-0 z-[9999] w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-out ${isClosing ? 'translate-x-full' : 'translate-x-0'} flex flex-col`}>
+    <div style={{ 
+      position: 'fixed', 
+      top: 0, 
+      left: 0, 
+      right: 0, 
+      bottom: 0, 
+      zIndex: 999999, 
+      pointerEvents: (isAuthPanelOpen && !isAnimatingOut) ? 'auto' : 'none',
+      backfaceVisibility: 'hidden',
+      transform: 'translateZ(0)' // Force hardware acceleration to prevent glitches
+    }}>
+      <AnimatePresence mode="wait">
+        {(isAuthPanelOpen || isAnimatingOut) && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={isAnimatingOut ? { opacity: 0 } : { opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              onClick={handleClose}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(40, 28, 32, 0.5)',
+                zIndex: 999998,
+                backfaceVisibility: 'hidden',
+                willChange: 'opacity'
+              }}
+            />
+            
+            {/* Side Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={isAnimatingOut ? { x: '100%' } : { x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ 
+                type: 'tween',
+                duration: 0.3,
+                ease: "easeInOut"
+              }}
+              style={{
+                position: 'fixed',
+                right: 0,
+                top: 0,
+                height: '100vh',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 32px 64px -12px rgba(40, 28, 32, 0.25), 0 0 0 1px rgba(115, 56, 87, 0.1)',
+                zIndex: 999999,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                backfaceVisibility: 'hidden',
+                willChange: 'transform',
+                transform: 'translateZ(0)' // Force hardware acceleration
+              }}
+              className="w-full sm:w-96 md:w-1/2 lg:w-2/5 xl:w-1/3 max-w-md"
+            >
         
         {/* Sharp Header - Orders Theme */}
         <div className="bg-white px-6 py-4" style={{borderBottom: '2px solid rgba(115, 56, 87, 0.2)'}}>
@@ -249,9 +323,11 @@ const NewAuthModal = () => {
           )}
         </div>
 
-
-      </div>
-    </>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 

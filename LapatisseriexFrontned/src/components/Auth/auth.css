@@ -981,3 +981,11 @@
     rgba(244, 63, 94, 0.08) 50%, 
     rgba(251, 113, 133, 0.08) 100%);
 }
+
+/* Forgot Password Component Styles */
+.forgot-password-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+}
