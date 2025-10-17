@@ -1,31 +1,28 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Package, Truck, Shield, Clock, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, Package, Truck, Shield, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fetchProductById, fetchProducts, makeSelectListByKey } from '../redux/productsSlice';
 import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
 import FavoriteButton from '../components/Favorites/FavoriteButton';
-
 import { useRecentlyViewed } from '../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useAuth } from '../hooks/useAuth';
 import MediaDisplay from '../components/common/MediaDisplay';
 import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
-import ProductDebugPanel from '../components/common/ProductDebugPanel';
 import ScrollManager from '../utils/scrollManager';
 import { calculatePricing } from '../utils/pricingUtils';
-import '../styles/ProductDisplayPage-mobile.css';
-import '../styles/premiumButtons.css';
+import '../styles/ProductDisplayPageNew.css';
 
-const ProductDisplayPage = () => {
+const ProductDisplayPageNew = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  // Get product data from Redux store (stable selectors)
+  // Get product data from Redux store
   const product = useSelector((state) => state.products.selectedProduct);
   const loading = useSelector((state) => state.products.loading);
   const error = useSelector((state) => state.products.error);
@@ -35,25 +32,18 @@ const ProductDisplayPage = () => {
   const { user } = useAuth();
   const { isFavorite } = useFavorites();
 
-  // IMMEDIATE scroll prevention - before any other effects
+  // IMMEDIATE scroll prevention
   React.useLayoutEffect(() => {
-    console.log(`🚀 ProductDisplayPage mounting for product: ${productId}`);
-    
-    // Use the comprehensive scroll reset utility
+    console.log(`🚀 ProductDisplayPageNew mounting for product: ${productId}`);
     const cleanupScroll = ScrollManager.resetScrollForProductNavigation(productId);
+    document.body.classList.add('product-display-page-new');
     
-    // Add mobile class for styling
-    document.body.classList.add('product-display-page-mobile');
-    
-    // Monitor scroll for debugging in development
-    let stopMonitoring = null;
     return () => {
-      console.log(`🧹 ProductDisplayPage cleanup for product: ${productId}`);
-      document.body.classList.remove('product-display-page-mobile');
+      console.log(`🧹 ProductDisplayPageNew cleanup for product: ${productId}`);
+      document.body.classList.remove('product-display-page-new');
       cleanupScroll();
-      if (stopMonitoring) stopMonitoring();
     };
-  }, [productId]); // Re-run when productId changes
+  }, [productId]);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -63,21 +53,15 @@ const ProductDisplayPage = () => {
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
-  const [isPricingOpen, setIsPricingOpen] = useState(false);
-  const [isCareInstructionsOpen, setIsCareInstructionsOpen] = useState(false);
-  const [isDeliveryInfoOpen, setIsDeliveryInfoOpen] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [lastQuantityChangeTime, setLastQuantityChangeTime] = useState(0);
   const [jellyAnimationKey, setJellyAnimationKey] = useState(0);
-  const [animationDirection, setAnimationDirection] = useState('none'); // 'up', 'down', 'none'
+  const [animationDirection, setAnimationDirection] = useState('none');
   
-  // References to the main "Reserve Yours" buttons (mobile & desktop) to determine when to show sticky bars
   const reserveButtonMobileRef = useRef(null);
   const reserveButtonDesktopRef = useRef(null);
-  // Offset for sticky bar to sit below desktop header
   const [stickyTopOffset, setStickyTopOffset] = useState(0);
 
-  // Helper: determines if a referenced element is within the viewport (partial visibility counts)
   const isElementInViewport = (ref) => {
     const el = ref?.current;
     if (!el) return false;
@@ -85,6 +69,14 @@ const ProductDisplayPage = () => {
     const vh = window.innerHeight || document.documentElement.clientHeight;
     const vw = window.innerWidth || document.documentElement.clientWidth;
     return rect.top < vh && rect.bottom > 0 && rect.left < vw && rect.right > 0;
+  };
+
+  // Check if element is above the viewport (scrolled past)
+  const isElementAboveViewport = (ref) => {
+    const el = ref?.current;
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.bottom < 0;
   };
 
   // Fetch product data
@@ -102,7 +94,7 @@ const ProductDisplayPage = () => {
     }
   }, [product]);
   
-  // Keep selectedVariant state in sync with selectedVariantIndex
+  // Keep selectedVariant state in sync
   useEffect(() => {
     if (product?.variants && product.variants[selectedVariantIndex]) {
       setSelectedVariant(product.variants[selectedVariantIndex]);
@@ -116,16 +108,14 @@ const ProductDisplayPage = () => {
     }
   }, [product, user, trackProductView]);
   
-  // Calculate sticky offset based on header height
+  // Calculate sticky offset
   useEffect(() => {
     const computeOffset = () => {
-      // Check if we're on desktop
-      if (window.innerWidth >= 768) { // md breakpoint
+      if (window.innerWidth >= 768) {
         const headerEl = document.querySelector('header');
         const headerHeight = headerEl ? headerEl.offsetHeight : 0;
         setStickyTopOffset(headerHeight);
       } else {
-        // On mobile header is hidden for this page
         setStickyTopOffset(0);
       }
     };
@@ -135,86 +125,47 @@ const ProductDisplayPage = () => {
     return () => window.removeEventListener('resize', computeOffset);
   }, []);
   
-  // Scroll detection states for sticky mini navbar
+  // Scroll detection states
   const [showStickyNavbar, setShowStickyNavbar] = useState(false);
-  const [showStickyBreadcrumb, setShowStickyBreadcrumb] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [scrollingUp, setScrollingUp] = useState(false);
-  
-  // Mobile sticky reserve button state - shows when scrolling past product info bar
   const [showMobileStickyReserve, setShowMobileStickyReserve] = useState(false);
   const productInfoRef = useRef(null);
 
-  // Calculate current cart quantity - ensure it updates when cart changes
+  // Calculate current cart quantity
   const currentCartQuantity = useMemo(() => {
     if (!product?._id) return 0;
     return getItemQuantity(product._id);
   }, [product?._id, getItemQuantity, cartItems]);
-  
-  // Debug cart state
-  useEffect(() => {
-    if (product) {
-      console.log('🔍 ProductDisplayPage - Cart State Debug:', {
-        productId: product._id,
-        urlProductId: productId,
-        currentCartQuantity,
-        isLoading,
-        cartItemsLength: cartItems.length,
-        shouldShowQuantity: currentCartQuantity > 0
-      });
-    }
-  }, [product, productId, currentCartQuantity, isLoading, cartItems]);
 
-  // Generate consistent random rating for each product based on product ID
+  // Generate rating
   const getProductRating = (productId) => {
     if (!productId) return { rating: 4.5, percentage: 85 };
-    
-    // Simple hash function to generate consistent "random" numbers from product ID
     let hash = 0;
     for (let i = 0; i < productId.length; i++) {
       const char = productId.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
+      hash = hash & hash;
     }
-    
-    // Use hash to generate rating between 4.0-5.0 and percentage between 80-100
     const rating = (4.0 + (Math.abs(hash) % 100) / 100).toFixed(1);
-    const percentage = 80 + (Math.abs(hash * 7) % 21); // 80-100%
-    
-    return { 
-      rating: parseFloat(rating), 
-      percentage: Math.floor(percentage) 
-    };
+    const percentage = 80 + (Math.abs(hash * 7) % 21);
+    return { rating: parseFloat(rating), percentage: Math.floor(percentage) };
   };
 
   const productRating = product ? getProductRating(product._id) : { rating: 4.5, percentage: 85 };
 
-  // Deterministic rating count like "3.9K" for display purposes
   const getRatingCount = (productId) => {
     if (!productId) return '3.9K';
     let hash = 0;
     for (let i = 0; i < productId.length; i++) {
       hash = ((hash << 5) - hash) + productId.charCodeAt(i);
-      hash |= 0; // 32-bit
+      hash |= 0;
     }
-    const base = Math.abs(hash % 9000) + 1000; // 1,000 - 9,999
-    // Format to X.XK (e.g., 3950 -> 4.0K)
+    const base = Math.abs(hash % 9000) + 1000;
     const k = (base / 1000).toFixed(1);
     return `${k.replace(/\.0$/, '')}K`;
   };
   const ratingCountDisplay = product ? getRatingCount(product._id) : '3.9K';
 
-  // Validate MongoDB ObjectId format
-  const isValidObjectId = (id) => {
-    return /^[0-9a-fA-F]{24}$/.test(id);
-  };
-
-  // Track retry attempts and error state
-  const [retryCount, setRetryCount] = useState(0);
-  const [productError, setProductError] = useState(null);
-  const maxRetries = 3;
-  
-  // Fetch Recently Viewed when user is available
+  // Fetch Recently Viewed
   useEffect(() => {
     const loadRecent = async () => {
       if (!user) { setRecentlyViewed([]); return; }
@@ -230,7 +181,7 @@ const ProductDisplayPage = () => {
     loadRecent();
   }, [user, productId, fetchRecentlyViewed]);
 
-  // Fetch products from the same category via Redux keyed list
+  // Fetch same category products
   const selectSameCategory = makeSelectListByKey('sameCategory');
   const sameCategoryAll = useSelector(selectSameCategory);
   useEffect(() => {
@@ -244,90 +195,57 @@ const ProductDisplayPage = () => {
     return list.filter(p => p && p._id !== productId).slice(0, 3);
   }, [sameCategoryAll, productId]);
 
-  // Auto-sliding functionality for multiple images - smooth and slow
+  // Auto-sliding for images
   useEffect(() => {
     if (product && product.images && product.images.length > 1 && !isHoveringImage) {
       const interval = setInterval(() => {
         setSelectedImageIndex((prevIndex) => 
           (prevIndex + 1) % product.images.length
         );
-      }, 4000); // Change image every 4 seconds for smooth, slow experience
-
+      }, 4000);
       return () => clearInterval(interval);
     }
   }, [product?.images, isHoveringImage]);
 
-  // Initialize sticky states on component mount
-  useEffect(() => {
-    // Force hide the sticky desktop bar on initial load
-    setShowStickyNavbar(false);
-    
-    // Check if we need to show the mobile sticky bar on initial load
-    if (window.innerWidth < 768) {
-      const reserveVisible = isElementInViewport(reserveButtonMobileRef);
-      setShowMobileStickyReserve(!reserveVisible);
-    }
-  }, [reserveButtonMobileRef]);
-  
-  // Scroll/resize detection for sticky elements (desktop top bar, mobile bottom CTA)
+  // Scroll detection
   useEffect(() => {
     const handleScroll = () => {
       const isMobile = window.innerWidth < 768;
-      
-      // Check if we're at the top of the page
-      const isAtTop = window.scrollY <= 10;
+      const scrollY = window.scrollY;
 
-      // Desktop/tablet: show sticky top bar if main desktop Reserve button is NOT visible AND we've scrolled down
       if (!isMobile) {
+        // For desktop: show sticky navbar when user scrolls down past 400px or when reserve button is not visible
         const reserveVisible = isElementInViewport(reserveButtonDesktopRef);
-        // Only show sticky bar if we're not at the top of the page AND reserve button is not visible
-        const shouldShowNavbar = !isAtTop && !reserveVisible;
+        const shouldShowNavbar = scrollY > 400 && !reserveVisible;
         if (shouldShowNavbar !== showStickyNavbar) setShowStickyNavbar(shouldShowNavbar);
-        // Ensure mobile sticky hidden
         if (showMobileStickyReserve) setShowMobileStickyReserve(false);
       } else {
-        // Mobile: show sticky bottom bar if main mobile Reserve button is NOT visible
         const reserveVisible = isElementInViewport(reserveButtonMobileRef);
         const shouldShowMobileReserve = !reserveVisible;
         if (shouldShowMobileReserve !== showMobileStickyReserve) setShowMobileStickyReserve(shouldShowMobileReserve);
-        // Ensure desktop sticky hidden on mobile
         if (showStickyNavbar) setShowStickyNavbar(false);
       }
-
-      // Breadcrumbs are removed in UI; keep hidden
-      if (showStickyBreadcrumb) setShowStickyBreadcrumb(false);
-      setLastScrollY(window.scrollY);
     };
 
-    // Better throttled scroll listener with debounce
     let scrollTimeout;
     const onScroll = () => {
-      // Clear any existing timeout
-      if (scrollTimeout) {
-        cancelAnimationFrame(scrollTimeout);
-      }
-      
-      // Set a new timeout
+      if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
       scrollTimeout = requestAnimationFrame(() => {
         handleScroll();
         scrollTimeout = null;
       });
     };
 
-    const onResize = () => handleScroll();
-
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onResize);
-
-    // Initial check after mount to ensure DOM is ready
+    window.addEventListener('resize', handleScroll);
     const timeoutId = setTimeout(() => handleScroll(), 100);
 
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', handleScroll);
     };
-  }, [reserveButtonMobileRef, reserveButtonDesktopRef, showStickyNavbar, showStickyBreadcrumb, showMobileStickyReserve]);
+  }, [reserveButtonMobileRef, reserveButtonDesktopRef, showStickyNavbar, showMobileStickyReserve]);
 
   const handleAddToCart = async () => {
     if (!product || totalStock === 0 || isAddingToCart) return;
@@ -346,41 +264,23 @@ const ProductDisplayPage = () => {
     event.preventDefault();
     event.stopPropagation();
     
-    if (!product) {
-      console.log('❌ No product found');
-      return;
-    }
+    if (!product) return;
     
     const currentQuantity = getItemQuantity(product._id);
-    console.log('🔍 Reserve button clicked!');
-    console.log('🔍 Current quantity in cart:', currentQuantity);
-    console.log('🔍 Cart items:', cartItems);
-    console.log('🔍 User status:', user ? 'logged in' : 'guest');
     
     if (currentQuantity > 0) {
-      // Product already in cart - just redirect
-      console.log('📦 Product already in cart (quantity:', currentQuantity, '), redirecting to cart');
       try {
         navigate('/cart');
       } catch (navError) {
-        console.error('❌ Navigation error:', navError);
-        window.location.href = '/cart'; // Fallback navigation
+        window.location.href = '/cart';
       }
     } else {
-      // Product not in cart - add one and redirect
       try {
-    console.log('🎯 Product not in cart, adding 1 item...');
-    await addToCart(product, 1, selectedVariantIndex);
-        
-        // Double check the cart was updated
-        const newQuantity = getItemQuantity(product._id);
-        console.log('✅ Product added successfully! New quantity:', newQuantity);
-        console.log('🔄 Navigating to cart...');
+        await addToCart(product, 1, selectedVariantIndex);
         try {
           navigate('/cart');
         } catch (navError) {
-          console.error('❌ Navigation error:', navError);
-          window.location.href = '/cart'; // Fallback navigation
+          window.location.href = '/cart';
         }
       } catch (error) {
         console.error('❌ Error reserving product:', error);
@@ -389,63 +289,34 @@ const ProductDisplayPage = () => {
     }
   };
 
-
-
-  const handleBuyNow = async () => {
-    if (!product || totalStock === 0 || isAddingToCart) return;
-    try {
-      const currentQuantity = getItemQuantity(product._id);
-      if (currentQuantity === 0) {
-        setIsAddingToCart(true);
-        await addToCart(product, 1, selectedVariantIndex);
-      }
-      navigate('/cart');
-    } catch (error) {
-      console.error('Error in buy now:', error);
-      try { const { toast } = await import('react-toastify'); toast.error(typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart'); } catch {}
-    } finally {
-      setIsAddingToCart(false);
-    }
-  };
-
   const handleQuantityChange = useCallback(async (newQuantity) => {
     if (newQuantity < 0 || !product?._id) return;
     
-    // Prevent only genuine rapid clicking (very fast consecutive clicks)
     const now = Date.now();
     const timeSinceLastClick = now - lastQuantityChangeTime;
     
-    if (timeSinceLastClick < 50) {
-      return; // Silently ignore super rapid clicks
-    }
+    if (timeSinceLastClick < 50) return;
     
     setLastQuantityChangeTime(now);
     
-    // Calculate direction based on quantity change
     const currentQuantity = getItemQuantity(product._id);
     const delta = newQuantity - currentQuantity;
     setAnimationDirection(delta > 0 ? 'up' : delta < 0 ? 'down' : 'none');
     
-    // Trigger jelly animation
     setJellyAnimationKey(prev => prev + 1);
     
-    // Fire and forget - no loading states for smooth experience
     updateQuantity(product._id, newQuantity).catch(error => {
       console.error('Error updating quantity:', error);
     });
   }, [updateQuantity, product?._id, lastQuantityChangeTime, getItemQuantity]);
 
-  // Calculate derived properties that may be needed in early returns
-  // Use centralized pricing utility for consistency across all components
+  // Calculate pricing
   const pricingDetails = useMemo(() => {
     return calculatePricing(selectedVariant);
   }, [selectedVariant]);
   
-  // Set default values for derived properties from the selected variant
   const tracks = !!selectedVariant?.isStockActive;
   const totalStock = tracks ? (selectedVariant?.stock || 0) : Number.POSITIVE_INFINITY;
-
-
 
   const handleImageSelect = (index) => {
     setSelectedImageIndex(index);
@@ -455,98 +326,31 @@ const ProductDisplayPage = () => {
     setIsImageModalOpen(true);
   };
 
-  // Dropdown management functions - ensures only one dropdown is open at a time
-  const closeAllDropdowns = () => {
-    setIsDescriptionOpen(false);
-    setIsPricingOpen(false);
-    setIsCareInstructionsOpen(false);
-    setIsDeliveryInfoOpen(false);
-  };
-
-  const handleDescriptionToggle = () => {
-    if (!isDescriptionOpen) {
-      closeAllDropdowns();
-      setIsDescriptionOpen(true);
-    } else {
-      setIsDescriptionOpen(false);
-    }
-  };
-
-  const handlePricingToggle = () => {
-    if (!isPricingOpen) {
-      closeAllDropdowns();
-      setIsPricingOpen(true);
-    } else {
-      setIsPricingOpen(false);
-    }
-  };
-
-  const handleCareInstructionsToggle = () => {
-    if (!isCareInstructionsOpen) {
-      closeAllDropdowns();
-      setIsCareInstructionsOpen(true);
-    } else {
-      setIsCareInstructionsOpen(false);
-    }
-  };
-
-  const handleDeliveryInfoToggle = () => {
-    if (!isDeliveryInfoOpen) {
-      closeAllDropdowns();
-      setIsDeliveryInfoOpen(true);
-    } else {
-      setIsDeliveryInfoOpen(false);
-    }
-  };
-
-  // Reserve button matching ProductCard style
+  // Reserve CTA Button Component with Orders page styling
   const ReserveCTA = ({ onClick, disabled, label = 'Reserve Yours', small = false, className = '', dataRole }) => (
     <button
       onClick={onClick}
       disabled={disabled}
       data-role={dataRole}
-      className={`group relative rounded-lg overflow-hidden transition-all duration-300 font-semibold ${
-        small ? 'py-2 px-3 text-xs' : 'py-3 px-5 text-sm'
+      className={`relative rounded-md overflow-hidden transition-all duration-300 font-light tracking-wide ${
+        small ? 'py-2 px-4 text-xs' : 'py-3 px-6 text-sm'
       } ${
         disabled
           ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
-          : 'bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:border-[#733857] transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation'
+          : 'text-white hover:opacity-90 transform hover:scale-[1.02] active:scale-[0.98]'
       } ${className}`}
+      style={{
+        letterSpacing: '0.05em',
+        background: disabled ? undefined : 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)'
+      }}
     >
-      <span className="relative z-10 flex items-center justify-center gap-1.5">
+      <span className="relative z-10 flex items-center justify-center gap-2 uppercase">
         {disabled ? (
-          <>
-            {totalStock === 0 ? 'Out of Stock' : 'Unavailable'}
-          </>
+          <>{totalStock === 0 ? 'Out of Stock' : 'Unavailable'}</>
         ) : (
-          <>
-            <svg className={`w-3 h-3 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-12 group-active:scale-110 ${
-              disabled ? 'text-gray-400' : 'text-[#733857] group-hover:text-white'
-            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
-              <circle cx="12" cy="12" r="10" />
-            </svg>
-            <span className={`transform transition-all duration-300 group-hover:tracking-wider group-active:tracking-wider ${
-              disabled 
-                ? 'text-gray-400'
-                : 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent group-hover:text-white'
-            }`}>{small ? 'Reserve' : label}</span>
-            <svg className={`w-3 h-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:translate-x-1 group-active:scale-110 ${
-              disabled ? 'text-gray-400' : 'text-[#733857] group-hover:text-white'
-            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </>
+          <>{label}</>
         )}
       </span>
-      {!disabled && (
-        <>
-          <div className="absolute top-1 right-2 w-1 h-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
-          <div className="absolute bottom-1 left-3 w-1 h-1 bg-yellow-300 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
-          <div className="absolute top-2 left-1/2 w-0.5 h-0.5 bg-yellow-500 rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-pulse group-active:animate-pulse transition-opacity duration-300 delay-150"></div>
-        </>
-      )}
-      <div className="absolute inset-0 bg-black opacity-0 group-active:opacity-10 transition-opacity duration-150 rounded-lg md:hidden"></div>
     </button>
   );
 
@@ -555,21 +359,11 @@ const ProductDisplayPage = () => {
   }
 
   if (!product) {
-    // Keep showing the skeleton until product is available
     return <ProductDisplaySkeleton />;
   }
 
   return (
-    <div 
-      className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 relative overflow-hidden"
-      style={{ scrollMarginTop: 0, scrollPaddingTop: 0 }}
-    >
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-pink-200/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-60 right-20 w-48 h-48 bg-purple-200/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-yellow-200/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
-      </div>
+    <div className="min-h-screen bg-white">
       {/* Enhanced Sticky Mini Navbar - Desktop only */}
       {product && (
         <div className={`hidden md:block fixed left-0 right-0 z-50 transition-all duration-300 ease-out ${
@@ -577,19 +371,14 @@ const ProductDisplayPage = () => {
             ? 'translate-y-0 opacity-100' 
             : '-translate-y-full opacity-0'
         }`}
-        style={{
-          top: stickyTopOffset, // Below header on desktop, top on mobile
-          zIndex: 100 // Ensure above page content and header if necessary
-        }}>
-        {/* Backdrop blur for better visual separation */}
-        <div className="bg-white/80 backdrop-blur-lg border-t border-pink-200/50 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 sm:py-3">
-            <div className="flex items-center justify-between gap-3 sm:gap-6">
+        style={{ top: stickyTopOffset, zIndex: 100 }}>
+        <div className="bg-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+            <div className="flex items-center justify-between gap-6">
               
               {/* Left: Product Info */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                {/* Product Thumbnail */}
-                <div className="w-10 h-10 sm:w-12 sm:h-12 border border-gray-300 overflow-hidden flex-shrink-0 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="w-12 h-12 border border-gray-100 overflow-hidden flex-shrink-0 bg-gray-50">
                   <MediaDisplay
                     src={product.images?.[selectedImageIndex] || product.images?.[0]}
                     alt={product.name}
@@ -597,22 +386,36 @@ const ProductDisplayPage = () => {
                   />
                 </div>
                 
-                {/* Product Details - Center on mobile, left-aligned on desktop */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent truncate leading-tight">
+                  <h3 className="text-sm font-light tracking-wide truncate leading-tight" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
                     {product.name}
                   </h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-sm sm:text-base font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-base font-light" style={{ color: '#1a1a1a' }}>
                       ₹{Math.round(pricingDetails.finalPrice)}
                     </span>
                     {pricingDetails.discountPercentage > 0 && (
                       <>
-                        <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-through">
+                        <span className="text-xs line-through" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                           ₹{pricingDetails.mrp}
                         </span>
-                        <span className="bg-green-500 text-white px-1.5 py-0.5 text-xs font-bold leading-none rounded">
-                          {pricingDetails.discountPercentage}% OFF
+                        <span className="relative inline-flex items-center overflow-hidden">
+                          <span className="text-xs font-bold px-2.5 py-0.5 bg-white" style={{ 
+                            color: '#16a34a',
+                            transform: 'skewX(-10deg)',
+                            display: 'inline-block'
+                          }}>
+                            {pricingDetails.discountPercentage}%
+                          </span>
+                          <span className="text-xs font-bold px-2.5 py-0.5" style={{ 
+                            color: '#16a34a',
+                            backgroundColor: '#dcfce7',
+                            transform: 'skewX(-10deg)',
+                            display: 'inline-block',
+                            marginLeft: '-2px'
+                          }}>
+                            OFF
+                          </span>
                         </span>
                       </>
                     )}
@@ -621,62 +424,40 @@ const ProductDisplayPage = () => {
               </div>
 
               {/* Right: Action Buttons */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                {/* Favorite Button - avoid nested <button> by using a non-button wrapper */}
+              <div className="flex items-center gap-3 flex-shrink-0">
                 <div
-                  className="bg-gray-50 border border-rose-300 h-9 sm:h-10 w-9 sm:w-10 flex items-center justify-center rounded-lg hover:border-rose-500"
+                  className="bg-gray-50 border border-gray-100 h-10 w-10 flex items-center justify-center hover:border-gray-200"
                   onClick={(e) => e.stopPropagation()}
                   role="presentation"
                 >
-                  <FavoriteButton productId={productId} size="md" className="text-rose-500" />
+                  <FavoriteButton productId={productId} size="md" />
                 </div>
                 
-                {/* Quantity Controls or Add to Cart */}
                 {currentCartQuantity > 0 ? (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center bg-gray-50 border border-gray-300 h-9 sm:h-10 rounded-lg">
+                  <div className="flex items-center bg-gray-50 border border-gray-100 h-10 rounded-md">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleQuantityChange(currentCartQuantity - 1);
                       }}
                       disabled={isAddingToCart}
-                      className="w-8 sm:w-9 h-full flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg"
+                      className="w-9 h-full flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ color: '#1a1a1a' }}
                     >
-                      <Minus className="w-3 h-3 sm:w-4 sm:h-4 text-[#733857]" />
+                      <Minus className="w-4 h-4" />
                     </button>
                     <motion.span 
                       key={`jelly-${jellyAnimationKey}`}
-                      initial={{ 
-                        scaleX: 1, 
-                        scaleY: 1,
-                        y: animationDirection === 'up' ? -10 : animationDirection === 'down' ? 10 : 0,
-                        opacity: animationDirection !== 'none' ? 0.7 : 1
-                      }}
+                      initial={{ scaleX: 1, scaleY: 1, y: animationDirection === 'up' ? -10 : animationDirection === 'down' ? 10 : 0, opacity: animationDirection !== 'none' ? 0.7 : 1 }}
                       animate={{
                         scaleX: [1, 1.15, 0.95, 1.03, 1],
                         scaleY: [1, 0.85, 1.05, 0.98, 1],
-                        y: [
-                          animationDirection === 'up' ? -10 : animationDirection === 'down' ? 10 : 0,
-                          animationDirection === 'up' ? -5 : animationDirection === 'down' ? 5 : 0,
-                          0,
-                          0,
-                          0
-                        ],
-                        opacity: [
-                          animationDirection !== 'none' ? 0.7 : 1,
-                          1,
-                          1,
-                          1,
-                          1
-                        ]
+                        y: [animationDirection === 'up' ? -10 : animationDirection === 'down' ? 10 : 0, animationDirection === 'up' ? -5 : animationDirection === 'down' ? 5 : 0, 0, 0, 0],
+                        opacity: [animationDirection !== 'none' ? 0.7 : 1, 1, 1, 1, 1]
                       }}
-                      transition={{
-                        duration: 0.6,
-                        times: [0, 0.2, 0.5, 0.8, 1],
-                        ease: "easeInOut"
-                      }}
-                      className="px-2 sm:px-3 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-semibold text-sm min-w-[2rem] text-center inline-block"
+                      transition={{ duration: 0.6, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
+                      className="px-3 font-light text-sm min-w-[2rem] text-center"
+                      style={{ color: '#1a1a1a' }}
                     >
                       {isAddingToCart ? '...' : currentCartQuantity}
                     </motion.span>
@@ -686,45 +467,35 @@ const ProductDisplayPage = () => {
                         handleQuantityChange(currentCartQuantity + 1);
                       }}
                       disabled={(tracks && currentCartQuantity >= totalStock) || isAddingToCart}
-                      className="w-8 sm:w-9 h-full flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
+                      className="w-9 h-full flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ color: '#1a1a1a' }}
                     >
-                      <Plus className="w-3 h-3 sm:w-4 sm:h-4 text-[#733857]" />
+                      <Plus className="w-4 h-4" />
                     </button>
-                    </div>
-                    {tracks && currentCartQuantity >= totalStock && (
-                      <div className="text-[10px] bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-1">Max stock reached</div>
-                    )}
                   </div>
                 ) : (
                   <button
                     onClick={handleAddToCart}
                     disabled={!product?.isActive || (tracks && totalStock === 0) || isAddingToCart}
-                    className={`btn-premium-outline px-3 sm:px-5 py-2 text-xs font-medium h-9 sm:h-10 ${
+                    className={`px-5 py-2 text-xs font-light tracking-wide border border-gray-200 h-10 uppercase ${
                       !product?.isActive || (tracks && totalStock === 0)
-                        ? 'opacity-50 cursor-not-allowed'
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50'
                         : isAddingToCart
-                        ? 'cursor-wait'
-                        : ''
+                        ? 'cursor-wait bg-gray-50'
+                        : 'bg-white hover:bg-gray-50'
                     }`}
+                    style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}
                   >
-                    {isAddingToCart ? (
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent animate-spin"></div>
-                        <span className="hidden sm:inline">Adding...</span>
-                      </div>
-                    ) : (
-                      <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Add to Box</span>
-                    )}
+                    {isAddingToCart ? 'Adding...' : 'Add to Box'}
                   </button>
                 )}
 
-                {/* Prominent Reserve Yours Button */}
                 <ReserveCTA
                   onClick={handleReserve}
                   disabled={!product?.isActive || (tracks && totalStock === 0)}
-                  label="Reserve Yours"
+                  label="Reserve"
                   small
-                  className="h-9 sm:h-10 px-3 sm:px-5"
+                  className="h-10 px-5"
                   dataRole="sticky-reserve"
                 />
               </div>
@@ -734,8 +505,8 @@ const ProductDisplayPage = () => {
         </div>
       )}
 
-      {/* Mobile Layout with Gradient Background and Glassmorphism Cards */}
-      <div className="md:hidden min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
+      {/* Mobile Layout */}
+      <div className="md:hidden min-h-screen bg-white">
         {/* Mobile Image Display */}
         <div className="relative w-full">
           <div className="relative w-full overflow-hidden">
@@ -749,48 +520,43 @@ const ProductDisplayPage = () => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               
-              {/* Navigation Controls - Back Arrow and Search */}
+              {/* Navigation Controls */}
               <div className="absolute top-3 left-3 z-10">
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(-1);
                   }}
-                  className="w-10 h-10 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center shadow-xl border border-white/30 hover:bg-white/30 transition-all duration-300"
+                  className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-gray-100 hover:bg-white transition-all duration-300"
                 >
-                  <ArrowLeft className="w-5 h-5 text-white drop-shadow-lg" />
+                  <ArrowLeft className="w-5 h-5" style={{ color: '#1a1a1a' }} />
                 </button>
               </div>
               
-              {/* Search and Share Icons */}
               <div className="absolute top-3 right-3 flex gap-2 z-10">
-                
                 <button 
                   onClick={(e) => e.stopPropagation()}
-                  className="w-10 h-10 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center shadow-xl border border-white/30 hover:bg-white/30 transition-all duration-300"
+                  className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-gray-100 hover:bg-white transition-all duration-300"
                 >
-                  <div className="w-5 h-5 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-lg">
-                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                      <polyline points="16 6 12 2 8 6"></polyline>
-                      <line x1="12" y1="2" x2="12" y2="15"></line>
-                    </svg>
-                  </div>
+                  <Share2 className="w-5 h-5" style={{ color: '#1a1a1a' }} />
                 </button>
               </div>
             </div>
             
-            {/* Image dots indicator for multiple images */}
+            {/* Image dots indicator */}
             {product.images && product.images.length > 1 && (
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
                 {product.images.map((_, index) => (
                   <div
                     key={index}
                     className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index === selectedImageIndex
-                        ? 'bg-white scale-110'
-                        : 'bg-white/50 hover:bg-white/80'
+                      index === selectedImageIndex ? 'scale-110' : ''
                     }`}
+                    style={{
+                      background: index === selectedImageIndex 
+                        ? 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)'
+                        : 'rgba(115, 56, 87, 0.3)'
+                    }}
                   />
                 ))}
               </div>
@@ -798,461 +564,253 @@ const ProductDisplayPage = () => {
           </div>
         </div>
 
-        {/* Mobile Product Info Cards with Glassmorphism */}
-        <div className="bg-gradient-to-br from-pink-50 via-white to-purple-50 px-4 pb-6 space-y-4">
-          {/* Product Info Card (Glassmorphism) */}
-          <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-white/30" ref={productInfoRef}>
-            {/* Product Title and Quantity */}
+        {/* Mobile Product Info */}
+        <div className="bg-white px-4 pb-6 space-y-4">
+          {/* Product Info Card */}
+          <div className="bg-white border-b border-gray-100 pt-6 pb-4" ref={productInfoRef}>
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent leading-tight flex-1">
+                  <h1 className="text-xl font-light tracking-wide leading-tight flex-1" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
                     {product.name}
                   </h1>
                   <div className="flex-shrink-0">
                     <FavoriteButton 
                       productId={productId} 
                       size="md" 
-                      className="bg-white/80 rounded-full p-1.5 shadow-sm hover:shadow-md transition-shadow duration-200" 
+                      className="bg-gray-50 rounded-full p-1.5 border border-gray-100" 
                     />
                   </div>
                 </div>
-                <p className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-2 font-medium">Net Qty: Serves 1</p>
+             
               </div>
-
             </div>
 
-            {/* Price Row - mobile matches reference */}
+            {/* Price Row */}
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+              <span className="text-2xl font-light" style={{ color: '#1a1a1a' }}>
                 ₹{Math.round(pricingDetails.finalPrice)}
               </span>
               {pricingDetails.discountPercentage > 0 && (
                 <>
-                  <span className="text-base bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-through">
+                  <span className="text-base line-through" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                     ₹{pricingDetails.mrp}
                   </span>
-                  <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-lg font-semibold">
-                    {pricingDetails.discountPercentage}% Off
-                  </span>
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-[10px]" title="Offer details">
-                    i
+                  <span className="relative inline-flex items-center overflow-hidden">
+                    <span className="text-sm font-bold px-3 py-1 bg-white" style={{ 
+                      color: '#16a34a',
+                      transform: 'skewX(-10deg)',
+                      display: 'inline-block'
+                    }}>
+                      {pricingDetails.discountPercentage}%
+                    </span>
+                    <span className="text-sm font-bold px-3 py-1" style={{ 
+                      color: '#16a34a',
+                      backgroundColor: '#dcfce7',
+                      transform: 'skewX(-10deg)',
+                      display: 'inline-block',
+                      marginLeft: '-2px'
+                    }}>
+                      OFF
+                    </span>
                   </span>
                 </>
               )}
             </div>
 
-            {/* Rating chip below price */}
+            {/* Rating chip */}
             <div className="mb-3">
-              <div className="inline-flex items-center gap-2 bg-white border border-gray-300 rounded-full px-2.5 py-1 shadow-sm">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-600 text-white text-[10px] leading-none">★</span>
-                <span className="text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{productRating.rating}</span>
-                <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">|</span>
-                <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{ratingCountDisplay}</span>
+              <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-2.5 py-1">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#10b981] text-white text-[10px] leading-none">★</span>
+                <span className="text-sm font-light" style={{ color: '#1a1a1a' }}>{productRating.rating}</span>
+                <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>|</span>
+                <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>{ratingCountDisplay}</span>
               </div>
             </div>
 
-            {/* Delivery Time */}
-            <div className="flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm font-medium">
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-              </svg>
-              <span>Estimated Delivery Time: 6 mins</span>
-            </div>
-
-            {/* Dietary Indicators - mobile pills */}
+            {/* Dietary Indicators */}
             <div className="flex items-center gap-2 mt-3">
-              {/* WITH EGG */}
-              <div
-                className={`flex items-center gap-2 rounded-[14px] px-3 py-1.5 border ${
-                  product.hasEgg ? 'border-black bg-amber-50' : 'border-gray-300 bg-white'
-                }`}
-                role="img"
-                aria-label="With egg indicator"
-              >
-                <span className="w-5 h-5 grid place-items-center rounded-md border border-red-600 bg-red-50">
-                  <span className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[8px] border-l-transparent border-r-transparent border-b-orange-600"></span>
-                </span>
-                <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">WITH EGG</span>
-              </div>
-
-              {/* EGGLESS */}
-              <div
-                className={`flex items-center gap-2 rounded-[14px] px-3 py-1.5 border ${
-                  !product.hasEgg ? 'border-black bg-green-50' : 'border-gray-300 bg-white'
-                }`}
-                role="img"
-                aria-label="Eggless indicator"
-              >
-                <span className="w-5 h-5 grid place-items-center rounded-md border-2 border-green-700 bg-white">
-                  <span className="w-3 h-3 rounded-full bg-green-700"></span>
-                </span>
-                <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">EGGLESS</span>
-              </div>
+              {product.hasEgg ? (
+                <div className="flex items-center gap-2 rounded-md px-3 py-1.5 border border-gray-200 bg-amber-50">
+                  <span className="w-5 h-5 grid place-items-center rounded-md border border-red-600 bg-red-50">
+                    <span className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[8px] border-l-transparent border-r-transparent border-b-orange-600"></span>
+                  </span>
+                  <span className="text-xs tracking-wide" style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}>WITH EGG</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-md px-3 py-1.5 border border-gray-200 bg-green-50">
+                  <span className="w-5 h-5 grid place-items-center rounded-md border-2 border-green-700 bg-white">
+                    <span className="w-3 h-3 rounded-full bg-green-700"></span>
+                  </span>
+                  <span className="text-xs tracking-wide" style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}>EGGLESS</span>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Feature Row (Icons in White Card) */}
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h3 className="text-base font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-3">Features</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {/* No Return or Exchange */}
-              <div className="flex flex-col items-center text-center p-3 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-sm transition-all">
-                <div className="w-8 h-8 mb-2 flex items-center justify-center bg-white rounded-full shadow-sm">
-                  <svg className="w-5 h-5 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728z" />
-                  </svg>
-                </div>
-                <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">No Return Or Exchange</span>
-              </div>
-
-              {/* Fast Delivery */}
-              <div className="flex flex-col items-center text-center p-3 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-sm transition-all">
-                <div className="w-8 h-8 mb-2 flex items-center justify-center bg-white rounded-full shadow-sm">
-                  <svg className="w-5 h-5 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">Fast Delivery</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Highlights Section */}
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Highlights</h3>
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            </div>
-            
-            <div className="space-y-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
-              <div className="flex justify-between py-2 px-2">
-                <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Key Features</span>
-                <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-right flex-1 ml-4">A rich cheesy double egg delight packed into a soft golden bun breakfast lunch or anytime fuel</span>
-              </div>
-              <div className="flex justify-between py-2 px-2 border-t border-gray-100">
-                <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Dietary Preference</span>
-                <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                  {product.hasEgg ? 'With Egg' : 'Eggless'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Information Section (Expandable) */}
-          <div className="bg-white rounded-lg shadow-sm">
-            <button
-              onClick={handleDescriptionToggle}
-              className="w-full px-4 py-4 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center">
-                <div className="w-5 h-5 mr-2 flex items-center justify-center bg-gray-100 rounded-full">
-                  <svg className="w-3 h-3 text-[#733857]" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Product Description</h3>
-              </div>
-              {isDescriptionOpen ? <ChevronUp className="w-4 h-4 text-[#733857]" /> : <ChevronDown className="w-4 h-4 text-[#733857]" />}
-            </button>
-            {isDescriptionOpen && (
-              <div className="px-4 pb-4 border-t border-gray-100">
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 mt-3">
-                  <p className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent leading-relaxed">
-                    {product.description}
-                  </p>
-                </div>
-                
-                {/* Additional product details */}
-                {(product.importantField?.name || Object.keys(product.extraFields || {}).length > 0) && (
-                  <div className="mt-4 space-y-0 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-                    {selectedVariant.quantity && (
-                      <div className="flex justify-between py-2 px-3 border-b border-gray-200">
-                        <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Weight:</span>
-                        <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{selectedVariant.quantity}{selectedVariant.measuringUnit}</span>
-                      </div>
-                    )}
-                    {product.importantField?.name && (
-                      <div className="flex justify-between py-2 px-3 border-b border-gray-200">
-                        <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{product.importantField.name}:</span>
-                        <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{product.importantField.value}</span>
-                      </div>
-                    )}
-                    {Object.entries(product.extraFields || {}).map(([key, value], index, arr) => (
-                      <div key={key} className={`flex justify-between py-2 px-3 ${index < arr.length - 1 ? 'border-b border-gray-200' : ''}`}>
-                        <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{key}:</span>
-                        <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Pricing & Stock Section - Mobile */}
-          <div className="bg-white rounded-lg shadow-sm">
-            <button
-              onClick={() => setIsPricingOpen(!isPricingOpen)}
-              className="w-full px-4 py-4 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center">
-                <div className="w-5 h-5 mr-2 flex items-center justify-center bg-gray-100 rounded-full">
-                  <svg className="w-3 h-3 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Pricing & Stock Calculator</h3>
-              </div>
-              {isPricingOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-            </button>
-            {isPricingOpen && (
-              <div className="px-4 pb-4 border-t border-gray-100">
-                {/* Pricing Breakdown Display */}
-                <div className="mt-3 space-y-3">
-                  <h4 className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Pricing Information</h4>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                      <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Original Price</div>
-                      <div className="text-lg font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">₹{selectedVariant?.price || 0}</div>
-                    </div>
-                    
-                    {pricingDetails.discountPercentage > 0 && (
-                      <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-                        <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Discount Applied</div>
-                        <div className="text-lg font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{pricingDetails.discountPercentage}% OFF</div>
-                      </div>
-                    )}
-                    
-                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                      <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Final Price</div>
-                      <div className="text-lg font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">₹{Math.round(pricingDetails.finalPrice)}</div>
-                    </div>
-                    
-                    {selectedVariant?.pricingBreakdown?.sellerReturn && (
-                      <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                        <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Seller Return</div>
-                        <div className="text-lg font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">₹{selectedVariant.pricingBreakdown.sellerReturn}</div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Discount Details */}
-                  {selectedVariant?.discount?.type && (
-                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-                      <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">Discount Type</div>
-                      <div className="text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                        {selectedVariant.discount.type === 'percentage' 
-                          ? `${selectedVariant.discount.value}% Percentage Discount` 
-                          : `₹${selectedVariant.discount.value} Flat Discount`}
-                      </div>
-                    </div>
+            {/* Product Description - Mobile */}
+            {product.description && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
+                  className="w-full flex items-center justify-between py-2"
+                >
+                  <h3 className="text-sm font-light tracking-wide uppercase" style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}>
+                    Product Description
+                  </h3>
+                  {isDescriptionOpen ? (
+                    <ChevronUp className="w-4 h-4" style={{ color: '#733857' }} />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" style={{ color: '#733857' }} />
                   )}
-                </div>
-                
-                {/* Stock Information */}
-                {selectedVariant?.isStockActive && (
-                  <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                    <h4 className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2">Stock Information</h4>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Available Stock:</span>
-                      <span className={`text-sm font-medium ${selectedVariant.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {selectedVariant.stock > 0 ? `${selectedVariant.stock} units` : 'Out of Stock'}
-                      </span>
-                    </div>
+                </button>
+                {isDescriptionOpen && (
+                  <div className="mt-3 text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                    {product.description}
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Care Instructions Section - Mobile */}
-          <div className="bg-white rounded-lg shadow-sm">
-            <button
-              onClick={handleCareInstructionsToggle}
-              className="w-full px-4 py-4 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center">
-                <div className="w-5 h-5 mr-2 flex items-center justify-center bg-gray-100 rounded-full">
-                  <svg className="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Care Instructions</h3>
-              </div>
-              {isCareInstructionsOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-            </button>
-            {isCareInstructionsOpen && (
-              <div className="px-4 pb-4 border-t border-gray-100">
-                <div className="mt-3 space-y-2 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                  <div className="flex items-start">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                    <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Store cream cakes in a refrigerator. Fondant cakes should be stored in an air conditioned environment.</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                    <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Slice and serve the cake at room temperature and make sure it is not exposed to heat.</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                    <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Use a serrated knife to cut a fondant cake.</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                    <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Sculptural elements and figurines may contain wire supports or toothpicks or wooden skewers for support.</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                    <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Please check the placement of these items before serving to small children.</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                    <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">The cake should be consumed within 24 hours.</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                    <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Enjoy your cake!</span>
-                  </div>
-                </div>
-                
-                <div className="mt-4">
-                  <p className="text-xs font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2 px-1">Manufacturer Details:</p>
-                  <div className="space-y-1 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                    <div className="flex items-start">
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                      <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Ferns N Petals Private Limited</span>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                      <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Address: FNP Estate, Ashram Marg, Mandi Road, Gadaipur, South Delhi, Delhi, 110030</span>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                      <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">FSSAI License No. 10019011006502</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Delivery Information Section - Mobile */}
-          <div className="bg-white rounded-lg shadow-sm">
-            <button
-              onClick={handleDeliveryInfoToggle}
-              className="w-full px-4 py-4 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center">
-                <div className="w-5 h-5 mr-2 flex items-center justify-center bg-gray-100 rounded-full">
-                  <svg className="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                    <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1V8a1 1 0 00-.293-.707L15 4.586A1 1 0 0014.414 4H14v3z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Delivery Information</h3>
-              </div>
-              {isDeliveryInfoOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-            </button>
-            {isDeliveryInfoOpen && (
-              <div className="px-4 pb-4 border-t border-gray-100">
-                <div className="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                  <p className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">We offer fast and reliable delivery services to ensure your orders reach you fresh and on time. Our delivery options include same-day delivery for orders placed before 2 PM and free delivery on qualifying orders.</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons for Mobile - Horizontal pair */}
+          {/* Action Buttons for Mobile */}
           <div className="pt-2">
             <div className="flex items-stretch gap-3">
               {/* Left: Add/Quantity */}
               <div className="flex-1">
                 {currentCartQuantity > 0 ? (
-                  <>
-                  <div className="w-full h-[2.25rem] flex items-center justify-between bg-white border border-gray-300 rounded-lg px-2">
+                  <div className="w-full h-[2.5rem] flex items-center justify-between bg-white border border-gray-100 rounded-md px-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity - 1); }}
-                      className="w-7 h-7 flex items-center justify-center transition-colors border border-gray-300 hover:bg-gray-100 rounded text-[#733857]"
+                      className="w-7 h-7 flex items-center justify-center transition-colors border border-gray-100 hover:bg-gray-50 rounded"
+                      style={{ color: '#1a1a1a' }}
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
                     <motion.span 
                       key={`jelly-mobile-${jellyAnimationKey}`}
-                      initial={{ 
-                        scaleX: 1, 
-                        scaleY: 1,
-                        y: animationDirection === 'up' ? -8 : animationDirection === 'down' ? 8 : 0,
-                        opacity: animationDirection !== 'none' ? 0.7 : 1
-                      }}
+                      initial={{ scaleX: 1, scaleY: 1, y: animationDirection === 'up' ? -8 : animationDirection === 'down' ? 8 : 0, opacity: animationDirection !== 'none' ? 0.7 : 1 }}
                       animate={{
                         scaleX: [1, 1.15, 0.95, 1.03, 1],
                         scaleY: [1, 0.85, 1.05, 0.98, 1],
-                        y: [
-                          animationDirection === 'up' ? -8 : animationDirection === 'down' ? 8 : 0,
-                          animationDirection === 'up' ? -4 : animationDirection === 'down' ? 4 : 0,
-                          0,
-                          0,
-                          0
-                        ],
-                        opacity: [
-                          animationDirection !== 'none' ? 0.7 : 1,
-                          1,
-                          1,
-                          1,
-                          1
-                        ]
+                        y: [animationDirection === 'up' ? -8 : animationDirection === 'down' ? 8 : 0, animationDirection === 'up' ? -4 : animationDirection === 'down' ? 4 : 0, 0, 0, 0],
+                        opacity: [animationDirection !== 'none' ? 0.7 : 1, 1, 1, 1, 1]
                       }}
-                      transition={{
-                        duration: 0.6,
-                        times: [0, 0.2, 0.5, 0.8, 1],
-                        ease: "easeInOut"
-                      }}
-                      className="text-sm font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent min-w-[2rem] text-center inline-block"
+                      transition={{ duration: 0.6, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
+                      className="text-sm font-light min-w-[2rem] text-center"
+                      style={{ color: '#1a1a1a' }}
                     >
                       {currentCartQuantity}
                     </motion.span>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
                       disabled={(tracks && currentCartQuantity >= totalStock)}
-                      className="w-7 h-7 flex items-center justify-center transition-colors border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 rounded text-[#733857]"
+                      className="w-7 h-7 flex items-center justify-center transition-colors border border-gray-100 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 rounded"
+                      style={{ color: '#1a1a1a' }}
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  {tracks && currentCartQuantity >= totalStock && (
-                    <div className="text-[10px] bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-1">Max stock reached</div>
-                  )}
-                  </>
                 ) : (
                   <button
                     onClick={handleAddToCart}
                     disabled={isAddingToCart || (tracks && totalStock === 0)}
-                    className={`w-full btn-premium-outline btn-sm-compact font-medium flex items-center justify-center gap-2 ${
-                      isAddingToCart || (tracks && totalStock === 0) ? 'opacity-60 cursor-not-allowed' : ''
+                    className={`w-full font-light tracking-wide flex items-center justify-center gap-2 h-[2.5rem] border border-gray-200 rounded-md uppercase ${
+                      isAddingToCart || (tracks && totalStock === 0) ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'bg-white hover:bg-gray-50'
                     }`}
+                    style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}
                   >
                     {isAddingToCart ? (
-                      <div className="inline-block h-3.5 w-3.5 animate-spin border-2 border-black border-t-transparent"></div>
+                      <div className="inline-block h-3.5 w-3.5 animate-spin border-2 border-[#733857] border-t-transparent rounded-full"></div>
                     ) : (
-                      <ShoppingCart className="w-4 h-4 text-gold-soft" />
+                      <><ShoppingCart className="w-4 h-4" /><span>Add to Box</span></>
                     )}
-                    <span>{isAddingToCart ? 'Adding...' : (tracks && totalStock === 0) ? 'Out of Stock' : 'Add to Box'}</span>
                   </button>
                 )}
               </div>
 
-              {/* Right: Reserve/Buy Now */}
+              {/* Right: Reserve */}
               <div className="flex-1" ref={reserveButtonMobileRef}>
                 <ReserveCTA
                   onClick={handleReserve}
                   disabled={tracks && totalStock === 0}
                   label="Reserve Yours"
                   small
-                  className="w-full btn-sm-compact"
+                  className="w-full h-[2.5rem]"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Care Instructions & Info - Below Action Buttons (Mobile) */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <div className="space-y-5">
+              {/* Care Instructions */}
+              <div>
+                <h3 className="text-sm font-semibold tracking-wide uppercase mb-3" style={{ color: '#733857', letterSpacing: '0.08em' }}>
+                  Care Instructions
+                </h3>
+                <div className="space-y-2.5">
+                  <div className="flex gap-2">
+                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ background: '#733857' }}></span>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                      Store cream cakes in refrigerator. Fondant cakes in air conditioned environment.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ background: '#733857' }}></span>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                      Slice and serve at room temperature. Avoid exposure to heat.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ background: '#733857' }}></span>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                      Use serrated knife for fondant cakes. Check for supports before serving to children.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ background: '#733857' }}></span>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                      Best consumed within 24 hours.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Timing */}
+              <div className="p-3">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <h4 className="text-xs font-semibold tracking-wide uppercase mb-1.5" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
+                      Delivery Timing
+                    </h4>
+                    <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                      <strong style={{ color: '#1a1a1a' }}>Everyday:</strong> 6:00 PM - 9:00 PM
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manufacturer Details */}
+              <div className="p-3">
+                <h4 className="text-xs font-semibold tracking-wide uppercase mb-2" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
+                  Manufacturer Details
+                </h4>
+                <div className="space-y-0.5 text-xs" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                 
+                  <p>LIG 208 Gandhi Nagar</p>
+                  <p>Peelamedu, Coimbatore</p>
+                </div>
+              </div>
+
+              {/* Cancellation & Return Policy */}
+              <div className="p-3 border-t border-gray-100">
+                <h4 className="text-xs font-semibold tracking-wide uppercase mb-2" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
+                  Cancellation & Return Policy
+                </h4>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                  <strong style={{ color: '#d97706' }}>No Cancellations or Returns:</strong> Due to the perishable nature of our products, we do not accept cancellations or returns once the order is placed.
+                </p>
               </div>
             </div>
           </div>
@@ -1262,11 +820,11 @@ const ProductDisplayPage = () => {
       {/* Recently Viewed / Similar Products - Mobile */}
       {(recentlyViewed.length > 0 || sameCategoryProducts.length > 0) && (
         <section className="md:hidden mt-6 px-4 pb-8">
-          <div className="text-center mb-6 border-b border-gray-200 pb-4">
-            <h2 className="text-xl font-semibold mb-1 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+          <div className="text-center mb-6 border-b border-gray-100 pb-4">
+            <h2 className="text-xl font-light tracking-wide mb-1" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
               {user && recentlyViewed.length > 0 ? 'Recently Viewed' : 'You Might Also Like'}
             </h2>
-            <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm">
+            <p className="text-sm tracking-wide" style={{ color: 'rgba(26, 26, 26, 0.5)', letterSpacing: '0.05em' }}>
               {user && recentlyViewed.length > 0
                 ? "Products you've looked at recently"
                 : `More delicious ${product?.category?.name || 'products'} for you`}
@@ -1285,125 +843,116 @@ const ProductDisplayPage = () => {
         </section>
       )}
 
-      {/* Mobile Sticky Product Bar - always mounted for slide animation */}
+      {/* Mobile Sticky Product Bar */}
       <div
-        className={`fixed bottom-16 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-200 shadow-lg transform transition-transform duration-300 ease-out ${
+        className={`fixed bottom-16 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-100 shadow-lg transform transition-transform duration-300 ease-out ${
           showMobileStickyReserve ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
         }`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' }}
       >
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              {/* Left: Product Info */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-10 h-10 border border-gray-300 overflow-hidden flex-shrink-0 bg-gray-50 rounded-lg">
-                  <MediaDisplay
-                    src={product.images?.[selectedImageIndex] || product.images?.[0]}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent truncate leading-tight">{product.name}</h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-sm font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">₹{Math.round(pricingDetails.finalPrice)}</span>
-                    {pricingDetails.discountPercentage > 0 && (
-                      <>
-                        <span className="text-[11px] bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-through">₹{pricingDetails.mrp}</span>
-                        <span className=" text-green-500 px-1 py-0.5 text-[10px] font-bold leading-none rounded">{pricingDetails.discountPercentage}% OFF</span>
-                      </>
-                    )}
-                  </div>
-                </div>
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            {/* Left: Product Info */}
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 border border-gray-100 overflow-hidden flex-shrink-0 bg-gray-50">
+                <MediaDisplay
+                  src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
-
-              {/* Right: Actions */}
-              <div className="flex items-stretch gap-2 flex-shrink-0">
-                {currentCartQuantity > 0 ? (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center bg-gray-50 border border-gray-300 h-7 rounded-lg">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity - 1); }}
-                      className="w-8 h-full flex items-center justify-center hover:bg-gray-100 transition-colors rounded-l-lg text-[#733857]"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                    <motion.span 
-                      key={`jelly-sticky-${jellyAnimationKey}`}
-                      initial={{ 
-                        scaleX: 1, 
-                        scaleY: 1,
-                        y: animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0,
-                        opacity: animationDirection !== 'none' ? 0.7 : 1
-                      }}
-                      animate={{
-                        scaleX: [1, 1.15, 0.95, 1.03, 1],
-                        scaleY: [1, 0.85, 1.05, 0.98, 1],
-                        y: [
-                          animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0,
-                          animationDirection === 'up' ? -3 : animationDirection === 'down' ? 3 : 0,
-                          0,
-                          0,
-                          0
-                        ],
-                        opacity: [
-                          animationDirection !== 'none' ? 0.7 : 1,
-                          1,
-                          1,
-                          1,
-                          1
-                        ]
-                      }}
-                      transition={{
-                        duration: 0.6,
-                        times: [0, 0.2, 0.5, 0.8, 1],
-                        ease: "easeInOut"
-                      }}
-                      className="px-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-semibold text-sm min-w-[2rem] text-center inline-block"
-                    >
-                      {currentCartQuantity}
-                    </motion.span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
-                      disabled={(tracks && currentCartQuantity >= totalStock)}
-                      className="w-8 h-full flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg text-[#733857]"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
-                    </div>
-                    {tracks && currentCartQuantity >= totalStock && (
-                      <div className="text-[10px] text-gray-600 mt-1">Max stock reached</div>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={!product?.isActive || (tracks && totalStock === 0) || isAddingToCart}
-                    className={`bg-white border border-gray-300 px-4 h-10 text-sm font-medium rounded-lg flex items-center justify-center leading-none box-border appearance-none whitespace-nowrap select-none ${
-                      !product?.isActive || (tracks && totalStock === 0)
-                        ? 'opacity-50 cursor-not-allowed text-gray-400'
-                        : isAddingToCart
-                        ? 'cursor-wait text-gray-600'
-                        : 'text-black hover:bg-gray-50'
-                    }`}
-                  >
-                    {isAddingToCart ? 'Adding...' : 'Add'}
-                  </button>
-                )}
-                <button
-                  onClick={handleBuyNow}
-                  disabled={!product?.isActive || (tracks && totalStock === 0)}
-                  className={`px-4 h-10 text-sm font-medium rounded-lg flex items-center justify-center leading-none box-border appearance-none whitespace-nowrap select-none border ${
-                    !product?.isActive || totalStock === 0
-                      ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
-                      : 'bg-black text-white hover:bg-gray-800 border-transparent'
-                  }`}
-                >
-                  Reserve
-                </button>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-light tracking-wide truncate leading-tight" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>{product.name}</h3>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-sm font-light" style={{ color: '#1a1a1a' }}>₹{Math.round(pricingDetails.finalPrice)}</span>
+                  {pricingDetails.discountPercentage > 0 && (
+                    <>
+                      <span className="text-[11px]" style={{ color: 'rgba(26, 26, 26, 0.5)', textDecoration: 'line-through !important', WebkitTextDecoration: 'line-through', textDecorationLine: 'line-through', textDecorationStyle: 'solid', textDecorationColor: 'rgba(26, 26, 26, 0.5)', textDecorationThickness: '1.5px' }}>₹{pricingDetails.mrp}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5" style={{ 
+                        color: 'green',
+                   
+                        transform: 'skewX(-10deg)',
+                        display: 'inline-block'
+                      }}>
+                        {pricingDetails.discountPercentage}%
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-stretch gap-2 flex-shrink-0">
+              {currentCartQuantity > 0 ? (
+                <div className="flex items-center bg-gray-50 border border-gray-100 h-8 rounded-md">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity - 1); }}
+                    className="w-8 h-full flex items-center justify-center hover:bg-gray-100 transition-colors"
+                    style={{ color: '#1a1a1a' }}
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <motion.span 
+                    key={`jelly-sticky-${jellyAnimationKey}`}
+                    initial={{ scaleX: 1, scaleY: 1, y: animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0, opacity: animationDirection !== 'none' ? 0.7 : 1 }}
+                    animate={{
+                      scaleX: [1, 1.15, 0.95, 1.03, 1],
+                      scaleY: [1, 0.85, 1.05, 0.98, 1],
+                      y: [animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0, animationDirection === 'up' ? -3 : animationDirection === 'down' ? 3 : 0, 0, 0, 0],
+                      opacity: [animationDirection !== 'none' ? 0.7 : 1, 1, 1, 1, 1]
+                    }}
+                    transition={{ duration: 0.6, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
+                    className="px-2 font-light text-sm min-w-[2rem] text-center"
+                    style={{ color: '#1a1a1a' }}
+                  >
+                    {currentCartQuantity}
+                  </motion.span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
+                    disabled={(tracks && currentCartQuantity >= totalStock)}
+                    className="w-8 h-full flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ color: '#1a1a1a' }}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  disabled={!product?.isActive || (tracks && totalStock === 0) || isAddingToCart}
+                  className={`bg-white border border-gray-100 px-3 h-8 text-xs font-light tracking-wide uppercase ${
+                    !product?.isActive || (tracks && totalStock === 0)
+                      ? 'opacity-50 cursor-not-allowed'
+                      : isAddingToCart
+                      ? 'cursor-wait'
+                      : 'hover:bg-gray-50'
+                  }`}
+                  style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}
+                >
+                  {isAddingToCart ? 'Adding...' : 'Add'}
+                </button>
+              )}
+              <button
+                onClick={handleReserve}
+                disabled={!product?.isActive || (tracks && totalStock === 0)}
+                className={`px-3 h-8 text-xs font-light tracking-wide uppercase ${
+                  !product?.isActive || totalStock === 0
+                    ? 'bg-gray-50 border border-gray-200 cursor-not-allowed'
+                    : 'text-white hover:opacity-90'
+                }`}
+                style={{ 
+                  letterSpacing: '0.05em',
+                  background: (!product?.isActive || totalStock === 0) 
+                    ? undefined 
+                    : 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)'
+                }}
+              >
+                Reserve
+              </button>
+            </div>
           </div>
+        </div>
       </div>
 
       {/* Desktop Layout */}
@@ -1413,22 +962,23 @@ const ProductDisplayPage = () => {
           
           {/* Image Gallery */}
           <div className="lg:col-span-7">
-            {/* Desktop Image Display Layout - Bounded sticky so sections below don't overlap */}
             <div className="relative">
               <div className="flex gap-4">
-              {/* Thumbnail Images - Left Side */}
+              {/* Thumbnail Images */}
               {product.images && product.images.length > 1 && (
-                <div className="flex flex-col gap-2 w-20 md:w-24 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">
+                <div className="flex flex-col gap-2 w-24 max-h-[80vh] overflow-y-auto">
                   {product.images.map((image, index) => (
                     <button
                       key={index}
                       onClick={() => handleImageSelect(index)}
-                      className={`aspect-square border-2 transition-all overflow-hidden hover:scale-105 flex-shrink-0 rounded-lg ${
+                      className={`aspect-square transition-all overflow-hidden hover:scale-105 flex-shrink-0 ${
                         index === selectedImageIndex
-                          ? 'border-black shadow-lg'
-                          : 'border-gray-300 hover:border-gray-500'
+                          ? 'border-2'
+                          : 'border border-gray-100 hover:border-gray-200'
                       }`}
-
+                      style={index === selectedImageIndex ? {
+                        borderColor: '#733857'
+                      } : {}}
                     >
                       <MediaDisplay
                         src={image}
@@ -1440,11 +990,11 @@ const ProductDisplayPage = () => {
                 </div>
               )}
               
-              {/* Main Image - Right Side */}
+              {/* Main Image */}
               <div className="flex-1">
-                <div className="relative bg-white/70 backdrop-blur-lg border border-pink-200/50 rounded-2xl shadow-xl">
+                <div className="relative bg-white border border-gray-100">
                   <div 
-                    className="aspect-square cursor-pointer group relative overflow-hidden rounded-2xl"
+                    className="aspect-square cursor-pointer group relative overflow-hidden"
                     onClick={handleImageZoom}
                     onMouseEnter={() => setIsHoveringImage(true)}
                     onMouseLeave={() => setIsHoveringImage(false)}
@@ -1453,19 +1003,20 @@ const ProductDisplayPage = () => {
                       src={product.images?.[selectedImageIndex] || product.images?.[0]}
                       alt={product.name}
                       className="w-full h-full object-cover"
-                      style={{
-                        opacity: 1
-                      }}
                     />
                     
-                    {/* Zoom icon always visible */}
                     <div className="absolute inset-0 bg-black bg-opacity-5 transition-all flex items-center justify-center">
                       <ZoomIn className="w-8 h-8 text-white opacity-70" />
                     </div>
                     
-                    {/* Stock Status */}
                     {tracks && totalStock === 0 && (
-                      <div className="absolute top-4 right-4 bg-black text-white px-3 py-1 text-sm rounded-lg">
+                      <div 
+                        className="absolute top-4 right-4 text-white px-3 py-1 text-sm tracking-wide" 
+                        style={{ 
+                          letterSpacing: '0.05em',
+                          background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)'
+                        }}
+                      >
                         Out of Stock
                       </div>
                     )}
@@ -1473,414 +1024,228 @@ const ProductDisplayPage = () => {
                 </div>
               </div>
               </div>
-            </div>
-            {/* Moved info sections below the image for large devices */}
-            <div className="mt-6 space-y-4">
-              {/* Highlights Section */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-pink-200/50">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Highlights</h3>
-                  <ChevronDown className="w-5 h-5 text-[#733857]" />
+
+              {/* Important Information - Below Image (Desktop) */}
+              <div className="mt-6 bg-white border border-gray-100 rounded-md p-5">
+                <div className="space-y-5">
+                  {/* Care Instructions */}
+                  <div>
+                    <h3 className="text-sm font-semibold tracking-wide uppercase mb-3" style={{ color: '#733857', letterSpacing: '0.08em' }}>
+                      Care Instructions
+                    </h3>
+                    <div className="space-y-2.5">
+                      <div className="flex gap-3">
+                        <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-2" style={{ background: '#733857' }}></span>
+                        <p className="text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                          Store cream cakes in refrigerator. Fondant cakes should be stored in air conditioned environment.
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-2" style={{ background: '#733857' }}></span>
+                        <p className="text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                          Slice and serve at room temperature. Avoid exposure to heat.
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-2" style={{ background: '#733857' }}></span>
+                        <p className="text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                          Use serrated knife for fondant cakes. Check for supports before serving to children.
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-2" style={{ background: '#733857' }}></span>
+                        <p className="text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                          Best consumed within 24 hours.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delivery Timing */}
+                  <div className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold tracking-wide uppercase mb-2" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
+                          Delivery Timing
+                        </h4>
+                        <div className="space-y-1 text-sm" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                          <p><strong style={{ color: '#1a1a1a' }}>Weekdays:</strong> 6:00 PM - 9:00 PM</p>
+                          <p><strong style={{ color: '#1a1a1a' }}>Weekends:</strong> 6:00 PM - 10:00 PM</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manufacturer Details */}
+                  <div className="p-4">
+                    <h4 className="text-sm font-semibold tracking-wide uppercase mb-2.5" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
+                      Manufacturer Details
+                    </h4>
+                    <div className="space-y-1 text-sm" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                    
+                      <p>LIG 208 Gandhi Nagar</p>
+                      <p>Peelamedu, Coimbatore</p>
+                    </div>
+                  </div>
+
+                  {/* Cancellation & Return Policy */}
+                  <div className="p-4 border-t border-gray-100">
+                    <h4 className="text-sm font-semibold tracking-wide uppercase mb-2.5" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
+                      Cancellation & Return Policy
+                    </h4>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                      <strong style={{ color: '#d97706' }}>No Cancellations or Returns:</strong> Due to the perishable nature of our products, we do not accept cancellations or returns once the order is placed.
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="space-y-4 bg-gray-50 rounded-lg p-4 border border-gray-100">
-                  <div className="flex justify-between py-3 px-2">
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">Key Features</span>
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-right flex-1 ml-6">A rich cheesy double egg delight packed into a soft golden bun breakfast lunch or anytime fuel</span>
-                  </div>
-                  <div className="flex justify-between py-3 px-2 border-t border-gray-200">
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">Dietary Preference</span>
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                      {product.hasEgg ? 'With Egg' : 'Eggless'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Information Section (Expandable) */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-pink-200/50">
-                <button
-                  onClick={handleDescriptionToggle}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-pink-50/50 transition-colors rounded-2xl"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 mr-3 flex items-center justify-center bg-gray-100 rounded-full shadow-sm">
-                      <svg className="w-4 h-4 text-[#733857]" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <h3 className="text-base font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Product Description</h3>
-                  </div>
-                  {isDescriptionOpen ? <ChevronUp className="w-5 h-5 text-[#733857]" /> : <ChevronDown className="w-5 h-5 text-[#733857]" />}
-                </button>
-                {isDescriptionOpen && (
-                  <div className="px-6 pb-6 border-t border-gray-100">
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 mt-4">
-                      <p className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent leading-relaxed">
-                        {product.description}
-                      </p>
-                    </div>
-                    
-                    {/* Additional product details */}
-                    {(product.importantField?.name || Object.keys(product.extraFields || {}).length > 0) && (
-                      <div className="mt-6 space-y-0 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-                        {selectedVariant.quantity && (
-                          <div className="flex justify-between py-3 px-4 border-b border-gray-200">
-                            <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">Weight:</span>
-                            <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">{selectedVariant.quantity}{selectedVariant.measuringUnit}</span>
-                          </div>
-                        )}
-                        {product.importantField?.name && (
-                          <div className="flex justify-between py-3 px-4 border-b border-gray-200">
-                            <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">{product.importantField.name}:</span>
-                            <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">{product.importantField.value}</span>
-                          </div>
-                        )}
-                        {Object.entries(product.extraFields || {}).map(([key, value]) => (
-                          <div key={key} className="flex justify-between py-3 px-4 border-b border-gray-200 last:border-b-0">
-                            <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">{key}:</span>
-                            <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">{value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Pricing & Stock Section - Desktop */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-pink-200/50">
-                <button
-                  onClick={handlePricingToggle}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-pink-50/50 transition-colors rounded-2xl"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 mr-3 flex items-center justify-center bg-gray-100 rounded-full shadow-sm">
-                      <svg className="w-4 h-4 text-[#733857]" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                    <h3 className="text-base font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Pricing & Stock Calculator</h3>
-                  </div>
-                  {isPricingOpen ? <ChevronUp className="w-5 h-5 text-[#733857]" /> : <ChevronDown className="w-5 h-5 text-[#733857]" />}
-                </button>
-                {isPricingOpen && (
-                  <div className="px-6 pb-6 border-t border-gray-100">
-                    {/* Pricing Breakdown Display - Desktop */}
-                    <div className="mt-4 space-y-4">
-                      <h4 className="text-base font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Pricing Information</h4>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                          <div className="text-sm text-green-600 mb-2">Original Price</div>
-                          <div className="text-xl font-bold text-green-800">₹{selectedVariant?.price || 0}</div>
-                        </div>
-                        
-                        {pricingDetails.discountPercentage > 0 && (
-                          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                            <div className="text-sm text-red-600 mb-2">Discount Applied</div>
-                            <div className="text-xl font-bold text-red-800">{pricingDetails.discountPercentage}% OFF</div>
-                          </div>
-                        )}
-                        
-                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                          <div className="text-sm text-blue-600 mb-2">Final Price</div>
-                          <div className="text-xl font-bold text-blue-800">₹{Math.round(pricingDetails.finalPrice)}</div>
-                        </div>
-                        
-                        {selectedVariant?.pricingBreakdown?.sellerReturn && (
-                          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                            <div className="text-sm text-purple-600 mb-2">Seller Return</div>
-                            <div className="text-xl font-bold text-purple-800">₹{selectedVariant.pricingBreakdown.sellerReturn}</div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Discount Details */}
-                      {selectedVariant?.discount?.type && (
-                        <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                          <div className="text-sm text-amber-700 mb-2">Discount Type</div>
-                          <div className="text-base font-medium text-amber-800">
-                            {selectedVariant.discount.type === 'percentage' 
-                              ? `${selectedVariant.discount.value}% Percentage Discount` 
-                              : `₹${selectedVariant.discount.value} Flat Discount`}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Stock Information */}
-                    {selectedVariant?.isStockActive && (
-                      <div className="mt-6 bg-gray-50 rounded-lg p-4 border border-gray-100">
-                        <h4 className="text-base font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-3">Stock Information</h4>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Available Stock:</span>
-                          <span className={`text-sm font-medium ${selectedVariant.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {selectedVariant.stock > 0 ? `${selectedVariant.stock} units` : 'Out of Stock'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Care Instructions Section */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <button
-                  onClick={handleCareInstructionsToggle}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 mr-3 flex items-center justify-center bg-gray-100 rounded-full shadow-sm">
-                      <svg className="w-4 h-4 text-[#733857]" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <h3 className="text-base font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Care Instructions</h3>
-                  </div>
-                  {isCareInstructionsOpen ? <ChevronUp className="w-5 h-5 text-[#733857]" /> : <ChevronDown className="w-5 h-5 text-[#733857]" />}
-                </button>
-                {isCareInstructionsOpen && (
-                  <div className="px-6 pb-6 border-t border-gray-100">
-                    <div className="mt-4 space-y-3 bg-gray-50 rounded-lg p-4 border border-gray-100">
-                      <div className="flex items-start">
-                        <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        <span className="text-sm text-gray-700">Store cream cakes in a refrigerator. Fondant cakes should be stored in an air conditioned environment.</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        <span className="text-sm text-gray-700">Slice and serve the cake at room temperature and make sure it is not exposed to heat.</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        <span className="text-sm text-gray-700">Use a serrated knife to cut a fondant cake.</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        <span className="text-sm text-gray-700">Sculptural elements and figurines may contain wire supports or toothpicks or wooden skewers for support.</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        <span className="text-sm text-gray-700">Please check the placement of these items before serving to small children.</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        <span className="text-sm text-gray-700">The cake should be consumed within 24 hours.</span>
-                      </div>
-                      <div className="flex items-start">
-                        <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        <span className="text-sm text-gray-700">Enjoy your cake!</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-6 pt-4 border-t border-gray-100">
-                      <p className="text-sm font-medium text-gray-900 mb-3">Manufacturer Details:</p>
-                      <div className="space-y-2 bg-gray-50 rounded-lg p-4 border border-gray-100">
-                        <div className="flex items-start">
-                          <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          <span className="text-sm text-gray-700">Ferns N Petals Private Limited</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          <span className="text-sm text-gray-700">Address: FNP Estate, Ashram Marg, Mandi Road, Gadaipur, South Delhi, Delhi, 110030</span>
-                        </div>
-                        <div className="flex items-start">
-                          <span className="w-2.5 h-2.5 bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          <span className="text-sm text-gray-700">FSSAI License No. 10019011006502</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Delivery Information Section */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <button
-                  onClick={handleDeliveryInfoToggle}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 mr-3 flex items-center justify-center bg-gray-100 rounded-full shadow-sm">
-                      <svg className="w-4 h-4 text-[#733857]" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                        <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1V8a1 1 0 00-.293-.707L15 4.586A1 1 0 0014.414 4H14v3z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-base font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Delivery Information</h3>
-                  </div>
-                  {isDeliveryInfoOpen ? <ChevronUp className="w-5 h-5 text-[#733857]" /> : <ChevronDown className="w-5 h-5 text-[#733857]" />}
-                </button>
-                {isDeliveryInfoOpen && (
-                  <div className="px-6 pb-6 border-t border-gray-100">
-                    <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-100">
-                      <p className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent leading-relaxed">We offer fast and reliable delivery services to ensure your orders reach you fresh and on time. Our delivery options include same-day delivery for orders placed before 2 PM and free delivery on qualifying orders.</p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
 
-          {/* Product Information - Right Side with Layered Design */}
+          {/* Product Information */}
           <div className="lg:col-span-5">
             <div className="space-y-4">
               
-              {/* Product Info Card (White Block) */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 border border-pink-200/50">
-                {/* Product Title and Quantity */}
+              {/* Product Info Card */}
+              <div className="bg-white border-b border-gray-100 pb-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-4">
-                      <h1 className="text-2xl md:text-3xl font-medium leading-tight bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent flex-1">
+                      <h1 className="text-3xl font-light tracking-wide leading-tight flex-1" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
                         {product.name}
                       </h1>
                       <div className="flex-shrink-0">
                         <FavoriteButton 
                           productId={productId} 
                           size="lg" 
-                          className="bg-white/90 p-2  transition-all duration-200" 
+                          className="bg-gray-50 p-2 border border-gray-100" 
                         />
                       </div>
                     </div>
-                    <p className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-2">Net Qty: Serves 1</p>
-                  </div>
 
+                  </div>
                 </div>
 
-                {/* Price Row (matches reference) */}
+                {/* Price Row */}
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-3xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+                  <span className="text-3xl font-light" style={{ color: '#1a1a1a' }}>
                     ₹{Math.round(pricingDetails.finalPrice)}
                   </span>
                   {pricingDetails.discountPercentage > 0 && (
                     <>
-                      <span className="text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-through">
+                      <span className="text-lg line-through" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                         ₹{pricingDetails.mrp}
                       </span>
-                      <span className="text-green-600 text-xl font-semibold">
-                        {pricingDetails.discountPercentage}% Off
-                      </span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-300 text-[#733857]" title="Offer details">
-                        i
+                      <span className="relative inline-flex items-center overflow-hidden">
+                        <span className="text-base font-bold px-3 py-1 bg-white" style={{ 
+                          color: '#16a34a',
+                          transform: 'skewX(-10deg)',
+                          display: 'inline-block'
+                        }}>
+                          {pricingDetails.discountPercentage}%
+                        </span>
+                        <span className="text-base font-bold px-3 py-1" style={{ 
+                          color: '#16a34a',
+                          backgroundColor: '#dcfce7',
+                          transform: 'skewX(-10deg)',
+                          display: 'inline-block',
+                          marginLeft: '-2px'
+                        }}>
+                          OFF
+                        </span>
                       </span>
                     </>
                   )}
                 </div>
 
-                {/* Rating chip below price */}
+                {/* Rating chip */}
                 <div className="mb-4">
-                  <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-pink-200/50 rounded-full px-3 py-1">
-                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-600 text-white">★</span>
-                    <span className="text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{productRating.rating}</span>
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">|</span>
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{ratingCountDisplay}</span>
+                  <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-3 py-1">
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#10b981] text-white text-sm">★</span>
+                    <span className="text-sm font-light" style={{ color: '#1a1a1a' }}>{productRating.rating}</span>
+                    <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>|</span>
+                    <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>{ratingCountDisplay}</span>
                   </div>
                 </div>
 
-                {/* Delivery Time */}
-                <div className="flex items-center text-green-600 text-base font-medium">
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                  </svg>
-                  <span>Estimated Delivery Time: 6 mins</span>
-                </div>
-
-                {/* Dietary Indicators - show both options like reference UI */}
+                {/* Dietary Indicators */}
                 <div className="flex items-center gap-3 mt-4">
-                  {/* WITH EGG pill */}
-                  <div
-                    className={`flex items-center gap-2 rounded-[14px] px-4 py-2 border ${
-                      product.hasEgg ? 'border-black bg-red-100' : 'border-gray-300 bg-white'
-                    }`}
-                    role="img"
-                    aria-label="With egg indicator"
-                  >
-                    <span className="w-5 h-5 grid place-items-center rounded-md border border-red-600 bg-red-50">
-                      <span className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[9px] border-l-transparent border-r-transparent border-b-red-600"></span>
-                    </span>
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">WITH EGG</span>
-                  </div>
-
-                  {/* EGGLESS pill */}
-                  <div
-                    className={`flex items-center gap-2 rounded-[14px] px-4 py-2 border ${
-                      !product.hasEgg ? 'border-black bg-green-50' : 'border-gray-300 bg-white'
-                    }`}
-                    role="img"
-                    aria-label="Eggless indicator"
-                  >
-                    <span className="w-5 h-5 grid place-items-center rounded-md border-2 border-green-700 bg-white">
-                      <span className="w-3 h-3 rounded-full bg-green-700"></span>
-                    </span>
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">EGGLESS</span>
-                  </div>
+                  {product.hasEgg ? (
+                    <div className="flex items-center gap-2 rounded-md px-4 py-2 border border-gray-200 bg-amber-50">
+                      <span className="w-5 h-5 grid place-items-center rounded-md border border-red-600 bg-red-50">
+                        <span className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[9px] border-l-transparent border-r-transparent border-b-red-600"></span>
+                      </span>
+                      <span className="text-sm tracking-wide" style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}>WITH EGG</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 rounded-md px-4 py-2 border border-gray-200 bg-green-50">
+                      <span className="w-5 h-5 grid place-items-center rounded-md border-2 border-green-700 bg-white">
+                        <span className="w-3 h-3 rounded-full bg-green-700"></span>
+                      </span>
+                      <span className="text-sm tracking-wide" style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}>EGGLESS</span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Product Description - Desktop */}
+                {product.description && (
+                  <div className="mt-6 pt-6 border-t border-gray-100">
+                    <button
+                      onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
+                      className="w-full flex items-center justify-between py-2"
+                    >
+                      <h3 className="text-base font-light tracking-wide uppercase" style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}>
+                        Product Description
+                      </h3>
+                      {isDescriptionOpen ? (
+                        <ChevronUp className="w-5 h-5" style={{ color: '#733857' }} />
+                      ) : (
+                        <ChevronDown className="w-5 h-5" style={{ color: '#733857' }} />
+                      )}
+                    </button>
+                    {isDescriptionOpen && (
+                      <div className="mt-4 text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                        {product.description}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Feature Row (Icons in White Card) */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 border border-pink-200/50 mb-4">
-                <h3 className="text-lg font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-4">Features</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  {/* No Return or Exchange */}
-                  <div className="flex flex-col items-center text-center p-5 bg-white/50 backdrop-blur-sm rounded-xl border border-pink-200/30 hover:scale-105 transition-all">
-                    <div className="w-12 h-12 mb-3 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full">
-                      <svg className="w-7 h-7 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">No Return Or Exchange</span>
-                  </div>
-
-                  {/* Fast Delivery */}
-                  <div className="flex flex-col items-center text-center p-5 bg-white/50 backdrop-blur-sm rounded-xl border border-pink-200/30 hover:scale-105 transition-all">
-                    <div className="w-12 h-12 mb-3 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full">
-                      <svg className="w-7 h-7 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-medium">Fast Delivery</span>
-                  </div>
-                </div>
-              </div>
-
-
-              {/* Variant Selection and Action Buttons */}
-              <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 space-y-6 border border-pink-200/50 mb-4">
-              
+              {/* Variant Selection and Actions */}
+              <div className="bg-white border-b border-gray-100 py-6 space-y-6">
                 {/* Variant Selection */}
                 {product.variants && product.variants.length > 1 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-3">
-                      Available Sizes
+                    <label className="block text-sm font-light tracking-wide mb-3" style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}>
+                      AVAILABLE SIZES
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       {product.variants.map((variant, index) => (
                         <button
                           key={index}
                           onClick={() => setSelectedVariantIndex(index)}
-                          className={`p-3 text-center transition-all border rounded-lg ${
+                          className={`p-3 text-center transition-all border ${
                             index === selectedVariantIndex
-                              ? 'bg-black text-white border-black'
-                              : 'bg-white border-gray-300 hover:bg-gray-50'
+                              ? 'text-white border-[#733857]'
+                              : 'bg-white border-gray-100 hover:border-gray-200'
                           }`}
+                          style={index === selectedVariantIndex ? {
+                            background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)'
+                          } : {}}
                         >
-                          {/* Product Image */}
                           <div className="mb-2">
                             <MediaDisplay
-                              src={product.images?.[0] || product.images?.[index] || '/placeholder-image.jpg'}
+                              src={product.images?.[0] || '/placeholder-image.jpg'}
                               alt={`${product.name} ${variant.quantity}${variant.measuringUnit}`}
-                              className="w-full h-20 object-cover rounded-md"
+                              className="w-full h-20 object-cover"
                             />
                           </div>
                           
-                          <div className="text-sm font-medium">
+                          <div className="text-sm font-light tracking-wide" style={{ letterSpacing: '0.05em' }}>
                             {variant.quantity}{variant.measuringUnit}
                           </div>
-                          <div className="text-xs opacity-75">
+                          <div className="text-xs" style={{ opacity: 0.75 }}>
                             ₹{variant.price}
                           </div>
                         </button>
@@ -1889,79 +1254,56 @@ const ProductDisplayPage = () => {
                   </div>
                 )}
 
-                {/* Action Buttons - Horizontal pair on desktop */}
+                {/* Action Buttons */}
                 <div className="flex items-stretch gap-3">
                   <div className="flex-1">
                     {currentCartQuantity > 0 ? (
-                      <>
-                      <div className="w-full h-12 flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3">
+                      <div className="w-full h-12 flex items-center justify-between bg-white border border-gray-100 px-3">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity - 1); }}
-                          className="w-9 h-9 flex items-center justify-center text-black transition-colors border border-gray-300 hover:bg-gray-100 rounded"
+                          className="w-9 h-9 flex items-center justify-center transition-colors border border-gray-100 hover:bg-gray-50"
+                          style={{ color: '#1a1a1a' }}
                         >
-                          <Minus className="w-4 h-4 text-[#733857]" />
+                          <Minus className="w-4 h-4" />
                         </button>
                         <motion.span 
                           key={`jelly-desktop-${jellyAnimationKey}`}
-                          initial={{ 
-                            scaleX: 1, 
-                            scaleY: 1,
-                            y: animationDirection === 'up' ? -12 : animationDirection === 'down' ? 12 : 0,
-                            opacity: animationDirection !== 'none' ? 0.7 : 1
-                          }}
+                          initial={{ scaleX: 1, scaleY: 1, y: animationDirection === 'up' ? -12 : animationDirection === 'down' ? 12 : 0, opacity: animationDirection !== 'none' ? 0.7 : 1 }}
                           animate={{
                             scaleX: [1, 1.15, 0.95, 1.03, 1],
                             scaleY: [1, 0.85, 1.05, 0.98, 1],
-                            y: [
-                              animationDirection === 'up' ? -12 : animationDirection === 'down' ? 12 : 0,
-                              animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0,
-                              0,
-                              0,
-                              0
-                            ],
-                            opacity: [
-                              animationDirection !== 'none' ? 0.7 : 1,
-                              1,
-                              1,
-                              1,
-                              1
-                            ]
+                            y: [animationDirection === 'up' ? -12 : animationDirection === 'down' ? 12 : 0, animationDirection === 'up' ? -6 : animationDirection === 'down' ? 6 : 0, 0, 0, 0],
+                            opacity: [animationDirection !== 'none' ? 0.7 : 1, 1, 1, 1, 1]
                           }}
-                          transition={{
-                            duration: 0.6,
-                            times: [0, 0.2, 0.5, 0.8, 1],
-                            ease: "easeInOut"
-                          }}
-                          className="text-base font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent min-w-[2.25rem] text-center inline-block"
+                          transition={{ duration: 0.6, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
+                          className="text-base font-light min-w-[2.25rem] text-center"
+                          style={{ color: '#1a1a1a' }}
                         >
                           {currentCartQuantity}
                         </motion.span>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleQuantityChange(currentCartQuantity + 1); }}
                           disabled={(currentCartQuantity >= totalStock)}
-                          className="w-9 h-9 flex items-center justify-center transition-colors border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 rounded"
+                          className="w-9 h-9 flex items-center justify-center transition-colors border border-gray-100 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                          style={{ color: '#1a1a1a' }}
                         >
-                          <Plus className="w-4 h-4 text-[#733857]" />
+                          <Plus className="w-4 h-4" />
                         </button>
                       </div>
-                      {tracks && currentCartQuantity >= totalStock && (
-                        <div className="text-[11px] bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-1">Max stock reached</div>
-                      )}
-                      </>
                     ) : (
                       <button
                         onClick={handleAddToCart}
                         disabled={isAddingToCart || totalStock === 0}
-                        className={`w-full btn-premium-outline font-medium py-3 px-5 flex items-center justify-center gap-2 text-sm ${
-                          isAddingToCart || totalStock === 0 ? 'opacity-60 cursor-not-allowed' : ''
+                        className={`w-full font-light tracking-wide py-3 px-5 flex items-center justify-center gap-2 text-sm border border-gray-200 uppercase ${
+                          isAddingToCart || totalStock === 0 ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'bg-white hover:bg-gray-50'
                         }`}
+                        style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}
                       >
                         {isAddingToCart ? (
-                          <div className="inline-block h-4 w-4 animate-spin border-2 border-black border-t-transparent"></div>
+                          <div className="inline-block h-4 w-4 animate-spin border-2 border-[#733857] border-t-transparent rounded-full"></div>
                         ) : (
-                          <ShoppingCart className="w-5 h-5 text-[#733857]" />
+                          <><ShoppingCart className="w-5 h-5" /><span>Add to Box</span></>
                         )}
-                        <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Add to Box</span>
                       </button>
                     )}
                   </div>
@@ -1970,7 +1312,7 @@ const ProductDisplayPage = () => {
                       onClick={handleReserve}
                       disabled={totalStock === 0}
                       label="Reserve Yours"
-                      className="w-full"
+                      className="w-full py-3 px-5"
                     />
                   </div>
                 </div>
@@ -1982,11 +1324,11 @@ const ProductDisplayPage = () => {
         {/* Recently Viewed / Similar Products - Desktop */}
         {(recentlyViewed.length > 0 || sameCategoryProducts.length > 0) && (
           <section className="mt-16">
-            <div className="text-center mb-8 border-b border-pink-200/50 pb-6">
-              <h2 className="text-2xl font-semibold mb-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+            <div className="text-center mb-8 border-b border-gray-100 pb-6">
+              <h2 className="text-2xl font-light tracking-wide mb-2" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
                 {user && recentlyViewed.length > 0 ? "Recently Viewed" : "You Might Also Like"}
               </h2>
-              <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+              <p className="text-sm tracking-wide" style={{ color: 'rgba(26, 26, 26, 0.5)', letterSpacing: '0.05em' }}>
                 {user && recentlyViewed.length > 0 
                   ? "Products you've looked at recently" 
                   : `More delicious ${product?.category?.name || 'products'} for you`}
@@ -1994,19 +1336,11 @@ const ProductDisplayPage = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {(user && recentlyViewed.length > 0 ? recentlyViewed : sameCategoryProducts).map((item, index) => {
+              {(user && recentlyViewed.length > 0 ? recentlyViewed : sameCategoryProducts).map((item) => {
                 const productToShow = item.productId || item;
-                
-                if (!productToShow || !productToShow._id) {
-                  return null;
-                }
-
+                if (!productToShow || !productToShow._id) return null;
                 return (
-                  <div key={productToShow._id}>
-                    <ProductCard
-                      product={productToShow}
-                    />
-                  </div>
+                  <ProductCard key={productToShow._id} product={productToShow} />
                 );
               })}
             </div>
@@ -2024,12 +1358,8 @@ const ProductDisplayPage = () => {
           onClose={() => setIsImageModalOpen(false)}
         />
       )}
-
-      {/* Debug Panel - Development Only */}
-      <ProductDebugPanel productId={productId} />
-
     </div>
   );
 };
 
-export default ProductDisplayPage;
+export default ProductDisplayPageNew;

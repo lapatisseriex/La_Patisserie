@@ -1,0 +1,286 @@
+/* ProductDisplayPageNew.css - Minimalist Orders Page Color Scheme */
+
+/* Force scroll position and prevent scroll restoration */
+body.product-display-page-new,
+body.product-display-page-new *,
+body.product-display-page-new html {
+  scroll-behavior: auto !important;
+}
+
+body.product-display-page-new html,
+body.product-display-page-new body {
+  scroll-behavior: auto !important;
+  scroll-padding-top: 0 !important;
+  scroll-margin-top: 0 !important;
+  scroll-snap-type: none !important;
+}
+
+/* Hide header and breadcrumbs on mobile for ProductDisplayPageNew */
+@media (max-width: 767px) {
+  /* Hide main header */
+  body.product-display-page-new header {
+    display: none !important;
+  }
+  
+  /* Hide breadcrumbs */
+  body.product-display-page-new .bg-gray-50.border-b.border-gray-200 {
+    display: none !important;
+  }
+  
+  /* Remove padding at top that accounts for header space */
+  body.product-display-page-new main {
+    padding-top: 0 !important;
+    background-color: #ffffff !important; /* Pure white background */
+  }
+  
+  /* Ensure no spacing at the top of the container */
+  body.product-display-page-new .max-w-7xl {
+    padding-top: 0 !important;
+  }
+}
+
+/* Typography matching Orders page */
+body.product-display-page-new {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions for all interactive elements */
+body.product-display-page-new button,
+body.product-display-page-new a {
+  transition: all 0.3s ease;
+}
+
+/* Custom scrollbar styling */
+body.product-display-page-new ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+body.product-display-page-new ::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+body.product-display-page-new ::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 3px;
+}
+
+body.product-display-page-new ::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* Loading spinner matching Orders page */
+@keyframes spin-new {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-new {
+  animation: spin-new 0.8s linear infinite;
+}
+
+/* Focus states with minimal style */
+body.product-display-page-new button:focus-visible,
+body.product-display-page-new a:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+/* Image transitions */
+body.product-display-page-new img {
+  transition: transform 0.5s ease;
+}
+
+/* Hover effects for cards */
+body.product-display-page-new .product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Border styling consistent with Orders page */
+body.product-display-page-new .border-gray-100 {
+  border-color: #f5f5f5;
+}
+
+body.product-display-page-new .border-gray-200 {
+  border-color: #e5e5e5;
+}
+
+/* Text color overrides */
+body.product-display-page-new .text-primary {
+  color: #1a1a1a;
+}
+
+body.product-display-page-new .text-secondary {
+  color: rgba(26, 26, 26, 0.5);
+}
+
+body.product-display-page-new .text-accent {
+  color: #733857;
+}
+
+/* Background colors */
+body.product-display-page-new .bg-primary {
+  background-color: #1a1a1a;
+}
+
+body.product-display-page-new .bg-primary:hover {
+  background-color: #2a2a2a;
+}
+
+/* Uppercase text with proper letter spacing */
+body.product-display-page-new .uppercase {
+  letter-spacing: 0.05em;
+}
+
+/* Minimal shadow effects */
+body.product-display-page-new .shadow-minimal {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+body.product-display-page-new .shadow-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Sticky elements with proper z-index */
+body.product-display-page-new .sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 767px) {
+  /* Ensure touch targets are at least 44x44px */
+  body.product-display-page-new button,
+  body.product-display-page-new a.button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve text legibility on mobile */
+  body.product-display-page-new {
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  /* Prevent horizontal scroll */
+  body.product-display-page-new {
+    overflow-x: hidden;
+  }
+}
+
+/* Desktop-specific adjustments */
+@media (min-width: 768px) {
+  /* Smooth hover transitions */
+  body.product-display-page-new button:hover,
+  body.product-display-page-new a:hover {
+    transform: translateY(-1px);
+  }
+  
+  /* Image hover effects */
+  body.product-display-page-new .image-container:hover img {
+    transform: scale(1.05);
+  }
+}
+
+/* Animation for quantity changes */
+@keyframes jelly-bounce {
+  0% {
+    transform: scale(1, 1);
+  }
+  25% {
+    transform: scale(1.15, 0.85);
+  }
+  50% {
+    transform: scale(0.95, 1.05);
+  }
+  75% {
+    transform: scale(1.03, 0.98);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+.jelly-animation {
+  animation: jelly-bounce 0.6s ease-in-out;
+}
+
+/* Loading state */
+.loading-spinner {
+  border: 2px solid #f5f5f5;
+  border-top-color: #1a1a1a;
+  border-radius: 50%;
+  animation: spin-new 0.8s linear infinite;
+}
+
+/* Disabled state styling */
+body.product-display-page-new button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+body.product-display-page-new button:disabled:hover {
+  transform: none;
+}
+
+/* Rating badge styling */
+.rating-badge {
+  background-color: #f5f5f5;
+  border: 1px solid #e5e5e5;
+}
+
+/* Dietary indicator pills */
+.dietary-pill {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.dietary-pill.active {
+  border-width: 2px;
+  background-color: rgba(115, 56, 87, 0.05);
+}
+
+/* Responsive grid adjustments */
+@media (min-width: 640px) and (max-width: 767px) {
+  body.product-display-page-new .grid-cols-2 {
+    gap: 1rem;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  body.product-display-page-new *,
+  body.product-display-page-new *::before,
+  body.product-display-page-new *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  body.product-display-page-new {
+    border-width: 2px;
+  }
+  
+  body.product-display-page-new button {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Print styles */
+@media print {
+  body.product-display-page-new .sticky-top,
+  body.product-display-page-new .fixed {
+    position: relative;
+  }
+  
+  body.product-display-page-new button {
+    display: none;
+  }
+}

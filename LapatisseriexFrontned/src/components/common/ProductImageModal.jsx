@@ -137,13 +137,27 @@ const ProductImageModal = ({
   if (!isOpen) return null;
 
   return (
-    <div 
-      ref={modalRef}
-      className={`modal-backdrop fixed inset-0 z-[1000] flex items-center justify-center transition-all duration-300 ease-out ${
-        isVisible 
-          ? 'bg-black/90 backdrop-blur-sm' 
-          : 'bg-black/0 backdrop-blur-none'
-      }`}
+    <>
+      {/* Hide bottom navigation on mobile when modal is open */}
+      <style>{`
+        @media (max-width: 768px) {
+          body.image-modal-open .md\\:hidden.fixed.bottom-0.z-50,
+          body.image-modal-open div[class*="bottom-0"][class*="z-50"],
+          body.image-modal-open nav.fixed.bottom-0 {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+          }
+        }
+      `}</style>
+      
+      <div 
+        ref={modalRef}
+        className={`modal-backdrop fixed inset-0 z-[1000] flex items-center justify-center transition-all duration-300 ease-out ${
+          isVisible 
+            ? 'bg-black/90 backdrop-blur-sm' 
+            : 'bg-black/0 backdrop-blur-none'
+        }`}
       onClick={handleBackgroundClick}
     >
       {/* Close Button - Made more visible and prominent */}
@@ -307,15 +321,15 @@ const ProductImageModal = ({
 
       {/* Image Dots Navigation */}
       {images.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 md:hidden">
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-0.5 md:hidden">
           {images.map((_, idx) => (
             <button
               key={idx}
               onClick={() => !isZoomed && setCurrentIndex(idx)}
-              className={`w-2 h-2 rounded-full transition-all duration-200 ${
+              className={`w-0.5 h-0.5 rounded-full transition-all duration-300 ${
                 idx === currentIndex 
-                  ? 'bg-white scale-125' 
-                  : 'bg-white/40 hover:bg-white/60'
+                  ? 'bg-white w-3' 
+                  : 'bg-white/20 hover:bg-white/35'
               } ${isZoomed ? 'cursor-default' : 'cursor-pointer'}`}
               aria-label={`Go to image ${idx + 1}`}
             />
@@ -323,6 +337,7 @@ const ProductImageModal = ({
         </div>
       )}
     </div>
+    </>
   );
 };
 
