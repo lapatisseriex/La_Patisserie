@@ -739,6 +739,13 @@ const ProductDisplayPageNew = () => {
                 />
               </div>
             </div>
+
+            {/* Cancellation & Return Policy - Simple & Natural */}
+            <div className="mt-4">
+              <p className="text-xs leading-relaxed text-center" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
+                Due to the perishable nature of our products, we do not accept cancellations or returns once the order is placed.
+              </p>
+            </div>
           </div>
 
           {/* Care Instructions & Info - Below Action Buttons (Mobile) */}
@@ -784,9 +791,14 @@ const ProductDisplayPageNew = () => {
                     <h4 className="text-xs font-semibold tracking-wide uppercase mb-1.5" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
                       Delivery Timing
                     </h4>
-                    <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
-                      <strong style={{ color: '#1a1a1a' }}>Everyday:</strong> 6:00 PM - 9:00 PM
-                    </p>
+                    <div className="space-y-1 text-xs" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+                      <p>
+                        <strong style={{ color: '#1a1a1a' }}>Weekdays:</strong> 8:00 PM - 10:00 PM
+                      </p>
+                      <p>
+                        <strong style={{ color: '#1a1a1a' }}>Weekends:</strong> 9:00 PM - 10:00 PM
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -801,16 +813,6 @@ const ProductDisplayPageNew = () => {
                   <p>LIG 208 Gandhi Nagar</p>
                   <p>Peelamedu, Coimbatore</p>
                 </div>
-              </div>
-
-              {/* Cancellation & Return Policy */}
-              <div className="p-3 border-t border-gray-100">
-                <h4 className="text-xs font-semibold tracking-wide uppercase mb-2" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
-                  Cancellation & Return Policy
-                </h4>
-                <p className="text-xs leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
-                  <strong style={{ color: '#d97706' }}>No Cancellations or Returns:</strong> Due to the perishable nature of our products, we do not accept cancellations or returns once the order is placed.
-                </p>
               </div>
             </div>
           </div>
@@ -1069,8 +1071,8 @@ const ProductDisplayPageNew = () => {
                           Delivery Timing
                         </h4>
                         <div className="space-y-1 text-sm" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
-                          <p><strong style={{ color: '#1a1a1a' }}>Weekdays:</strong> 6:00 PM - 9:00 PM</p>
-                          <p><strong style={{ color: '#1a1a1a' }}>Weekends:</strong> 6:00 PM - 10:00 PM</p>
+                          <p><strong style={{ color: '#1a1a1a' }}>Weekdays:</strong> 8:00 PM - 10:00 PM</p>
+                          <p><strong style={{ color: '#1a1a1a' }}>Weekends:</strong> 9:00 PM - 10:00 PM</p>
                         </div>
                       </div>
                     </div>
@@ -1086,16 +1088,6 @@ const ProductDisplayPageNew = () => {
                       <p>LIG 208 Gandhi Nagar</p>
                       <p>Peelamedu, Coimbatore</p>
                     </div>
-                  </div>
-
-                  {/* Cancellation & Return Policy */}
-                  <div className="p-4 border-t border-gray-100">
-                    <h4 className="text-sm font-semibold tracking-wide uppercase mb-2.5" style={{ color: '#1a1a1a', letterSpacing: '0.08em' }}>
-                      Cancellation & Return Policy
-                    </h4>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
-                      <strong style={{ color: '#d97706' }}>No Cancellations or Returns:</strong> Due to the perishable nature of our products, we do not accept cancellations or returns once the order is placed.
-                    </p>
                   </div>
                 </div>
               </div>
@@ -1315,6 +1307,13 @@ const ProductDisplayPageNew = () => {
                       className="w-full py-3 px-5"
                     />
                   </div>
+                </div>
+
+                {/* Cancellation & Return Policy - Simple & Natural */}
+                <div className="mt-6">
+                  <p className="text-sm leading-relaxed text-center" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
+                    Due to the perishable nature of our products, we do not accept cancellations or returns once the order is placed.
+                  </p>
                 </div>
               </div>
             </div>

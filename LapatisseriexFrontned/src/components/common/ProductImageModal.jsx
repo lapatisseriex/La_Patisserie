@@ -318,24 +318,6 @@ const ProductImageModal = ({
           )}
         </div>
       </div>
-
-      {/* Image Dots Navigation */}
-      {images.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-0.5 md:hidden">
-          {images.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => !isZoomed && setCurrentIndex(idx)}
-              className={`w-0.5 h-0.5 rounded-full transition-all duration-300 ${
-                idx === currentIndex 
-                  ? 'bg-white w-3' 
-                  : 'bg-white/20 hover:bg-white/35'
-              } ${isZoomed ? 'cursor-default' : 'cursor-pointer'}`}
-              aria-label={`Go to image ${idx + 1}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
     </>
   );
