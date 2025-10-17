@@ -670,11 +670,11 @@
   
   @media (max-width: 767px) {
     body.hide-location-bar main {
-      padding-top: 75px; /* Adequate padding when location bar is hidden on mobile */
+      padding-top: 0; /* No padding needed on mobile - header is not sticky */
     }
     
     main {
-      padding-top: 75px !important; /* Consistent mobile padding to prevent overlap */
+      padding-top: 0 !important; /* No padding needed on mobile - header is not sticky */
     }
   }
   
@@ -691,29 +691,29 @@
   /* Dynamic padding based on header visibility */
   @media (max-width: 767px) {
     body.scrolling-down main {
-      padding-top: 75px !important;
+      padding-top: 0 !important; /* No padding needed - mobile header is not sticky */
       transition: padding-top 0.2s ease;
     }
     
     body.scrolling-up main {
-      padding-top: 75px !important;
+      padding-top: 0 !important; /* No padding needed - mobile header is not sticky */
       transition: padding-top 0.2s ease;
     }
     
     body:not(.scrolled) main {
-      padding-top: 75px !important;
+      padding-top: 0 !important; /* No padding needed - mobile header is not sticky */
       transition: padding-top 0.2s ease;
     }
   }
   
   /* Ensure proper header height calculation */
   body.has-fixed-header {
-    --header-height-mobile: 75px; /* Adequate height to prevent overlap */
+    --header-height-mobile: 0; /* No height needed - mobile header is not sticky */
   }
   
-  /* When header slides up, reduce spacing */
+  /* When location bar is hidden, reduce spacing */
   body.has-fixed-header.header-hidden {
-    --header-height-mobile: 88px; /* Height without location bar */
+    --header-height-mobile: 0; /* No height needed - mobile header is not sticky */
   }
 }
 

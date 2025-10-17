@@ -3,6 +3,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent system dark mode from interfering with website design */
+:root {
+  color-scheme: light;
+}
+
+/* Only prevent dark mode interference, keep original design */
+@media (prefers-color-scheme: dark) {
+  /* Disable dark mode auto-styling but preserve original colors */
+  * {
+    color-scheme: light !important;
+  }
+  
+  /* Prevent browser from inverting colors or applying dark styles */
+  img, video, iframe, canvas, svg {
+    filter: none !important;
+  }
+}
+
 /* Remove focus outline for all interactive elements */
 button:focus,
 a:focus,

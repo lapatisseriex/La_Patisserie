@@ -632,9 +632,8 @@ const Products = () => {
 
       {/* Always render both bars with smooth opacity transitions */}
       <div
-        className="text-category-bar-container fixed top-0 left-0 right-0 bg-white shadow-lg z-40 border-b border-gray-200 w-full"
+        className="text-category-bar-container sticky top-0 left-0 right-0 bg-white shadow-lg z-40 border-b border-gray-200 w-full"
         style={{
-          top: `${headerHeight}px`,
           zIndex: showTextCategoryBar ? 40 : 30,
           opacity: showTextCategoryBar ? 1 : 0,
           transform: 'translateY(0)',
@@ -651,12 +650,11 @@ const Products = () => {
         />
       </div>
 
-      {/* Fixed category swiper container - must match text bar spacing */}
+      {/* Sticky category swiper container - must match text bar spacing */}
       <div
         ref={(el) => { categorySectionRef.current = el; swiperBarRef.current = el; }}
-        className="fixed top-0 left-0 right-0 bg-white shadow-lg z-30 border-b border-gray-200"
+        className="sticky top-0 left-0 right-0 bg-white shadow-lg z-30 border-b border-gray-200"
         style={{
-          top: `${headerHeight}px`,
           zIndex: !showTextCategoryBar ? 30 : 25,
           opacity: !showTextCategoryBar ? 1 : 0,
           transform: 'translateY(0)',
@@ -675,10 +673,8 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Add padding to content to prevent overlap with fixed bars */}
-      <div className="container mx-auto px-4 pt-0 pb-4" style={{
-        paddingTop: `${Math.max(0, headerHeight + categoryBarHeight - 1)}px` // subtract 1px to counter border rounding
-      }}>
+      {/* Content container - no padding needed with sticky positioning */}
+      <div className="container mx-auto px-4 pt-0 pb-4">
 
         {/* Main Content */}
         {isLoading ? (

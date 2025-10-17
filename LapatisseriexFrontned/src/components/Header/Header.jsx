@@ -559,7 +559,24 @@ const Header = ({ isAdminView = false }) => {
 
   return (
     <>
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-all duration-300" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+    <header className="md:fixed md:top-0 md:left-0 md:right-0 md:z-50 bg-white shadow-sm transition-all duration-300" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+      
+      {/* Mobile Top Header Bar - Shop Name and Logo */}
+      <div className="block md:hidden py-2 px-3 bg-white border-b border-gray-100">
+        <div className="flex justify-between items-center">
+          {/* Left side - Shop Name */}
+          <Link to="/" className="flex items-center">
+            <span className="text-lg font-light" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}>
+              La Patisserie
+            </span>
+          </Link>
+          
+          {/* Right side - Logo */}
+          <Link to="/" className="flex items-center">
+            <img src="/images/logo.png" alt="Sweet Cake Logo" className="h-8 opacity-90" />
+          </Link>
+        </div>
+      </div>
       
       {/* Mobile Location Bar - Display only, no dropdown */}
       {!isAdminView && (
@@ -585,10 +602,12 @@ const Header = ({ isAdminView = false }) => {
                 <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
               </button>
               
-              {/* Mobile Notification Bell - Right Side */}
-              <div className="flex items-center">
-                <NotificationBell />
-              </div>
+              {/* Mobile Notification Bell - Right Side - Only show when user is logged in */}
+              {user && (
+                <div className="flex items-center">
+                  <NotificationBell />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -800,25 +819,70 @@ const Header = ({ isAdminView = false }) => {
                       boxShadow: '0 8px 32px rgba(40, 28, 32, 0.15), 0 4px 16px rgba(40, 28, 32, 0.1)'
                     }}
                   >
-                    <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100">
-                      <h3 className="text-xs font-light tracking-wide uppercase" style={{color: '#281c20'}}>Settings</h3>
-                    </div>
-                    <div className="p-2">
-                      <Link
-                        to="/profile"
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) transition-all duration-300 font-light relative group backdrop-filter backdrop-blur-sm"
-                        style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
-                        onClick={() => setIsLocationDropdownOpen(false)}
-                      >
-                        <img 
-                          src="/gamification.png" 
-                          alt="Settings Icon" 
-                          className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
-                        />
-                        <span className="relative z-10">Edit in settings</span>
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
-                      </Link>
-                    </div>
+                    {user ? (
+                      // User is logged in - show profile link
+                      <>
+                        <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100">
+                          <h3 className="text-xs font-light tracking-wide uppercase" style={{color: '#281c20'}}>Settings</h3>
+                        </div>
+                        <div className="p-2">
+                          <Link
+                            to="/profile"
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) transition-all duration-300 font-light relative group backdrop-filter backdrop-blur-sm"
+                            style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
+                            onClick={() => setIsLocationDropdownOpen(false)}
+                          >
+                            <img 
+                              src="/gamification.png" 
+                              alt="Settings Icon" 
+                              className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+                            />
+                            <span className="relative z-10">Edit in settings</span>
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                          </Link>
+                        </div>
+                      </>
+                    ) : (
+                      // User is not logged in - show location selection dropdown
+                      <>
+                        <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100">
+                          <h3 className="text-xs font-light tracking-wide uppercase" style={{color: '#281c20'}}>Select Location</h3>
+                        </div>
+                        <div 
+                          className="p-2 max-h-48 overflow-y-auto" 
+                          style={{
+                            scrollbarWidth: 'none', 
+                            msOverflowStyle: 'none',
+                            WebkitScrollbar: 'none'
+                          }}
+                        >
+                          {locations && locations.length > 0 ? (
+                            locations.map(location => (
+                              <button
+                                key={location._id}
+                                onClick={() => handleLocationSelect(location._id)}
+                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) transition-all duration-300 font-light relative group backdrop-filter backdrop-blur-sm text-left"
+                                style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
+                              >
+                                <img 
+                                  src="/compass.png" 
+                                  alt="Location Icon" 
+                                  className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+                                />
+                                <span className="relative z-10 truncate">
+                                  {location.area}, {location.city} - {location.pincode}
+                                </span>
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-gray-500 text-sm">
+                              No locations available
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -845,8 +909,8 @@ const Header = ({ isAdminView = false }) => {
                 {/* User Menu - Uses role-based display */}
                 <UserMenu />
 
-                {/* Notification Bell */}
-                <NotificationBell />
+                {/* Notification Bell - Only show when user is logged in */}
+                {user && <NotificationBell />}
 
                 {/* Cart component - Premium Design with Tooltip */}
                 <div className="tooltip">
