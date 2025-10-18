@@ -23,7 +23,7 @@ const newsletterSchema = new mongoose.Schema(
     },
     source: {
       type: String,
-      enum: ['footer', 'admin', 'checkout', 'other'],
+      enum: ['footer', 'homepage', 'admin', 'checkout', 'other'],
       default: 'footer'
     },
     subscribedAt: {

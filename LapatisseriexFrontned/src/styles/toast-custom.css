@@ -1,0 +1,130 @@
+/* Custom Toast Styling to Match Site Color Palette */
+/* EXACT colors from ProductDisplayPage and Profile page */
+
+/* Base toast styling - override ALL variants */
+:root {
+  --toastify-color-light: rgba(255, 255, 255, 0.95);
+  --toastify-color-dark: #1a1a1a;
+  --toastify-color-info: rgba(255, 255, 255, 0.95);
+  --toastify-color-success: rgba(255, 255, 255, 0.95);
+  --toastify-color-warning: rgba(255, 251, 235, 0.95);
+  --toastify-color-error: rgba(255, 245, 245, 0.95);
+  --toastify-color-transparent: rgba(255, 255, 255, 0.7);
+  
+  --toastify-text-color-light: #1a1a1a;
+  --toastify-text-color-dark: #1a1a1a;
+  --toastify-text-color-info: #1a1a1a;
+  --toastify-text-color-success: #1a1a1a;
+  --toastify-text-color-warning: #1a1a1a;
+  --toastify-text-color-error: #1a1a1a;
+}
+
+/* Override ALL toast types - matching ProductDisplayPage & Profile */
+.Toastify__toast,
+.Toastify__toast--default,
+.Toastify__toast-theme--light,
+.Toastify__toast-theme--dark,
+.Toastify__toast-theme--colored {
+  background: white !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgb(243, 244, 246) !important; /* border-gray-100 */
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 8px !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-weight: 300 !important;
+  min-height: 64px !important;
+}
+
+/* Progress bar - NO violet/purple */
+.Toastify__progress-bar,
+.Toastify__progress-bar--bg,
+.Toastify__progress-bar-theme--light,
+.Toastify__progress-bar-theme--dark,
+.Toastify__progress-bar-theme--colored,
+.Toastify__progress-bar--info,
+.Toastify__progress-bar--success,
+.Toastify__progress-bar--warning,
+.Toastify__progress-bar--error {
+  background: #1a1a1a !important; /* dark text color, not violet */
+  height: 3px !important;
+}
+
+/* Toast body */
+.Toastify__toast-body,
+.Toastify__toast-body > div {
+  color: #1a1a1a !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-weight: 300 !important;
+  padding: 8px !important;
+  line-height: 1.5 !important;
+}
+
+/* Success toast - NO green! Match product page */
+.Toastify__toast--success,
+.Toastify__toast-theme--colored.Toastify__toast--success,
+.Toastify__toast-theme--light.Toastify__toast--success {
+  background: white !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgb(243, 244, 246) !important; /* border-gray-100 */
+}
+
+/* Info toast - NO blue! Match product page */
+.Toastify__toast--info,
+.Toastify__toast-theme--colored.Toastify__toast--info,
+.Toastify__toast-theme--light.Toastify__toast--info {
+  background: white !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgb(243, 244, 246) !important; /* border-gray-100 */
+}
+
+/* Error toast - subtle styling */
+.Toastify__toast--error,
+.Toastify__toast-theme--colored.Toastify__toast--error,
+.Toastify__toast-theme--light.Toastify__toast--error {
+  background: white !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgb(254, 226, 226) !important; /* subtle red border */
+}
+
+/* Warning toast - subtle styling */
+.Toastify__toast--warning,
+.Toastify__toast-theme--colored.Toastify__toast--warning,
+.Toastify__toast-theme--light.Toastify__toast--warning {
+  background: white !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgb(254, 243, 199) !important; /* subtle yellow border */
+}
+
+/* Close button */
+.Toastify__close-button,
+.Toastify__close-button > svg {
+  color: #1a1a1a !important;
+  opacity: 0.5 !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.Toastify__close-button:hover,
+.Toastify__close-button:hover > svg {
+  opacity: 1 !important;
+  color: #1a1a1a !important;
+}
+
+/* Toast icon */
+.Toastify__toast-icon {
+  width: 20px !important;
+  margin-right: 12px !important;
+}
+
+/* Container */
+.Toastify__toast-container {
+  z-index: 99999 !important;
+}
+
+/* Ensure text color inheritance doesn't override */
+.Toastify__toast *,
+.Toastify__toast-body *,
+.Toastify__toast div {
+  color: #1a1a1a !important;
+}

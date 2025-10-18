@@ -13,6 +13,7 @@ import RecentlyViewedSection from './RecentlyViewedSection';
 import CategorySwiper from './categorySwiper';
 import PageLoadingAnimation from '../common/PageLoadingAnimation';
 import AdvertisementBanner from './AdvertisementBanner';
+import Newsletter from '../Newsletter/Newsletter';
 
 const Home = () => {
   const headingRef = useRef(null);
@@ -198,7 +199,7 @@ const Home = () => {
       </section>
 
 
-
+<Newsletter />
     </div>
     </>
   );

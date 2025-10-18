@@ -54,6 +54,9 @@ export const updateTimeSettings = asyncHandler(async (req, res) => {
     if (req.body.specialDays) {
       settings.specialDays = req.body.specialDays;
     }
+    if (req.body.dailyPauseWindows) {
+      settings.dailyPauseWindows = req.body.dailyPauseWindows;
+    }
     
     await settings.save();
     
@@ -174,23 +177,29 @@ export const checkShopStatus = asyncHandler(async (req, res) => {
     const settingsPromise = TimeSettings.getCurrentSettings();
     const settings = await Promise.race([settingsPromise, timeoutPromise]);
     
-    const now = new Date();
-    const isOpen = settings.isShopOpen();
-    const currentDay = now.getDay();
+  const now = new Date();
+  const isOpen = settings.isShopOpen();
+    // Determine current day based on configured timezone, not server timezone
+    const tz = settings.timezone;
+    const dowShort = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(now);
+    const dayIndexMap = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const currentDay = dayIndexMap.indexOf(dowShort);
     const today = now.toLocaleDateString('en-CA', { timeZone: settings.timezone });
     
     // Check for special day hours
     const specialDay = settings.specialDays.find(day => {
-      const specialDate = new Date(day.date).toLocaleDateString('en-CA');
+      // Compare dates in the configured timezone to avoid off-by-one day errors
+      const specialDate = new Date(day.date).toLocaleDateString('en-CA', { timeZone: settings.timezone });
       return specialDate === today;
     });
     
     // Get operating hours for today
     const isWeekend = currentDay === 0 || currentDay === 6;
-    let operatingHours;
+  let operatingHours;
     let closingTime = null;
     let nextOpenTime = null;
     let message = '';
+  const pauses = settings.dailyPauseWindows || [];
     
     if (specialDay) {
       if (specialDay.isClosed) {
@@ -211,42 +220,109 @@ export const checkShopStatus = asyncHandler(async (req, res) => {
       } : null;
     }
     
+    // Helper to build a Date (UTC instant) for a given local time in a specific timezone
+    const buildTzDate = (refDate, tz, hhmm) => {
+      const [hh, mm] = (hhmm || '00:00').split(':').map(v => parseInt(v, 10));
+      const ymd = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(refDate);
+      const year = parseInt(ymd.find(p => p.type === 'year').value, 10);
+      const month = parseInt(ymd.find(p => p.type === 'month').value, 10);
+      const day = parseInt(ymd.find(p => p.type === 'day').value, 10);
+      const naiveUtcMs = Date.UTC(year, month - 1, day, hh, mm, 0, 0);
+      // Determine tz offset at this instant using shortOffset (e.g., GMT+5:30)
+      const dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        timeZoneName: 'shortOffset',
+        hour12: false,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+      const parts = dtf.formatToParts(new Date(naiveUtcMs));
+      const tzName = parts.find(p => p.type === 'timeZoneName')?.value || 'GMT+0';
+      const m = tzName.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+      let offsetMs = 0;
+      if (m) {
+        const sign = m[1] === '+' ? 1 : -1;
+        const oh = parseInt(m[2] || '0', 10);
+        const om = parseInt(m[3] || '0', 10);
+        offsetMs = sign * (oh * 60 + om) * 60 * 1000;
+      } else {
+        // Fallback for environments without shortOffset support
+        const naiveUtcDate = new Date(naiveUtcMs);
+        const tzLocal = new Date(naiveUtcDate.toLocaleString('en-US', { timeZone: tz })).getTime();
+        offsetMs = tzLocal - naiveUtcMs;
+      }
+      // Local tz wall-clock at hh:mm corresponds to UTC time = naiveUtcMs - offsetMs
+      return new Date(naiveUtcMs - offsetMs);
+    };
+
     // Calculate closing time if shop is open
     if (isOpen && operatingHours) {
-      const [hours, minutes] = operatingHours.endTime.split(':');
-      const closing = new Date(now);
-      closing.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      closingTime = closing.toISOString();
+      // Helper: get next occurrence (>= now) of a HH:MM wall-clock time in tz
+      const nextOccurrence = (ref, hhmm) => {
+        let d = buildTzDate(ref, tz, hhmm);
+        if (d <= now) {
+          const nextRef = new Date(ref);
+          nextRef.setUTCDate(nextRef.getUTCDate() + 1);
+          d = buildTzDate(nextRef, tz, hhmm);
+        }
+        return d;
+      };
+
+      // Operating end boundary for current open session
+      const endCandidate = nextOccurrence(now, operatingHours.endTime);
+
+      // Consider upcoming pause starts that occur before the endCandidate
+      const pauseCandidates = (pauses || [])
+        .filter(w => w?.startTime && w?.endTime)
+        .map(w => nextOccurrence(now, w.startTime))
+        .filter(d => d <= endCandidate);
+
+      const allCandidates = [endCandidate, ...pauseCandidates].filter(Boolean);
+      const closing = allCandidates.reduce((min, d) => (!min || d < min ? d : min), null);
+      closingTime = closing ? closing.toISOString() : null;
     }
     
     // Calculate next opening time if shop is closed
     if (!isOpen) {
+      const tz = settings.timezone;
       if (operatingHours) {
-        const [hours, minutes] = operatingHours.startTime.split(':');
-        const opening = new Date(now);
-        opening.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        
-        // If opening time has passed today, set to tomorrow
-        if (opening <= now) {
-          opening.setDate(opening.getDate() + 1);
+        // If closed due to pause, next opening is pause end today; else next schedule opening
+        const currentTime = now.toLocaleTimeString('en-US', { hour12: false, timeZone: tz, hour: '2-digit', minute: '2-digit' });
+        let target = null;
+        for (const w of pauses) {
+          if (!w?.startTime || !w?.endTime) continue;
+          // if within pause now -> next opening at endTime
+          const within = (w.startTime === w.endTime) ||
+            (w.startTime < w.endTime ? (currentTime >= w.startTime && currentTime <= w.endTime)
+                                      : (currentTime >= w.startTime || currentTime <= w.endTime));
+          if (within) { target = w.endTime; break; }
         }
-        
+        if (!target) {
+          target = operatingHours.startTime;
+        }
+        let opening = buildTzDate(now, tz, target);
+        if (opening <= now) {
+          // Compute same local time on next local day in tz
+          const nextRef = new Date(now);
+          nextRef.setUTCDate(nextRef.getUTCDate() + 1);
+          opening = buildTzDate(nextRef, tz, target);
+        }
         nextOpenTime = opening.toISOString();
       } else {
-        // Find next available day
+        // Find next available day with active schedule
         let daysToAdd = 1;
         let foundNextDay = false;
-        
         while (!foundNextDay && daysToAdd <= 7) {
-          const futureDate = new Date(now);
-          futureDate.setDate(futureDate.getDate() + daysToAdd);
-          const futureDayOfWeek = futureDate.getDay();
-          const futureSchedule = (futureDayOfWeek === 0 || futureDayOfWeek === 6) ? settings.weekend : settings.weekday;
-          
+          const futureRef = new Date(now);
+          futureRef.setUTCDate(futureRef.getUTCDate() + daysToAdd);
+          const futureDayOfWeek = futureRef.toLocaleDateString('en-US', { timeZone: tz, weekday: 'short' });
+          // Determine weekend vs weekday based on tz
+          const dow = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(futureRef);
+          const dayIndex = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(dow);
+          const futureSchedule = (dayIndex === 0 || dayIndex === 6) ? settings.weekend : settings.weekday;
           if (futureSchedule.isActive) {
-            const [hours, minutes] = futureSchedule.startTime.split(':');
-            futureDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-            nextOpenTime = futureDate.toISOString();
+            const opening = buildTzDate(futureRef, tz, futureSchedule.startTime);
+            nextOpenTime = opening.toISOString();
             foundNextDay = true;
           } else {
             daysToAdd++;

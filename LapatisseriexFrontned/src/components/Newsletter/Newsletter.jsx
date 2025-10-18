@@ -1,62 +1,99 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useAuth } from '../../hooks/useAuth';
 
 const Newsletter = () => {
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-  
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  // Prefill email with logged-in user's email, if available
+  useEffect(() => {
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [user?.email]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email && email.includes('@')) {
-      // In a real app, we would send this to a backend
-      console.log('Subscribing email:', email);
-      setSubscribed(true);
+
+    // Basic email validation (same as footer)
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage({ type: 'error', text: 'Please enter a valid email address' });
+      return;
+    }
+
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/newsletter/subscribe`, {
+        email,
+        source: 'homepage',
+      });
+      setMessage({ type: 'success', text: response.data.message || 'Subscribed successfully!' });
       setEmail('');
-      setTimeout(() => setSubscribed(false), 5000);
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to subscribe. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <section className="bg-white py-16 relative overflow-hidden" id="newsletter">
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-40 h-40 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="absolute bottom-0 right-0 w-56 h-56 bg-white/10 rounded-full translate-x-1/4 translate-y-1/4"></div>
-      
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
-            Subscribe for Sweet Updates
-          </h2>
-          <p className="text-black text-lg mb-8">
-            Be the first to know about new flavors, seasonal specials, and exclusive offers
-          </p>
-          
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            {subscribed ? (
-              <div className="w-full bg-black text-white text-lg font-medium py-4 px-6 rounded-lg shadow-lg">
-                Thank you for subscribing!
-              </div>
-            ) : (
-              <>
-                <input 
-                  type="email" 
-                  placeholder="Enter your email address" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="flex-grow py-3 px-4 rounded-lg border border-white focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white shadow-md"
-                  aria-label="Email address"
-                />
-                <button 
-                  type="submit" 
-                  className="bg-white hover:bg-black text-white font-medium py-3 px-6 rounded-lg transition-colors shadow-md whitespace-nowrap"
-                >
-                  Subscribe
-                </button>
-              </>
-            )}
+    <section id="newsletter" className="bg-white py-16">
+      <div className="container mx-auto px-4">
+        <div className="max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl shadow-sm p-6 md:p-8">
+          <div className="text-center">
+            <h2 className="text-2xl md:text-3xl font-light tracking-wide text-[#733857] mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: '0.02em' }}>
+              Subscribe for Sweet Updates
+            </h2>
+            <p className="text-gray-600 text-base md:text-lg" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Be the first to know about new flavors, seasonal specials, and exclusive offers
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-6 flex flex-col sm:flex-row gap-3">
+            <input
+              type="email"
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              aria-label="Email address"
+              className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-black placeholder-gray-500 shadow-sm focus:border-[#733857] focus:ring-2 focus:ring-[#733857]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-3 bg-white border-2 border-[#733857] text-black rounded-lg font-medium shadow-sm transition-all duration-300 hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:text-white transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              {loading ? 'Subscribing…' : 'Subscribe'}
+            </button>
           </form>
-          
-          <p className="text-black text-sm mt-4">
+
+          {message.text && (
+            <div
+              className={`mt-4 rounded-md border p-3 text-sm ${
+                message.type === 'success'
+                  ? '  text-[#733857]'
+                  : '  text-[#733857]'
+              }`}
+              role="status"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              {message.text}
+            </div>
+          )}
+
+          <p className="mt-4 text-center text-xs text-gray-500" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             We respect your privacy and will never share your information
           </p>
         </div>

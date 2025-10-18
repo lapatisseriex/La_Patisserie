@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Save, Plus, Trash2, Calendar, AlertCircle } from 'lucide-react';
+import webSocketService from '../../services/websocketService.js';
 
 const AdminTimeSettings = () => {
   const [user, setUser] = useState(null);
@@ -33,6 +34,64 @@ const AdminTimeSettings = () => {
     description: ''
   });
 
+  // Compute today's info for admin: weekday/weekend and today's hours (timezone-aware)
+  const todayInfo = useMemo(() => {
+    try {
+      const tz = settings.timezone || 'Asia/Kolkata';
+      const now = new Date();
+      const weekdayShort = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(now);
+      const weekdayLong = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' }).format(now);
+      const dayIndex = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(weekdayShort);
+      const isWeekend = dayIndex === 0 || dayIndex === 6;
+      const todayStr = now.toLocaleDateString('en-CA', { timeZone: tz });
+      const special = (settings.specialDays || []).find(d => new Date(d.date).toLocaleDateString('en-CA', { timeZone: tz }) === todayStr);
+      let hours = null;
+      let closed = false;
+      if (special) {
+        closed = !!special.isClosed;
+        if (!closed) {
+          hours = {
+            startTime: special.startTime || (isWeekend ? settings.weekend.startTime : settings.weekday.startTime),
+            endTime: special.endTime || (isWeekend ? settings.weekend.endTime : settings.weekday.endTime)
+          };
+        }
+      } else {
+        const sched = isWeekend ? settings.weekend : settings.weekday;
+        closed = !sched?.isActive;
+        if (!closed && sched) {
+          hours = { startTime: sched.startTime, endTime: sched.endTime };
+        }
+      }
+      return {
+        weekdayLong,
+        isWeekend,
+        closed,
+        hours,
+        tz
+      };
+    } catch (e) {
+      return { weekdayLong: '', isWeekend: false, closed: false, hours: null, tz: 'Asia/Kolkata' };
+    }
+  }, [settings]);
+
+  // Format next open time for display based on settings timezone
+  const formattedNextOpen = useMemo(() => {
+    try {
+      if (!shopStatus?.nextOpenTime) return null;
+      const tz = settings.timezone || 'Asia/Kolkata';
+      const d = new Date(shopStatus.nextOpenTime);
+      const now = new Date();
+      const todayStr = now.toLocaleDateString('en-CA', { timeZone: tz });
+      const dateStr = d.toLocaleDateString('en-CA', { timeZone: tz });
+      const timeStr = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tz });
+      if (todayStr === dateStr) return `at ${timeStr}`;
+      const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: tz });
+      return `${weekday} ${timeStr}`;
+    } catch {
+      return shopStatus?.nextOpenTime ?? null;
+    }
+  }, [shopStatus?.nextOpenTime, settings.timezone]);
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -62,6 +121,16 @@ const AdminTimeSettings = () => {
     };
 
     initializeAuth();
+  }, []);
+
+  // Realtime shop status updates for admin view
+  useEffect(() => {
+    if (!webSocketService.isConnected()) {
+      webSocketService.connect(null);
+    }
+    const handleShop = (status) => setShopStatus(status);
+    webSocketService.onShopStatusUpdate(handleShop);
+    return () => webSocketService.offShopStatusUpdate(handleShop);
   }, []);
 
   const fetchTimeSettingsWithUser = async (authUser) => {
@@ -293,10 +362,28 @@ const AdminTimeSettings = () => {
           <span className="font-medium">
             {shopStatus.isOpen ? 'Shop Open' : 'Shop Closed'}
           </span>
-          {!shopStatus.isOpen && shopStatus.nextOpenTime && (
+          {!shopStatus.isOpen && formattedNextOpen && (
             <span className="text-sm">
-              • Opens {shopStatus.nextOpenTime}
+              • Opens {formattedNextOpen}
             </span>
+          )}
+        </div>
+      </div>
+
+      {/* Today info (weekday/weekend and hours) */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 -mt-2">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
+          <span className="font-medium">Today:</span>
+          <span className={`px-2 py-0.5 rounded-full border text-xs ${todayInfo.isWeekend ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
+            {todayInfo.weekdayLong} • {todayInfo.isWeekend ? 'Weekend' : 'Weekday'}
+          </span>
+          <span className="text-gray-400">|</span>
+          {todayInfo.closed ? (
+            <span className="text-red-600">Closed today</span>
+          ) : todayInfo.hours ? (
+            <span>Hours: {todayInfo.hours.startTime} – {todayInfo.hours.endTime} ({settings.timezone})</span>
+          ) : (
+            <span>No hours configured</span>
           )}
         </div>
       </div>

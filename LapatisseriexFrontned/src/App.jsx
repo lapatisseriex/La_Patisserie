@@ -3,8 +3,9 @@ import { useSelector } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import ScrollToTop from "./ScrollToTop.jsx";
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './styles/toast-custom.css';
 
 // Layout
 import Layout from './components/Layout/Layout';
@@ -138,8 +139,17 @@ function App() {
                     <SparkAnimationProvider>
                       <Router>
                         <ScrollToTop />
-                        {/* Global toast notifications */}
-                        <ToastContainer position="top-center" autoClose={2500} hideProgressBar theme="colored" />
+                        {/* Global toast notifications - styled to match site palette */}
+                        <ToastContainer
+                          containerId="app-toasts"
+                          position="top-right"
+                          transition={Slide}
+                          autoClose={3200}
+                          hideProgressBar={false}
+                          closeOnClick
+                          pauseOnHover
+                          draggable
+                        />
                         {/* Data Sync Handler - ensures user state stays synchronized */}
                         <DataSyncHandler />
                         {/* Auth Modal - available on all pages */}

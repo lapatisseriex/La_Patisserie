@@ -8,8 +8,13 @@ class WebSocketService {
   }
 
   connect(userId) {
-    if (this.socket) {
-      this.disconnect();
+    if (this.socket && this.socket.connected) {
+      // Already connected; update auth if needed
+      if (userId && this.userId !== userId) {
+        this.userId = userId;
+        this.socket.emit('authenticate', userId);
+      }
+      return this.socket;
     }
 
     const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
@@ -75,6 +80,18 @@ class WebSocketService {
   offNewNotification(callback) {
     if (this.socket) {
       this.socket.off('newNotification', callback);
+    }
+  }
+
+  onShopStatusUpdate(callback) {
+    if (this.socket) {
+      this.socket.on('shopStatusUpdate', callback);
+    }
+  }
+
+  offShopStatusUpdate(callback) {
+    if (this.socket) {
+      this.socket.off('shopStatusUpdate', callback);
     }
   }
 

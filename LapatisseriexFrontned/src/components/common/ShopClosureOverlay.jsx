@@ -8,7 +8,8 @@ const ShopClosureOverlay = ({
   className = '', 
   overlayType = 'section' // 'section', 'button', 'page'
 }) => {
-  const { isOpen, nextOpeningTime } = useShopStatus();
+  const { isOpen, nextOpeningTime, timezone, formatNextOpening } = useShopStatus();
+  const formattedOpen = formatNextOpening?.(nextOpeningTime, timezone) || null;
 
   if (isOpen) {
     return children;
@@ -45,9 +46,9 @@ const ShopClosureOverlay = ({
                 <p className="text-gray-600 mb-4">
                   We're currently closed and not accepting orders.
                 </p>
-                {nextOpeningTime && (
+                {formattedOpen && (
                   <p className="text-sm text-gray-500">
-                    We'll reopen: <span className="font-medium text-gray-700">{nextOpeningTime}</span>
+                    We'll reopen <span className="font-medium text-gray-700">{formattedOpen}</span>
                   </p>
                 )}
                 <button 
@@ -77,9 +78,9 @@ const ShopClosureOverlay = ({
                 <p className="text-gray-600 text-sm mb-3">
                   This section is not available while the shop is closed.
                 </p>
-                {nextOpeningTime && (
+                {formattedOpen && (
                   <p className="text-xs text-gray-500">
-                    Available again: <span className="font-medium">{nextOpeningTime}</span>
+                    Available again <span className="font-medium">{formattedOpen}</span>
                   </p>
                 )}
               </div>

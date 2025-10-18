@@ -46,9 +46,27 @@ const timeSettingsSchema = new mongoose.Schema({
     endTime: String,
     description: String
   }]
+  ,
+  dailyPauseWindows: [{
+    startTime: { type: String }, // 'HH:MM'
+    endTime: { type: String },   // 'HH:MM'
+    description: { type: String }
+  }]
 }, {
   timestamps: true
 });
+
+// Helper: compare HH:MM in same day with wrap support
+function isTimeInRange(current, start, end) {
+  // current, start, end are strings 'HH:MM'
+  if (start === end) return true; // 24h pause if identical
+  if (start < end) {
+    return current >= start && current <= end;
+  } else {
+    // Wraps midnight: e.g., 23:00 - 02:00
+    return current >= start || current <= end;
+  }
+}
 
 // Method to check if shop is currently open
 timeSettingsSchema.methods.isShopOpen = function() {
@@ -60,12 +78,16 @@ timeSettingsSchema.methods.isShopOpen = function() {
     minute: '2-digit'
   });
   
-  const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  // Compute current day-of-week and date in configured timezone
+  const dowShort = new Intl.DateTimeFormat('en-US', { timeZone: this.timezone, weekday: 'short' }).format(now);
+  const dayIndexMap = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const currentDay = dayIndexMap.indexOf(dowShort); // 0 = Sunday, 1 = Monday, etc.
   const today = now.toLocaleDateString('en-CA', { timeZone: this.timezone }); // YYYY-MM-DD format
   
   // Check for special days first
   const specialDay = this.specialDays.find(day => {
-    const specialDate = new Date(day.date).toLocaleDateString('en-CA');
+    // Compare dates in configured timezone to avoid mismatch around midnight
+    const specialDate = new Date(day.date).toLocaleDateString('en-CA', { timeZone: this.timezone });
     return specialDate === today;
   });
   
@@ -81,19 +103,44 @@ timeSettingsSchema.methods.isShopOpen = function() {
   const schedule = isWeekend ? this.weekend : this.weekday;
   
   if (!schedule.isActive) return false;
-  
-  return currentTime >= schedule.startTime && currentTime <= schedule.endTime;
+
+  // Within base operating hours?
+  const withinOperating = (schedule.startTime <= schedule.endTime)
+    ? (currentTime >= schedule.startTime && currentTime <= schedule.endTime)
+    : isTimeInRange(currentTime, schedule.startTime, schedule.endTime);
+  if (!withinOperating) return false;
+
+  // Apply daily pause windows if configured
+  const pauses = this.dailyPauseWindows || [];
+  for (const w of pauses) {
+    if (w?.startTime && w?.endTime) {
+      if (isTimeInRange(currentTime, w.startTime, w.endTime)) {
+        return false; // paused now
+      }
+    }
+  }
+
+  return true;
 };
 
 // Method to get next opening time
 timeSettingsSchema.methods.getNextOpeningTime = function() {
   const now = new Date();
-  const currentDay = now.getDay();
+  // Current day-of-week in configured timezone
+  const dowShort = new Intl.DateTimeFormat('en-US', { timeZone: this.timezone, weekday: 'short' }).format(now);
+  const dayIndexMap = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const currentDay = dayIndexMap.indexOf(dowShort);
+  const currentTime = now.toLocaleTimeString('en-US', {
+    hour12: false,
+    timeZone: this.timezone,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
   
   // Check if today has special hours
   const today = now.toLocaleDateString('en-CA', { timeZone: this.timezone });
   const specialDay = this.specialDays.find(day => {
-    const specialDate = new Date(day.date).toLocaleDateString('en-CA');
+    const specialDate = new Date(day.date).toLocaleDateString('en-CA', { timeZone: this.timezone });
     return specialDate === today;
   });
   
@@ -106,6 +153,14 @@ timeSettingsSchema.methods.getNextOpeningTime = function() {
   const schedule = isWeekend ? this.weekend : this.weekday;
   
   if (schedule.isActive) {
+    // If currently within a pause, next opening is pause end today
+    const pauses = this.dailyPauseWindows || [];
+    for (const w of pauses) {
+      if (w?.startTime && w?.endTime && isTimeInRange(currentTime, w.startTime, w.endTime)) {
+        return `Today at ${w.endTime}`;
+      }
+    }
+
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return `${days[currentDay]} at ${schedule.startTime}`;
   }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import axios from 'axios';
+import webSocketService from '../../services/websocketService.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -56,6 +57,19 @@ const WebsiteLiveTimerCompact = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Realtime updates via WebSocket
+  useEffect(() => {
+    if (!webSocketService.isConnected()) {
+      webSocketService.connect(null);
+    }
+    const handleShopStatus = (status) => {
+      setShopStatus(status);
+      setLoading(false);
+    };
+    webSocketService.onShopStatusUpdate(handleShopStatus);
+    return () => webSocketService.offShopStatusUpdate(handleShopStatus);
+  }, []);
+
   // Calculate time remaining
   useEffect(() => {
     if (!shopStatus) return;
@@ -95,13 +109,30 @@ const WebsiteLiveTimerCompact = () => {
   if (loading || !shopStatus) return null;
 
   const isOpen = shopStatus.isOpen;
+  const nextOpenDate = shopStatus?.nextOpenTime ? new Date(shopStatus.nextOpenTime) : null;
+  const closingDate = shopStatus?.closingTime ? new Date(shopStatus.closingTime) : null;
 
-  // Get current Indian time
+  // Get current time in shop timezone
   const currentIndianTime = currentTime.toLocaleTimeString('en-IN', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
+    timeZone: shopStatus?.timezone || 'Asia/Kolkata'
   });
+
+  const formatIndianDateToTime = (dateObj) => {
+    if (!dateObj) return '';
+    try {
+      return dateObj.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: shopStatus?.timezone || 'Asia/Kolkata'
+      });
+    } catch (e) {
+      return '';
+    }
+  };
 
   return (
     <motion.div
@@ -189,6 +220,19 @@ const WebsiteLiveTimerCompact = () => {
                 {/* Breadcrumb separator */}
                 <span className="text-xs font-light" style={{ color: '#d1d5db' }}>•</span>
                 
+                {/* Explicit open/close time on desktop */}
+                <div className="hidden md:flex items-center gap-1 flex-shrink-0">
+                  <span className="text-[10px] font-light" style={{ color: '#6b7280' }}>
+                    {isOpen ? 'Closes at' : 'Opens at'}
+                  </span>
+                  <span className="text-xs font-light tabular-nums" style={{ color: '#1a1a1a' }}>
+                    {isOpen ? formatIndianDateToTime(closingDate) : formatIndianDateToTime(nextOpenDate)}
+                  </span>
+                </div>
+
+                {/* Breadcrumb separator */}
+                <span className="text-xs font-light" style={{ color: '#d1d5db' }}>•</span>
+                
                 {/* Current Time - Desktop only */}
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <Clock className="w-3 h-3" style={{ color: '#6b7280' }} />
@@ -198,6 +242,32 @@ const WebsiteLiveTimerCompact = () => {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Desktop: If no countdown available, still show Opens/Closes at and current time */}
+          {!timeRemaining && (
+            <div className="hidden md:flex items-center gap-3">
+              {/* Explicit open/close time on desktop */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className="text-[10px] font-light" style={{ color: '#6b7280' }}>
+                  {isOpen ? 'Closes at' : 'Opens at'}
+                </span>
+                <span className="text-xs font-light tabular-nums" style={{ color: '#1a1a1a' }}>
+                  {isOpen ? formatIndianDateToTime(closingDate) : formatIndianDateToTime(nextOpenDate)}
+                </span>
+              </div>
+
+              {/* Breadcrumb separator */}
+              <span className="text-xs font-light" style={{ color: '#d1d5db' }}>•</span>
+
+              {/* Current Time - Desktop only */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Clock className="w-3 h-3" style={{ color: '#6b7280' }} />
+                <span className="text-xs font-light tabular-nums" style={{ color: '#6b7280' }}>
+                  {currentIndianTime}
+                </span>
+              </div>
+            </div>
           )}
 
           {/* Right: Operating hours - Mobile only */}

@@ -37,6 +37,7 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
+import { calculateShopStatus } from './utils/shopStatus.js';
 
 // Initialize Express app
 const app = express();
@@ -240,6 +241,27 @@ const startServer = async () => {
     // Make io available globally for use in other files
     global.io = io;
     global.connectedUsers = connectedUsers;
+
+    // Periodically broadcast shop status so clients update without refresh
+    let lastShopStatusSnapshot = null;
+    const broadcastShopStatus = async () => {
+      try {
+        const status = await calculateShopStatus();
+        const asKey = JSON.stringify({
+          isOpen: status.isOpen,
+          nextOpenTime: status.nextOpenTime,
+          closingTime: status.closingTime
+        });
+        if (asKey !== lastShopStatusSnapshot) {
+          lastShopStatusSnapshot = asKey;
+          io.emit('shopStatusUpdate', status);
+        }
+      } catch (e) {
+        // ignore ephemeral failures
+      }
+    };
+    // Run every 5 seconds for near-real-time UX without excessive load
+    setInterval(broadcastShopStatus, 5000);
 
     // Health check endpoint
     app.get('/health', (req, res) => {
