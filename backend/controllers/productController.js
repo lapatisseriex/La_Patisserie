@@ -482,6 +482,9 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   try {
     console.log(`Attempting to delete product with ID: ${req.params.id}`);
     
+    // Clear cache immediately to prevent stale data
+    cache.clear();
+    
     const product = await Product.findById(req.params.id);
     
     if (!product) {
@@ -533,13 +536,20 @@ export const deleteProduct = asyncHandler(async (req, res) => {
     
     console.log(`Product ${req.params.id} deleted successfully`);
     
-    // Clear cache after deleting product to ensure fresh data on next fetch
+    // Clear cache again after deleting product to ensure fresh data on next fetch
     cache.clear();
     
-    res.status(200).json({ message: 'Product removed successfully' });
+    res.status(200).json({ 
+      success: true,
+      message: 'Product removed successfully',
+      deletedProductId: req.params.id 
+    });
     
   } catch (error) {
     console.error(`Error deleting product ${req.params.id}:`, error);
+    
+    // Clear cache even on error to prevent stale data
+    cache.clear();
     
     // More specific error handling
     if (error.name === 'CastError') {

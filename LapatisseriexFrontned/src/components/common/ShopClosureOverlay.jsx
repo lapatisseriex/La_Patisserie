@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, AlertCircle } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useShopStatus } from '../../context/ShopStatusContext';
 
 const ShopClosureOverlay = ({ 
@@ -38,25 +38,51 @@ const ShopClosureOverlay = ({
 
       case 'page':
         return (
-          <div className={`min-h-screen bg-gray-50 flex items-center justify-center ${className}`}>
-            <div className="max-w-md mx-auto text-center p-8">
-              <div className="bg-white rounded-xl shadow-lg p-8">
-                <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Shop Currently Closed</h2>
-                <p className="text-gray-600 mb-4">
-                  We're currently closed and not accepting orders.
+          <div className={`min-h-screen  px-6 py-12 font-['Quicksand',sans-serif] sm:px-10 lg:px-16 ${className}`}>
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-12">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <img src="/images/logo.png" alt="La Patisserie" className="h-12 w-auto" />
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#733857]">
+                  La Patisserie
                 </p>
-                {formattedOpen && (
-                  <p className="text-sm text-gray-500">
-                    We'll reopen <span className="font-medium text-gray-700">{formattedOpen}</span>
+              </div>
+
+              <div className="grid items-center gap-10 md:grid-cols-[minmax(0,1fr),minmax(0,1fr)] md:gap-12">
+                <img
+                  src="/images/closed.png"
+                  alt="Shop temporarily closed illustration"
+                  className="w-full max-w-md justify-self-center md:max-w-lg md:justify-self-start"
+                  loading="lazy"
+                />
+
+                <div className="w-full  p-8 text-center sm:p-10 md:text-left">
+                  <h2 className="text-2xl font-semibold uppercase tracking-[0.2em] text-[#1a1a1a] sm:text-3xl">
+                    We&apos;re taking a short pause
+                  </h2>
+                  <p className="mt-4 text-sm leading-relaxed text-[#6f5260] sm:text-base">
+                    Our dessert kitchen is currently closed for orders while we prep the next batch of sweet creations.
+                    Thank you for your patience!
                   </p>
-                )}
-                <button 
-                  onClick={() => window.location.href = '/'}
-                  className="mt-4 bg-pink-500 text-white px-6 py-2 rounded-lg hover:bg-pink-600 transition-colors"
-                >
-                  Back to Home
-                </button>
+                  {formattedOpen && (
+                    <p className="mt-6 text-xs font-semibold uppercase tracking-[0.22em] text-[#8d4466]">
+                      Back whisks up at <span className="text-[#733857]">{formattedOpen}</span>
+                    </p>
+                  )}
+                  <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start">
+                    <button
+                      onClick={() => window.location.href = '/'}
+                      className="w-full border border-[#733857] px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#733857] transition hover:bg-[#733857] hover:text-white sm:w-auto"
+                    >
+                      Browse the collection
+                    </button>
+                    <button
+                      onClick={() => window.location.href = '/newsletter'}
+                      className="w-full border border-transparent bg-[#733857] px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-[#5e2c46] sm:w-auto"
+                    >
+                      Notify me when open
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

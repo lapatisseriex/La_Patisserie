@@ -61,10 +61,10 @@ function isTimeInRange(current, start, end) {
   // current, start, end are strings 'HH:MM'
   if (start === end) return true; // 24h pause if identical
   if (start < end) {
-    return current >= start && current <= end;
+    return current >= start && current < end;
   } else {
     // Wraps midnight: e.g., 23:00 - 02:00
-    return current >= start || current <= end;
+    return current >= start || current < end;
   }
 }
 
@@ -94,7 +94,7 @@ timeSettingsSchema.methods.isShopOpen = function() {
   if (specialDay) {
     if (specialDay.isClosed) return false;
     if (specialDay.startTime && specialDay.endTime) {
-      return currentTime >= specialDay.startTime && currentTime <= specialDay.endTime;
+      return currentTime >= specialDay.startTime && currentTime < specialDay.endTime;
     }
   }
   
@@ -106,7 +106,7 @@ timeSettingsSchema.methods.isShopOpen = function() {
 
   // Within base operating hours?
   const withinOperating = (schedule.startTime <= schedule.endTime)
-    ? (currentTime >= schedule.startTime && currentTime <= schedule.endTime)
+    ? (currentTime >= schedule.startTime && currentTime < schedule.endTime)
     : isTimeInRange(currentTime, schedule.startTime, schedule.endTime);
   if (!withinOperating) return false;
 

@@ -12,7 +12,7 @@ import { toast } from 'react-toastify';
  * AdminProducts component for managing products in admin dashboard
  */
 const AdminProducts = () => {
-  const { products, loading, error, fetchProducts, deleteProduct, getProduct } = useProduct();
+  const { products, loading, error, fetchProducts, refreshProducts, deleteProduct, getProduct } = useProduct();
   const { categories, fetchCategories } = useCategory();
   const { closeSidebarIfOpen, closeSidebarForModal, isSidebarOpen, isMobile } = useSidebar();
   const location = useLocation();
@@ -105,12 +105,13 @@ const AdminProducts = () => {
     if (!selectedCategory && !selectedStatus && !searchQuery && !priceMin && !priceMax) {
       // No filters active - sync directly with ProductContext
       if (products && products.length >= 0) { // Changed from > 0 to >= 0 to handle empty arrays
+        console.log('📋 Syncing product list with ProductContext:', products.length, 'products');
         setProductList(products);
         setProductCount(products.length);
       }
     } else {
-      // Filters are active - the loadProducts function will handle the refresh
-      // This ensures we don't override filtered results with unfiltered ProductContext data
+      // Filters are active - but still update count if possible
+      console.log('📋 Filters active, not syncing directly with ProductContext');
     }
   }, [products, selectedCategory, selectedStatus, searchQuery, priceMin, priceMax]);
 
@@ -344,9 +345,14 @@ const AdminProducts = () => {
     // Ensure ?edit is cleared so the modal doesn't auto-reopen
     clearEditParam();
     
-    // Always refresh products after form close to ensure immediate display
-    // This ensures new products show up immediately regardless of filters
-    await loadProducts(selectedCategory, selectedStatus, priceMin, priceMax, searchQuery, page);
+    // Add a small delay to ensure ProductContext state is updated first
+    setTimeout(async () => {
+      console.log('🔄 Refreshing products after form close...');
+      // Force refresh from server to ensure new products are visible
+      await refreshProducts({ isActive: 'all' });
+      // Then load products with current filters
+      await loadProducts(selectedCategory, selectedStatus, priceMin, priceMax, searchQuery, page);
+    }, 100);
   };
 
   // Clear all filters and close panel

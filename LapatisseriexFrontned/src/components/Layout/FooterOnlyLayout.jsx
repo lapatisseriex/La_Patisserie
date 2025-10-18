@@ -5,7 +5,7 @@ import Footer from '../Footer/Footer';
 const FooterOnlyLayout = () => {
   return (
     <>
-      <main className="min-h-screen bg-white transition-all duration-300">
+      <main data-no-padding="true" className="min-h-screen bg-white transition-all duration-300">
         <Outlet />
       </main>
       <Footer />

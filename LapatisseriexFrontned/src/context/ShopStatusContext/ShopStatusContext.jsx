@@ -22,6 +22,7 @@ export const ShopStatusProvider = ({ children }) => {
     closingTime: null,
     currentTime: null,
     timezone: 'Asia/Kolkata',
+    operatingHours: null,
     loading: true
   });
   
@@ -86,6 +87,7 @@ export const ShopStatusProvider = ({ children }) => {
           closingTime: s.closingTime || null,
           currentTime: s.currentTime || null,
           timezone: s.timezone || 'Asia/Kolkata',
+          operatingHours: s.operatingHours || null,
           loading: false
         };
         
@@ -132,6 +134,7 @@ export const ShopStatusProvider = ({ children }) => {
         closingTime: status.closingTime || null,
         currentTime: status.currentTime || null,
         timezone: status.timezone || 'Asia/Kolkata',
+        operatingHours: status.operatingHours || null,
         loading: false
       };
       setShopStatus(newStatus);

@@ -91,11 +91,14 @@ export const ProductProvider = ({ children }) => {
 
   // Fetch all products with filtering options
   const fetchProducts = useCallback(async (filters = {}) => {
+    // Extract forceRefresh flag and remove it from filters before building query
+    const { forceRefresh = false, ...actualFilters } = filters;
+    
     // Build query parameters for filtering
     const queryParams = new URLSearchParams();
     
     // Add filters to query params
-    Object.entries(filters).forEach(([key, value]) => {
+    Object.entries(actualFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         queryParams.append(key, value);
       }
@@ -120,9 +123,9 @@ export const ProductProvider = ({ children }) => {
         }
       }
       
-      // Only bypass cache for admin views, keep cache for category pages
-      const isAdminView = filters.isActive === 'all';
-      const shouldBypassCache = isAdminView;
+      // Only bypass cache for admin views or when forceRefresh is true
+      const isAdminView = actualFilters.isActive === 'all';
+      const shouldBypassCache = isAdminView || forceRefresh;
       
       // Improved caching: category pages now use cache for 5 minutes (300000ms)
       const CACHE_TIMEOUT = 300000; // 5 minutes
@@ -442,19 +445,38 @@ export const ProductProvider = ({ children }) => {
         }
       );
       
-      // Clear cache after creating to ensure fresh data on next fetch
-      // Find cache keys that start with 'products-' and clear them
-      for (const key of requestCache.current.keys()) {
-        if (key.startsWith('products-')) {
-          requestCache.current.delete(key);
-        }
-      }
+      console.log('✅ Product created successfully:', response.data);
       
-      // Also clear localStorage/sessionStorage product caches
+      // Clear ALL caches to ensure fresh data
+      requestCache.current.clear();
+      productCache.current.clear();
+      requestInProgress.current.clear();
+      productRequestMap.current.clear();
       CacheManager.clearProductCache();
       
-      // Update products in state immediately without making another API call
-      setProducts(prev => [...prev, response.data]);
+      // Immediately update products state with the new product
+      const newProduct = response.data;
+      setProducts(prev => {
+        // Check if product already exists to avoid duplicates
+        const exists = prev.some(p => p._id === newProduct._id);
+        if (exists) {
+          console.log('Product already exists in state, updating...');
+          return prev.map(p => p._id === newProduct._id ? newProduct : p);
+        } else {
+          console.log('Adding new product to state...');
+          return [...prev, newProduct];
+        }
+      });
+      
+      // Also cache the new product individually for immediate access
+      if (newProduct._id) {
+        productCache.current.set(newProduct._id, {
+          data: newProduct,
+          timestamp: Date.now()
+        });
+      }
+      
+      console.log('✅ Product state updated and cached');
       
       return response.data;
     } catch (err) {
@@ -494,19 +516,28 @@ export const ProductProvider = ({ children }) => {
         }
       );
       
-      // Clear cache after updating to ensure fresh data on next fetch
-      // Find cache keys that start with 'products-' and clear them
-      for (const key of requestCache.current.keys()) {
-        if (key.startsWith('products-')) {
-          requestCache.current.delete(key);
-        }
-      }
+      console.log('✅ Product updated successfully:', response.data);
       
-      // Also clear localStorage/sessionStorage product caches
+      // Clear ALL caches to ensure fresh data
+      requestCache.current.clear();
+      productCache.current.clear();
+      requestInProgress.current.clear();
+      productRequestMap.current.clear();
       CacheManager.clearProductCache();
       
-      // Update product in state immediately without making another API call
-      setProducts(prev => prev.map(p => p._id === productId ? response.data : p));
+      // Update product in state immediately
+      const updatedProduct = response.data;
+      setProducts(prev => prev.map(p => p._id === productId ? updatedProduct : p));
+      
+      // Also update the individual product cache
+      if (updatedProduct._id) {
+        productCache.current.set(updatedProduct._id, {
+          data: updatedProduct,
+          timestamp: Date.now()
+        });
+      }
+      
+      console.log('✅ Product state updated and cached');
       
       return response.data;
     } catch (err) {
@@ -587,12 +618,8 @@ export const ProductProvider = ({ children }) => {
       
       console.log(`Product deletion response:`, response.data);
       
-      // Clear cache to ensure fresh data on next fetch
-      for (const key of requestCache.current.keys()) {
-        if (key.startsWith('products-')) {
-          requestCache.current.delete(key);
-        }
-      }
+      // Clear ALL cache to ensure fresh data
+      requestCache.current.clear();
       
       // Update products list in state to remove the deleted product
       setProducts(prev => prev.filter(product => product._id !== productId));
@@ -600,8 +627,12 @@ export const ProductProvider = ({ children }) => {
       // Also update Redux store to keep everything in sync
       dispatch(removeProduct(productId));
       
-      console.log(`Product ${productId} deleted successfully from frontend state`);
+      // Force refresh products from server to ensure consistency
+      await fetchProducts({ isActive: 'all', clearCache: true });
       
+      console.log(`Product ${productId} deleted successfully and data refreshed`);
+      
+      setLoading(false);
       return true;
     } catch (err) {
       console.error(`Error deleting product ${productId}:`, err);
@@ -630,12 +661,28 @@ export const ProductProvider = ({ children }) => {
     }
   }, [API_URL, dispatch]);
   
+  // Force refresh products from server (useful after mutations)
+  const refreshProducts = useCallback(async (filters = {}) => {
+    // Clear all caches to ensure fresh data
+    requestCache.current.clear();
+    productCache.current.clear();
+    requestInProgress.current.clear();
+    productRequestMap.current.clear();
+    CacheManager.clearProductCache();
+    
+    console.log('🔄 Force refreshing products from server...');
+    
+    // Fetch fresh data from server
+    return await fetchProducts({ ...filters, forceRefresh: true });
+  }, [fetchProducts]);
+
   // Context value
   const value = {
     products,
     loading,
     error,
     fetchProducts,
+    refreshProducts,
     getProduct,
     createProduct,
     updateProduct,

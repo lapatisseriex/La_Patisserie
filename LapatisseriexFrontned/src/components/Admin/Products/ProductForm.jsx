@@ -65,7 +65,7 @@ const useAdminSidebar = () => {
  * Form for creating or editing a product
  */
 const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
-  const { createProduct, updateProduct, fetchProducts } = useProduct();
+  const { createProduct, updateProduct, fetchProducts, refreshProducts } = useProduct();
   const { categories, fetchCategories } = useCategory();
   const { isSidebarOpen, isMobile } = useAdminSidebar();
   const [isEditing] = useState(!!product);
@@ -333,8 +333,10 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       if (isEditing) await updateProduct(product._id, finalData);
       else await createProduct(finalData);
 
-      // Force refresh products to ensure immediate display
-      await fetchProducts({ isActive: 'all' });
+      console.log('✅ Product saved successfully, refreshing product list...');
+      
+      // Force refresh products to ensure immediate display with fresh server data
+      await refreshProducts({ isActive: 'all' });
 
       setSuccess(true);
       setTimeout(() => onClose(), 1500);

@@ -75,7 +75,13 @@ main {
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: white;
-  padding-top: env(safe-area-inset-top, 0);
+  padding-top: 0 !important;
+  margin: 0 !important;
+}
+
+html {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* Admin pages: remove any body top padding (including safe-area) so the mobile header is flush */
@@ -422,4 +428,25 @@ body.admin-layout main {
   scroll-behavior: smooth;
 }
 
+/* Payment page: Ensure no top spacing - using data attribute for specificity */
+main[data-no-padding="true"] {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  position: relative;
+}
+
+main[data-no-padding="true"] > * {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 767px) {
+  main[data-no-padding="true"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+  
+  main[data-no-padding="true"] > * {
+    margin-top: 0 !important;
+  }
+}
 

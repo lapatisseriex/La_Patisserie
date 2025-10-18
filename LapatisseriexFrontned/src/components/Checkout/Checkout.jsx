@@ -246,10 +246,10 @@ const Checkout = () => {
             <div className="mx-auto flex h-24 w-24 items-center justify-center border border-[#733857]/20">
               <Package className="w-10 h-10 text-[#733857]" />
             </div>
-            <h2 className="text-3xl font-light tracking-wide text-[#1a1a1a]">
+            <h2 className="text-3xl font-light tracking-wide text-[#733857]">
               Your cart is empty
             </h2>
-            <p className="text-sm text-gray-500 max-w-md mx-auto">
+            <p className="text-sm text-[#733857]/70 max-w-md mx-auto">
               Add some delicious items before heading to checkout.
             </p>
             <button
@@ -266,7 +266,7 @@ const Checkout = () => {
             {/* Order Summary - Shows FIRST on mobile, SECOND on desktop */}
             <div className="order-1 lg:order-2 lg:sticky lg:top-4 h-fit border-none shadow-none">
               <div className="p-8 border-none shadow-none">
-                <h2 className="text-xl font-semibold text-gray-900 mb-8">Order Summary</h2>
+                <h2 className="text-xl font-semibold text-[#733857] mb-8">Order Summary</h2>
 
                 {/* Cart Items */}
                 <div className="space-y-6 mb-8 max-h-96 overflow-y-auto pt-2 pr-2">
@@ -344,9 +344,7 @@ const Checkout = () => {
                             <div className="text-xl font-semibold text-gray-900">{formatCurrency(totals.finalTotal)}</div>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-500 text-right -mt-1">
-                          Including ₹{((totals.finalTotal * 0.05).toFixed(2))} in taxes
-                        </div>
+                      
                       </>
                     );
                   })()}
@@ -369,7 +367,7 @@ const Checkout = () => {
               {/* Contact Information */}
               <div className="bg-transparent p-0 shadow-none border-b border-gray-100 pb-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Contact Information</h2>
+                  <h2 className="text-xl font-semibold text-[#733857]">Contact Information</h2>
                   {!isEditMode && (
                     <button
                       onClick={() => setIsEditMode(true)}
@@ -383,38 +381,38 @@ const Checkout = () => {
                 
                 {/* Phone */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#733857] mb-2">
                     Phone number
                   </label>
                   <input
                     type="text"
                     value={user?.phone || ''}
                     readOnly
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900"
                   />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#733857] mb-2">
                     Email address
                   </label>
                   <input
                     type="email"
                     value={user?.email || email}
                     readOnly
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900"
                   />
                 </div>
               </div>
 
               {/* Delivery */}
               <div className="bg-transparent p-0 shadow-none">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery</h2>
+                <h2 className="text-lg font-semibold text-[#733857] mb-4">Delivery</h2>
                 
                 {/* Name */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#733857] mb-2">
                     Full Name
                   </label>
                   <input
@@ -425,14 +423,14 @@ const Checkout = () => {
                     className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${
                       isEditMode 
                         ? 'bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent' 
-                        : 'bg-white text-gray-700'
+                        : 'bg-white text-gray-900'
                     }`}
                   />
                 </div>
 
                 {/* Location */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#733857] mb-2">
                     Delivery Location
                   </label>
                   {isEditMode ? (
@@ -471,7 +469,7 @@ const Checkout = () => {
                         return locationName;
                       })()}
                       readOnly
-                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 ${!user?.location ? 'border-red-300' : ''}`}
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.location ? 'border-red-300' : ''}`}
                     />
                   )}
                   {!user?.location && !isEditMode && (
@@ -483,7 +481,7 @@ const Checkout = () => {
 
                 {/* Hostel */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#733857] mb-2">
                     Hostel/Residence
                   </label>
                   {isEditMode ? (
@@ -510,7 +508,7 @@ const Checkout = () => {
                       type="text"
                       value={user?.hostel?.name || 'Not set'}
                       readOnly
-                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 ${!user?.hostel ? 'border-red-300' : ''}`}
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.hostel ? 'border-red-300' : ''}`}
                     />
                   )}
                   {!user?.hostel && !isEditMode && (
@@ -526,7 +524,7 @@ const Checkout = () => {
                     <button
                       onClick={handleCancelEdit}
                       disabled={saving}
-                      className="flex-1 px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 font-light touch-manipulation"
+                      className="flex-1 px-6 py-3 text-[#733857] bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 font-light touch-manipulation"
                       style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                     >
                       Cancel
