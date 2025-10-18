@@ -1,0 +1,4 @@
+// Oreo Tiramisu Banner - Place this image in your public folder as 'oreo-tiramisu-banner.jpg'
+// This is a placeholder - you should replace this with the actual banner image
+
+// For now, let's update the advertisement data to use a different approach

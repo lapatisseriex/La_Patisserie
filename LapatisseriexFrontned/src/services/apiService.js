@@ -270,7 +270,7 @@ api.interceptors.response.use(
           localStorage.removeItem('authToken');
           localStorage.removeItem('cachedUser');
           
-          // Dispatch a custom event that AuthContext can listen for
+          // Dispatch a custom event that auth components can listen for
           const authExpiredEvent = new CustomEvent('auth:expired');
           window.dispatchEvent(authExpiredEvent);
         }

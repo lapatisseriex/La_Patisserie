@@ -10,8 +10,21 @@ const ProductContext = createContext();
 
 const PRODUCT_CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
-export const useProduct = () => useContext(ProductContext);
-export const useProducts = () => useContext(ProductContext); // Alias for backward compatibility
+export const useProduct = () => {
+  const context = useContext(ProductContext);
+  if (!context) {
+    throw new Error('useProduct must be used within a ProductProvider. Make sure your component is wrapped with ProductProvider.');
+  }
+  return context;
+};
+
+export const useProducts = () => {
+  const context = useContext(ProductContext);
+  if (!context) {
+    throw new Error('useProducts must be used within a ProductProvider. Make sure your component is wrapped with ProductProvider.');
+  }
+  return context;
+};
 
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState([]);

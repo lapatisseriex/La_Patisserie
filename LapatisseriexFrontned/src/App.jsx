@@ -66,7 +66,7 @@ import Newsletter from './components/Newsletter/Newsletter';
 import NewAuthModal from './components/Auth/NewAuthModal/NewAuthModal';
 
 // Common Components
-import DataSyncHandler from './components/common/DataSyncHandler';
+
 
 // Context Providers
 import { useAuth } from './hooks/useAuth';
@@ -152,7 +152,7 @@ function App() {
                           draggable
                         />
                         {/* Data Sync Handler - ensures user state stays synchronized */}
-                        <DataSyncHandler />
+                       
                         {/* Auth Modal - available on all pages */}
                         <NewAuthModal />
                         <Routes>

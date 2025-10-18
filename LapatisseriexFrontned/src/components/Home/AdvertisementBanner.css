@@ -1,0 +1,100 @@
+/* AdvertisementBanner Mobile Optimizations */
+
+.advertisement-banner {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.advertisement-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Mobile specific optimizations */
+@media (max-width: 640px) {
+  .advertisement-banner {
+    aspect-ratio: 2/1;
+  }
+  
+  .advertisement-banner img {
+    object-position: center center;
+    object-fit: cover;
+  }
+  
+  /* Ensure text is readable on mobile */
+  .advertisement-banner .overlay-text {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 0.5rem;
+    backdrop-filter: blur(4px);
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 768px) {
+  .advertisement-banner {
+    aspect-ratio: 5/2;
+  }
+  
+  .advertisement-banner img {
+    object-position: center center;
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 769px) {
+  .advertisement-banner {
+    aspect-ratio: 3/1;
+  }
+  
+  .advertisement-banner img {
+    object-position: center center;
+  }
+}
+
+/* Prevent horizontal scroll issues */
+.advertisement-banner-container {
+  width: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Improve text readability on banners */
+.banner-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.3) 0%,
+    transparent 50%,
+    transparent 100%
+  );
+}
+
+.banner-text {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+/* Responsive aspect ratios */
+.aspect-mobile {
+  aspect-ratio: 2/1;
+}
+
+.aspect-tablet {
+  aspect-ratio: 5/2;
+}
+
+.aspect-desktop {
+  aspect-ratio: 3/1;
+}
+
+/* Fix any overflow issues */
+.no-overflow {
+  overflow: hidden;
+  max-width: 100%;
+}
