@@ -12,6 +12,7 @@ import Payment from '../models/paymentModel.js';
 import Notification from '../models/notificationModel.js';
 import { sendOrderStatusNotification, sendOrderConfirmationEmail } from '../utils/orderEmailService.js';
 import { createNotification } from './notificationController.js';
+import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
 
 // Initialize Razorpay with validation
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -313,6 +314,33 @@ export const createOrder = asyncHandler(async (req, res) => {
       }
     }
 
+    // Normalize cart items with latest variant snapshots
+    const normalizedCartItems = await Promise.all((cartItems || []).map(async (item) => {
+      try {
+        const product = await Product.findById(item.productId).select('variants name');
+        const { variant, variantLabel, variantIndex } = resolveVariantInfoForItem(item, product);
+
+        return {
+          ...item,
+          variantIndex,
+          variant: item.variant || variant || null,
+          variantLabel: item.variantLabel || variantLabel || '',
+          price: Number(item.price) || 0,
+          originalPrice: Number(item.originalPrice) || Number(item.price) || 0
+        };
+      } catch (variantError) {
+        console.error(`Error resolving variant for product ${item.productId}:`, variantError.message);
+        return {
+          ...item,
+          variantIndex: Number.isInteger(item?.variantIndex) ? item.variantIndex : 0,
+          variant: item.variant || null,
+          variantLabel: item.variantLabel || '',
+          price: Number(item.price) || 0,
+          originalPrice: Number(item.originalPrice) || Number(item.price) || 0
+        };
+      }
+    }));
+
     // Create order in database
     // For online payments: Set orderStatus to 'pending' until payment is verified
     // For COD: Set orderStatus to 'placed' immediately since payment is guaranteed
@@ -325,7 +353,7 @@ export const createOrder = asyncHandler(async (req, res) => {
       paymentMethod,
       paymentStatus: paymentMethod === 'cod' ? 'pending' : 'created',
       orderStatus: paymentMethod === 'cod' ? 'placed' : 'pending', // ✅ Don't mark as 'placed' until payment verified
-      cartItems,
+      cartItems: normalizedCartItems,
       userDetails,
       deliveryLocation,
       hostelName,
@@ -973,21 +1001,28 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
     const enrichedCartItems = await Promise.all(order.cartItems.map(async (item) => {
       try {
         const Product = (await import('../models/productModel.js')).default;
-        const product = await Product.findById(item.productId).select('name images category description');
-        
+        const product = await Product.findById(item.productId).select('name images category description variants');
+
+        const plainItem = typeof item.toObject === 'function' ? item.toObject() : { ...item };
+        const { variant, variantLabel } = resolveVariantInfoForItem(plainItem, product);
+
         return {
-          ...item.toObject(),
+          ...plainItem,
           productImage: product?.images?.[0] || null,
           productCategory: product?.category || null,
-          productDescription: product?.description || null
+          productDescription: product?.description || null,
+          variant: variant || plainItem.variant || null,
+          variantLabel: variantLabel || plainItem.variantLabel || ''
         };
       } catch (error) {
         console.error(`Error fetching product details for ${item.productId}:`, error);
         return {
-          ...item.toObject(),
+          ...(typeof item.toObject === 'function' ? item.toObject() : { ...item }),
           productImage: null,
           productCategory: null,
-          productDescription: null
+          productDescription: null,
+          variant: null,
+          variantLabel: ''
         };
       }
     }));
@@ -1054,19 +1089,26 @@ export const getUserOrders = asyncHandler(async (req, res) => {
       const enrichedCartItems = await Promise.all(order.cartItems.map(async (item) => {
         try {
           const Product = (await import('../models/productModel.js')).default;
-          const product = await Product.findById(item.productId).select('name images category');
-          
+          const product = await Product.findById(item.productId).select('name images category variants');
+
+          const plainItem = typeof item.toObject === 'function' ? item.toObject() : { ...item };
+          const { variant, variantLabel } = resolveVariantInfoForItem(plainItem, product);
+
           return {
-            ...item.toObject(),
+            ...plainItem,
             productImage: product?.images?.[0] || null,
-            productCategory: product?.category || null
+            productCategory: product?.category || null,
+            variant: variant || plainItem.variant || null,
+            variantLabel: variantLabel || plainItem.variantLabel || ''
           };
         } catch (error) {
           console.error(`Error fetching product details for ${item.productId}:`, error);
           return {
-            ...item.toObject(),
+            ...(typeof item.toObject === 'function' ? item.toObject() : { ...item }),
             productImage: null,
-            productCategory: null
+            productCategory: null,
+            variant: null,
+            variantLabel: ''
           };
         }
       }));

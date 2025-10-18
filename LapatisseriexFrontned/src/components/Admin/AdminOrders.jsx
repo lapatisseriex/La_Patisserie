@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa';
 import { BsCashCoin } from 'react-icons/bs';
 import { toast } from 'react-hot-toast';
+import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -29,6 +30,55 @@ const AdminOrders = () => {
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [deliveryLoading, setDeliveryLoading] = useState({});
   const [deliverySuccess, setDeliverySuccess] = useState({});
+
+  const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K';
+
+  const getItemImage = (item = {}) => {
+    const sources = [
+      item.image,
+      Array.isArray(item.images) && item.images[0],
+      item.productImage,
+      item.product?.image,
+      Array.isArray(item.product?.images) && item.product.images[0],
+      item.productDetails?.image,
+      Array.isArray(item.productDetails?.images) && item.productDetails.images[0]
+    ];
+
+    return sources.find(Boolean) || placeholderImage;
+  };
+
+  const getVariantDisplay = (item = {}) => {
+    const productRef = item.productDetails || item.product || {};
+    const variants = Array.isArray(productRef?.variants)
+      ? productRef.variants
+      : Array.isArray(item?.variants)
+        ? item.variants
+        : [];
+
+    const variantIndex = Number.isInteger(item?.variantIndex)
+      ? item.variantIndex
+      : Number.isInteger(productRef?.variantIndex)
+        ? productRef.variantIndex
+        : 0;
+
+    const variantFromArray = variants?.[variantIndex];
+    const selectedVariant =
+      item?.selectedVariant ||
+      productRef?.selectedVariant ||
+      item?.variant ||
+      variantFromArray;
+
+    const variantLabel = resolveOrderItemVariantLabel({
+      ...item,
+      variants,
+      variantIndex,
+      variant: item?.variant || selectedVariant || variantFromArray,
+      selectedVariant,
+      variantLabel: item?.variantLabel || productRef?.variantLabel
+    });
+
+    return variantLabel || '';
+  };
 
   // Status color mapping
   const getStatusColor = (status) => {
@@ -431,6 +481,7 @@ const AdminOrders = () => {
                             <div className="text-gray-500">
                               Total: {order.cartItems.length} items
                             </div>
+                           
                           </>
                         ) : (
                           <span className="text-gray-400">No items</span>
@@ -596,62 +647,81 @@ const AdminOrders = () => {
                       const deliveryKey = `${selectedOrder._id}-${item.productName}`;
                       const isDelivering = deliveryLoading[deliveryKey];
                       const isDelivered = deliverySuccess[deliveryKey];
-                      
+                      const variantLabel = getVariantDisplay(item);
+                      const imageSrc = getItemImage(item);
+
                       return (
                         <div key={index} className={`flex justify-between items-center p-3 rounded-lg border ${
                           dispatchStatus === 'delivered' ? 'bg-green-50 border-green-200' :
                           dispatchStatus === 'dispatched' ? 'bg-purple-50 border-purple-200' :
                           'bg-orange-50 border-orange-200'
                         }`}>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-1 text-xs font-medium rounded ${
-                                dispatchStatus === 'delivered' ? 'bg-green-100 text-green-800' :
-                                dispatchStatus === 'dispatched' ? 'bg-purple-100 text-purple-800' :
-                                'bg-orange-100 text-orange-800'
-                              }`}>
-                                {dispatchStatus === 'delivered' ? 'DELIVERED' :
-                                 dispatchStatus === 'dispatched' ? 'DISPATCHED' :
-                                 'PENDING'}
-                              </span>
-                              <div className="font-medium">{item.productName}</div>
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-14 h-14 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-100">
+                              <img
+                                src={imageSrc}
+                                alt={item.productName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = placeholderImage;
+                                }}
+                              />
                             </div>
-                            <div className="text-sm text-gray-500 mt-1">
-                              Quantity: {item.quantity} | Unit Price: {formatCurrency(item.price)}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                  dispatchStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                                  dispatchStatus === 'dispatched' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-orange-100 text-orange-800'
+                                }`}>
+                                  {dispatchStatus === 'delivered' ? 'DELIVERED' :
+                                   dispatchStatus === 'dispatched' ? 'DISPATCHED' :
+                                   'PENDING'}
+                                </span>
+                                <div className="font-medium truncate">{item.productName}</div>
+                              </div>
+                              <div className="text-sm text-gray-600 truncate">
+                                Qty: {item.quantity} • Unit Price: {formatCurrency(item.price)}
+                              </div>
+                              {variantLabel && (
+                                <div className="text-xs text-gray-500 truncate mt-1">
+                                  Variant: {variantLabel}
+                                </div>
+                              )}
+                              {item.dispatchedAt && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  Dispatched: {new Date(item.dispatchedAt).toLocaleString('en-IN', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              )}
+                              {item.deliveredAt && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  Delivered: {new Date(item.deliveredAt).toLocaleString('en-IN', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              )}
                             </div>
-                            {item.dispatchedAt && (
-                              <div className="text-xs text-gray-400 mt-1">
-                                Dispatched: {new Date(item.dispatchedAt).toLocaleString('en-IN', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </div>
-                            )}
-                            {item.deliveredAt && (
-                              <div className="text-xs text-gray-400 mt-1">
-                                Delivered: {new Date(item.deliveredAt).toLocaleString('en-IN', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </div>
-                            )}
                           </div>
-                          
+
                           <div className="flex items-center gap-3">
                             <div className="font-medium">{formatCurrency(item.price * item.quantity)}</div>
-                            
-                            {/* Delivery Button for Dispatched Items */}
+
                             {dispatchStatus === 'dispatched' && (
                               <button
                                 onClick={() => markAsDelivered(selectedOrder._id, item.productName, item.categoryName)}
                                 disabled={isDelivering || isDelivered}
                                 className={`px-3 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1 ${
-                                  isDelivered 
-                                    ? 'bg-emerald-500 text-white cursor-default' 
+                                  isDelivered
+                                    ? 'bg-emerald-500 text-white cursor-default'
                                     : 'bg-green-600 hover:bg-green-700 text-white disabled:opacity-50'
                                 }`}
                               >
@@ -670,14 +740,13 @@ const AdminOrders = () => {
                                 )}
                               </button>
                             )}
-                            
-                            {/* Status Display for Other Items */}
+
                             {dispatchStatus === 'delivered' && (
                               <div className="px-3 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
                                 ✅ Completed
                               </div>
                             )}
-                            
+
                             {dispatchStatus === 'pending' && (
                               <div className="px-3 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">
                                 📦 Pending
@@ -706,10 +775,7 @@ const AdminOrders = () => {
                       <span>Delivery Charge:</span>
                       <span>{formatCurrency(selectedOrder.orderSummary?.deliveryCharge)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Tax:</span>
-                      <span>{formatCurrency(selectedOrder.orderSummary?.taxAmount)}</span>
-                    </div>
+                  
                     {selectedOrder.orderSummary?.couponDiscount > 0 && (
                       <div className="flex justify-between text-red-600">
                         <span>Coupon Discount:</span>

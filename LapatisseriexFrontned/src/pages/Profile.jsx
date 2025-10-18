@@ -545,38 +545,23 @@ const ProfilePage = () => {
             
             {recentlyViewedLoading ? (
               <div className="text-center py-6 md:py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#733857] mx-auto"></div>
                 <p className="mt-4 text-gray-600">Loading recently viewed items...</p>
               </div>
             ) : validRecentlyViewed.length === 0 ? (
-              <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 md:p-10 text-center shadow-md">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                  <Eye className="h-10 w-10 text-gray-500" />
+              <div className="text-center py-12">
+                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center border border-[#733857]/20">
+                  <Eye className="h-10 w-10 text-[#733857]" />
                 </div>
-                <h4 className="text-xl font-medium text-black mb-3">No Recently Viewed Items</h4>
-                <p className="text-gray-600 mb-6">Start browsing our delicious collection to see your recently viewed products here</p>
-                <style>{`
-                  .browse-products-btn span {
-                    background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                    -webkit-background-clip: text;
-                    background-clip: text;
-                    color: transparent;
-                    transition: all 0.3s ease;
-                  }
-                  .browse-products-btn:hover span {
-                    color: white !important;
-                    background: none !important;
-                    -webkit-background-clip: unset !important;
-                    background-clip: unset !important;
-                  }
-                `}</style>
+                <h4 className="text-3xl font-light tracking-wide text-[#1a1a1a] mb-3">No recently viewed items</h4>
+                <p className="text-sm text-gray-500 mb-8 max-w-md mx-auto">
+                  Browse our collection to see your recently viewed products here.
+                </p>
                 <Link 
                   to="/products" 
-                  className="browse-products-btn inline-flex items-center px-6 py-3 bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors shadow-md font-medium transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
                 >
-                  <span className="transition-all duration-300">
-                    Start Browsing
-                  </span>
+                  Start Browsing
                 </Link>
               </div>
             ) : (
@@ -1110,34 +1095,19 @@ const ProfilePage = () => {
                 </div>
               </div>
             ) : !favorites || favorites.length === 0 ? (
-              <div className="bg-gray-50 border border-gray-200 p-10 text-center shadow-md">
-                <div className="w-20 h-20 bg-white flex items-center justify-center mx-auto mb-6 border border-gray-200 shadow-md">
-                  <Heart className="h-10 w-10 text-gray-500" />
+              <div className="text-center py-12">
+                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center border border-[#733857]/20">
+                  <Heart className="h-10 w-10 text-[#733857]" />
                 </div>
-                <h4 className="text-xl font-medium text-black mb-3">No Favorites Yet</h4>
-                <p className="text-gray-600 mb-6">Add your favorite cakes and pastries here</p>
-                <style>{`
-                  .browse-products-btn span {
-                    background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                    -webkit-background-clip: text;
-                    background-clip: text;
-                    color: transparent;
-                    transition: all 0.3s ease;
-                  }
-                  .browse-products-btn:hover span {
-                    color: white !important;
-                    background: none !important;
-                    -webkit-background-clip: unset !important;
-                    background-clip: unset !important;
-                  }
-                `}</style>
+                <h4 className="text-3xl font-light tracking-wide text-[#1a1a1a] mb-3">No favorites yet</h4>
+                <p className="text-sm text-gray-500 mb-8 max-w-md mx-auto">
+                  Save the treats you love to revisit them whenever you like.
+                </p>
                 <Link 
                   to="/products" 
-                  className="browse-products-btn inline-flex items-center px-6 py-3 bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors shadow-md font-medium transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
                 >
-                  <span className="transition-all duration-300">
-                    Browse Products
-                  </span>
+                  Browse Products
                 </Link>
               </div>
             ) : (

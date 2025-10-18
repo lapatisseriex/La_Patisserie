@@ -3,6 +3,7 @@ import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js';
 import DeliveryLocationMapping from '../models/deliveryLocationMappingModel.js';
 import { createNotification } from './notificationController.js';
+import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
 
 // @desc    Get grouped pending orders for order tracking
 // @route   GET /api/admin/orders/grouped
@@ -15,6 +16,7 @@ export const getGroupedPendingOrders = asyncHandler(async (req, res) => {
     })
     .populate({
       path: 'cartItems.productId',
+      select: 'name variants images category',
       populate: {
         path: 'category',
         model: 'Category'
@@ -175,6 +177,7 @@ export const getIndividualPendingOrders = asyncHandler(async (req, res) => {
     })
     .populate({
       path: 'cartItems.productId',
+      select: 'name variants images category',
       populate: {
         path: 'category',
         model: 'Category'
@@ -200,33 +203,54 @@ export const getIndividualPendingOrders = asyncHandler(async (req, res) => {
       // Get all cart items categorized by their dispatch status
       const pendingItems = order.cartItems.filter(item => 
         !item.dispatchStatus || item.dispatchStatus === 'pending'
-      ).map(item => ({
-        ...item,
-        categoryName: item.productId && item.productId.category && item.productId.category.name 
-          ? item.productId.category.name 
-          : 'Unknown Category',
-        dispatchStatus: item.dispatchStatus || 'pending'
-      }));
+      ).map(item => {
+        const plainItem = typeof item.toObject === 'function' ? item.toObject() : { ...item };
+        const { variant, variantLabel } = resolveVariantInfoForItem(plainItem, item.productId);
+
+        return {
+          ...plainItem,
+          variant: variant || plainItem.variant || null,
+          variantLabel: variantLabel || plainItem.variantLabel || '',
+          categoryName: item.productId && item.productId.category && item.productId.category.name 
+            ? item.productId.category.name 
+            : 'Unknown Category',
+          dispatchStatus: item.dispatchStatus || 'pending'
+        };
+      });
 
       const dispatchedItems = order.cartItems.filter(item => 
         item.dispatchStatus === 'dispatched'
-      ).map(item => ({
-        ...item,
-        categoryName: item.productId && item.productId.category && item.productId.category.name 
-          ? item.productId.category.name 
-          : 'Unknown Category',
-        dispatchStatus: item.dispatchStatus
-      }));
+      ).map(item => {
+        const plainItem = typeof item.toObject === 'function' ? item.toObject() : { ...item };
+        const { variant, variantLabel } = resolveVariantInfoForItem(plainItem, item.productId);
+
+        return {
+          ...plainItem,
+          variant: variant || plainItem.variant || null,
+          variantLabel: variantLabel || plainItem.variantLabel || '',
+          categoryName: item.productId && item.productId.category && item.productId.category.name 
+            ? item.productId.category.name 
+            : 'Unknown Category',
+          dispatchStatus: item.dispatchStatus
+        };
+      });
 
       const deliveredItems = order.cartItems.filter(item => 
         item.dispatchStatus === 'delivered'
-      ).map(item => ({
-        ...item,
-        categoryName: item.productId && item.productId.category && item.productId.category.name 
-          ? item.productId.category.name 
-          : 'Unknown Category',
-        dispatchStatus: item.dispatchStatus
-      }));
+      ).map(item => {
+        const plainItem = typeof item.toObject === 'function' ? item.toObject() : { ...item };
+        const { variant, variantLabel } = resolveVariantInfoForItem(plainItem, item.productId);
+
+        return {
+          ...plainItem,
+          variant: variant || plainItem.variant || null,
+          variantLabel: variantLabel || plainItem.variantLabel || '',
+          categoryName: item.productId && item.productId.category && item.productId.category.name 
+            ? item.productId.category.name 
+            : 'Unknown Category',
+          dispatchStatus: item.dispatchStatus
+        };
+      });
       
       // Only include orders that have pending items OR dispatched items (for delivery management)
       if (pendingItems.length === 0 && dispatchedItems.length === 0) {

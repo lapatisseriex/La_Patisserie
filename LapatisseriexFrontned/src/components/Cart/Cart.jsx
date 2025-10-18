@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaShoppingCart, FaExclamationTriangle, FaBuilding } from 'react-icons/fa';
 import { motion } from 'framer-motion';
@@ -9,10 +9,76 @@ import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
 import { toast } from 'react-toastify';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
+import { formatVariantLabel } from '../../utils/variantUtils';
+
+const deriveEggStatus = (productLike) => {
+  if (!productLike) return null;
+
+  if (typeof productLike.hasEgg === 'boolean') {
+    return productLike.hasEgg;
+  }
+
+  const candidates = [
+    productLike?.hasEgg,
+    productLike?.importantField?.value,
+    productLike?.importantField?.name,
+    productLike?.eggType,
+    productLike?.eggLabel,
+    productLike?.egg,
+    productLike?.isEgg,
+    productLike?.extraFields?.egg,
+    productLike?.extraFields?.Egg,
+    productLike?.extraFields?.eggType,
+    productLike?.extraFields?.EggType
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    if (typeof candidate === 'boolean') {
+      return candidate;
+    }
+    if (typeof candidate === 'number') {
+      if (candidate === 1) return true;
+      if (candidate === 0) return false;
+    }
+    const normalized = String(candidate).trim().toLowerCase();
+    if (!normalized) continue;
+    if (['true', 'yes', 'y', '1'].includes(normalized)) {
+      return true;
+    }
+    if (['false', 'no', 'n', '0'].includes(normalized)) {
+      return false;
+    }
+    if (
+      normalized.includes('eggless') ||
+      normalized.includes('no egg') ||
+      normalized.includes('egg free') ||
+      normalized.includes('egg-free') ||
+      normalized.includes('without egg') ||
+      normalized.includes('pure veg') ||
+      normalized.includes('veg only')
+    ) {
+      return false;
+    }
+    if (
+      normalized.includes('with egg') ||
+      normalized.includes('contains egg') ||
+      normalized.includes('has egg') ||
+      normalized.includes('egg-based')
+    ) {
+      return true;
+    }
+    if (normalized.includes('egg')) {
+      return true;
+    }
+  }
+
+  return null;
+};
 
 const Cart = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
-  const { cartItems, cartCount, updateQuantity, removeFromCart, clearCart, error: cartError } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, pendingOperations, getCartItem } = useCart();
   
   // Use our hooks
   const { user } = useAuth();
@@ -34,14 +100,11 @@ const Cart = () => {
 
   // Helper function to check if user can proceed to checkout
   const canProceedToCheckout = () => {
-    return hasValidDeliveryLocation() && user?.hostel && user.hostel._id && user.hostel.name;
+    return user?.hostel && user.hostel._id && user.hostel.name;
   };
 
   // Helper function to get checkout button text
   const getCheckoutButtonText = () => {
-    if (!hasValidDeliveryLocation()) {
-      return 'Select Delivery Location';
-    }
     if (!user?.hostel || !user.hostel._id || !user.hostel.name) {
       return 'Select Hostel';
     }
@@ -115,21 +178,29 @@ const Cart = () => {
     return DEFAULT_DELIVERY_CHARGE;
   }, [discountedCartTotal, user, locations]);
   
-  // Grand total using discounted cart total
+  // Grand total using discounted cart total only (without delivery charge)
   const grandTotal = useMemo(() => {
-    const total = discountedCartTotal + deliveryCharge;
-    return isNaN(total) ? 0 : Math.max(0, total);
-  }, [discountedCartTotal, deliveryCharge]);
+    return isNaN(discountedCartTotal) ? 0 : Math.max(0, discountedCartTotal);
+  }, [discountedCartTotal]);
 
-  const handleQuantityChange = async (productId, newQuantity, maxStock) => {
-    if (maxStock !== undefined && newQuantity > maxStock) {
+  const handleQuantityChange = async (productId, nextQuantity, maxStock) => {
+    const normalizedQuantity = Number(nextQuantity);
+    const safeQuantity = Math.max(0, Number.isNaN(normalizedQuantity) ? 0 : Math.round(normalizedQuantity));
+
+    const currentItem = getCartItem(productId);
+    const existingQuantity = Number(currentItem?.quantity ?? 0);
+    if (Number.isFinite(existingQuantity) && safeQuantity === existingQuantity) {
+      return;
+    }
+
+    if (maxStock !== undefined && safeQuantity > maxStock) {
       setStockError(`Cannot add more items. Only ${maxStock} available in stock.`);
       // Clear error after 3 seconds
       setTimeout(() => setStockError(''), 3000);
       return;
     }
     try {
-      await updateQuantity(productId, newQuantity);
+      await updateQuantity(productId, safeQuantity);
       setStockError(''); // Clear any previous error
     } catch (error) {
       setStockError(error?.message || 'Failed to update quantity');
@@ -138,8 +209,20 @@ const Cart = () => {
   };
 
   // Enhanced quantity handler with animation
-  const handleQuantityChangeWithAnimation = async (productId, currentQuantity, delta, maxStock) => {
+  const handleQuantityChangeWithAnimation = async (productId, delta, maxStock) => {
+    const pendingOp = pendingOperations?.[productId];
+    if (pendingOp && ['updating', 'removing'].includes(pendingOp.type)) {
+      return;
+    }
+
+    const item = getCartItem(productId);
+    const numericQuantity = Number(item?.quantity ?? 0);
+    const currentQuantity = Number.isFinite(numericQuantity) ? numericQuantity : 0;
     const newQuantity = Math.max(0, currentQuantity + delta);
+
+    if (newQuantity === currentQuantity) {
+      return;
+    }
     
     // Set animation direction and trigger animation
     setAnimationDirections(prev => ({ ...prev, [productId]: delta > 0 ? 'up' : 'down' }));
@@ -167,12 +250,6 @@ const Cart = () => {
         return;
       }
       
-      // Validate location selection
-      if (!user?.location || !user.location._id) {
-        toast.error('Please select your delivery location from your profile before proceeding to checkout.');
-        return;
-      }
-      
       // Validate hostel selection
       if (!user?.hostel || !user.hostel._id || !user.hostel.name) {
         toast.error('Please select your hostel from your profile before proceeding to checkout.');
@@ -187,45 +264,43 @@ const Cart = () => {
         return;
       }
       
-      // Go to the checkout page (payment)
-      navigate('/payment');
+      // Go to the checkout page
+      navigate('/checkout');
     } catch (error) {
       console.error('Error during checkout:', error);
     }
   };
+
+  const handleNavigateToProduct = (productId) => {
+    if (!productId) {
+      toast.error('Product details unavailable');
+      return;
+    }
+    navigate(`/product/${productId}`);
+  };
   // If cart is empty
   if (cartItems.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 min-h-screen">
-        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
-          <div className="text-center py-10">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FaShoppingCart className="text-gray-400 text-4xl" />
+      <div className="min-h-screen bg-white px-4 py-20 flex items-center justify-center">
+        <div className="max-w-2xl w-full text-center space-y-10">
+          <div className="flex flex-col items-center gap-6">
+            <div className="flex h-20 w-20 items-center justify-center border border-[#733857]/20">
+              <FaShoppingCart className="text-3xl text-[#733857]" />
             </div>
-            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2">Your cart is empty</h2>
-            <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-8">Looks like you haven't added any items to your cart yet</p>
-            <style>{`
-              .browse-products-btn span {
-                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                color: transparent;
-                transition: all 0.3s ease;
-              }
-              .browse-products-btn:hover span {
-                color: white !important;
-                background: none !important;
-                -webkit-background-clip: unset !important;
-                background-clip: unset !important;
-              }
-            `}</style>
-            <Link 
-              to="/products" 
-              className="browse-products-btn group bg-white border-2 border-[#733857] font-semibold py-3 px-8 rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:border-[#733857] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg"
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.35em] text-[#733857]/60">Cart Status</p>
+              <h2 className="text-3xl font-light tracking-wide text-[#1a1a1a]">Your cart is empty</h2>
+              <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto leading-relaxed">
+                Looks like you haven&apos;t added anything yet. Explore today&apos;s specials and reserve your favourites before they sell out.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
             >
-              <span className="transition-all duration-300">
-                Browse Products
-              </span>
+              Browse Products
             </Link>
           </div>
         </div>
@@ -235,113 +310,232 @@ const Cart = () => {
   
   return (
     <ShopClosureOverlay overlayType="page" showWhenClosed={!isOpen}>
-      <div className="container mx-auto px-4 py-8 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        {/* Back button - hidden on mobile, visible on desktop with top padding */}
-        <div className="hidden md:flex items-center mb-6 pt-4">
-          <Link to="/products" className="flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-            <FaArrowLeft className="mr-2" />
-            <span>Back</span>
-          </Link>
-        </div>
-        
-        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
-          {/* Cart Items */}
-          <div className="lg:col-span-8 mb-8 lg:mb-0">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="pb-4 border-b border-gray-200 mb-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h2 className="font-semibold text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Cart Items ({cartItems.length})</h2>
-                    </div>
-                    <div className="flex items-center text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                      <FaMapMarkerAlt className={`${hasValidDeliveryLocation() ? 'text-gray-500' : 'text-amber-500'} mr-1`} />
-                      <span className="mr-2">{user?.location ? `${user.location.area}, ${user.location.city}` : 'Select Location'}</span>
-                    </div>
-                  </div>
-                  <button 
-                    className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:opacity-80 transition-opacity text-sm font-medium"
-                    onClick={() => setShowLocationModal(true)}
-                  >
-                    {user?.location ? 'Change' : 'Select'}
-                  </button>
+      <div className="min-h-screen bg-white">
+        <div className="w-full px-4 md:px-6 py-6 md:py-8">
+          {/* Header */}
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-xl font-medium text-gray-900 mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+              Your Cart
+            </h1>
+            <p className="text-sm text-gray-600">
+              {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+            </p>
+          </div>
+          
+          <div className="w-full">
+            {/* Cart Items */}
+            <div className="w-full">
+              {/* Table block wrapper so header and rows share padding */}
+              <div className="bg-white rounded-lg p-4">
+                {/* Table Header - Desktop Only */}
+                <div className="hidden md:grid grid-cols-12 gap-4 border-b border-gray-200 pb-4 mb-6">
+                <div className="col-span-6">
+                  <span className="text-sm font-medium text-gray-600">Item</span>
+                </div>
+                <div className="col-span-2 text-center">
+                  <span className="text-sm font-medium text-gray-600">Price</span>
+                </div>
+                <div className="col-span-2 text-center">
+                  <span className="text-sm font-medium text-gray-600">Quantity</span>
+                </div>
+                <div className="col-span-2 text-center">
+                  <span className="text-sm font-medium text-gray-600">Total</span>
                 </div>
               </div>
               
-              {/* Location Warning */}
-              {!hasValidDeliveryLocation() && (
-                <div className="bg-amber-50 text-amber-800 border border-amber-200 rounded-md p-4 mb-6">
-                  <div className="flex items-start">
-                    <FaExclamationTriangle className="text-amber-500 mt-0.5 mr-2" />
-                    <div>
-                      <p className="font-medium">Delivery location required</p>
-                      <p className="text-sm mt-1">Please select a valid delivery location to place your order</p>
-                    </div>
-                  </div>
+              {/* Stock Errors and Warnings */}
+              
+              {cartItems.some((i) => getItemAvailability(i).unavailable) && (
+                <div className="bg-red-50 text-red-700 border border-red-200 rounded-md p-3 text-sm mb-4">
+                  One or more items are out of stock. Remove them to proceed to checkout.
                 </div>
               )}
               
-              {/* Cart item list */}
-              <div className="space-y-6">
-                {cartItems.some((i) => getItemAvailability(i).unavailable) && (
-                  <div className="bg-red-50 text-red-700 border border-red-200 rounded-md p-3 text-sm">
-                    One or more items are out of stock. Remove them to proceed to checkout.
-                  </div>
-                )}
-                {stockError && (
-                  <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">
-                    {stockError}
-                  </div>
-                )}
+              {stockError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">
+                  {stockError}
+                </div>
+              )}
+              
+              {/* Cart Items - Table Layout */}
+              <div>
                 {cartItems.map((item) => {
                   const { unavailable, tracks, stock } = getItemAvailability(item);
                   const maxReached = tracks && item.quantity >= stock;
                   const canIncrease = !unavailable && !maxReached;
+                  const pendingOp = pendingOperations?.[item.productId];
+                  const isQuantityUpdating = pendingOp && ['updating', 'removing'].includes(pendingOp.type);
+                  
+                  // Get variant data
+                  const prod = item.productDetails || item.product || item;
+                  const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
+                  const variant = prod?.variants?.[vi];
+                  const eggFromProduct = deriveEggStatus(prod);
+                  const eggFromVariant = deriveEggStatus(prod?.selectedVariant);
+                  const eggFromItem = deriveEggStatus(item);
+                  const resolvedEgg = eggFromProduct ?? eggFromVariant ?? eggFromItem;
+                  const hasEgg = typeof resolvedEgg === 'boolean' ? resolvedEgg : false;
+                  const eggLabel = hasEgg ? 'Egg' : 'Eggless';
+                  const variantLabel = formatVariantLabel(prod?.selectedVariant)
+                    || prod?.variantLabel
+                    || (Array.isArray(prod?.variants) && prod.variants[vi]?.variantLabel)
+                    || formatVariantLabel(Array.isArray(prod?.variants) && prod.variants[vi]);
+                  
+                  if (!variant) return null;
+                  
                   return (
-                  <div key={item.id} className="flex border-b border-gray-100 pb-6">
-                    {/* Mobile-optimized image container */}
-                    <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 mr-4">
-                      <img 
-                        src={item.image || '/placeholder-image.jpg'} 
-                        alt={item.name || 'Product'} 
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                    </div>
-                    
-                    {/* Content section - takes remaining space */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm md:text-base pr-2">{item.name || 'Product'}</h3>
-                        <button 
-                          onClick={() => {
-                            removeFromCart(item.productId);
-                          }}
-                          className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                      {unavailable && (
-                        <div className="mb-2">
-                          <span className="inline-block text-xs font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded px-2 py-0.5">
-                            Product out of stock
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Quantity controls and price - mobile optimized */}
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
+                    <div key={item.id} className="md:grid md:grid-cols-12 gap-4 items-center py-4 bg-white border-b border-[#733857] mb-5 pb-5">
+                      {/* Mobile Layout */}
+                      <div className="md:hidden flex flex-col w-full">
+                        <div className="flex items-center gap-4">
+                          {/* Product Image */}
+                          <div className="flex flex-col items-center">
+                            <button
+                              type="button"
+                              onClick={() => handleNavigateToProduct(item.productId)}
+                              className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#733857] cursor-pointer"
+                              aria-label="View product details"
+                            >
+                              <img 
+                                src={item.image || '/placeholder-image.jpg'} 
+                                alt={item.name || 'Product'} 
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          </div>
+                          
+                          {/* Product Name & Price */}
+                          <div className="flex-1">
+                            <h3 className="font-medium text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                              {item.name || 'Product'}
+                            </h3>
+                            <p className="text-sm text-gray-700 font-medium">
+                              ₹ {(() => {
+                                const pricing = calculatePricing(variant);
+                                return pricing.finalPrice.toFixed(0);
+                              })()} each
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              Variant: <span className="font-medium text-gray-800">{variantLabel || 'Default'}</span>
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              Egg (or) Eggless: <span className="font-medium text-gray-800">{eggLabel}</span>
+                            </p>
+                          </div>
+                          
+                          {/* Remove Button */}
                           <button 
-                            onClick={() => {
-                              handleQuantityChangeWithAnimation(item.productId, item.quantity, -1, stock);
-                            }}
-                            className={`w-7 h-7 md:w-8 md:h-8 rounded-l-md flex items-center justify-center border text-sm bg-gray-100 border-gray-200`}
+                            onClick={() => removeFromCart(item.productId)}
+                            className="text-gray-600 hover:text-red-500 transition-colors"
+                            aria-label="Remove item"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        
+                        {/* Quantity Controls - Mobile */}
+                        <div className="mt-3 flex justify-between items-center">
+                          <div className="flex items-center border border-gray-300 rounded-lg">
+                            <button 
+                              type="button"
+                              onClick={() => handleQuantityChangeWithAnimation(item.productId, -1, stock)}
+                              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors rounded-l-lg"
+                                disabled={item.quantity <= 1 || isQuantityUpdating}
+                            >
+                              -
+                            </button>
+                            <motion.span
+                              key={`jelly-mobile-cart-${item.productId}-${jellyAnimations[item.productId] || 0}`}
+                              initial={{ 
+                                scaleX: 1, 
+                                scaleY: 1,
+                                y: animationDirections[item.productId] === 'up' ? -10 : animationDirections[item.productId] === 'down' ? 10 : 0,
+                                opacity: animationDirections[item.productId] ? 0.7 : 1
+                              }}
+                              animate={{ scaleX: 1, scaleY: 1, y: 0, opacity: 1 }}
+                              transition={{ 
+                                type: "spring", 
+                                stiffness: 500, 
+                                damping: 25,
+                                duration: 0.3
+                              }}
+                              className="w-12 h-8 flex items-center justify-center text-sm font-medium text-gray-900 bg-white border-l border-r border-gray-300"
+                            >
+                              {item.quantity}
+                            </motion.span>
+                            <button 
+                              type="button"
+                              onClick={() => handleQuantityChangeWithAnimation(item.productId, 1, stock)}
+                              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors rounded-r-lg"
+                              disabled={!canIncrease || isQuantityUpdating}
+                            >
+                              +
+                            </button>
+                          </div>
+                          
+                          {/* Item Total - Mobile */}
+                          <div className="font-medium">
+                            Total: ₹ {(() => {
+                              const pricing = calculatePricing(variant);
+                              const itemTotal = pricing.finalPrice * item.quantity;
+                              return itemTotal.toFixed(0);
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop Layout */}
+                      {/* Product Info - spans 6 */}
+                      <div className="hidden md:flex col-span-6 items-center gap-4 pl-4">
+                        <div className="flex flex-col items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleNavigateToProduct(item.productId)}
+                            className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#733857] cursor-pointer"
+                            aria-label="View product details"
+                          >
+                            <img 
+                              src={item.image || '/placeholder-image.jpg'} 
+                              alt={item.name || 'Product'} 
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-[#733857] mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                            {item.name || 'Product'}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {variantLabel || variant.size || variant.weight || 'Standard'}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            Egg (or) Eggless: <span className="font-medium text-gray-800">{eggLabel}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Price - spans 2 */}
+                      <div className="hidden md:flex col-span-2 items-center justify-center">
+                        <span className="text-sm text-gray-600">
+                          ₹{(() => {
+                            const pricing = calculatePricing(variant);
+                            return pricing.finalPrice.toFixed(2);
+                          })()}
+                        </span>
+                      </div>
+
+                      {/* Quantity Controls - spans 2 */}
+                      <div className="hidden md:flex col-span-2 items-center justify-center">
+                        <div className="flex items-center border border-gray-300 rounded-lg">
+                          <button 
+                            type="button"
+                            onClick={() => handleQuantityChangeWithAnimation(item.productId, -1, stock)}
+                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors rounded-l-lg"
+                            disabled={item.quantity <= 1 || isQuantityUpdating}
                           >
                             -
                           </button>
-                          <motion.input
+                          <motion.span
                             key={`jelly-cart-${item.productId}-${jellyAnimations[item.productId] || 0}`}
                             initial={{ 
                               scaleX: 1, 
@@ -349,323 +543,104 @@ const Cart = () => {
                               y: animationDirections[item.productId] === 'up' ? -10 : animationDirections[item.productId] === 'down' ? 10 : 0,
                               opacity: animationDirections[item.productId] ? 0.7 : 1
                             }}
-                            animate={{
-                              scaleX: [1, 1.15, 0.95, 1.03, 1],
-                              scaleY: [1, 0.85, 1.05, 0.98, 1],
-                              y: 0,
-                              opacity: 1
+                            animate={{ scaleX: 1, scaleY: 1, y: 0, opacity: 1 }}
+                            transition={{ 
+                              type: "spring", 
+                              stiffness: 500, 
+                              damping: 25,
+                              duration: 0.3
                             }}
-                            transition={{
-                              duration: 0.5,
-                              times: [0, 0.2, 0.5, 0.8, 1],
-                              ease: "easeInOut"
-                            }}
-                            type="text"
-                            className="w-8 h-7 md:w-10 md:h-8 text-center text-xs md:text-sm border-t border-b border-gray-200"
-                            value={item.quantity}
-                            readOnly
-                          />
-                          <button
-                            onClick={() => {
-                              if (!canIncrease) return;
-                              const nextQty = item.quantity + 1;
-                              if (tracks && nextQty > stock) {
-                                setStockError(`Cannot add more items. Only ${stock} available in stock.`);
-                                setTimeout(() => setStockError(''), 3000);
-                                return;
-                              }
-                              handleQuantityChangeWithAnimation(item.productId, item.quantity, 1, stock);
-                            }}
-                            disabled={!canIncrease}
-                            className={`w-7 h-7 md:w-8 md:h-8 rounded-r-md flex items-center justify-center border text-sm ${
-                              !canIncrease
-                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                : 'bg-gray-100 border-gray-200'
-                            }`}
+                            className="w-12 h-8 flex items-center justify-center text-sm font-medium text-gray-900 bg-white border-l border-r border-gray-300"
+                          >
+                            {item.quantity}
+                          </motion.span>
+                          <button 
+                            type="button"
+                            onClick={() => handleQuantityChangeWithAnimation(item.productId, 1, stock)}
+                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors rounded-r-lg"
+                            disabled={!canIncrease || isQuantityUpdating}
                           >
                             +
                           </button>
                         </div>
-                        
-                        <div className="text-right">
-                          {(() => {
-                            // Get variant data from productDetails
-                            const prod = item.productDetails;
-                            const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-                            const variant = prod?.variants?.[vi];
-                            
-                            if (!variant) {
-                              // Skip item if no variant found - invalid cart item
-                              console.warn('Cart item missing variant data:', item);
-                              return (
-                                <div className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm md:text-base">
-                                  Invalid item
-                                </div>
-                              );
-                            }
-                            
-                            // Use centralized pricing calculation
-                            const pricing = calculatePricing(variant);
-                            
-                            return (
-                              <>
-                                <div className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent text-sm md:text-base">
-                                  {formatCurrency(pricing.finalPrice * item.quantity)}
-                                </div>
-                                <div className="text-xs md:text-sm">
-                                  <div className="space-y-1">
-                                    {pricing.mrp > pricing.finalPrice && (
-                                      <div className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                                        <span className="line-through">{formatCurrency(pricing.mrp)}</span>
-                                        <span className="text-green-600 ml-1">{formatCurrency(pricing.finalPrice)}</span> each
-                                      </div>
-                                    )}
-                                    {pricing.discountPercentage > 0 && (
-                                      <div className="text-green-600 font-medium">{pricing.discountPercentage}% OFF</div>
-                                    )}
-                                  </div>
-                                </div>
-                              </>
-                            );
-                          })()}
-                          {maxReached && (
-                            <div className="text-[10px] md:text-xs text-amber-600 mt-1">Max available stock reached</div>
-                          )}
-                        </div>
                       </div>
-                    </div>
-                  </div>
-                );})}
-              </div>
-            </div>
-          </div>
-          
-          {/* Order Summary */}
-          <div className="lg:col-span-4">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-[130px] md:top-[140px]">
-              <h2 className="font-semibold text-lg bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent pb-4 border-b border-gray-200 mb-4">
-                Order Summary
-              </h2>
 
-              {/* Delivery Information */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Delivery Information</h3>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2 text-sm">
-                    <FaMapMarkerAlt className="text-[#733857] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="text-gray-600">Location: </span>
-                      <span className="text-gray-800 font-medium">
-                        {user?.location?.name || getCurrentLocationName() || 'Not set'}
-                      </span>
-                      {!user?.location && (
-                        <div className="text-red-600 text-xs mt-1">Please set your delivery location</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <FaBuilding className="text-[#733857] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="text-gray-600">Hostel: </span>
-                      <span className="text-gray-800 font-medium">
-                        {user?.hostel?.name || 'Not set'}
-                      </span>
-                      {!user?.hostel && (
-                        <div className="text-red-600 text-xs mt-1">Please set your hostel</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Price Breakdown */}
-              <div className="space-y-3">
-                {(() => {
-                  // Use pre-calculated averageDiscountPercentage from admin pricing logic
-                  return (
-                    <>
-                      {originalTotal > discountedCartTotal && (
-                        <>
-                          <div className="flex justify-between text-sm">
-                            <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Original Price</span>
-                            <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-through">{formatCurrency(originalTotal)}</span>
-                          </div>
-                          <div className="flex justify-between text-green-600">
-                            <span>Discount Savings {averageDiscountPercentage > 0 && `(${averageDiscountPercentage}% OFF)`}</span>
-                            <span className="font-medium">-{formatCurrency(totalSavings)}</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Subtotal</span>
-                        <span className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{formatCurrency(discountedCartTotal)}</span>
+                      {/* Total - spans 2 */}
+                      <div className="hidden md:flex col-span-2 items-center justify-center relative">
+                        <span className="text-sm font-semibold text-[#733857]">
+                          ₹{(() => {
+                            const pricing = calculatePricing(variant);
+                            const itemTotal = pricing.finalPrice * item.quantity;
+                            return itemTotal.toFixed(2);
+                          })()}
+                        </span>
+                        <button 
+                          onClick={() => removeFromCart(item.productId)}
+                          className="text-gray-300 hover:text-red-500 transition-colors absolute top-0 right-4"
+                          aria-label="Remove item"
+                        >
+                          <FaTrash size={10} />
+                        </button>
                       </div>
-                    </>
+                    </div>
                   );
-                })()}
-                
-                <div className="flex justify-between">
-                  <div>
-                    <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Delivery Charge</span>
-                    {(() => {
-                      // Use the location object directly if it exists in user, otherwise search in locations array
-                      const userLocation = user?.location || 
-                        (user?.locationId && locations?.find(loc => loc._id === user.locationId));
-                      
-                      return userLocation ? (
-                        <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">to {userLocation.area}</div>
-                      ) : (
-                        <div className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">default rate</div>
-                      );
-                    })()}
+                })}
+              </div>
+              </div>
+              
+              {/* Total Section */}
+              <div className="mt-8">
+                {/* Mobile Total */}
+                <div className="md:hidden px-4">
+                  <div className="flex justify-between items-center border-t border-b border-gray-300 py-4">
+                    <span className="text-lg font-medium">Total: </span>
+                    <span className="text-lg font-bold">₹ {formatCurrency(discountedCartTotal)}</span>
                   </div>
-                  <span className="font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                    {deliveryCharge === 0 ? (
-                      <span className="text-green-500">
-                        Free
-                        {discountedCartTotal >= FREE_DELIVERY_THRESHOLD && (
-                          <div className="text-xs">Orders ≥ ₹{FREE_DELIVERY_THRESHOLD}</div>
-                        )}
-                      </span>
-                    ) : (
-                      `₹${deliveryCharge}`
-                    )}
-                  </span>
                 </div>
                 
-                <div className="border-t border-gray-200 pt-3 mt-3">
-                  <div className="flex justify-between font-bold text-lg">
-                    <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Total</span>
-                    <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">₹{grandTotal.toFixed(2)}</span>
+                {/* Desktop Total */}
+                <div className="hidden md:flex justify-end pr-4">
+                  <div className="w-64 border-t border-b border-brown-300 py-4 flex justify-end">
+                    <span className="text-xl font-bold text-black pr-2" style={{fontFamily: 'Montserrat, Arial, sans-serif'}}>
+                      Total : ₹ {formatCurrency(discountedCartTotal)}
+                    </span>
                   </div>
                 </div>
               </div>
               
-              {/* Checkout Buttons */}
-              <div className="mt-6">
+              {/* Checkout Button */}
+              <div className="px-4 md:flex md:justify-center mt-6">
                 <button 
                   onClick={handleCheckout}
                   disabled={!canProceedToCheckout()}
-                  className={`group relative w-full rounded-lg overflow-hidden transition-all duration-300 font-semibold py-3 px-5 text-sm ${
+                  className={`w-full md:max-w-xs py-2 px-5 rounded-lg font-medium text-sm text-center transition-all duration-200 ${
                     canProceedToCheckout()
-                      ? 'bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:border-[#733857] transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation'
-                      : 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
+                      ? 'bg-[#733857] hover:bg-[#8d4466] text-white shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
+                  style={{fontFamily: 'Montserrat, Arial, sans-serif'}}
                 >
-                  <span className="relative z-10 flex items-center justify-center gap-1.5">
-                    <svg className={`w-3 h-3 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-12 group-active:scale-110 ${
-                      canProceedToCheckout() 
-                        ? 'text-[#733857] group-hover:text-white' 
-                        : 'text-gray-400'
-                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13v6a1 1 0 001 1h9a1 1 0 001-1v-6M17 13v6a1 1 0 01-1 1H8a1 1 0 01-1-1v-6" />
-                    </svg>
-                    <span className={`transform transition-all duration-300 group-hover:tracking-wider group-active:tracking-wider ${
-                      canProceedToCheckout() 
-                        ? 'bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent group-hover:text-white' 
-                        : 'text-gray-400'
-                    }`}>
-                      {getCheckoutButtonText()}
-                    </span>
-                    <svg className={`w-3 h-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:translate-x-1 group-active:scale-110 ${
-                      canProceedToCheckout() 
-                        ? 'text-[#733857] group-hover:text-white' 
-                        : 'text-gray-400'
-                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
+                  {canProceedToCheckout() ? "Checkout" : getCheckoutButtonText()}
                 </button>
-                
-                {!canProceedToCheckout() && (
-                  <div className="mt-3 space-y-1">
-                    {!hasValidDeliveryLocation() && (
-                      <p className="text-amber-600 text-xs text-center">
-                        Select a valid delivery location to continue
-                      </p>
-                    )}
-                    {hasValidDeliveryLocation() && (!user?.hostel || !user.hostel._id || !user.hostel.name) && (
+              </div>
+              
+              {!canProceedToCheckout() && (
+                <div className="mt-3 flex justify-center">
+                  <div className="space-y-1">
+                    {(!user?.hostel || !user.hostel._id || !user.hostel.name) && (
                       <p className="text-amber-600 text-xs text-center">
                         Select your hostel from your profile to continue
                       </p>
                     )}
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Location Modal */}
-      {showLocationModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-black mb-4">Select Delivery Location</h3>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-3">
-                We currently deliver to the following locations:
-              </p>
-              
-              {locationsLoading ? (
-                <div className="py-4 text-center text-gray-600">Loading locations...</div>
-              ) : locations.length > 0 ? (
-                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
-                  {locations.map(location => (
-                    <div 
-                      key={location._id}
-                      className={`p-3 border-b border-gray-100 last:border-0 cursor-pointer ${
-                        selectedLocationId === location._id ? 'bg-pink-50' : 'hover:bg-gray-50'
-                      }`}
-                      onClick={() => setSelectedLocationId(location._id)}
-                    >
-                      <div className="flex items-start">
-                        <input 
-                          type="radio"
-                          name="location"
-                          className="mt-1 text-pink-500 focus:ring-pink-400"
-                          checked={selectedLocationId === location._id}
-                          onChange={() => setSelectedLocationId(location._id)}
-                        />
-                        <div className="ml-3">
-                          <p className="font-medium text-black">{location.area}</p>
-                          <p className="text-sm text-gray-600">{location.city}, {location.pincode}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 text-center bg-gray-100 rounded-md">
-                  No delivery locations available at this time.
                 </div>
               )}
             </div>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowLocationModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleChangeLocation}
-                disabled={!selectedLocationId || !locations.length}
-                className={`px-4 py-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-md transition-colors ${
-                  (!selectedLocationId || !locations.length) 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : 'hover:from-rose-500 hover:to-pink-600'
-                }`}
-              >
-                Update Location
-              </button>
-            </div>
           </div>
         </div>
-      )}
       </div>
+
+
     </ShopClosureOverlay>
   );
 };

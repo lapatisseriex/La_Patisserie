@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle, XCircle, Eye, Calendar, MapPin, ShoppingBag, ChevronRight, CreditCard, Banknote } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { calculatePricing } from '../utils/pricingUtils';
+import { resolveOrderItemVariantLabel } from '../utils/variantUtils';
 
 // Helper function to get product image URL
 const getProductImageUrl = (item) => {
@@ -203,37 +204,24 @@ const Orders = () => {
         )}
 
         {filteredOrders.length === 0 ? (
-          <div 
-            className="text-center py-20"
-            style={{ animation: 'fadeIn 0.5s ease-out' }}
-          >
-            <div 
-              className="w-16 h-16 mx-auto mb-6 flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)' }}
-            >
-              <ShoppingBag className="w-8 h-8 text-white" />
+          <div className="text-center py-20" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center border border-[#733857]/20">
+              <ShoppingBag className="w-10 h-10 text-[#733857]" />
             </div>
-            <h2 className="text-xl font-light mb-3" style={{ 
-              color: '#1a1a1a',
-              letterSpacing: '0.03em'
-            }}>
+            <h2 className="text-3xl font-light tracking-wide text-[#1a1a1a] mb-3">
               {activeFilter === 'all' ? 'No orders yet' : 'No orders in this category'}
             </h2>
-            <p className="text-sm mb-8 tracking-wide" style={{ 
-              color: 'rgba(26, 26, 26, 0.5)',
-              letterSpacing: '0.05em'
-            }}>
-              {activeFilter === 'all' 
-                ? 'START EXPLORING OUR DELICIOUS COLLECTION' 
-                : 'CHECK OTHER ORDER CATEGORIES'}
+            <p className="text-sm text-gray-500 mb-8 max-w-md mx-auto">
+              {activeFilter === 'all'
+                ? 'Explore our collection and place your first order.'
+                : 'Try another filter to see more of your orders.'}
             </p>
             <Link 
               to="/"
-              className="inline-flex items-center px-6 py-3 text-sm font-medium text-white transition-all duration-300 hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)' }}
+              className="inline-flex items-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
             >
               Browse Products
-              <ChevronRight className="ml-2 w-4 h-4" />
+              <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
         ) : (
@@ -338,6 +326,9 @@ const OrderCard = ({ order, index }) => {
       minute: '2-digit'
     });
   };
+
+  const previewItems = Array.isArray(order.cartItems) ? order.cartItems.slice(0, 2) : [];
+  const remainingItemsCount = Math.max((order.cartItems?.length || 0) - previewItems.length, 0);
 
   return (
     <div 
@@ -449,6 +440,38 @@ const OrderCard = ({ order, index }) => {
                 </span>
               )}
             </p>
+            {previewItems.length > 0 && (
+              <div className="mt-3 space-y-1">
+                {previewItems.map((item, itemIdx) => {
+                  const variantLabel = resolveOrderItemVariantLabel(item);
+
+                  return (
+                    <p
+                      key={itemIdx}
+                      className="text-xs flex flex-wrap items-center gap-1 tracking-wider"
+                      style={{ color: 'rgba(26, 26, 26, 0.55)', letterSpacing: '0.04em' }}
+                    >
+                      <span className="font-medium" style={{ color: '#1a1a1a' }}>
+                        {item.productName}
+                      </span>
+                      {variantLabel && (
+                        <span className="text-[11px] uppercase" style={{ color: '#733857' }}>
+                          • {variantLabel}
+                        </span>
+                      )}
+                      <span className="text-[11px]" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
+                        ×{item.quantity}
+                      </span>
+                    </p>
+                  );
+                })}
+                {remainingItemsCount > 0 && (
+                  <p className="text-[11px] tracking-widest" style={{ color: 'rgba(26, 26, 26, 0.4)', letterSpacing: '0.08em' }}>
+                    +{remainingItemsCount} more {remainingItemsCount === 1 ? 'item' : 'items'}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

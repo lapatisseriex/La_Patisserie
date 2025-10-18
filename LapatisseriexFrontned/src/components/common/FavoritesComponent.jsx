@@ -126,37 +126,22 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
 
   if (!favorites || favorites.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Heart className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-700 mb-2">No favorites yet</h3>
-        <p className="text-gray-500 mb-6">Start adding products to your favorites!</p>
+      <div className="py-16 text-center">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center border border-[#733857]/20">
+          <Heart className="h-10 w-10 text-[#733857]" />
+        </div>
+        <h3 className="text-2xl font-light tracking-wide text-[#1a1a1a] mb-2">No favorites yet</h3>
+        <p className="text-sm text-gray-500 mb-8">
+          Start adding products you love to keep them handy for later.
+        </p>
         {!isProfileTab && (
-          <>
-            <style>{`
-              .browse-products-btn span {
-                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                color: transparent;
-                transition: all 0.3s ease;
-              }
-              .browse-products-btn:hover span {
-                color: white !important;
-                background: none !important;
-                -webkit-background-clip: unset !important;
-                background-clip: unset !important;
-              }
-            `}</style>
-            <Link 
-              to="/products" 
-              className="browse-products-btn inline-flex items-center bg-white border-2 border-[#733857] px-6 py-3 rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors transform hover:scale-[1.02] active:scale-[0.98] shadow-md"
-            >
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              <span className="transition-all duration-300">
-                Browse Products
-              </span>
-            </Link>
-          </>
+          <Link 
+            to="/products" 
+            className="inline-flex items-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            Browse Products
+          </Link>
         )}
       </div>
     );

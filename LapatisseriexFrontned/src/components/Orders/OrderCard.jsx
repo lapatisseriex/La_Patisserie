@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { calculatePricing } from '../../utils/pricingUtils';
+import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import './OrderCard.css';
 
 const OrderCard = ({ order }) => {
@@ -205,64 +206,69 @@ const OrderCard = ({ order }) => {
               
               {/* Product List */}
               <div className="space-y-2">
-                {order.cartItems.map((item, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-white border border-gray-100">
-                    <div className="w-12 h-12 overflow-hidden bg-gray-50 flex-shrink-0">
-                      <img
-                        src={item.productImage || defaultProductImage}
-                        alt={item.productName}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.src = defaultProductImage;
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h5 className="font-medium text-sm truncate" style={{ color: '#1a1a1a' }}>
-                        {item.productName}
-                      </h5>
-                      {(() => {
-                        // Use centralized pricing calculation if variant data is available
-                        if (item.variant) {
-                          const pricing = calculatePricing(item.variant);
-                          return (
-                            <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
-                              Qty: {item.quantity} × ₹{Math.round(pricing.finalPrice)}
-                            </p>
-                          );
-                        } else {
-                          // Fallback to stored price for older orders
+                {order.cartItems.map((item, index) => {
+                  const variantLabel = resolveOrderItemVariantLabel(item);
+
+                  return (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-white border border-gray-100">
+                      <div className="w-12 h-12 overflow-hidden bg-gray-50 flex-shrink-0">
+                        <img
+                          src={item.productImage || defaultProductImage}
+                          alt={item.productName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src = defaultProductImage;
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="font-medium text-sm truncate" style={{ color: '#1a1a1a' }}>
+                          {item.productName}
+                        </h5>
+                        {variantLabel && (
+                          <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
+                            Variant: <span className="font-medium" style={{ color: '#1a1a1a' }}>{variantLabel}</span>
+                          </p>
+                        )}
+                        {(() => {
+                          if (item.variant) {
+                            const pricing = calculatePricing(item.variant);
+                            return (
+                              <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
+                                Qty: {item.quantity} × ₹{Math.round(pricing.finalPrice)}
+                              </p>
+                            );
+                          }
+
                           return (
                             <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                               Qty: {item.quantity} × ₹{Math.round(item.price)}
                             </p>
                           );
-                        }
-                      })()}
-                    </div>
-                    <div className="text-right">
-                      {(() => {
-                        // Use centralized pricing calculation if variant data is available
-                        if (item.variant) {
-                          const pricing = calculatePricing(item.variant);
-                          const itemTotal = pricing.finalPrice * item.quantity;
-                          return (
-                            <p className="font-medium text-sm" style={{ color: '#733857' }}>
-                              ₹{Math.round(itemTotal)}
-                            </p>
-                          );
-                        } else {
-                          // Fallback to stored price for older orders
+                        })()}
+                      </div>
+                      <div className="text-right">
+                        {(() => {
+                          if (item.variant) {
+                            const pricing = calculatePricing(item.variant);
+                            const itemTotal = pricing.finalPrice * item.quantity;
+                            return (
+                              <p className="font-medium text-sm" style={{ color: '#733857' }}>
+                                ₹{Math.round(itemTotal)}
+                              </p>
+                            );
+                          }
+
                           return (
                             <p className="font-medium text-sm" style={{ color: '#733857' }}>
                               ₹{Math.round(item.quantity * item.price)}
                             </p>
                           );
-                        }
-                      })()}
+                        })()}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

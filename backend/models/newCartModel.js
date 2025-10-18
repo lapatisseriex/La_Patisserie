@@ -33,6 +33,10 @@ const newCartItemSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
+    hasEgg: {
+      type: Boolean,
+      default: false
+    },
     // Ensure we persist which variant is in the cart to adjust stock correctly
     variantIndex: {
       type: Number,

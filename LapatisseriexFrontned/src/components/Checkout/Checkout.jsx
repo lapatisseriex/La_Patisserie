@@ -5,6 +5,7 @@ import { useCart } from '../../hooks/useCart';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useHostel } from '../../context/HostelContext/HostelContext';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
+import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import {
   Mail,
   Phone,
@@ -62,6 +63,39 @@ const Checkout = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editLocationId, isEditMode]);
+
+  const getVariantDetails = (item) => {
+    const prod = item?.productDetails || item?.product || item || {};
+    const variants = Array.isArray(prod?.variants)
+      ? prod.variants
+      : Array.isArray(item?.variants)
+        ? item.variants
+        : [];
+
+    const variantIndex = Number.isInteger(item?.productDetails?.variantIndex)
+      ? item.productDetails.variantIndex
+      : Number.isInteger(item?.variantIndex)
+        ? item.variantIndex
+        : 0;
+
+    const variantFromArray = variants?.[variantIndex];
+    const selectedVariant = item?.productDetails?.selectedVariant || item?.selectedVariant || variantFromArray || item?.variant;
+
+    const variantLabel = resolveOrderItemVariantLabel({
+      ...item,
+      variants,
+      variantIndex,
+      variant: item?.variant || selectedVariant,
+      selectedVariant,
+      variantLabel: item?.variantLabel || prod?.variantLabel
+    });
+
+    return {
+      variantIndex,
+      variant: item?.variant || selectedVariant || variantFromArray || null,
+      variantLabel
+    };
+  };
 
   // Fetch hostels for current user location on mount (only once)
   useEffect(() => {
@@ -208,36 +242,21 @@ const Checkout = () => {
 
         {/* If cart is empty */}
         {isEmpty ? (
-          <div className="bg-white p-8 rounded-xl shadow-sm text-center max-w-md mx-auto border border-gray-100">
-            <Package className="mx-auto text-gray-400 mb-4" size={48} />
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">Your cart is empty</h2>
-            <p className="text-gray-600 mb-6">
-              Add some delicious items to your cart before proceeding to checkout.
+          <div className="max-w-xl mx-auto text-center space-y-6">
+            <div className="mx-auto flex h-24 w-24 items-center justify-center border border-[#733857]/20">
+              <Package className="w-10 h-10 text-[#733857]" />
+            </div>
+            <h2 className="text-3xl font-light tracking-wide text-[#1a1a1a]">
+              Your cart is empty
+            </h2>
+            <p className="text-sm text-gray-500 max-w-md mx-auto">
+              Add some delicious items before heading to checkout.
             </p>
-            <style>{`
-              .browse-products-btn span {
-                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                color: transparent;
-                transition: all 0.3s ease;
-              }
-              .browse-products-btn:hover span {
-                color: white !important;
-                background: none !important;
-                -webkit-background-clip: unset !important;
-                background-clip: unset !important;
-              }
-            `}</style>
             <button
               onClick={() => (window.location.href = '/products')}
-              className="group relative px-8 py-3 text-gray-900 font-light transition-all duration-200 rounded-lg overflow-hidden bg-white border-2 border-[#733857] hover:text-white shadow-sm hover:shadow-md touch-manipulation"
-              style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+              className="inline-flex items-center justify-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
             >
-              <span className="relative z-10 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent group-hover:text-white transition-all duration-200">
-                Browse Products
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              Browse Products
             </button>
           </div>
         ) : (
@@ -252,6 +271,23 @@ const Checkout = () => {
                 {/* Cart Items */}
                 <div className="space-y-6 mb-8 max-h-96 overflow-y-auto pt-2 pr-2">
                   {cartItems.map((item) => {
+                    const { variant, variantLabel } = getVariantDetails(item);
+                    const fallbackLabel = (() => {
+                      const opts = item.options || item.productDetails?.options || {};
+                      const weight = opts.weight || item.productDetails?.weight || item.productDetails?.variant?.weight || '';
+                      const flavor = opts.flavor || item.productDetails?.flavor || '';
+                      const parts = [];
+                      if (weight) parts.push(weight);
+                      if (flavor) parts.push(flavor);
+                      return parts.length ? parts.join(' • ') : '';
+                    })();
+
+                    const displayLabel = variantLabel || fallbackLabel || 'Standard';
+                    const pricing = variant ? calculatePricing(variant) : null;
+                    const unitPrice = pricing ? pricing.finalPrice : Number(item?.price) || 0;
+                    const safeUnitPrice = Number.isFinite(unitPrice) ? unitPrice : 0;
+                    const itemTotal = safeUnitPrice * Number(item.quantity || 0);
+
                     return (
                       <div key={item.id} className="flex items-start gap-4">
                         <div className="relative flex-shrink-0">
@@ -269,32 +305,11 @@ const Checkout = () => {
                             {item.name}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {(() => {
-                              const prod = item.productDetails || item.product || item;
-                              const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
-                              const variant = prod?.variants?.[vi];
-                              if (variant) {
-                                return variant.size || variant.weight || 'Standard';
-                              }
-                              return 'Standard';
-                            })()}
+                            {displayLabel}
                           </p>
                         </div>
                         <p className="text-sm font-normal text-gray-900 whitespace-nowrap">
-                          {(() => {
-                            const prod = item.productDetails || item.product || item;
-                            const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
-                            const variant = prod?.variants?.[vi];
-                            
-                            if (variant) {
-                              const pricing = calculatePricing(variant);
-                              const itemTotal = pricing.finalPrice * item.quantity;
-                              return `₹${itemTotal.toFixed(2)}`;
-                            } else {
-                              const itemTotal = item.price * item.quantity;
-                              return isNaN(itemTotal) ? '₹0.00' : `₹${itemTotal.toFixed(2)}`;
-                            }
-                          })()}
+                          {Number.isFinite(itemTotal) ? `₹${itemTotal.toFixed(2)}` : '₹0.00'}
                         </p>
                       </div>
                     );

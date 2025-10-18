@@ -1,5 +1,6 @@
 import NewCart from '../models/newCartModel.js';
 import Product from '../models/productModel.js';
+import { formatVariantLabel } from '../utils/variantUtils.js';
 
 // @desc    Get user's cart
 // @route   GET /api/newcart
@@ -13,12 +14,46 @@ export const getNewCart = async (req, res) => {
     
     // Refresh product details for all cart items to get latest data
     const refreshedItems = [];
+    let itemsChanged = false;
     for (const item of cart.items) {
       try {
         const product = await Product.findById(item.productId);
         if (product && product.isActive) {
-          const variantIndex = item.productDetails?.variantIndex || 0;
-          const variant = product.variants?.[variantIndex];
+          const variantsArray = Array.isArray(product.variants)
+            ? product.variants
+            : [];
+
+          let variantIndex = Number.isInteger(item.productDetails?.variantIndex)
+            ? item.productDetails.variantIndex
+            : 0;
+
+          if (variantsArray.length > 0) {
+            if (variantIndex < 0 || variantIndex >= variantsArray.length) {
+              variantIndex = 0;
+            }
+          } else {
+            variantIndex = 0;
+          }
+
+          const variantDoc = variantsArray.length > 0 && variantsArray[variantIndex]
+            ? variantsArray[variantIndex]
+            : null;
+
+          const variant = variantDoc
+            ? (typeof variantDoc.toObject === 'function'
+              ? variantDoc.toObject()
+              : { ...variantDoc })
+            : null;
+
+          const normalizedVariants = variantsArray.map((entry) => {
+            const plainVariant = typeof entry.toObject === 'function'
+              ? entry.toObject()
+              : { ...entry };
+            return {
+              ...plainVariant,
+              variantLabel: formatVariantLabel(plainVariant)
+            };
+          });
           
           // Update product details with latest data
           const updatedProductDetails = {
@@ -27,10 +62,28 @@ export const getNewCart = async (req, res) => {
             image: product.image || product.images?.[0] || item.productDetails.image,
             category: product.category?.name || product.category,
             isActive: product.isActive,
-            variantIndex: variantIndex,
-            variants: product.variants || [],
-            selectedVariant: variant || null
+            hasEgg: Boolean(product.hasEgg),
+            variantIndex,
+            variants: normalizedVariants,
+            selectedVariant: variant
+              ? {
+                  ...variant,
+                  variantLabel: formatVariantLabel(variant)
+                }
+              : null,
+            variantLabel: variant
+              ? formatVariantLabel(variant)
+              : item.productDetails?.variantLabel || ''
           };
+          const existingDetails = item.productDetails ? JSON.stringify(item.productDetails) : null;
+          const updatedDetails = JSON.stringify(updatedProductDetails);
+          if (existingDetails !== updatedDetails) {
+            item.productDetails = updatedProductDetails;
+            if (typeof item.markModified === 'function') {
+              item.markModified('productDetails');
+            }
+            itemsChanged = true;
+          }
           
           refreshedItems.push({
             ...item.toObject(),
@@ -52,12 +105,18 @@ export const getNewCart = async (req, res) => {
         refreshedItems.push(item.toObject());
       }
     }
-    
-    // Generate ETag based on cart data for caching
+
+    if (itemsChanged) {
+      cart.lastUpdated = new Date();
+      cart.markModified('items');
+      await cart.save();
+    }
+
+    // Generate ETag based on cart data for caching (recompute after potential save)
     const eTag = `W/"cart-${userId}-${cart.updatedAt.getTime()}"`;
-    
+
     // Check if client has fresh version
-    if (req.headers['if-none-match'] === eTag) {
+    if (!itemsChanged && req.headers['if-none-match'] === eTag) {
       console.log(`⚡ Cart not modified for user: ${userId}`);
       return res.status(304).end(); // Not Modified
     }
@@ -117,8 +176,14 @@ export const addToNewCart = async (req, res) => {
     }
 
     // Get product price (from variants or main price)
+  const variantsArray = Array.isArray(product.variants) ? product.variants : [];
   const vi = Number.isInteger(variantIndex) ? variantIndex : 0;
-  const variant = Array.isArray(product.variants) ? product.variants[vi] : undefined;
+  const variantDoc = variantsArray[vi];
+  const variant = variantDoc
+    ? (typeof variantDoc.toObject === 'function'
+      ? variantDoc.toObject()
+      : { ...variantDoc })
+    : null;
   const productPrice = parseFloat(variant?.price || product.price || 0);
   const productStock = (variant?.stock ?? product.stock ?? 0);
   console.log(`🔎 Variant selection: vi=${vi}, tracks=${!!variant?.isStockActive}, stock=${productStock}, price=${productPrice}`);
@@ -140,6 +205,16 @@ export const addToNewCart = async (req, res) => {
       console.log('ℹ️ Variant does not track stock; skipping stock availability checks');
     }
 
+    const normalizedVariants = variantsArray.map((entry) => {
+      const plainVariant = typeof entry.toObject === 'function'
+        ? entry.toObject()
+        : { ...entry };
+      return {
+        ...plainVariant,
+        variantLabel: formatVariantLabel(plainVariant)
+      };
+    });
+
     // Prepare product details for cart
     const productDetails = {
       name: product.name,
@@ -147,11 +222,18 @@ export const addToNewCart = async (req, res) => {
       image: product.image || product.images?.[0] || '',
       category: product.category?.name || product.category,
       isActive: product.isActive,
+      hasEgg: Boolean(product.hasEgg),
       variantIndex: vi,
       // Include full product data for free cash calculations
-      variants: product.variants || [],
+      variants: normalizedVariants,
       // Quick access to selected variant for frontend
-      selectedVariant: variant || null
+      selectedVariant: variant
+        ? {
+            ...variant,
+            variantLabel: formatVariantLabel(variant)
+          }
+        : null,
+      variantLabel: variant ? formatVariantLabel(variant) : ''
     };
 
     // Get or create cart

@@ -9,6 +9,7 @@ import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
 import { calculateCartTotals, calculatePricing, formatCurrency } from '../../utils/pricingUtils';
+import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import api from '../../services/apiService';
 
 const Payment = () => {
@@ -120,6 +121,32 @@ const Payment = () => {
     return isNaN(total) ? 0 : Math.max(0, total); // Ensure total is never negative or NaN
   }, [discountedCartTotal, deliveryCharge, appliedFreeCash]);
 
+  const getVariantInfo = (item) => {
+    const prod = item?.productDetails || item?.product || item || {};
+    const variants = Array.isArray(prod?.variants) ? prod.variants : Array.isArray(item?.variants) ? item.variants : [];
+    const variantIndex = Number.isInteger(item?.productDetails?.variantIndex)
+      ? item.productDetails.variantIndex
+      : Number.isInteger(item?.variantIndex)
+        ? item.variantIndex
+        : 0;
+    const variantFromArray = variants?.[variantIndex];
+    const selectedVariant = item?.productDetails?.selectedVariant || item?.selectedVariant || variantFromArray || item?.variant;
+    const variantLabel = resolveOrderItemVariantLabel({
+      ...item,
+      variants,
+      variantIndex,
+      variant: item?.variant || selectedVariant,
+      selectedVariant,
+      variantLabel: item?.variantLabel || prod?.variantLabel
+    });
+
+    return {
+      variantIndex,
+      variant: item?.variant || selectedVariant || variantFromArray || null,
+      variantLabel
+    };
+  };
+
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('razorpay');
   const [cardDetails, setCardDetails] = useState({
     cardNumber: '',
@@ -172,21 +199,38 @@ const Payment = () => {
         receipt: `order_${Date.now()}`,
         paymentMethod,
         cartItems: cartItems.map(item => {
-          // Use centralized pricing calculation for consistency
-          const prod = item.productDetails;
-          const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-          const variant = prod?.variants?.[vi];
-          
-          // Get pricing using centralized utility
-          const pricing = calculatePricing(variant);
-          
+          const prod = item.productDetails || item.product || {};
+          const variants = Array.isArray(prod?.variants) ? prod.variants : Array.isArray(item?.variants) ? item.variants : [];
+          const variantIndex = Number.isInteger(item?.productDetails?.variantIndex)
+            ? item.productDetails.variantIndex
+            : Number.isInteger(item?.variantIndex)
+              ? item.variantIndex
+              : 0;
+          const variantFromArray = variants?.[variantIndex];
+          const selectedVariant = item?.productDetails?.selectedVariant || item?.selectedVariant || variantFromArray;
+
+          const variantLabel = resolveOrderItemVariantLabel({
+            ...item,
+            variants,
+            variantIndex,
+            variant: item?.variant || selectedVariant,
+            selectedVariant,
+            variantLabel: item?.variantLabel || prod?.variantLabel
+          });
+
+          const pricingSource = item?.variant || selectedVariant || variantFromArray;
+          const pricing = pricingSource ? calculatePricing(pricingSource) : { finalPrice: Number(item.price) || 0, mrp: Number(item.originalPrice) || Number(item.price) || 0 };
+          const variantSnapshot = pricingSource ? { ...pricingSource } : null;
+
           return {
             productId: item.productId || item._id,
-            productName: item.name,
+            productName: item.name || prod?.name || 'Product',
             quantity: item.quantity,
-            price: pricing.finalPrice, // Use centralized pricing calculation
-            originalPrice: pricing.mrp, // Use centralized MRP calculation
-            variantIndex: item.variantIndex || 0
+            price: pricing.finalPrice,
+            originalPrice: pricing.mrp,
+            variantIndex,
+            variantLabel: variantLabel || '',
+            variant: variantSnapshot
           };
         }),
         userDetails: {
@@ -873,59 +917,60 @@ const Payment = () => {
               </h2>
               
               <div className="max-h-[250px] sm:max-h-[300px] overflow-y-auto mb-4 pr-1 sm:pr-2">
-                {cartItems.map((item) => (
-                  <div key={`${item.id || item._id}-${JSON.stringify(item.options)}`} className="flex items-center py-2 sm:py-3 border-b border-white">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
-                      <img 
-                        src={item.image || (item.images && item.images[0]) || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K'} 
-                        alt={item.name} 
-                        className="w-full h-full object-cover rounded-md"
-                        onError={(e) => {
-                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K';
-                        }}
-                      />
-                    </div>
-                    <div className="ml-2 sm:ml-3 flex-grow">
-                      <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{item.name}</p>
-                      <div className="flex justify-between items-center">
-                        <p className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                          {(() => {
-                            const opts = item.options || item.productDetails?.options || {};
-                            const weight = opts.weight || item.productDetails?.weight || item.productDetails?.variant?.weight || '';
-                            const flavor = opts.flavor || item.productDetails?.flavor || '';
-                            const parts = [];
-                            if (weight) parts.push(weight);
-                            if (flavor) parts.push(flavor);
-                            return parts.length ? parts.join(' • ') : null;
-                          })()}
-                        </p>
-                        <div className="text-xs">
-                          {(() => {
-                            // Use centralized pricing calculation for consistency
-                            const prod = item.productDetails;
-                            const vi = Number.isInteger(item?.productDetails?.variantIndex) ? item.productDetails.variantIndex : 0;
-                            const variant = prod?.variants?.[vi];
-                            const pricing = calculatePricing(variant);
-                            
-                            return (
-                              <div className="space-y-1">
-                                <div>
-                                  <span className="font-medium text-green-600">₹{Math.round(pricing.finalPrice)}</span>
-                                  <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent"> × {item.quantity}</span>
-                                </div>
-                                {pricing.discountPercentage > 0 && (
-                                  <div className="text-green-600 font-medium text-xs">
-                                    {pricing.discountPercentage}% OFF
-                                  </div>
-                                )}
+                {cartItems.map((item) => {
+                  const { variant, variantLabel } = getVariantInfo(item);
+                  const fallbackLabel = (() => {
+                    const opts = item.options || item.productDetails?.options || {};
+                    const weight = opts.weight || item.productDetails?.weight || item.productDetails?.variant?.weight || '';
+                    const flavor = opts.flavor || item.productDetails?.flavor || '';
+                    const parts = [];
+                    if (weight) parts.push(weight);
+                    if (flavor) parts.push(flavor);
+                    return parts.length ? parts.join(' • ') : '';
+                  })();
+
+                  const displayLabel = variantLabel || fallbackLabel || 'Standard';
+                  const pricing = variant ? calculatePricing(variant) : null;
+                  const unitPrice = pricing ? pricing.finalPrice : Number(item?.price) || 0;
+                  const safeUnitPrice = Number.isFinite(unitPrice) ? unitPrice : 0;
+                  const hasDiscount = Boolean(pricing?.discountPercentage > 0);
+
+                  return (
+                    <div key={`${item.id || item._id}-${JSON.stringify(item.options)}`} className="flex items-center py-2 sm:py-3 border-b border-white">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
+                        <img 
+                          src={item.image || (item.images && item.images[0]) || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K'} 
+                          alt={item.name} 
+                          className="w-full h-full object-cover rounded-md"
+                          onError={(e) => {
+                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K';
+                          }}
+                        />
+                      </div>
+                      <div className="ml-2 sm:ml-3 flex-grow">
+                        <p className="text-xs sm:text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{item.name}</p>
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
+                            {displayLabel}
+                          </p>
+                          <div className="text-xs">
+                            <div className="space-y-1">
+                              <div>
+                                <span className="font-medium text-green-600">₹{Math.round(safeUnitPrice)}</span>
+                                <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent"> × {item.quantity}</span>
                               </div>
-                            );
-                          })()}
+                              {hasDiscount && (
+                                <div className="text-green-600 font-medium text-xs">
+                                  {pricing?.discountPercentage}% OFF
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               <div className="space-y-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">

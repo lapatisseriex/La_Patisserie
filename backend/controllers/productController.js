@@ -6,6 +6,7 @@ import TimeSettings from '../models/timeSettingsModel.js';
 import { deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
 import { cache } from '../utils/cache.js';
 import { sendNewProductNewsletter, sendDiscountNewsletter } from '../utils/newsletterEmailService.js';
+import { formatVariantLabel } from '../utils/variantUtils.js';
 
 // @desc    Get all products with optional filtering
 // @route   GET /api/products
@@ -208,10 +209,16 @@ export const getProduct = asyncHandler(async (req, res) => {
     const productDoc = new Product(product);
     
     // Add pricing breakdown for each variant
-    const variantsWithPricing = product.variants?.map((variant, index) => ({
-      ...variant,
-      pricingBreakdown: productDoc.getVariantPricingBreakdown(index)
-    })) || [];
+    const variantsWithPricing = product.variants?.map((variant, index) => {
+      const plainVariant = typeof variant?.toObject === 'function'
+        ? variant.toObject()
+        : { ...variant };
+      return {
+        ...plainVariant,
+        variantLabel: formatVariantLabel(plainVariant),
+        pricingBreakdown: productDoc.getVariantPricingBreakdown(index)
+      };
+    }) || [];
 
     // Add availability status to the product
     const productWithAvailability = {
@@ -221,7 +228,8 @@ export const getProduct = asyncHandler(async (req, res) => {
       shopStatus: {
         isOpen: isShopOpen,
         nextOpenTime: nextOpenTime
-      }
+      },
+      defaultVariantLabel: variantsWithPricing[0]?.variantLabel || ''
     };
 
     res.status(200).json(productWithAvailability);

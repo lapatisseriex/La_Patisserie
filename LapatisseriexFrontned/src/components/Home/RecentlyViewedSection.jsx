@@ -75,34 +75,21 @@ const RecentlyViewedSection = () => {
 
         {/* Empty State */}
         {!loading && validRecentlyViewed.length === 0 && user && (
-          <div className="text-center py-16">
-            <div className="flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mx-auto mb-6">
-              <Clock className="h-10 w-10 text-gray-500" />
+          <div className="py-14 text-center">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center border border-[#733857]/20">
+              <Clock className="h-10 w-10 text-[#733857]" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">No Recently Viewed Products</h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">Start exploring our delicious cakes and desserts to see them here!</p>
-            <style>{`
-              .browse-products-btn span {
-                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                color: transparent;
-                transition: all 0.3s ease;
-              }
-              .browse-products-btn:hover span {
-                color: white !important;
-                background: none !important;
-                -webkit-background-clip: unset !important;
-                background-clip: unset !important;
-              }
-            `}</style>
+            <h3 className="text-2xl font-light tracking-wide text-[#1a1a1a] mb-2">
+              No recently viewed products
+            </h3>
+            <p className="text-sm text-gray-500 mb-8 max-w-md mx-auto">
+              Explore our latest desserts to see them appear here.
+            </p>
             <button
               onClick={() => navigate('/products')}
-              className="browse-products-btn bg-white border-2 border-[#733857] font-medium px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transform hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex items-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
             >
-              <span className="transition-all duration-300">
-                Browse Products
-              </span>
+              Browse Products
             </button>
           </div>
         )}

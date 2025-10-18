@@ -23,6 +23,15 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  variantLabel: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  variant: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
   dispatchStatus: {
     type: String,
     enum: ['pending', 'dispatched', 'delivered'],

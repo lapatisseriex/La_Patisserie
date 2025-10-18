@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, DollarSign } from 'lucide-react';
 import { calculatePricing } from '../../utils/pricingUtils';
+import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 
 const OrderTrackingContent = ({ order }) => {
   const navigate = useNavigate();
@@ -307,6 +308,7 @@ const OrderTrackingContent = ({ order }) => {
               ? { color: '#8d4466', bgColor: 'rgba(141, 68, 102, 0.08)', label: 'Dispatched', icon: Truck }
               : { color: '#733857', bgColor: 'rgba(115, 56, 87, 0.08)', label: 'Preparing', icon: Clock };
             const ItemIcon = itemStatusConfig.icon;
+            const variantLabel = resolveOrderItemVariantLabel(item);
 
             return (
               <div 
@@ -365,7 +367,14 @@ const OrderTrackingContent = ({ order }) => {
                   </div>
                   <p className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                     Quantity: {item.quantity}
-                    {item.selectedVariant && ` • ${item.selectedVariant.weight} ${item.selectedVariant.unit}`}
+                    {variantLabel && (
+                      <>
+                        {' '}
+                        •
+                        {' '}
+                        <span className="font-medium" style={{ color: '#1a1a1a' }}>{variantLabel}</span>
+                      </>
+                    )}
                   </p>
                   {item.dispatchedAt && (
                     <p className="text-xs mt-1" style={{ color: 'rgba(26, 26, 26, 0.4)' }}>

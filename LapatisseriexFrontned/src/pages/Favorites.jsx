@@ -32,38 +32,21 @@ const Favorites = () => {
   // Empty state
   if (!loading && (!favorites || favorites.length === 0)) {
     return (
-      <div className="min-h-screen flex items-center justify-center ">
-        <div className="max-w-lg w-full p-8 bg-white ">
-          <div className="flex flex-col items-center">
-            <Heart className="w-14 h-14 text-rose-500 mb-4" />
-            <h2 className="text-3xl font-semibold mb-2 text-gray-900">No Favorites Yet</h2>
-            <p className="text-gray-600 mb-6 text-center">
-              Add your favorite cakes & desserts here to view them later.
-            </p>
-            <style>{`
-              .browse-products-btn span {
-                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                color: transparent;
-                transition: all 0.3s ease;
-              }
-              .browse-products-btn:hover span {
-                color: white !important;
-                background: none !important;
-                -webkit-background-clip: unset !important;
-                background-clip: unset !important;
-              }
-            `}</style>
-            <Link
-              to="/products"
-              className="browse-products-btn bg-white border-2 border-[#733857] px-6 py-3 font-medium hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition duration-300 rounded-md shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <span className="transition-all duration-300">
-                Browse Products
-              </span>
-            </Link>
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+        <div className="w-full max-w-xl text-center space-y-6">
+          <div className="mx-auto flex h-24 w-24 items-center justify-center border border-[#733857]/20">
+            <Heart className="w-10 h-10 text-[#733857]" />
           </div>
+          <h2 className="text-3xl font-light tracking-wide text-[#1a1a1a]">No favorites yet</h2>
+          <p className="text-sm text-gray-500 max-w-md mx-auto">
+            Save your top picks to keep them ready for your next craving.
+          </p>
+          <Link
+            to="/products"
+            className="inline-flex items-center justify-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
+          >
+            Browse Products
+          </Link>
         </div>
       </div>
     );

@@ -13,6 +13,7 @@ import {
   FaSync
 } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 
 // CSS for line clamp
 const styles = `
@@ -104,6 +105,7 @@ const IndividualOrderCard = ({ order, onDispatchItem, dispatchLoading, dispatchS
             const dispatchKey = `${order._id}-${item.productName}`;
             const isDispatching = dispatchLoading[dispatchKey];
             const isSuccess = dispatchSuccess[dispatchKey];
+            const variantLabel = resolveOrderItemVariantLabel(item);
             
             return (
               <div key={`pending-${index}`} className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
@@ -114,6 +116,9 @@ const IndividualOrderCard = ({ order, onDispatchItem, dispatchLoading, dispatchS
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                     <span>Category: {item.categoryName}</span>
+                    {variantLabel && (
+                      <span>Variant: {variantLabel}</span>
+                    )}
                     <span>Qty: {item.quantity}</span>
                     <span>Price: ₹{item.price}</span>
                   </div>
@@ -147,62 +152,76 @@ const IndividualOrderCard = ({ order, onDispatchItem, dispatchLoading, dispatchS
           })}
 
           {/* Show dispatched items but without delivery buttons - just for reference */}
-          {(order.dispatchedItems_list || []).map((item, index) => (
-            <div key={`dispatched-${index}`} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">DISPATCHED</span>
-                  <h5 className="font-medium text-gray-900">{item.productName}</h5>
+          {(order.dispatchedItems_list || []).map((item, index) => {
+            const variantLabel = resolveOrderItemVariantLabel(item);
+
+            return (
+              <div key={`dispatched-${index}`} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">DISPATCHED</span>
+                    <h5 className="font-medium text-gray-900">{item.productName}</h5>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                    <span>Category: {item.categoryName}</span>
+                    {variantLabel && (
+                      <span>Variant: {variantLabel}</span>
+                    )}
+                    <span>Qty: {item.quantity}</span>
+                    <span>Price: ₹{item.price}</span>
+                    {item.dispatchedAt && (
+                      <span>Dispatched: {new Date(item.dispatchedAt).toLocaleString('en-IN', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                  <span>Category: {item.categoryName}</span>
-                  <span>Qty: {item.quantity}</span>
-                  <span>Price: ₹{item.price}</span>
-                  {item.dispatchedAt && (
-                    <span>Dispatched: {new Date(item.dispatchedAt).toLocaleString('en-IN', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</span>
-                  )}
+
+                <div className="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm font-medium">
+                  🚚 Out for Delivery
                 </div>
               </div>
-              
-              <div className="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm font-medium">
-                🚚 Out for Delivery
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Show delivered items for reference */}
-          {(order.deliveredItems_list || []).map((item, index) => (
-            <div key={`delivered-${index}`} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">DELIVERED</span>
-                  <h5 className="font-medium text-gray-900">{item.productName}</h5>
+          {(order.deliveredItems_list || []).map((item, index) => {
+            const variantLabel = resolveOrderItemVariantLabel(item);
+
+            return (
+              <div key={`delivered-${index}`} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">DELIVERED</span>
+                    <h5 className="font-medium text-gray-900">{item.productName}</h5>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                    <span>Category: {item.categoryName}</span>
+                    {variantLabel && (
+                      <span>Variant: {variantLabel}</span>
+                    )}
+                    <span>Qty: {item.quantity}</span>
+                    <span>Price: ₹{item.price}</span>
+                    {item.deliveredAt && (
+                      <span>Delivered: {new Date(item.deliveredAt).toLocaleString('en-IN', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                  <span>Category: {item.categoryName}</span>
-                  <span>Qty: {item.quantity}</span>
-                  <span>Price: ₹{item.price}</span>
-                  {item.deliveredAt && (
-                    <span>Delivered: {new Date(item.deliveredAt).toLocaleString('en-IN', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</span>
-                  )}
+
+                <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
+                  ✅ Completed
                 </div>
               </div>
-              
-              <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
-                ✅ Completed
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         {/* Order Info */}

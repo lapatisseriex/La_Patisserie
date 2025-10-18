@@ -15,6 +15,8 @@ import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
 import ScrollManager from '../utils/scrollManager';
 import { calculatePricing } from '../utils/pricingUtils';
+import { formatVariantLabel } from '../utils/variantUtils';
+
 import { WebsiteLiveTimerCompact } from '../components/WebsiteLiveTimer/index.js';
 import '../styles/ProductDisplayPageNew.css';
 
@@ -316,6 +318,32 @@ const ProductDisplayPageNew = () => {
     return calculatePricing(selectedVariant);
   }, [selectedVariant]);
   
+  const selectedVariantLabel = useMemo(() => {
+    if (!product) return '';
+
+    const variantFromProduct = Array.isArray(product.variants) && Number.isInteger(selectedVariantIndex)
+      ? product.variants[selectedVariantIndex]
+      : null;
+
+    const explicitLabel = variantFromProduct?.variantLabel;
+    if (typeof explicitLabel === 'string' && explicitLabel.trim()) {
+      return explicitLabel.trim();
+    }
+
+    const computedLabel = formatVariantLabel(selectedVariant || variantFromProduct);
+    if (computedLabel) {
+      return computedLabel;
+    }
+
+    const fallbackLabel = typeof product.variantLabel === 'string' && product.variantLabel.trim()
+      ? product.variantLabel.trim()
+      : typeof product.defaultVariantLabel === 'string' && product.defaultVariantLabel.trim()
+        ? product.defaultVariantLabel.trim()
+        : '';
+
+    return fallbackLabel;
+  }, [product, selectedVariant, selectedVariantIndex]);
+
   const tracks = !!selectedVariant?.isStockActive;
   const totalStock = tracks ? (selectedVariant?.stock || 0) : Number.POSITIVE_INFINITY;
 
@@ -409,7 +437,6 @@ const ProductDisplayPageNew = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-light tracking-wide truncate leading-tight" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
                     {product.name}
@@ -444,6 +471,11 @@ const ProductDisplayPageNew = () => {
                       </>
                     )}
                   </div>
+                  {selectedVariantLabel && (
+                    <div className="mt-1 text-[11px] font-medium tracking-[0.2em] uppercase text-gray-500 truncate">
+                      {selectedVariantLabel}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -629,7 +661,6 @@ const ProductDisplayPageNew = () => {
                 </>
               )}
             </div>
-
             {/* Rating chip */}
             <div className="mb-3">
               <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-2.5 py-1">
@@ -1196,6 +1227,11 @@ const ProductDisplayPageNew = () => {
                     </>
                   )}
                 </div>
+                {selectedVariantLabel && (
+                  <div className="hidden md:block mt-1 text-xs uppercase tracking-[0.3em] text-gray-500">
+                    {selectedVariantLabel}
+                  </div>
+                )}
 
                 {/* Rating chip */}
                 <div className="mb-4">
