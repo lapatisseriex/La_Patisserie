@@ -491,11 +491,11 @@ const Payment = () => {
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 pt-4 sm:pt-8 min-h-screen">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center mb-4 sm:mb-6">
-            <Link to="/cart" className="hidden sm:flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-colors">
+            <Link to="/checkout" className="hidden sm:flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-colors">
               <FaArrowLeft className="mr-2 text-[#733857]" />
-              <span>Back to Cart</span>
+              <span>Back to Checkout</span>
             </Link>
-            <h1 className="text-xl sm:text-2xl font-bold text-center flex-grow bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Checkout</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-center flex-grow bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Payment</h1>
           </div>
           
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -504,18 +504,18 @@ const Payment = () => {
             </div>
             <h2 className="text-2xl font-bold text-red-600 mb-4">Delivery Location Required</h2>
             <p className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-6">
-              Please select a delivery location to proceed with checkout.
+              Please select a delivery location to proceed with payment.
             </p>
             
             <div className="space-y-4">
               <Link 
-                to="/cart" 
-                className="block w-full px-6 py-3 bg-gradient-to-r from-rose-400 to-pink-500 text-white font-medium rounded-md hover:from-rose-500 hover:to-pink-600 transition-all duration-300 shadow-md hover:shadow-lg"
+                to="/checkout" 
+                className="block w-full px-6 py-3 bg-white border-2 border-[#733857] text-[#733857] font-medium rounded-md hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg"
               >
-                Go Back to Cart
+                Go Back to Checkout
               </Link>
               <p className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                You can select your delivery location from the cart page.
+                You can verify your delivery location from the checkout page.
               </p>
             </div>
           </div>
@@ -530,9 +530,9 @@ const Payment = () => {
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/cart" className="flex items-center gap-3 text-gray-600 hover:text-[#733857] transition-colors">
+            <Link to="/checkout" className="flex items-center gap-3 text-gray-600 hover:text-[#733857] transition-colors">
               <ChevronLeft className="h-5 w-5" />
-              <span className="font-medium">Back to Cart</span>
+              <span className="font-medium">Back to Checkout</span>
             </Link>
             <div className="flex items-center gap-2">
               <img src="/images/logo.png" alt="La Patisserie" className="h-8 w-auto" />
@@ -545,11 +545,11 @@ const Payment = () => {
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 min-h-screen">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center mb-4 sm:mb-6">
-          <Link to="/cart" className="hidden sm:flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-colors">
+          <Link to="/checkout" className="hidden sm:flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-colors">
             <FaArrowLeft className="mr-2 text-[#733857]" />
-            <span>Back to Cart</span>
+            <span>Back to Checkout</span>
           </Link>
-          <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-center flex-grow bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Checkout</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-center flex-grow bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Payment</h1>
         </div>
         
         {/* Delivery Information */}

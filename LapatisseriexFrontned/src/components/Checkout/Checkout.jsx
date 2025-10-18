@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
 import { useCart } from '../../hooks/useCart';
+import { useLocation } from '../../context/LocationContext/LocationContext';
+import { useHostel } from '../../context/HostelContext/HostelContext';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 import {
   Mail,
@@ -8,23 +11,65 @@ import {
   User,
   MapPin,
   ChevronRight,
+  ChevronLeft,
   CheckCircle,
   AlertCircle,
   ShoppingBag,
   Package,
   Building,
+  Edit2,
+  Save,
+  X,
 } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 
 const Checkout = () => {
-  const { user } = useAuth();
+  const { user, getCurrentUser, updateUser } = useAuth();
   const { cartItems, cartTotal, cartCount, isEmpty } = useCart();
+  const { locations, loading: locationsLoading, updateUserLocation, getCurrentLocationName } = useLocation();
+  const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState(user?.email || '');
   const [error, setError] = useState('');
-  const [step, setStep] = useState(1); // 1: User Info, 2: Payment, 3: Confirmation
+  const [step, setStep] = useState(1); // 1: User Info, 2: Ready for Payment
+  
+  // Edit mode states
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editLocationId, setEditLocationId] = useState(user?.location?._id || '');
+  const [editHostelId, setEditHostelId] = useState(user?.hostel?._id || '');
+  const [saving, setSaving] = useState(false);
+
+  // Update local state when user data changes
+  useEffect(() => {
+    if (user) {
+      setEditName(user.name || '');
+      setEditLocationId(user.location?._id || '');
+      setEditHostelId(user.hostel?._id || '');
+      setEmail(user.email || '');
+    }
+  }, [user]);
+
+  // Fetch hostels when location changes in edit mode
+  useEffect(() => {
+    if (isEditMode && editLocationId) {
+      fetchHostelsByLocation(editLocationId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editLocationId, isEditMode]);
+
+  // Fetch hostels for current user location on mount (only once)
+  useEffect(() => {
+    if (user?.location?._id) {
+      fetchHostelsByLocation(user.location._id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.location?._id]);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -32,6 +77,87 @@ const Checkout = () => {
       setError('Your cart is empty. Add some items before proceeding to checkout.');
     }
   }, [isEmpty]);
+
+  // Handle save changes
+  const handleSaveChanges = async () => {
+    try {
+      setSaving(true);
+      setError('');
+
+      if (!editName.trim()) {
+        setError('Name cannot be empty');
+        setSaving(false);
+        return;
+      }
+
+      if (!editLocationId) {
+        setError('Please select a delivery location');
+        setSaving(false);
+        return;
+      }
+
+      if (!editHostelId) {
+        setError('Please select a hostel');
+        setSaving(false);
+        return;
+      }
+
+      // Update user name, location, and hostel in one API call
+      const authToken = localStorage.getItem('authToken');
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_URL}/users/${user.uid}`,
+        { 
+          name: editName.trim(),
+          location: editLocationId,
+          hostel: editHostelId 
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      // Get the full location and hostel objects
+      const selectedLocation = locations.find(loc => loc._id === editLocationId);
+      const selectedHostel = hostels.find(h => h._id === editHostelId);
+
+      // Immediately update Redux store for instant UI update across all components
+      if (updateUser) {
+        updateUser({
+          ...user,
+          name: editName.trim(),
+          location: selectedLocation || editLocationId,
+          hostel: selectedHostel || editHostelId
+        });
+      }
+
+      // Also update location in LocationContext for immediate UI update
+      await updateUserLocation(editLocationId);
+
+      // Refresh user data from server to ensure everything is in sync
+      // This will update Redux store with the server response
+      await getCurrentUser();
+
+      toast.success('Information updated successfully!');
+      setIsEditMode(false);
+    } catch (error) {
+      console.error('Error updating user information:', error);
+      setError(error.response?.data?.message || 'Failed to update information. Please try again.');
+      toast.error('Failed to update information');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditName(user?.name || '');
+    setEditLocationId(user?.location?._id || '');
+    setEditHostelId(user?.hostel?._id || '');
+    setIsEditMode(false);
+    setError('');
+  };
 
   const handleProceedToPayment = () => {
     if (!email) {
@@ -57,7 +183,8 @@ const Checkout = () => {
     }
     
     setError('');
-    setStep(2);
+    // Navigate to payment page
+    navigate('/payment');
   };
 
   const handleEmailChange = (e) => {
@@ -65,367 +192,358 @@ const Checkout = () => {
   };
   console.log(user);
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Checkout</h1>
-
-      {/* Cart summary */}
-      {!isEmpty && (
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
-          <div className="flex items-center">
-            <ShoppingBag className="text-blue-500 mr-2" size={20} />
-            <p className="text-blue-800">
-              <strong>{cartCount}</strong> items in your cart - Total:{' '}
-              <strong>₹{isNaN(cartTotal) ? '0.00' : cartTotal.toFixed(2)}</strong>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Error message */}
-      {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="flex items-center">
-            <AlertCircle className="text-red-500 mr-2" size={20} />
-            <p className="text-red-800">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* If cart is empty */}
-      {isEmpty ? (
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm text-center">
-          <Package className="mx-auto text-gray-400 mb-4" size={48} />
-          <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-          <p className="text-gray-600 mb-4">
-            Add some delicious items to your cart before proceeding to checkout.
-          </p>
-          <style>{`
-            .browse-products-btn span {
-              background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-              -webkit-background-clip: text;
-              background-clip: text;
-              color: transparent;
-              transition: all 0.3s ease;
-            }
-            .browse-products-btn:hover span {
-              color: white !important;
-              background: none !important;
-              -webkit-background-clip: unset !important;
-              background-clip: unset !important;
-            }
-          `}</style>
-          <button
-            onClick={() => (window.location.href = '/products')}
-            className="browse-products-btn py-2 px-6 bg-white border-2 border-[#733857] rounded-md hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-md"
+    <div className="min-h-screen bg-gray-25" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', backgroundColor: '#fafafa' }}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Back to Cart */}
+        <div className="mb-6">
+          <Link 
+            to="/cart" 
+            className="inline-flex items-center gap-2 text-[#733857] hover:text-[#8d4466] transition-colors duration-200"
           >
-            <span className="transition-all duration-300">
-              Browse Products
-            </span>
-          </button>
+            <ChevronLeft size={20} />
+            <span className="font-medium">Back to Cart</span>
+          </Link>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Checkout form */}
-          <div className="lg:col-span-2">
-            {/* Progress Steps */}
-            <div className="flex items-center justify-center mb-8">
-              <div
-                className={`flex items-center ${
-                  step >= 1 ? 'text-blue-600' : 'text-gray-400'
-                }`}
-              >
-                <div
-                  className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
-                    step >= 1 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
-                  }`}
-                >
-                  1
+
+
+        {/* If cart is empty */}
+        {isEmpty ? (
+          <div className="bg-white p-8 rounded-xl shadow-sm text-center max-w-md mx-auto border border-gray-100">
+            <Package className="mx-auto text-gray-400 mb-4" size={48} />
+            <h2 className="text-xl font-semibold mb-2 text-gray-900">Your cart is empty</h2>
+            <p className="text-gray-600 mb-6">
+              Add some delicious items to your cart before proceeding to checkout.
+            </p>
+            <style>{`
+              .browse-products-btn span {
+                background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+                transition: all 0.3s ease;
+              }
+              .browse-products-btn:hover span {
+                color: white !important;
+                background: none !important;
+                -webkit-background-clip: unset !important;
+                background-clip: unset !important;
+              }
+            `}</style>
+            <button
+              onClick={() => (window.location.href = '/products')}
+              className="group relative px-8 py-3 text-gray-900 font-light transition-all duration-200 rounded-lg overflow-hidden bg-white border-2 border-[#733857] hover:text-white shadow-sm hover:shadow-md touch-manipulation"
+              style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+            >
+              <span className="relative z-10 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent group-hover:text-white transition-all duration-200">
+                Browse Products
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+            </button>
+          </div>
+        ) : (
+          /* Two-column layout - Mobile: Products above, Desktop: Side by side */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            {/* Order Summary - Shows FIRST on mobile, SECOND on desktop */}
+            <div className="order-1 lg:order-2 lg:sticky lg:top-4 h-fit border-none shadow-none">
+              <div className="p-8 border-none shadow-none">
+                <h2 className="text-xl font-semibold text-gray-900 mb-8">Order Summary</h2>
+
+                {/* Cart Items */}
+                <div className="space-y-6 mb-8 max-h-96 overflow-y-auto pt-2 pr-2">
+                  {cartItems.map((item) => {
+                    return (
+                      <div key={item.id} className="flex items-start gap-4">
+                        <div className="relative flex-shrink-0">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded-xl"
+                          />
+                          <span className="absolute -top-2 -right-2 bg-[#733857] text-white text-xs font-medium min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full">
+                            {item.quantity}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-normal text-gray-900 mb-1">
+                            {item.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {(() => {
+                              const prod = item.productDetails || item.product || item;
+                              const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
+                              const variant = prod?.variants?.[vi];
+                              if (variant) {
+                                return variant.size || variant.weight || 'Standard';
+                              }
+                              return 'Standard';
+                            })()}
+                          </p>
+                        </div>
+                        <p className="text-sm font-normal text-gray-900 whitespace-nowrap">
+                          {(() => {
+                            const prod = item.productDetails || item.product || item;
+                            const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
+                            const variant = prod?.variants?.[vi];
+                            
+                            if (variant) {
+                              const pricing = calculatePricing(variant);
+                              const itemTotal = pricing.finalPrice * item.quantity;
+                              return `₹${itemTotal.toFixed(2)}`;
+                            } else {
+                              const itemTotal = item.price * item.quantity;
+                              return isNaN(itemTotal) ? '₹0.00' : `₹${itemTotal.toFixed(2)}`;
+                            }
+                          })()}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
-                <span className="ml-2">User Info</span>
-              </div>
-              <div
-                className={`w-12 h-1 mx-2 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}
-              ></div>
-              <div
-                className={`flex items-center ${
-                  step >= 2 ? 'text-blue-600' : 'text-gray-400'
-                }`}
-              >
-                <div
-                  className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
-                    step >= 2 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
-                  }`}
-                >
-                  2
+
+                {/* Price Breakdown */}
+                <div className="border-t border-gray-200 pt-4 space-y-3">
+                  {(() => {
+                    const totals = calculateCartTotals(cartItems);
+                    
+                    return (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-700">Subtotal · {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</span>
+                          <span className="text-gray-900">{formatCurrency(totals.originalTotal > 0 ? totals.originalTotal : totals.finalTotal)}</span>
+                        </div>
+                        {totals.totalSavings > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-700">Discount {totals.averageDiscountPercentage > 0 && `(${totals.averageDiscountPercentage}% OFF)`}</span>
+                            <span className="text-green-600 font-normal">-{formatCurrency(totals.totalSavings)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-700">Delivery</span>
+                          <span className="text-gray-600">Calculated at next step</span>
+                        </div>
+                        <div className="flex justify-between text-base pt-2 border-t border-gray-200">
+                          <span className="font-semibold text-gray-900">Total</span>
+                          <div className="text-right">
+                            <div className="text-xs text-gray-500 mb-0.5">INR</div>
+                            <div className="text-xl font-semibold text-gray-900">{formatCurrency(totals.finalTotal)}</div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 text-right -mt-1">
+                          Including ₹{((totals.finalTotal * 0.05).toFixed(2))} in taxes
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
-                <span className="ml-2">Payment</span>
-              </div>
-              <div
-                className={`w-12 h-1 mx-2 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}
-              ></div>
-              <div
-                className={`flex items-center ${
-                  step >= 3 ? 'text-blue-600' : 'text-gray-400'
-                }`}
-              >
-                <div
-                  className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${
-                    step >= 3 ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
-                  }`}
-                >
-                  3
-                </div>
-                <span className="ml-2">Confirmation</span>
               </div>
             </div>
 
-            {/* User Info Step */}
-            {step === 1 && (
-              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-                <h2 className="text-xl font-semibold mb-4 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">User Information</h2>
-                <div className="space-y-4">
-                  {/* Name */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                      Name <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={user?.name || ''}
-                        readOnly
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                      Phone <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={user?.phone || ''}
-                        readOnly
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Email */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                      Email <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={handleEmailChange}
-                        placeholder="Enter your email address"
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Location */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                      Delivery Location <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={user?.location?.name || 'Not set'}
-                        readOnly
-                        className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 ${!user?.location ? 'border-red-300' : ''}`}
-                      />
-                    </div>
-                    {!user?.location && (
-                      <p className="text-sm text-red-600">
-                        Please set your delivery location in your profile before proceeding
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Hostel */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                      Hostel/Residence <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={user?.hostel?.name || 'Not set'}
-                        readOnly
-                        className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 ${!user?.hostel ? 'border-red-300' : ''}`}
-                      />
-                    </div>
-                    {!user?.hostel && (
-                      <p className="text-sm text-red-600">
-                        Please set your hostel in your profile before proceeding
-                      </p>
-                    )}
+            {/* Contact & Delivery Information - Shows SECOND on mobile, FIRST on desktop */}
+            <div className="order-2 lg:order-1 bg-white p-8 space-y-8 rounded-xl shadow-sm border border-gray-100">
+              {/* Error message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="text-red-500 mr-2" size={20} />
+                    <p className="text-red-800">{error}</p>
                   </div>
                 </div>
+              )}
 
-                {/* Proceed Button */}
-                <div className="pt-4">
-                  <button
-                    onClick={handleProceedToPayment}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-black hover:bg-gray-800 text-white font-medium"
-                  >
-                    Proceed to Payment <ChevronRight size={18} />
-                  </button>
+              {/* Contact Information */}
+              <div className="bg-transparent p-0 shadow-none border-b border-gray-100 pb-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Contact Information</h2>
+                  {!isEditMode && (
+                    <button
+                      onClick={() => setIsEditMode(true)}
+                      className="text-sm text-[#733857] hover:text-[#8d4466] font-light transition-all duration-200 hover:underline underline-offset-2"
+                      style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                
+                {/* Phone */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone number
+                  </label>
+                  <input
+                    type="text"
+                    value={user?.phone || ''}
+                    readOnly
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    value={user?.email || email}
+                    readOnly
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700"
+                  />
                 </div>
               </div>
-            )}
 
-            {/* Payment Step */}
-            {step === 2 && (
-              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-                <h2 className="text-xl font-semibold mb-4">Payment</h2>
-                <p className="text-gray-600 mb-4">
-                  Payment processing would be implemented here.
-                </p>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={() => setStep(3)}
-                    className="py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800"
-                  >
-                    Complete Payment
-                  </button>
+              {/* Delivery */}
+              <div className="bg-transparent p-0 shadow-none">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery</h2>
+                
+                {/* Name */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={isEditMode ? editName : user?.name || ''}
+                    onChange={(e) => setEditName(e.target.value)}
+                    readOnly={!isEditMode}
+                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${
+                      isEditMode 
+                        ? 'bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent' 
+                        : 'bg-white text-gray-700'
+                    }`}
+                  />
                 </div>
-              </div>
-            )}
 
-            {/* Confirmation Step */}
-            {step === 3 && (
-              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-                <div className="flex flex-col items-center justify-center py-8">
-                  <div className="rounded-full bg-green-100 p-4 mb-4">
-                    <CheckCircle className="text-green-600" size={48} />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2">Order Confirmed!</h2>
-                  <p className="text-gray-600 mb-6">
-                    A confirmation email has been sent to {email}
-                  </p>
-                  <button
-                    onClick={() => (window.location.href = '/')}
-                    className="py-2 px-6 bg-black text-white rounded-md hover:bg-gray-800"
-                  >
-                    Continue Shopping
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm sticky top-4">
-              <h3 className="text-lg font-semibold mb-4 flex items-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                <Package className="mr-2 text-[#733857]" size={20} /> Order Summary
-              </h3>
-
-              <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
-                {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md"
-                  >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-12 h-12 object-cover rounded-md"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent truncate">
-                        {item.name}
-                      </p>
-                      <p className="text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
-                    <p className="text-sm font-medium bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-                      {(() => {
-                        // Use centralized pricing calculation for consistency
-                        const prod = item.productDetails || item.product || item;
-                        const vi = Number.isInteger(item?.variantIndex) ? item.variantIndex : 0;
-                        const variant = prod?.variants?.[vi];
-                        
-                        if (variant) {
-                          const pricing = calculatePricing(variant);
-                          const itemTotal = pricing.finalPrice * item.quantity;
-                          return `₹${itemTotal.toFixed(2)}`;
-                        } else {
-                          // Fallback to simple multiplication if variant not found
-                          const itemTotal = item.price * item.quantity;
-                          return isNaN(itemTotal) ? '₹0.00' : `₹${itemTotal.toFixed(2)}`;
-                        }
-                      })()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Order Total */}
-              <div className="border-t pt-4">
-                {(() => {
-                  // Calculate cart totals for discount information
-                  const totals = calculateCartTotals(cartItems);
-                  
-                  return (
-                    <>
-                      {/* Show discount savings if any */}
-                      {totals.totalSavings > 0 && (
-                        <>
-                          <div className="flex justify-between items-center text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-1">
-                            <span>Original Price:</span>
-                            <span className="line-through">{formatCurrency(totals.originalTotal)}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-green-600 text-sm mb-2">
-                            <span>Discount Savings {totals.averageDiscountPercentage > 0 && `(${totals.averageDiscountPercentage}% OFF)`}:</span>
-                            <span className="font-medium">-{formatCurrency(totals.totalSavings)}</span>
-                          </div>
-                          {/* Show average discount percentage prominently for multiple products */}
-                          {cartItems.length > 1 && totals.averageDiscountPercentage > 0 && (
-                            <div className="flex justify-between bg-green-50 p-2 rounded-md border border-green-100 mb-2">
-                              <span className="text-green-700 font-medium text-sm">Average Discount:</span>
-                              <span className="text-green-700 font-bold text-sm">{totals.averageDiscountPercentage}% OFF</span>
-                            </div>
-                          )}
-                        </>
+                {/* Location */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Delivery Location
+                  </label>
+                  {isEditMode ? (
+                    <select
+                      value={editLocationId}
+                      onChange={(e) => setEditLocationId(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
+                    >
+                      <option value="">Select a location</option>
+                      {locationsLoading ? (
+                        <option disabled>Loading locations...</option>
+                      ) : (
+                        locations.map((location) => (
+                          <option key={location._id} value={location._id}>
+                            {location.area}, {location.city} - {location.pincode}
+                          </option>
+                        ))
                       )}
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-semibold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">Total:</span>
-                        <span className="text-lg font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{formatCurrency(totals.finalTotal)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-1">
-                        <span>{cartItems.length} items</span>
-                        <span>Delivery charges may apply</span>
-                      </div>
-                    </>
-                  );
-                })()}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={(() => {
+                        const locationName = getCurrentLocationName();
+                        if (locationName === "Select Location" || locationName === "Location Loading...") {
+                          if (user?.location) {
+                            if (typeof user.location === 'object' && user.location.area) {
+                              return `${user.location.area}, ${user.location.city}`;
+                            } else if (typeof user.location === 'string' && locations.length > 0) {
+                              const loc = locations.find(l => l._id === user.location);
+                              return loc ? `${loc.area}, ${loc.city}` : 'Not set';
+                            }
+                          }
+                          return 'Not set';
+                        }
+                        return locationName;
+                      })()}
+                      readOnly
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 ${!user?.location ? 'border-red-300' : ''}`}
+                    />
+                  )}
+                  {!user?.location && !isEditMode && (
+                    <p className="text-sm text-red-600 mt-1">
+                      Please set your delivery location before proceeding
+                    </p>
+                  )}
+                </div>
+
+                {/* Hostel */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hostel/Residence
+                  </label>
+                  {isEditMode ? (
+                    <select
+                      value={editHostelId}
+                      onChange={(e) => setEditHostelId(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
+                    >
+                      <option value="">Select a hostel</option>
+                      {hostelsLoading ? (
+                        <option disabled>Loading hostels...</option>
+                      ) : hostels.length === 0 ? (
+                        <option disabled>No hostels available for this location</option>
+                      ) : (
+                        hostels.map((hostel) => (
+                          <option key={hostel._id} value={hostel._id}>
+                            {hostel.name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={user?.hostel?.name || 'Not set'}
+                      readOnly
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 ${!user?.hostel ? 'border-red-300' : ''}`}
+                    />
+                  )}
+                  {!user?.hostel && !isEditMode && (
+                    <p className="text-sm text-red-600 mt-1">
+                      Please set your hostel before proceeding
+                    </p>
+                  )}
+                </div>
+
+                {/* Edit Mode Buttons */}
+                {isEditMode && (
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={saving}
+                      className="flex-1 px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 font-light touch-manipulation"
+                      style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveChanges}
+                      disabled={saving}
+                      className="flex-1 px-6 py-3 text-white bg-[#733857] border-2 border-[#733857] rounded-lg hover:bg-[#8d4466] hover:border-[#8d4466] transition-all duration-200 disabled:opacity-50 font-light shadow-sm hover:shadow-md touch-manipulation"
+                      style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {/* Proceed Button */}
+              <button
+                onClick={handleProceedToPayment}
+                disabled={isEditMode || saving}
+                className="group relative w-full py-4 px-8 text-white font-light transition-all duration-200 rounded-lg overflow-hidden bg-[#733857] border-2 border-[#733857] hover:bg-[#8d4466] hover:border-[#8d4466] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-sm hover:shadow-md touch-manipulation"
+                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+              >
+                <span className="relative z-10">
+                  {isEditMode ? 'Save changes to proceed' : 'Continue to Payment'}
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

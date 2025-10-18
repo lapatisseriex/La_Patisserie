@@ -18,6 +18,7 @@ import ProductDisplayPage from './pages/ProductDisplayPage';
 import Favorites from './pages/Favorites';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
+import CheckoutPage from './pages/Checkout';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import OurServices from './pages/OurServices';
 import About from './pages/About';
@@ -173,6 +174,11 @@ function App() {
                               </ProductErrorBoundary>
                             } />
                             <Route path="cart" element={<Cart />} />
+                            <Route path="checkout" element={
+                              <PrivateRoute>
+                                <CheckoutPage />
+                              </PrivateRoute>
+                            } />
                             <Route path="favorites" element={<Favorites />} />
                             {/* Demo Analytics Dashboard - Public Route */}
                             

@@ -26,7 +26,7 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'Helvetica', 'Arial', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
       },
       backgroundImage: {
         'cake-pattern': "url('/images/backGround.png')",

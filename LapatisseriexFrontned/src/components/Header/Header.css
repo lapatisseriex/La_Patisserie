@@ -1,6 +1,6 @@
 /* Header Styles */
 
-/* Apply sans-serif font to all text elements */
+/* Apply modern system font to all text elements */
 .category-swiper,
 .breadcrumb,
 .header-container,
@@ -9,7 +9,7 @@
 .nav-link,
 .auth-panel-closing,
 .mobile-menu {
-  font-family: sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Special styling for the logo text */
