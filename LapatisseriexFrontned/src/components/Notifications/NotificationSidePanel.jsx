@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -18,6 +18,59 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import notificationService from '../../services/notificationService';
+
+// Dynamic Time Component that updates every minute
+const DynamicTime = ({ dateString }) => {
+  const [timeText, setTimeText] = useState('');
+  const timerRef = useRef(null);
+
+  const calculateTimeText = () => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) {
+      return 'Just now';
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInMinutes < 1440) { // 24 hours
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      return `${diffInHours}h ago`;
+    } else {
+      const diffInDays = Math.floor(diffInMinutes / 1440);
+      return `${diffInDays}d ago`;
+    }
+  };
+
+  useEffect(() => {
+    // Initial calculation
+    setTimeText(calculateTimeText());
+
+    // Update every minute
+    timerRef.current = setInterval(() => {
+      setTimeText(calculateTimeText());
+    }, 60000); // Update every 60 seconds
+
+    // Cleanup
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [dateString]);
+
+  return (
+    <span 
+      className="text-xs tracking-wide"
+      style={{ 
+        color: 'rgba(40, 28, 32, 0.5)',
+        letterSpacing: '0.02em'
+      }}
+    >
+      {timeText}
+    </span>
+  );
+};
 import './NotificationPanel.css';
 
 const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
@@ -177,21 +230,6 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
     const combinedText = `${notification.title} ${notification.message}`;
     const priceMatch = combinedText.match(/₹\s*([\d,]+(?:\.\d{2})?)/);
     return priceMatch ? `₹${priceMatch[1]}` : null;
-  };
-
-  const formatDate = (dateString) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) {
-      return 'Just now';
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    } else {
-      const diffInDays = Math.floor(diffInHours / 24);
-      return `${diffInDays}d ago`;
-    }
   };
 
   const formatMessageWithBold = (message) => {
@@ -521,15 +559,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                                   {/* Time */}
                                   <div className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" style={{ color: 'rgba(40, 28, 32, 0.4)' }} strokeWidth={1.5} />
-                                    <span 
-                                      className="text-xs tracking-wide"
-                                      style={{ 
-                                        color: 'rgba(40, 28, 32, 0.5)',
-                                        letterSpacing: '0.02em'
-                                      }}
-                                    >
-                                      {formatDate(notification.createdAt)}
-                                    </span>
+                                    <DynamicTime dateString={notification.createdAt} />
                                   </div>
                                 </div>
                                 

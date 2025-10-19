@@ -276,6 +276,16 @@ const AdminOrderTracking = () => {
     maxCount: 0,
     customCount: 1
   });
+  
+  // Dropdown state management for order sections
+  const [todaysOrdersExpanded, setTodaysOrdersExpanded] = useState(() => {
+    const saved = localStorage.getItem('todaysOrdersExpanded');
+    return saved !== null ? JSON.parse(saved) : true; // Default to expanded
+  });
+  const [previousOrdersExpanded, setPreviousOrdersExpanded] = useState(() => {
+    const saved = localStorage.getItem('previousOrdersExpanded');
+    return saved !== null ? JSON.parse(saved) : false; // Default to collapsed
+  });
 
   // Fetch order data (both grouped and individual)
   const fetchOrderData = async (isRefresh = false) => {
@@ -394,6 +404,29 @@ const AdminOrderTracking = () => {
     }).filter(Boolean);
   };
 
+  // Helper function to check if order is from today
+  const isOrderFromToday = (orderDate) => {
+    const today = new Date();
+    const orderCreated = new Date(orderDate);
+    
+    return today.getDate() === orderCreated.getDate() &&
+           today.getMonth() === orderCreated.getMonth() &&
+           today.getFullYear() === orderCreated.getFullYear();
+  };
+
+  // Filter orders by date - separating today's orders from remaining orders
+  const filterOrdersByDate = (orders) => {
+    if (!orders || !Array.isArray(orders)) return { todaysOrders: [], remainingOrders: [] };
+    
+    // First sort all orders by createdAt date in descending order (newest first)
+    const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    const todaysOrders = sortedOrders.filter(order => isOrderFromToday(order.createdAt));
+    const remainingOrders = sortedOrders.filter(order => !isOrderFromToday(order.createdAt));
+    
+    return { todaysOrders, remainingOrders };
+  };
+
   useEffect(() => {
     fetchOrderData();
   }, []);
@@ -416,6 +449,15 @@ const AdminOrderTracking = () => {
   useEffect(() => {
     localStorage.setItem('expandedCategories', JSON.stringify(expandedCategories));
   }, [expandedCategories]);
+
+  // Persist dropdown states to localStorage
+  useEffect(() => {
+    localStorage.setItem('todaysOrdersExpanded', JSON.stringify(todaysOrdersExpanded));
+  }, [todaysOrdersExpanded]);
+
+  useEffect(() => {
+    localStorage.setItem('previousOrdersExpanded', JSON.stringify(previousOrdersExpanded));
+  }, [previousOrdersExpanded]);
 
   // Restore selectedHostel from saved data when orderData changes
   useEffect(() => {
@@ -677,6 +719,141 @@ const AdminOrderTracking = () => {
         height: { duration: 0.3 },
         opacity: { duration: 0.2 }
       }
+    }
+  };
+
+  // Bulk dispatch functions
+  const dispatchTodaysOrders = async () => {
+    const { todaysOrders } = filterOrdersByDate(individualOrders);
+    
+    if (todaysOrders.length === 0) {
+      toast.error('No orders to dispatch from today');
+      return;
+    }
+
+    try {
+      setDispatchLoading(prev => ({ ...prev, todaysOrders: true }));
+      
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('Authentication required. Please log in.');
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+
+      // Dispatch all pending items from today's orders
+      for (const order of todaysOrders) {
+        for (const item of order.pendingItems || []) {
+          try {
+            const apiBaseUrl = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                orderId: order._id,
+                productName: item.productName,
+                categoryName: item.categoryName
+              })
+            });
+
+            if (response.ok) {
+              successCount++;
+            } else {
+              failCount++;
+              console.error(`Failed to dispatch ${item.productName} from order ${order._id}`);
+            }
+          } catch (error) {
+            failCount++;
+            console.error(`Error dispatching ${item.productName}:`, error);
+          }
+        }
+      }
+
+      // Refresh data
+      await fetchOrderData(false);
+      
+      if (failCount === 0) {
+        toast.success(`Successfully dispatched all ${successCount} items from today's orders!`);
+      } else {
+        toast.success(`Dispatched ${successCount} items. ${failCount} items failed to dispatch.`);
+      }
+
+    } catch (error) {
+      console.error('Error in bulk dispatch:', error);
+      toast.error('Failed to dispatch today\'s orders');
+    } finally {
+      setDispatchLoading(prev => ({ ...prev, todaysOrders: false }));
+    }
+  };
+
+  const dispatchAllOrders = async () => {
+    if (individualOrders.length === 0) {
+      toast.error('No orders to dispatch');
+      return;
+    }
+
+    try {
+      setDispatchLoading(prev => ({ ...prev, allOrders: true }));
+      
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error('Authentication required. Please log in.');
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+
+      // Dispatch all pending items from all orders
+      for (const order of individualOrders) {
+        for (const item of order.pendingItems || []) {
+          try {
+            const apiBaseUrl = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                orderId: order._id,
+                productName: item.productName,
+                categoryName: item.categoryName
+              })
+            });
+
+            if (response.ok) {
+              successCount++;
+            } else {
+              failCount++;
+              console.error(`Failed to dispatch ${item.productName} from order ${order._id}`);
+            }
+          } catch (error) {
+            failCount++;
+            console.error(`Error dispatching ${item.productName}:`, error);
+          }
+        }
+      }
+
+      // Refresh data
+      await fetchOrderData(false);
+      
+      if (failCount === 0) {
+        toast.success(`Successfully dispatched all ${successCount} items from all orders!`);
+      } else {
+        toast.success(`Dispatched ${successCount} items. ${failCount} items failed to dispatch.`);
+      }
+
+    } catch (error) {
+      console.error('Error in bulk dispatch:', error);
+      toast.error('Failed to dispatch all orders');
+    } finally {
+      setDispatchLoading(prev => ({ ...prev, allOrders: false }));
     }
   };
 
@@ -1018,7 +1195,7 @@ const AdminOrderTracking = () => {
 
       {/* Content based on view mode */}
       {viewMode === 'individual' ? (
-        // Individual Orders View - Show ALL orders without filtering
+        // Individual Orders View - Show orders divided by date
         individualOrders.length === 0 ? (
           <div className="text-center py-12">
             <FaTruck className="mx-auto text-6xl text-gray-300 mb-4" />
@@ -1026,16 +1203,185 @@ const AdminOrderTracking = () => {
             <p className="text-gray-500">All orders have been dispatched or there are no orders requiring dispatch.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {individualOrders.map((order) => (
-              <IndividualOrderCard 
-                key={order._id} 
-                order={order} 
-                onDispatchItem={dispatchIndividualItem}
-                dispatchLoading={dispatchLoading}
-                dispatchSuccess={dispatchSuccess}
-              />
-            ))}
+          <div className="space-y-8">
+            {(() => {
+              const { todaysOrders, remainingOrders } = filterOrdersByDate(individualOrders);
+              
+              return (
+                <>
+                  {/* Bulk Dispatch Controls */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">Bulk Dispatch Controls</h3>
+                        <p className="text-sm text-gray-600">Quickly dispatch multiple orders at once</p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        {todaysOrders.length > 0 && (
+                          <button
+                            onClick={dispatchTodaysOrders}
+                            disabled={dispatchLoading.todaysOrders}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg"
+                          >
+                            {dispatchLoading.todaysOrders ? (
+                              <FaSpinner className="animate-spin" />
+                            ) : (
+                              <FaTruck />
+                            )}
+                            <span className="font-medium">
+                              Dispatch Today's Orders ({todaysOrders.length})
+                            </span>
+                          </button>
+                        )}
+                        
+                        <button
+                          onClick={dispatchAllOrders}
+                          disabled={dispatchLoading.allOrders}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-md hover:shadow-lg"
+                        >
+                          {dispatchLoading.allOrders ? (
+                            <FaSpinner className="animate-spin" />
+                          ) : (
+                            <FaTruck />
+                          )}
+                          <span className="font-medium">
+                            Dispatch All Orders ({individualOrders.length})
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Today's Orders Section */}
+                  {todaysOrders.length > 0 && (
+                    <div className="bg-white border-2 border-blue-200 rounded-lg shadow-lg overflow-hidden">
+                      {/* Section Header - Clickable */}
+                      <button
+                        onClick={() => setTodaysOrdersExpanded(!todaysOrdersExpanded)}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 hover:from-blue-700 hover:to-blue-800 transition-all duration-200"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">📅</span>
+                            <div className="text-left">
+                              <h2 className="text-xl font-bold">Today's Orders</h2>
+                              <p className="text-blue-100 text-sm">
+                                Orders placed on {new Date().toLocaleDateString('en-IN', { 
+                                  weekday: 'long', 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                              {todaysOrders.length} orders
+                            </span>
+                            <FaChevronDown 
+                              className={`text-white transition-transform duration-200 ${
+                                todaysOrdersExpanded ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </button>
+                      
+                      {/* Orders Content - Collapsible */}
+                      <AnimatePresence>
+                        {todaysOrdersExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                          >
+                            <div className="p-6 space-y-6">
+                              {todaysOrders.map((order) => (
+                                <IndividualOrderCard 
+                                  key={order._id} 
+                                  order={order} 
+                                  onDispatchItem={dispatchIndividualItem}
+                                  dispatchLoading={dispatchLoading}
+                                  dispatchSuccess={dispatchSuccess}
+                                />
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  {/* Remaining Orders Section */}
+                  {remainingOrders.length > 0 && (
+                    <div className="bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                      {/* Section Header - Clickable */}
+                      <button
+                        onClick={() => setPreviousOrdersExpanded(!previousOrdersExpanded)}
+                        className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white px-6 py-4 hover:from-gray-700 hover:to-gray-800 transition-all duration-200"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">📋</span>
+                            <div className="text-left">
+                              <h2 className="text-xl font-bold">Previous Orders</h2>
+                              <p className="text-gray-200 text-sm">Orders from previous days</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="bg-gray-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                              {remainingOrders.length} orders
+                            </span>
+                            <FaChevronDown 
+                              className={`text-white transition-transform duration-200 ${
+                                previousOrdersExpanded ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </button>
+                      
+                      {/* Orders Content - Collapsible */}
+                      <AnimatePresence>
+                        {previousOrdersExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                          >
+                            <div className="p-6 space-y-6">
+                              {remainingOrders.map((order) => (
+                                <IndividualOrderCard 
+                                  key={order._id} 
+                                  order={order} 
+                                  onDispatchItem={dispatchIndividualItem}
+                                  dispatchLoading={dispatchLoading}
+                                  dispatchSuccess={dispatchSuccess}
+                                />
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  {/* Show message if no orders in either section */}
+                  {todaysOrders.length === 0 && remainingOrders.length === 0 && (
+                    <div className="text-center py-12">
+                      <FaTruck className="mx-auto text-6xl text-gray-300 mb-4" />
+                      <h3 className="text-xl font-medium text-gray-900 mb-2">No Pending Orders</h3>
+                      <p className="text-gray-500">All orders have been dispatched or there are no orders requiring dispatch.</p>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )
       ) : (

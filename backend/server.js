@@ -209,31 +209,56 @@ const startServer = async () => {
     // WebSocket setup
     const io = new Server(server, {
       cors: {
-        origin: allowedOrigins,
+        origin: function (origin, callback) {
+          // Allow requests with no origin (like mobile apps or curl requests)
+          if (!origin) return callback(null, true);
+          
+          // Check exact matches first
+          if (allowedOrigins.indexOf(origin) !== -1) {
+            return callback(null, true);
+          }
+          
+          // Check regex patterns
+          const isAllowedByPattern = allowedOriginPatterns.some(pattern => pattern.test(origin));
+          if (isAllowedByPattern) {
+            return callback(null, true);
+          }
+          
+          // Allow in development mode
+          if (process.env.NODE_ENV === 'development') {
+            return callback(null, true);
+          }
+          
+          console.log('WebSocket CORS blocked origin:', origin);
+          return callback(new Error('CORS not allowed'), false);
+        },
         methods: ['GET', 'POST'],
         credentials: true
-      }
+      },
+      transports: ['websocket', 'polling']
     });
 
     // Store connected users
     const connectedUsers = new Map();
 
     io.on('connection', (socket) => {
-      console.log('User connected:', socket.id);
+      console.log('✅ WebSocket client connected:', socket.id);
 
       // Handle user authentication
       socket.on('authenticate', (userId) => {
         if (userId) {
           connectedUsers.set(userId, socket.id);
           socket.userId = userId;
-          console.log(`User ${userId} authenticated with socket ${socket.id}`);
+          console.log(`✅ User ${userId} authenticated with socket ${socket.id}`);
         }
       });
 
       socket.on('disconnect', () => {
         if (socket.userId) {
           connectedUsers.delete(socket.userId);
-          console.log(`User ${socket.userId} disconnected`);
+          console.log(`❌ User ${socket.userId} disconnected`);
+        } else {
+          console.log(`❌ Client ${socket.id} disconnected`);
         }
       });
     });
@@ -241,6 +266,8 @@ const startServer = async () => {
     // Make io available globally for use in other files
     global.io = io;
     global.connectedUsers = connectedUsers;
+    
+    console.log('✅ WebSocket server initialized and ready');
 
     // Periodically broadcast shop status so clients update without refresh
     let lastShopStatusSnapshot = null;

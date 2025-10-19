@@ -165,6 +165,30 @@ export const verifyToken = asyncHandler(async (req, res) => {
         });
         
         console.log(`New user created successfully: ${user._id} (${email})`);
+        
+        // Emit WebSocket event to notify admin of new user signup
+        try {
+          const io = global.io;
+          if (io) {
+            io.emit('newUserSignup', {
+              userId: user._id,
+              userData: {
+                id: user._id,
+                uid: user.uid,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                location: user.location,
+                createdAt: user.createdAt
+              }
+            });
+            console.log('✅ WebSocket event "newUserSignup" emitted for new user:', user.email);
+          } else {
+            console.warn('⚠️ WebSocket (io) not available - cannot emit newUserSignup event');
+          }
+        } catch (wsError) {
+          console.error('❌ Error emitting WebSocket event for new user:', wsError);
+        }
       } catch (err) {
         console.error('User creation failed:', err);
         

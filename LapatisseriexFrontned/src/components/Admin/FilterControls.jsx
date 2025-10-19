@@ -1,5 +1,41 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Calendar, Filter, RefreshCw, TestTube } from 'lucide-react';
+
+// Dynamic Time Component for Last Updated display
+const DynamicLastUpdated = ({ timestamp }) => {
+  const [timeText, setTimeText] = useState('');
+  const timerRef = useRef(null);
+
+  const calculateTimeText = () => {
+    if (!timestamp) return '';
+    const now = new Date();
+    const diff = Math.floor((now - timestamp) / 1000); // seconds
+
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return timestamp.toLocaleDateString();
+  };
+
+  useEffect(() => {
+    // Initial calculation
+    setTimeText(calculateTimeText());
+
+    // Update every minute
+    timerRef.current = setInterval(() => {
+      setTimeText(calculateTimeText());
+    }, 60000);
+
+    // Cleanup
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [timestamp]);
+
+  return timeText;
+};
 
 const FilterControls = ({ 
   selectedPeriod, 
@@ -24,17 +60,6 @@ const FilterControls = ({
     { value: 'month', label: 'Monthly' },
   ];
 
-  const formatLastUpdated = (timestamp) => {
-    if (!timestamp) return '';
-    const now = new Date();
-    const diff = Math.floor((now - timestamp) / 1000); // seconds
-
-    if (diff < 60) return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return timestamp.toLocaleDateString();
-  };
-
   return (
     <div className="bg-white border border-gray-300 shadow-sm p-8 mb-8">
       <div className="border-b border-gray-200 pb-4 mb-6">
@@ -45,7 +70,7 @@ const FilterControls = ({
           </div>
           {lastUpdated && (
             <span className="text-xs text-gray-500">
-              Updated: {formatLastUpdated(lastUpdated)}
+              Updated: <DynamicLastUpdated timestamp={lastUpdated} />
             </span>
           )}
         </div>

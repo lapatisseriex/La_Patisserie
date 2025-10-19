@@ -1287,7 +1287,7 @@ const ProfilePage = () => {
                     <div key={payment._id} className="bg-white border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-green-100 flex items-center justify-center">
+                          <div className="w-10 h-10 flex items-center justify-center">
                             <CreditCard className="w-5 h-5 text-green-600" />
                           </div>
                           <div>
@@ -1305,14 +1305,7 @@ const ProfilePage = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-semibold text-gray-900">₹{payment.amount}</div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            payment.paymentStatus === 'success' || payment.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' :
-                            payment.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            payment.paymentStatus === 'failed' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {payment.paymentStatus?.charAt(0).toUpperCase() + payment.paymentStatus?.slice(1)}
-                          </span>
+                          
                         </div>
                       </div>
                       

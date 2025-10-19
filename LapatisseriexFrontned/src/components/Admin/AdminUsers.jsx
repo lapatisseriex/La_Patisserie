@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaUser, FaPhone, FaMapMarkerAlt, FaCrown, FaExclamationTriangle, FaEye, FaFilter, FaEnvelope } from 'react-icons/fa';
+import { FaUser, FaPhone, FaMapMarkerAlt, FaCrown, FaExclamationTriangle, FaEye, FaFilter, FaEnvelope, FaBell, FaTimes, FaSyncAlt } from 'react-icons/fa';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { toast } from 'react-hot-toast';
+import io from 'socket.io-client';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -24,6 +27,12 @@ const AdminUsers = () => {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [authReady, setAuthReady] = useState(false);
+  // WebSocket state
+  const [showNewUserBanner, setShowNewUserBanner] = useState(false);
+  const [newUserCount, setNewUserCount] = useState(0);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [wsSocketId, setWsSocketId] = useState('');
 
   const { locations } = useLocationContext?.() || { locations: [] };
   
@@ -31,12 +40,24 @@ const AdminUsers = () => {
   
   // Fetch all users
   const fetchUsers = async (pageNum = page, searchText = globalSearch) => {
+    // Only proceed if auth is ready
+    if (!authReady) {
+      console.log('Auth not ready yet, skipping fetch users');
+      return;
+    }
+
     try {
       setLoading(true);
       
       // Get ID token from auth
-      const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
+      if (!auth.currentUser) {
+        console.error('No current user found');
+        setError('Authentication required. Please login again.');
+        setLoading(false);
+        return;
+      }
+      
       const idToken = await auth.currentUser.getIdToken(true);
       
       const params = new URLSearchParams();
@@ -86,21 +107,110 @@ const AdminUsers = () => {
     setShowFilters(false);
   };
   
+  // Wait for Firebase auth to be ready
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setAuthReady(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Set up WebSocket connection for real-time user signup notifications
+  useEffect(() => {
+    let rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    
+    // Remove /api or any path from the URL to get base server URL
+    const apiUrl = rawApiUrl.replace(/\/api.*$/, '');
+    
+    console.log('%c🔌 WebSocket Connection (Users Page)', 'color: #733857; font-weight: bold; font-size: 14px');
+    console.log('📍 Connecting to:', apiUrl);
+    console.log('⏰ Time:', new Date().toLocaleTimeString());
+    
+    const socket = io(apiUrl, {
+      path: '/socket.io/',
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000,
+      autoConnect: true
+    });
+    
+    socket.on('connect', () => {
+      console.log('%c✅ WebSocket CONNECTED (Users Page)', 'color: green; font-weight: bold; font-size: 14px');
+      console.log('🆔 Socket ID:', socket.id);
+      setWsConnected(true);
+      setWsSocketId(socket.id);
+      toast.success('Live user updates connected!', {
+        duration: 3000,
+        icon: '🔌',
+      });
+    });
+
+    socket.on('connect_error', (error) => {
+      console.log('%c❌ WebSocket Error (Users Page)', 'color: red; font-weight: bold');
+      console.error('Error:', error.message);
+      setWsConnected(false);
+      setWsSocketId('');
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('%c🔌 WebSocket Disconnected (Users Page)', 'color: orange; font-weight: bold');
+      console.log('Reason:', reason);
+      setWsConnected(false);
+      setWsSocketId('');
+    });
+    
+    // Listen for new user signup events
+    socket.on('newUserSignup', (data) => {
+      console.log('%c👤 NEW USER SIGNUP EVENT!', 'color: blue; font-weight: bold; font-size: 16px; background: #e6f3ff; padding: 5px');
+      console.log('📧 Email:', data.userData?.email);
+      console.log('👤 Name:', data.userData?.name);
+      console.log('🆔 User ID:', data.userId);
+      console.log('📍 Location:', data.userData?.location);
+      console.log('⏰ Signed up at:', new Date().toLocaleTimeString());
+      console.log('📋 Full Data:', data);
+      
+      setShowNewUserBanner(true);
+      setNewUserCount(prev => prev + 1);
+      
+      // Show toast notification
+      toast.success(`New user signed up: ${data.userData?.email || 'Unknown'}!`, {
+        duration: 4000,
+        icon: '👤',
+      });
+    });
+
+    // Cleanup on unmount
+    return () => {
+      console.log('%c🔌 Cleaning up WebSocket (Users Page)', 'color: gray');
+      socket.off('newUserSignup');
+      socket.off('connect');
+      socket.off('connect_error');
+      socket.off('disconnect');
+      socket.disconnect();
+    };
+  }, []);
+  
   // Load users on component mount
   useEffect(() => {
     fetchUsers(page, globalSearch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, authReady]);
 
   // Refetch when global search changes, reset to page 1 (debounced)
   useEffect(() => {
+    if (!authReady) return;
+    
     const t = setTimeout(() => {
       setPage(1);
       fetchUsers(1, globalSearch);
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [globalSearch]);
+  }, [globalSearch, authReady]);
 
   // Highlight helpers for name matches (case-insensitive)
   const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -169,13 +279,69 @@ const AdminUsers = () => {
 
   return (
     <div className="container mx-auto pl-8 pr-4 py-6 pt-8 font-sans overflow-x-hidden min-w-0">
+      {/* New User Notification Banner */}
+      {showNewUserBanner && (
+        <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-md animate-slide-down">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-500 rounded-full p-2 animate-pulse">
+                <FaBell className="text-white text-lg" />
+              </div>
+              <div>
+                <p className="text-blue-800 font-semibold text-lg">
+                  New user{newUserCount > 1 ? 's' : ''} signed up!
+                </p>
+                <p className="text-blue-700 text-sm">
+                  {newUserCount} new user{newUserCount > 1 ? 's have' : ' has'} joined. Click refresh to view.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  fetchUsers(page, globalSearch);
+                  setShowNewUserBanner(false);
+                  setNewUserCount(0);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <FaSyncAlt className="text-sm" />
+                <span>Refresh Now</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowNewUserBanner(false);
+                  setNewUserCount(0);
+                }}
+                className="text-blue-600 hover:text-blue-800 transition-colors p-2"
+              >
+                <FaTimes className="text-xl" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
       {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
-  <div className="mb-2 md:mb-4 flex items-center justify-between">
+      <div className="mb-2 md:mb-4 flex items-center justify-between">
         {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
-        <div>
-          <h1 className="text-2xl font-bold text-black">User Management</h1>
-          <p className="text-black font-light">View and manage user accounts</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-black">User Management</h1>
+            {/* WebSocket Connection Status Badge */}
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+              wsConnected 
+                ? 'bg-green-100 text-green-700 border border-green-300' 
+                : 'bg-red-100 text-red-700 border border-red-300'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span>{wsConnected ? 'Live Updates Active' : 'Disconnected'}</span> 
+            </div>
+          </div>
+          <p className="text-black font-light">
+            View and manage user accounts
+          </p>
         </div>
         <button
           className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-sm"
@@ -610,6 +776,22 @@ const AdminUsers = () => {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes slide-down {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-down {
+          animation: slide-down 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

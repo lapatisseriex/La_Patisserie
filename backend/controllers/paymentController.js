@@ -452,6 +452,33 @@ export const createOrder = asyncHandler(async (req, res) => {
     // For COD, send order confirmation email asynchronously AFTER responding,
     // so the UI confirms immediately. For online payments, email is sent after verification.
     if (paymentMethod === 'cod') {
+      // Emit WebSocket event to notify admin of new COD order BEFORE async email
+      try {
+        const io = global.io;
+        if (io) {
+          io.emit('newOrderPlaced', {
+            orderNumber,
+            orderData: {
+              orderNumber,
+              userId,
+              amount: amount / 100,
+              paymentMethod: 'cod',
+              orderStatus: 'placed',
+              paymentStatus: 'pending',
+              deliveryLocation,
+              hostelName,
+              createdAt: order.createdAt
+            }
+          });
+          console.log('✅ WebSocket event "newOrderPlaced" emitted for COD order:', orderNumber);
+        } else {
+          console.warn('⚠️ WebSocket (io) not available - cannot emit newOrderPlaced event');
+        }
+      } catch (wsError) {
+        console.error('❌ Error emitting WebSocket event for new order:', wsError);
+      }
+
+      // Send email asynchronously
       setImmediate(async () => {
         try {
           const user = await User.findById(userId).select('email name');
@@ -658,6 +685,32 @@ export const verifyPayment = asyncHandler(async (req, res) => {
           console.error('Error sending order confirmation email (async):', emailError.message);
         }
       });
+
+      // Emit WebSocket event to notify admin of new online order
+      try {
+        const io = global.io;
+        if (io) {
+          io.emit('newOrderPlaced', {
+            orderNumber: order.orderNumber,
+            orderData: {
+              orderNumber: order.orderNumber,
+              userId: order.userId,
+              amount: order.amount,
+              paymentMethod: 'razorpay',
+              orderStatus: 'placed',
+              paymentStatus: 'paid',
+              deliveryLocation: order.deliveryLocation,
+              hostelName: order.hostelName,
+              createdAt: order.createdAt
+            }
+          });
+          console.log('✅ WebSocket event "newOrderPlaced" emitted for online order:', order.orderNumber);
+        } else {
+          console.warn('⚠️ WebSocket (io) not available - cannot emit newOrderPlaced event');
+        }
+      } catch (wsError) {
+        console.error('❌ Error emitting WebSocket event for new order:', wsError);
+      }
       
       res.json({
         success: true,

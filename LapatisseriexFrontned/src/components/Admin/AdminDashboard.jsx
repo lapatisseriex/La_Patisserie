@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUsers, FaShoppingCart, FaMapMarkerAlt, FaList, FaCheckCircle } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import InventoryWidget from './Dashboard/InventoryWidget';
@@ -145,7 +146,7 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="mt-4">
-              <a href="/admin/users" className="text-blue-500 text-sm hover:underline font-medium">View all users</a>
+              <Link to="/admin/users" className="text-blue-500 text-sm hover:underline font-medium">View all users</Link>
             </div>
           </div>
           
@@ -160,7 +161,7 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="mt-4 flex justify-between items-center">
-              <a href="/admin/orders" className="text-green-500 text-sm hover:underline font-medium">View all orders</a>
+              <Link to="/admin/orders" className="text-green-500 text-sm hover:underline font-medium">View all orders</Link>
               <div className="text-amber-500 text-sm font-bold bg-amber-50 px-2 py-1 rounded">
                 {stats.pendingOrders} pending
               </div>
@@ -250,7 +251,7 @@ const AdminDashboard = () => {
             </div>
           )}
           <div className="mt-4">
-            <a href="/admin/orders" className="text-blue-600 text-sm hover:underline font-medium">View all orders</a>
+            <Link to="/admin/orders" className="text-blue-600 text-sm hover:underline font-medium">View all orders</Link>
           </div>
         </div>
         
@@ -293,7 +294,7 @@ const AdminDashboard = () => {
             </div>
           )}
           <div className="mt-4">
-            <a href="/admin/users" className="color blue text-sm hover:underline font-medium">View all users</a>
+            <Link to="/admin/users" className="color blue text-sm hover:underline font-medium">View all users</Link>
           </div>
         </div>
       </div>
