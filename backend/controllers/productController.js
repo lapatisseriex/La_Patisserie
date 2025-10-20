@@ -161,8 +161,13 @@ export const getProducts = asyncHandler(async (req, res) => {
     }
   }));
   
-  // Set caching headers for better performance
-  res.set('Cache-Control', 'public, max-age=60'); // Cache for 1 minute
+  // Force fresh data on every request to ensure newly added or removed products show immediately
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
+    'Surrogate-Control': 'no-store'
+  });
   
   res.status(200).json({
     products: productsWithAvailability,
@@ -231,6 +236,13 @@ export const getProduct = asyncHandler(async (req, res) => {
       },
       defaultVariantLabel: variantsWithPricing[0]?.variantLabel || ''
     };
+
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+      'Surrogate-Control': 'no-store'
+    });
 
     res.status(200).json(productWithAvailability);
   } catch (error) {

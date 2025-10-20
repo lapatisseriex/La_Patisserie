@@ -116,11 +116,11 @@ export const ProductProvider = ({ children }) => {
         queryParams.append(key, value);
       }
     });
-    
-    const queryString = queryParams.toString();
+
+    const baseQueryString = queryParams.toString();
 
     // Generate a unique cache key based only on the actual query parameters
-    const cacheKey = `products-${queryString}`;
+    const cacheKey = `products-${baseQueryString}`;
     
     try {
       // Circuit breaker check
@@ -146,6 +146,13 @@ export const ProductProvider = ({ children }) => {
       // Check for valid cache entry
       const cachedResult = shouldBypassCache ? null : requestCache.current.get(cacheKey);
       const now = Date.now();
+      let requestQueryString = baseQueryString;
+
+      if (shouldBypassCache) {
+        const freshParams = new URLSearchParams(queryParams);
+        freshParams.set('_ts', now.toString());
+        requestQueryString = freshParams.toString();
+      }
       
       if (!shouldBypassCache && cachedResult && (now - cachedResult.timestamp < CACHE_TIMEOUT)) {
         console.log(`Using cached product data for key: ${cacheKey} (age: ${(now - cachedResult.timestamp)/1000}s)`);
@@ -184,8 +191,10 @@ export const ProductProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      console.log(`📦 Fetching products: ${queryString ? queryString : 'all products'}`);
-      const response = await axiosInstance.get(`${API_URL}/products?${queryString}`);
+      console.log(`📦 Fetching products: ${requestQueryString ? requestQueryString : 'all products'}`);
+      const response = await axiosInstance.get(
+        `${API_URL}/products${requestQueryString ? `?${requestQueryString}` : ''}`
+      );
       
       // Success log
       console.log(`✅ Products loaded: ${response.data.products?.length || 0} items`);
@@ -268,7 +277,7 @@ export const ProductProvider = ({ children }) => {
       // Cache the error response for a short time to prevent immediate retries
       requestCache.current.set(cacheKey, {
         data: emptyResponse,
-        timestamp: now,
+        timestamp: Date.now(),
         isError: true
       });
       
