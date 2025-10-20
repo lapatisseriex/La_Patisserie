@@ -2,6 +2,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js';
 import DeliveryLocationMapping from '../models/deliveryLocationMappingModel.js';
+import Payment from '../models/paymentModel.js';
 import { createNotification } from './notificationController.js';
 import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
 
@@ -730,10 +731,43 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
       newOrderStatus = 'out_for_delivery';
     }
 
+    const shouldFinalizeCodPayment =
+      newOrderStatus === 'delivered' &&
+      order.paymentMethod === 'cod' &&
+      order.paymentStatus !== 'paid';
+
+    if (shouldFinalizeCodPayment) {
+      order.paymentStatus = 'paid';
+    }
+
     order.orderStatus = newOrderStatus;
     order.updatedAt = new Date();
 
     await order.save();
+
+    if (shouldFinalizeCodPayment) {
+      try {
+        const paymentRecord = await Payment.findOne({ orderId: order.orderNumber });
+        if (paymentRecord && paymentRecord.paymentStatus !== 'success') {
+          paymentRecord.paymentStatus = 'success';
+          paymentRecord.date = paymentRecord.date || new Date();
+          await paymentRecord.save();
+        } else if (!paymentRecord) {
+          await Payment.create({
+            userId: order.userId,
+            email: order.userDetails?.email,
+            orderId: order.orderNumber,
+            amount: order.amount,
+            paymentMethod: 'cod',
+            paymentStatus: 'success',
+            date: new Date(),
+            meta: { source: 'cod_delivery_auto_finalize' }
+          });
+        }
+      } catch (paymentUpdateError) {
+        console.error('Failed to finalize COD payment record:', paymentUpdateError);
+      }
+    }
 
     // Send notification to user
     try {
@@ -794,6 +828,7 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
       orderNumber: order.orderNumber,
       deliveredItems: updatedItems,
       newOrderStatus: newOrderStatus,
+      paymentStatus: order.paymentStatus,
       deliveryProgress: {
         total: totalItems,
         dispatched: dispatchedItems,

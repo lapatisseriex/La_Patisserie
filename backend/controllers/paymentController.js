@@ -234,6 +234,58 @@ const updateProductOrderCounts = async (cartItems) => {
   }
 };
 
+// Ensure an order placed notification exists and emit a real-time event when needed
+const ensureOrderPlacedNotification = async (order, options = {}) => {
+  const { forceEmit = false } = options;
+
+  try {
+    if (!order || !order.userId) {
+      return;
+    }
+
+    const userIdString = order.userId.toString();
+    const totalAmount = order?.orderSummary?.grandTotal ?? order?.amount ?? 0;
+    const message = `Your order **#${order.orderNumber}** has been placed successfully. Total amount: ₹${totalAmount}`;
+
+    const existingNotification = await Notification.findOne({
+      userId: order.userId,
+      orderNumber: order.orderNumber,
+      type: 'order_placed'
+    });
+
+    const notificationAlreadyExists = Boolean(existingNotification);
+
+    if (!notificationAlreadyExists) {
+      await createNotification(
+        order.userId,
+        order.orderNumber,
+        'order_placed',
+        '**Order Placed** Successfully',
+        message
+      );
+      console.log('✅ Order placed notification persisted for order:', order.orderNumber);
+    }
+
+    const io = global.io;
+    const connectedUsers = global.connectedUsers;
+
+    if (io && connectedUsers) {
+      const socketId = connectedUsers.get(userIdString);
+      if (socketId && (forceEmit || !notificationAlreadyExists)) {
+        io.to(socketId).emit('newNotification', {
+          type: 'order_placed',
+          title: '**Order Placed** Successfully',
+          message,
+          orderNumber: order.orderNumber
+        });
+        console.log(`✅ Order placed notification emitted for order: ${order.orderNumber}`);
+      }
+    }
+  } catch (notificationError) {
+    console.error('Error ensuring order placed notification:', notificationError);
+  }
+};
+
 // Create Razorpay Order
 export const createOrder = asyncHandler(async (req, res) => {
   try {
@@ -543,6 +595,11 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     if (existingPayment) {
       console.log('⚠️ Payment already processed:', razorpay_payment_id);
       const order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+
+      if (order) {
+        await ensureOrderPlacedNotification(order, { forceEmit: true });
+      }
+
       return res.json({
         success: true,
         message: 'Payment already verified',
@@ -582,6 +639,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         const existingOrder = await Order.findOne({ razorpayOrderId: razorpay_order_id });
         if (existingOrder && existingOrder.paymentStatus === 'paid') {
           console.log('⚠️ Order already paid:', existingOrder.orderNumber);
+          await ensureOrderPlacedNotification(existingOrder, { forceEmit: true });
           return res.json({
             success: true,
             message: 'Payment already verified',
@@ -599,40 +657,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       
       console.log('Payment verified successfully for order:', order.orderNumber);
 
-      // ✅ NOW SEND "ORDER PLACED" NOTIFICATION for successful online payment
-      try {
-        const existingNotification = await Notification.findOne({
-          userId: order.userId,
-          orderNumber: order.orderNumber,
-          type: 'order_placed'
-        });
-
-        if (!existingNotification) {
-          await createNotification(
-            order.userId,
-            order.orderNumber,
-            'order_placed',
-            '**Order Placed** Successfully',
-            `Your order **#${order.orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`
-          );
-
-          // Emit real-time notification via WebSocket
-          const io = global.io;
-          const connectedUsers = global.connectedUsers;
-          if (io && connectedUsers && connectedUsers.has(order.userId.toString())) {
-            const socketId = connectedUsers.get(order.userId.toString());
-            io.to(socketId).emit('newNotification', {
-              type: 'order_placed',
-              title: '**Order Placed** Successfully',
-              message: `Your order **#${order.orderNumber}** has been placed successfully. Total amount: ₹${order.amount}`,
-              orderNumber: order.orderNumber
-            });
-            console.log('✅ Order placed notification sent after payment verification');
-          }
-        }
-      } catch (notificationError) {
-        console.error('Error creating order placed notification:', notificationError);
-      }
+      await ensureOrderPlacedNotification(order, { forceEmit: true });
 
       // Persist payment record for admin reporting
       try {

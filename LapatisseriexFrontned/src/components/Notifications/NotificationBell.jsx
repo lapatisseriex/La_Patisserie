@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaBell, FaStar } from 'react-icons/fa';
+import { FaStar } from 'react-icons/fa';
 import NotificationSidePanel from './NotificationSidePanel';
 import notificationService from '../../services/notificationService';
+import webSocketService from '../../services/websocketService';
+import { useAuth } from '../../hooks/useAuth';
 
 
 const NotificationBell = () => {
@@ -10,44 +12,82 @@ const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasNewNotification, setHasNewNotification] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const lastUnreadCountRef = useRef(0);
+  const pulseTimeoutRef = useRef(null);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await notificationService.getNotifications(1, 1, true);
-      const newUnreadCount = response.unreadCount;
-      
-      // Trigger pulse animation when new notifications arrive
-      if (newUnreadCount > unreadCount && unreadCount > 0) {
-        setHasNewNotification(true);
-        setTimeout(() => setHasNewNotification(false), 2000);
-      }
-      
-      setUnreadCount(newUnreadCount);
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
+  const handleUnreadCountChange = useCallback((count) => {
+    setUnreadCount(count);
+    lastUnreadCountRef.current = count;
+  }, []);
+
+  const clearPulseTimeout = () => {
+    if (pulseTimeoutRef.current) {
+      clearTimeout(pulseTimeoutRef.current);
+      pulseTimeoutRef.current = null;
     }
   };
 
+  const triggerPulse = useCallback(() => {
+    setHasNewNotification(true);
+    clearPulseTimeout();
+    pulseTimeoutRef.current = setTimeout(() => {
+      setHasNewNotification(false);
+      pulseTimeoutRef.current = null;
+    }, 2000);
+  }, []);
+
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) {
+      handleUnreadCountChange(0);
+      return;
+    }
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      handleUnreadCountChange(0);
+      return;
+    }
+
+    try {
+      const response = await notificationService.getNotifications(1, 1, true);
+      const newUnreadCount = response.unreadCount || 0;
+
+      if (newUnreadCount > lastUnreadCountRef.current && lastUnreadCountRef.current > 0) {
+        triggerPulse();
+      }
+
+      handleUnreadCountChange(newUnreadCount);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  }, [isAuthenticated, triggerPulse, handleUnreadCountChange]);
+
   useEffect(() => {
+    const userId = user?._id || user?.uid || null;
+    webSocketService.connect(userId);
+
     fetchUnreadCount();
-    
-    // Listen for real-time notifications
+
     const handleNewNotification = () => {
+      triggerPulse();
       fetchUnreadCount();
-      setHasNewNotification(true);
-      setTimeout(() => setHasNewNotification(false), 2000);
     };
 
-    // Add event listener for WebSocket notifications
-    window.addEventListener('newNotification', handleNewNotification);
-    
-    // Refresh count every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-    
+    webSocketService.onNewNotification(handleNewNotification);
+
+    const interval = isAuthenticated ? setInterval(fetchUnreadCount, 30000) : null;
+
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('newNotification', handleNewNotification);
+      if (interval) {
+        clearInterval(interval);
+      }
+      webSocketService.offNewNotification(handleNewNotification);
     };
+  }, [user?._id, user?.uid, isAuthenticated, fetchUnreadCount, triggerPulse]);
+
+  useEffect(() => () => {
+    clearPulseTimeout();
   }, []);
 
   const togglePanel = () => {
@@ -234,7 +274,7 @@ const NotificationBell = () => {
       <NotificationSidePanel 
         isOpen={isPanelOpen} 
         onClose={closePanel}
-        onUnreadCountChange={setUnreadCount}
+        onUnreadCountChange={handleUnreadCountChange}
       />
     </>
   );

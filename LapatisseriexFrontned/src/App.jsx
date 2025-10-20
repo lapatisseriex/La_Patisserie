@@ -83,6 +83,7 @@ import { SparkAnimationProvider } from './context/SparkAnimationContext/SparkAni
 // Redux Provider and Auth
 import ReduxProvider from './redux/ReduxProvider';
 import AuthInitializer from './components/Auth/AuthInitializer';
+import WebSocketInitializer from './components/WebSocket/WebSocketInitializer';
 
 // Main Homepage that combines all sections
 const HomePage = () => {
@@ -131,6 +132,7 @@ function App() {
   return (
     <ReduxProvider>
       <AuthInitializer />
+      <WebSocketInitializer />
         <ShopStatusProvider>
           <LocationProvider>
             <HostelProvider>

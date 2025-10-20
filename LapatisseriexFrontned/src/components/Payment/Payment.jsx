@@ -505,37 +505,58 @@ const Payment = () => {
     }
   };
 
-  // --- Order Complete Page (Unchanged) ---
-  if (isOrderComplete) {
+if (isOrderComplete) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-10" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-        <div className="mx-auto max-w-xl bg-white p-8 shadow-sm">
+      <div className="min-h-screen  px-4 py-10" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+        {/* Main content card with sharp corners */}
+        <div className="mx-auto max-w-lg  p-8 sm:p-10">
           <div className="flex flex-col items-center text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center border border-emerald-200 bg-emerald-50 text-xs font-semibold uppercase tracking-wide text-emerald-600">
-              Paid
+            
+           
+            <div className="mb-6 flex h-20 w-20 items-center justify-center  p-2">
+              <img
+                src="/images/logo.png" // <-- REPLACE THIS
+                alt="La Patisserie Logo"
+                className="h-full w-full object-contain"
+              />
             </div>
-            <h2 className="text-2xl font-semibold text-slate-900">Payment confirmed</h2>
-            <p className="mt-2 text-sm text-slate-500">
+
+            {/* 2. Page Hierarchy */}
+            <h2 className="text-3xl font-semibold text-slate-900">Payment confirmed</h2>
+            <p className="mt-3 text-base text-slate-500">
               Thank you for choosing La Patisserie. A confirmation email with your order details is on the way.
             </p>
-            <div className="mt-6 w-full border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Order number</p>
-              <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{orderNumber}</p>
+
+            {/* 3. Integrated Order Details */}
+            <div className="mt-8 w-full border-t border-slate-200 pt-8">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-500">Order number</p>
+                <p className="text-lg font-semibold text-slate-900">{orderNumber}</p>
+              </div>
             </div>
-            <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+
+            {/* 4. Updated Button Styles (Sharp Corners) */}
+            <div className="mt-10 flex w-full flex-col-reverse gap-4 sm:flex-row sm:justify-center">
               <Link
                 to="/"
-                className="w-full border border-slate-200 px-6 py-3 text-center text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
+                className="w-full border border-slate-300 px-6 py-3 text-center text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 sm:w-auto"
               >
                 Back to home
               </Link>
               <Link
                 to="/products"
-                className="w-full bg-[#733857] px-6 py-3 text-center text-sm font-medium text-white transition hover:bg-[#5e2c46] sm:w-auto"
+                className="w-full bg-[#733857] px-6 py-3 text-center text-sm font-medium text-white transition hover:bg-[#5e2c46] focus:outline-none focus:ring-2 focus:ring-[#733857] focus:ring-offset-2 sm:w-auto"
               >
                 Continue shopping
               </Link>
+                <Link
+                to="/orders"
+                className="w-full bg-[#cf91d9] px-6 py-3 text-center text-sm font-medium text-white transition hover:bg-[#f2a9ce] focus:outline-none focus:ring-2 focus:ring-[#733857] focus:ring-offset-2 sm:w-auto"
+              >
+               My Orders
+              </Link>
             </div>
+            
           </div>
         </div>
       </div>

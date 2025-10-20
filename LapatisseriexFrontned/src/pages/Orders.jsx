@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle, XCircle, Eye, Calendar, MapPin, ShoppingBag, ChevronRight, CreditCard, Banknote } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { calculatePricing } from '../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../utils/variantUtils';
+import webSocketService from '../services/websocketService';
 
 // Helper function to get product image URL
 const getProductImageUrl = (item) => {
@@ -28,12 +29,14 @@ const Orders = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const { user } = useAuth();
 
-  useEffect(() => {
-    fetchUserOrders();
-  }, []);
+  const fetchUserOrders = useCallback(async (options = {}) => {
+    const { silent = false } = options;
 
-  const fetchUserOrders = async () => {
     try {
+      if (!silent) {
+        setLoading(true);
+      }
+
       const authToken = localStorage.getItem('authToken');
       if (!authToken) {
         throw new Error('Authentication required');
@@ -51,50 +54,86 @@ const Orders = () => {
 
       const data = await response.json();
       
-      // ✅ ADDITIONAL CLIENT-SIDE FILTER: Only show completed orders
-      // Filter out pending (payment not completed) and cancelled orders
       const validOrders = (data.orders || []).filter(order => 
         order.orderStatus !== 'pending' && 
         order.orderStatus !== 'cancelled'
       );
       
       setOrders(validOrders);
+      setError(null);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      setError(error.message);
+      if (!silent) {
+        setError(error.message);
+        setOrders([]);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setOrders([]);
+      setLoading(false);
+      return;
+    }
+
+    fetchUserOrders();
+  }, [user, fetchUserOrders]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const userId = user._id || user.uid || null;
+    webSocketService.connect(userId);
+
+    const handleOrderStatusUpdate = (update) => {
+      if (!update?.orderNumber) {
+        return;
+      }
+      fetchUserOrders({ silent: true });
+    };
+
+    webSocketService.onOrderStatusUpdate(handleOrderStatusUpdate);
+
+    return () => {
+      webSocketService.offOrderStatusUpdate(handleOrderStatusUpdate);
+    };
+  }, [user, fetchUserOrders]);
 
   const getStatusConfig = (status) => {
     const configs = {
-      'pending': {
+      pending: {
         icon: Package,
         color: '#6b7280',
         label: 'PAYMENT PENDING'
       },
-      'placed': {
+      placed: {
         icon: Package,
         color: '#733857',
         label: 'ORDER PLACED'
       },
-      'confirmed': {
+      confirmed: {
         icon: CheckCircle,
         color: '#10b981',
         label: 'CONFIRMED'
       },
-      'out_for_delivery': {
+      out_for_delivery: {
         icon: Truck,
         color: '#8d4466',
         label: 'OUT FOR DELIVERY'
       },
-      'delivered': {
+      delivered: {
         icon: CheckCircle,
         color: '#059669',
         label: 'DELIVERED'
       },
-      'cancelled': {
+      cancelled: {
         icon: Package,
         color: '#dc2626',
         label: 'CANCELLED'

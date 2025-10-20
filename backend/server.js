@@ -246,10 +246,26 @@ const startServer = async () => {
 
       // Handle user authentication
       socket.on('authenticate', (userId) => {
-        if (userId) {
-          connectedUsers.set(userId, socket.id);
-          socket.userId = userId;
-          console.log(`✅ User ${userId} authenticated with socket ${socket.id}`);
+        const normalizedId = userId ? userId.toString() : null;
+
+        if (socket.userId && socket.userId !== normalizedId) {
+          connectedUsers.delete(socket.userId);
+        }
+
+        if (normalizedId) {
+          connectedUsers.set(normalizedId, socket.id);
+          socket.userId = normalizedId;
+          console.log(`✅ User ${normalizedId} authenticated with socket ${socket.id}`);
+        } else {
+          socket.userId = null;
+        }
+      });
+
+      socket.on('logout', () => {
+        if (socket.userId) {
+          connectedUsers.delete(socket.userId);
+          console.log(`🚪 User ${socket.userId} logged out from socket ${socket.id}`);
+          socket.userId = null;
         }
       });
 
@@ -257,6 +273,7 @@ const startServer = async () => {
         if (socket.userId) {
           connectedUsers.delete(socket.userId);
           console.log(`❌ User ${socket.userId} disconnected`);
+          socket.userId = null;
         } else {
           console.log(`❌ Client ${socket.id} disconnected`);
         }

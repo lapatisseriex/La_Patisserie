@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import notificationService from '../../services/notificationService';
+import webSocketService from '../../services/websocketService';
+import { useAuth } from '../../hooks/useAuth';
 
 // Dynamic Time Component that updates every minute
 const DynamicTime = ({ dateString }) => {
@@ -80,35 +82,86 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const userId = user?._id || user?.uid || null;
+  const isMountedRef = useRef(false);
 
-  const fetchNotifications = async (page = 1, append = false) => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const fetchNotifications = useCallback(async (page = 1, append = false, options = {}) => {
+    if (!isAuthenticated) {
+      if (!isMountedRef.current) return;
+      setNotifications([]);
+      setUnreadCount(0);
+      onUnreadCountChange(0);
+      setHasMore(false);
+      return;
+    }
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      if (!isMountedRef.current) return;
+      setNotifications([]);
+      setUnreadCount(0);
+      onUnreadCountChange(0);
+      setHasMore(false);
+      return;
+    }
+
+    const { silent = false } = options;
+
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
+
       const response = await notificationService.getNotifications(page, 20);
-      
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
       if (append) {
         setNotifications(prev => [...prev, ...response.notifications]);
       } else {
         setNotifications(response.notifications);
       }
-      
+
       setUnreadCount(response.unreadCount);
       onUnreadCountChange(response.unreadCount);
       setHasMore(response.notifications.length === 20);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast.error('Failed to load notifications');
+      if (!silent) {
+        toast.error('Failed to load notifications');
+      }
     } finally {
-      setLoading(false);
+      if (!silent && isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [isAuthenticated, onUnreadCountChange]);
 
   useEffect(() => {
     if (isOpen) {
-      fetchNotifications();
       setCurrentPage(1);
+      fetchNotifications();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchNotifications]);
+
+  useEffect(() => {
+    if (!isAuthenticated && isMountedRef.current) {
+      setNotifications([]);
+      setUnreadCount(0);
+      onUnreadCountChange(0);
+      setHasMore(false);
+    }
+  }, [isAuthenticated, onUnreadCountChange]);
   const loadMore = () => {
     if (!loading && hasMore) {
       const nextPage = currentPage + 1;
@@ -135,6 +188,37 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
       toast.error('Failed to mark as read');
     }
   };
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    webSocketService.connect(userId);
+
+    const handleNewNotification = () => {
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      if (isOpen) {
+        setCurrentPage(1);
+        fetchNotifications(1, false, { silent: true });
+      } else {
+        setUnreadCount(prev => {
+          const nextCount = prev + 1;
+          onUnreadCountChange(nextCount);
+          return nextCount;
+        });
+      }
+    };
+
+    webSocketService.onNewNotification(handleNewNotification);
+
+    return () => {
+      webSocketService.offNewNotification(handleNewNotification);
+    };
+  }, [userId, isOpen, fetchNotifications, onUnreadCountChange]);
 
   const markAllAsRead = async () => {
     try {

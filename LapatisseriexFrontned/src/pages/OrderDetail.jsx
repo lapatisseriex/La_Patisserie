@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import OrderTrackingContent from '../components/Orders/OrderTrackingContent';
+import webSocketService from '../services/websocketService';
 
 const OrderDetail = () => {
   const { orderId } = useParams(); // This will be orderNumber
@@ -12,15 +13,7 @@ const OrderDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
-    fetchOrderDetail();
-  }, [orderId, user]);
-
-  const fetchOrderDetail = async () => {
+  const fetchOrderDetail = useCallback(async () => {
     try {
       setLoading(true);
       const authToken = localStorage.getItem('authToken');
@@ -28,7 +21,6 @@ const OrderDetail = () => {
         throw new Error('Authentication required');
       }
 
-      // Use orderNumber in the API call (orderId param is actually orderNumber)
       const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/orders/${orderId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -48,7 +40,36 @@ const OrderDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+      return;
+    }
+    fetchOrderDetail();
+  }, [orderId, user, navigate, fetchOrderDetail]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const userId = user._id || user.uid || null;
+    webSocketService.connect(userId);
+
+    const handleOrderStatusUpdate = (update) => {
+      if (update?.orderNumber === orderId) {
+        fetchOrderDetail();
+      }
+    };
+
+    webSocketService.onOrderStatusUpdate(handleOrderStatusUpdate);
+
+    return () => {
+      webSocketService.offOrderStatusUpdate(handleOrderStatusUpdate);
+    };
+  }, [user, orderId, fetchOrderDetail]);
 
   if (loading) {
     return (
