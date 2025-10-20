@@ -457,24 +457,26 @@ const cartSlice = createSlice({
         };
       })
       .addCase(updateCartQuantity.fulfilled, (state, action) => {
-        const { productId, quantity, cartTotal, cartCount, isRemoved } = action.payload;
+        const payloadProductId = action.payload?.productId;
+        const targetProductId = payloadProductId ?? action.meta.arg.productId;
+  const { quantity, cartTotal, cartCount, isRemoved } = action.payload ?? {};
         const requestId = action.meta.requestId;
-        const pending = state.pendingOperations[productId];
+        const pending = state.pendingOperations[targetProductId];
         if (pending?.requestId && pending.requestId !== requestId) {
           return;
         }
         
-        delete state.pendingOperations[productId];
+        delete state.pendingOperations[targetProductId];
         
         if (quantity === 0 || isRemoved) {
           // Remove item
-          const itemIndex = state.items.findIndex(item => item.productId === productId);
+          const itemIndex = state.items.findIndex(item => item.productId === targetProductId);
           if (itemIndex >= 0) {
             state.items.splice(itemIndex, 1);
           }
         } else {
           // Update quantity
-          const itemIndex = state.items.findIndex(item => item.productId === productId);
+          const itemIndex = state.items.findIndex(item => item.productId === targetProductId);
           if (itemIndex >= 0) {
             state.items[itemIndex].quantity = quantity;
             delete state.items[itemIndex].isOptimistic;
@@ -487,12 +489,13 @@ const cartSlice = createSlice({
         state.lastUpdated = Date.now();
       })
       .addCase(updateCartQuantity.rejected, (state, action) => {
-        const { productId } = action.meta.arg;
-        const pending = state.pendingOperations[productId];
+        const payloadProductId = action.payload?.productId;
+        const targetProductId = payloadProductId ?? action.meta.arg.productId;
+        const pending = state.pendingOperations[targetProductId];
         if (pending?.requestId && pending.requestId !== action.meta.requestId) {
           return;
         }
-        delete state.pendingOperations[productId];
+        delete state.pendingOperations[targetProductId];
         // Suppress noisy duplicate-operation errors
         if (action.payload !== 'Operation already in progress') {
           state.error = action.payload;

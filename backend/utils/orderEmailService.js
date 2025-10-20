@@ -95,15 +95,15 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail) => {
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #f3f4f6;">
           <div style="display: flex; align-items: center;">
-            <img src="${item.productImage}" alt="${item.productName}" style="width: 40px; height: 40px; border-radius: 8px; margin-right: 12px; object-fit: cover;">
+            <img src="${item.productImage || ''}" alt="${item.productName || 'Item'}" style="width: 40px; height: 40px; border-radius: 8px; margin-right: 12px; object-fit: cover;">
             <div>
-              <div style="font-weight: 600; color: #374151;">${item.productName}</div>
-              <div style="font-size: 14px; color: #6B7280;">Qty: ${item.quantity}</div>
+              <div style="font-weight: 600; color: #374151;">${item.productName || 'Item'}</div>
+              <div style="font-size: 14px; color: #6B7280;">Qty: ${item.quantity || 0}</div>
             </div>
           </div>
         </td>
-        <td style="padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: 600; color: #374151;">
-          ₹${(item.price * item.quantity).toFixed(2)}
+        <td style="padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: right;">
+          ₹${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
         </td>
       </tr>
     `).join('');
