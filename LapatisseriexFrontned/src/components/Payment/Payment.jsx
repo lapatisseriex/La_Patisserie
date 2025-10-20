@@ -5,10 +5,12 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
+import OfferBadge from '../common/OfferBadge';
 import ServiceAssuranceBanner from './ServiceAssuranceBanner';
 import { WebsiteLiveTimerCompact } from '../WebsiteLiveTimer';
 import { calculateCartTotals, calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
+import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import api from '../../services/apiService';
                   
 const Payment = () => {
@@ -20,6 +22,8 @@ const Payment = () => {
   const navigate = useNavigate();
   const [showLocationError, setShowLocationError] = useState(false);
   const [useFreeCash, setUseFreeCash] = useState(false);
+
+  const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
 
   useEffect(() => {
     refreshCart();
@@ -626,7 +630,15 @@ if (isOrderComplete) {
             </Link>
             <div className="flex items-center gap-2">
               <img src="/images/logo.png" alt="La Patisserie" className="h-8 w-auto" />
-              <span className="text-sm font-semibold text-[#733857]">La Patisserie</span>
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm font-semibold text-[#733857]">La Patisserie</span>
+                <span
+                  className="text-xs font-semibold tracking-wide"
+                  style={{ color: orderExperience.color }}
+                >
+                  {orderExperience.label}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -658,10 +670,14 @@ if (isOrderComplete) {
 
                     const displayLabel = variantLabel || fallbackLabel || 'Standard';
                     const pricing = variant ? calculatePricing(variant) : null;
-                    const unitPrice = pricing ? pricing.finalPrice : Number(item?.price) || 0;
-                    const safeUnitPrice = Number.isFinite(unitPrice) ? unitPrice : 0;
+                    const rawUnitPrice = pricing ? pricing.finalPrice : Number(item?.price) || 0;
+                    const safeUnitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
+                    const mrpValue = pricing ? pricing.mrp : rawUnitPrice;
+                    const safeMrp = Number.isFinite(mrpValue) ? mrpValue : safeUnitPrice;
+                    const discountPercentage = Number.isFinite(pricing?.discountPercentage) ? pricing.discountPercentage : 0;
+                    const hasDiscount = discountPercentage > 0;
                     const lineTotal = safeUnitPrice * (item.quantity || 1);
-                    const hasDiscount = Boolean(pricing?.discountPercentage > 0);
+                    const originalTotal = hasDiscount ? safeMrp * (item.quantity || 1) : lineTotal;
 
                     return (
                       <div
@@ -681,15 +697,32 @@ if (isOrderComplete) {
                         <div className="flex flex-1 flex-col gap-1">
                           <p className="text-sm font-medium text-slate-900">{item.name}</p>
                           <p className="text-xs text-slate-500">{displayLabel}</p>
+                          {hasDiscount && (
+                            <OfferBadge label={`${discountPercentage}% OFF`} className="text-[10px]" />
+                          )}
                           <div className="flex items-center justify-between text-xs text-slate-500">
-                            <span>
-                              {formatCurrency(safeUnitPrice)} × {item.quantity}
-                            </span>
-                            <span className="font-medium text-slate-900">{formatCurrency(lineTotal)}</span>
+                            <div className="flex items-center gap-2">
+                              <span>
+                                {formatCurrency(safeUnitPrice)} × {item.quantity}
+                              </span>
+                              {hasDiscount && (
+                                <span className="text-[11px] text-slate-400 line-through">
+                                  {formatCurrency(safeMrp)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              {hasDiscount && (
+                                <div className="text-[11px] text-slate-400 line-through">
+                                  {formatCurrency(originalTotal)}
+                                </div>
+                              )}
+                              <span className="font-medium text-slate-900">{formatCurrency(lineTotal)}</span>
+                            </div>
                           </div>
                           {hasDiscount && (
                             <span className="text-[11px] font-medium text-emerald-600">
-                              {pricing?.discountPercentage}% off applied
+                              {discountPercentage}% off applied
                             </span>
                           )}
                         </div>

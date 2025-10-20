@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import OrderTrackingContent from '../components/Orders/OrderTrackingContent';
 import webSocketService from '../services/websocketService';
+import { getOrderExperienceInfo } from '../utils/orderExperience';
 
 const OrderDetail = () => {
   const { orderId } = useParams(); // This will be orderNumber
@@ -12,6 +13,7 @@ const OrderDetail = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
 
   const fetchOrderDetail = useCallback(async () => {
     try {
@@ -156,9 +158,17 @@ const OrderDetail = () => {
           >
             Order Tracking
           </h1>
-          <p className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
-            Track your order and view details
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
+              Track your order and view details
+            </p>
+            <span
+              className="text-xs font-semibold tracking-wide"
+              style={{ color: orderExperience.color }}
+            >
+              {orderExperience.label}
+            </span>
+          </div>
         </div>
         
         {/* Order Tracking Content */}

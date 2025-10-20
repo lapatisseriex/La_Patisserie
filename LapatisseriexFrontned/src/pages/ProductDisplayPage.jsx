@@ -13,9 +13,11 @@ import MediaDisplay from '../components/common/MediaDisplay';
 import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
+import OfferBadge from '../components/common/OfferBadge';
 import ScrollManager from '../utils/scrollManager';
 import { calculatePricing } from '../utils/pricingUtils';
 import { formatVariantLabel } from '../utils/variantUtils';
+import { getOrderExperienceInfo } from '../utils/orderExperience';
 
 import { WebsiteLiveTimerCompact } from '../components/WebsiteLiveTimer/index.js';
 import '../styles/ProductDisplayPageNew.css';
@@ -35,6 +37,27 @@ const ProductDisplayPageNew = () => {
   const { user } = useAuth();
   const { isFavorite } = useFavorites();
 
+  const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
+
+  const mediaItems = useMemo(() => {
+    const items = [];
+    if (Array.isArray(product?.images)) {
+      product.images.forEach((src, idx) => {
+        if (src) {
+          items.push({ type: 'image', src, key: `image-${idx}` });
+        }
+      });
+    }
+    if (Array.isArray(product?.videos)) {
+      product.videos.forEach((src, idx) => {
+        if (src) {
+          items.push({ type: 'video', src, key: `video-${idx}` });
+        }
+      });
+    }
+    return items;
+  }, [product?.images, product?.videos]);
+
   // IMMEDIATE scroll prevention
   React.useLayoutEffect(() => {
     console.log(`🚀 ProductDisplayPageNew mounting for product: ${productId}`);
@@ -48,7 +71,7 @@ const ProductDisplayPageNew = () => {
     };
   }, [productId]);
 
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -103,6 +126,66 @@ const ProductDisplayPageNew = () => {
       setSelectedVariant(product.variants[selectedVariantIndex]);
     }
   }, [selectedVariantIndex, product]);
+
+  useEffect(() => {
+    if (mediaItems.length === 0) {
+      setSelectedMediaIndex(0);
+      return;
+    }
+
+    const firstImageIndex = mediaItems.findIndex((item) => item.type === 'image');
+    const fallbackIndex = firstImageIndex !== -1 ? firstImageIndex : 0;
+    setSelectedMediaIndex(fallbackIndex);
+  }, [productId, mediaItems.length]);
+
+  useEffect(() => {
+    setSelectedMediaIndex((prev) => {
+      if (mediaItems.length === 0) {
+        return 0;
+      }
+      if (prev >= mediaItems.length) {
+        return mediaItems.length - 1;
+      }
+      return prev;
+    });
+  }, [mediaItems.length]);
+
+  const imageIndices = useMemo(() => {
+    return mediaItems
+      .map((item, idx) => (item.type === 'image' ? idx : null))
+      .filter((idx) => idx !== null);
+  }, [mediaItems]);
+
+  const modalImages = useMemo(() => {
+    return imageIndices.map((idx) => mediaItems[idx]).filter(Boolean);
+  }, [imageIndices, mediaItems]);
+
+  const modalInitialIndex = useMemo(() => {
+    const relativeIndex = imageIndices.indexOf(selectedMediaIndex);
+    return relativeIndex >= 0 ? relativeIndex : 0;
+  }, [imageIndices, selectedMediaIndex]);
+
+  const isSelectedMediaImage = mediaItems[selectedMediaIndex]?.type === 'image';
+
+  useEffect(() => {
+    if (imageIndices.length <= 1) {
+      return undefined;
+    }
+
+    if (isHoveringImage || !isSelectedMediaImage) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      setSelectedMediaIndex((prev) => {
+        const currentPosition = imageIndices.indexOf(prev);
+        const nextPosition = currentPosition === -1 ? 0 : (currentPosition + 1) % imageIndices.length;
+        return imageIndices[nextPosition];
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [imageIndices, isHoveringImage, isSelectedMediaImage]);
 
   // Track product view
   useEffect(() => {
@@ -197,18 +280,6 @@ const ProductDisplayPageNew = () => {
     const list = Array.isArray(sameCategoryAll) ? sameCategoryAll : [];
     return list.filter(p => p && p._id !== productId).slice(0, 3);
   }, [sameCategoryAll, productId]);
-
-  // Auto-sliding for images
-  useEffect(() => {
-    if (product && product.images && product.images.length > 1 && !isHoveringImage) {
-      const interval = setInterval(() => {
-        setSelectedImageIndex((prevIndex) => 
-          (prevIndex + 1) % product.images.length
-        );
-      }, 4000);
-      return () => clearInterval(interval);
-    }
-  }, [product?.images, isHoveringImage]);
 
   // Scroll detection
   useEffect(() => {
@@ -347,12 +418,32 @@ const ProductDisplayPageNew = () => {
   const tracks = !!selectedVariant?.isStockActive;
   const totalStock = tracks ? (selectedVariant?.stock || 0) : Number.POSITIVE_INFINITY;
 
-  const handleImageSelect = (index) => {
-    setSelectedImageIndex(index);
+  const selectedMedia = mediaItems[selectedMediaIndex] || null;
+  const fallbackMediaSrc = Array.isArray(product?.images) && product.images.length > 0
+    ? product.images[0]
+    : Array.isArray(product?.videos) && product.videos.length > 0
+      ? product.videos[0]
+      : null;
+  const fallbackMediaType = Array.isArray(product?.images) && product.images.length > 0
+    ? 'image'
+    : Array.isArray(product?.videos) && product.videos.length > 0
+      ? 'video'
+      : 'image';
+  const selectedMediaSrc = selectedMedia?.src || fallbackMediaSrc;
+  const selectedMediaType = selectedMedia?.type || fallbackMediaType;
+  const hasVideos = Array.isArray(product?.videos) && product.videos.length > 0;
+  const mediaCount = mediaItems.length;
+
+  const handleMediaSelect = (index) => {
+    if (index >= 0 && index < mediaCount) {
+      setSelectedMediaIndex(index);
+    }
   };
 
   const handleImageZoom = () => {
-    setIsImageModalOpen(true);
+    if (selectedMediaType === 'image') {
+      setIsImageModalOpen(true);
+    }
   };
 
   // Reserve CTA Button Component with Orders page styling
@@ -432,9 +523,11 @@ const ProductDisplayPageNew = () => {
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-12 h-12 border border-gray-100 overflow-hidden flex-shrink-0 bg-gray-50">
                   <MediaDisplay
-                    src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                    src={selectedMediaSrc}
+                    type={selectedMediaType}
                     alt={product.name}
                     className="w-full h-full object-cover"
+                    videoProps={{ controls: false, muted: true, loop: true, playsInline: true, autoPlay: true }}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -450,24 +543,7 @@ const ProductDisplayPageNew = () => {
                         <span className="text-xs line-through" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                           ₹{pricingDetails.mrp}
                         </span>
-                        <span className="relative inline-flex items-center overflow-hidden">
-                          <span className="text-xs font-bold px-2.5 py-0.5 bg-white" style={{ 
-                            color: '#16a34a',
-                            transform: 'skewX(-10deg)',
-                            display: 'inline-block'
-                          }}>
-                            {pricingDetails.discountPercentage}%
-                          </span>
-                          <span className="text-xs font-bold px-2.5 py-0.5" style={{ 
-                            color: '#16a34a',
-                            backgroundColor: '#dcfce7',
-                            transform: 'skewX(-10deg)',
-                            display: 'inline-block',
-                            marginLeft: '-2px'
-                          }}>
-                            OFF
-                          </span>
-                        </span>
+                        <OfferBadge label={`${pricingDetails.discountPercentage}% OFF`} className="text-[10px]" />
                       </>
                     )}
                   </div>
@@ -567,13 +643,15 @@ const ProductDisplayPageNew = () => {
         <div className="relative w-full">
           <div className="relative w-full overflow-hidden">
             <div 
-              className="relative w-full aspect-square cursor-pointer group"
+              className={`relative w-full aspect-square ${selectedMediaType === 'image' ? 'cursor-pointer group' : 'cursor-default'}`}
               onClick={handleImageZoom}
             >
               <MediaDisplay
-                src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                src={selectedMediaSrc}
+                type={selectedMediaType}
                 alt={product.name}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                videoProps={{ controls: true, playsInline: true, autoPlay: true, muted: true, loop: true }}
               />
               
               {/* Share button only */}
@@ -587,21 +665,34 @@ const ProductDisplayPageNew = () => {
               </div>
             </div>
             
-            {/* Image dots indicator */}
-            {product.images && product.images.length > 1 && (
+            {/* Media dots indicator */}
+            {mediaCount > 1 && (
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
-                {product.images.map((_, index) => (
+                {mediaItems.map((item, index) => (
                   <div
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index === selectedImageIndex ? 'scale-110' : ''
+                    key={item.key || index}
+                    className={`flex h-2 w-3 items-center justify-center rounded-full transition-all duration-300 ${
+                      index === selectedMediaIndex ? 'scale-110' : ''
                     }`}
                     style={{
-                      background: index === selectedImageIndex 
+                      background: index === selectedMediaIndex
                         ? 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)'
                         : 'rgba(115, 56, 87, 0.3)'
                     }}
-                  />
+                  >
+                    {item.type === 'video' && (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-2 w-2 text-white"
+                      >
+                        <path d="M10 8l6 4-6 4V8z" />
+                      </svg>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -640,24 +731,7 @@ const ProductDisplayPageNew = () => {
                   <span className="text-base line-through" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                     ₹{pricingDetails.mrp}
                   </span>
-                  <span className="relative inline-flex items-center overflow-hidden">
-                    <span className="text-sm font-bold px-3 py-1 bg-white" style={{ 
-                      color: '#16a34a',
-                      transform: 'skewX(-10deg)',
-                      display: 'inline-block'
-                    }}>
-                      {pricingDetails.discountPercentage}%
-                    </span>
-                    <span className="text-sm font-bold px-3 py-1" style={{ 
-                      color: '#16a34a',
-                      backgroundColor: '#dcfce7',
-                      transform: 'skewX(-10deg)',
-                      display: 'inline-block',
-                      marginLeft: '-2px'
-                    }}>
-                      OFF
-                    </span>
-                  </span>
+                  <OfferBadge label={`${pricingDetails.discountPercentage}% OFF`} className="text-sm" />
                 </>
               )}
             </div>
@@ -669,6 +743,16 @@ const ProductDisplayPageNew = () => {
                 <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>|</span>
                 <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>{ratingCountDisplay}</span>
               </div>
+            </div>
+
+            {/* Returning customer badge */}
+            <div className="mb-3">
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: orderExperience.color, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                {orderExperience.label}
+              </span>
             </div>
 
             {/* Dietary Indicators */}
@@ -901,9 +985,11 @@ const ProductDisplayPageNew = () => {
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="w-10 h-10 border border-gray-100 overflow-hidden flex-shrink-0 bg-gray-50">
                 <MediaDisplay
-                  src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                  src={selectedMediaSrc}
+                  type={selectedMediaType}
                   alt={product.name}
                   className="w-full h-full object-cover"
+                  videoProps={{ controls: false, muted: true, loop: true, playsInline: true, autoPlay: true }}
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -912,15 +998,8 @@ const ProductDisplayPageNew = () => {
                   <span className="text-sm font-light" style={{ color: '#1a1a1a' }}>₹{Math.round(pricingDetails.finalPrice)}</span>
                   {pricingDetails.discountPercentage > 0 && (
                     <>
-                      <span className="text-[11px]" style={{ color: 'rgba(26, 26, 26, 0.5)', textDecoration: 'line-through !important', WebkitTextDecoration: 'line-through', textDecorationLine: 'line-through', textDecorationStyle: 'solid', textDecorationColor: 'rgba(26, 26, 26, 0.5)', textDecorationThickness: '1.5px' }}>₹{pricingDetails.mrp}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5" style={{ 
-                        color: 'green',
-                   
-                        transform: 'skewX(-10deg)',
-                        display: 'inline-block'
-                      }}>
-                        {pricingDetails.discountPercentage}%
-                      </span>
+                      <span className="text-[11px]" style={{ color: 'rgba(26, 26, 26, 0.5)', textDecorationLine: 'line-through', textDecorationStyle: 'solid', textDecorationColor: 'rgba(26, 26, 26, 0.5)', textDecorationThickness: '1.5px' }}>₹{pricingDetails.mrp}</span>
+                      <OfferBadge label={`${pricingDetails.discountPercentage}% OFF`} className="text-[10px] leading-none" />
                     </>
                   )}
                 </div>
@@ -1044,49 +1123,80 @@ const ProductDisplayPageNew = () => {
           <div className="lg:col-span-7">
             <div className="relative">
               <div className="flex gap-4">
-              {/* Thumbnail Images */}
-              {product.images && product.images.length > 1 && (
+              {/* Thumbnail Media */}
+              {mediaCount > 1 && (
                 <div className="flex flex-col gap-2 w-24 max-h-[80vh] overflow-y-auto">
-                  {product.images.map((image, index) => (
+                  {mediaItems.map((item, index) => (
                     <button
-                      key={index}
-                      onClick={() => handleImageSelect(index)}
-                      className={`aspect-square transition-all overflow-hidden hover:scale-105 flex-shrink-0 ${
-                        index === selectedImageIndex
+                      key={item.key || index}
+                      onClick={() => handleMediaSelect(index)}
+                      className={`relative aspect-square transition-all overflow-hidden hover:scale-105 flex-shrink-0 ${
+                        index === selectedMediaIndex
                           ? 'border-2'
                           : 'border border-gray-100 hover:border-gray-200'
                       }`}
-                      style={index === selectedImageIndex ? {
+                      style={index === selectedMediaIndex ? {
                         borderColor: '#733857'
                       } : {}}
                     >
                       <MediaDisplay
-                        src={image}
+                        src={item.src}
+                        type={item.type}
                         alt={`${product.name} ${index + 1}`}
                         className="w-full h-full object-cover"
+                        videoProps={{ controls: false, muted: true, loop: true, playsInline: true }}
                       />
+                      {item.type === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="white"
+                            strokeWidth="2"
+                            className="h-6 w-6"
+                          >
+                            <path d="M10 8l6 4-6 4V8z" />
+                          </svg>
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
               )}
               
-              {/* Main Image */}
+              {/* Main Media */}
               <div className="flex-1">
                 <div className="relative bg-white border border-gray-100">
                   <div 
-                    className="aspect-square cursor-pointer group relative overflow-hidden"
+                    className={`aspect-square relative overflow-hidden ${selectedMediaType === 'image' ? 'cursor-pointer group' : 'cursor-default'}`}
                     onClick={handleImageZoom}
                     onMouseEnter={() => setIsHoveringImage(true)}
                     onMouseLeave={() => setIsHoveringImage(false)}
                   >
                     <MediaDisplay
-                      src={product.images?.[selectedImageIndex] || product.images?.[0]}
+                      src={selectedMediaSrc}
+                      type={selectedMediaType}
                       alt={product.name}
                       className="w-full h-full object-cover"
+                      videoProps={{ controls: true, playsInline: true, autoPlay: true, muted: true, loop: true }}
                     />
                     
                     <div className="absolute inset-0 bg-black bg-opacity-5 transition-all flex items-center justify-center">
-                      <ZoomIn className="w-8 h-8 text-white opacity-70" />
+                      {selectedMediaType === 'video' ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="white"
+                          strokeWidth="2"
+                          className="h-10 w-10 opacity-80"
+                        >
+                          <path d="M10 8l6 4-6 4V8z" />
+                        </svg>
+                      ) : (
+                        <ZoomIn className="w-8 h-8 text-white opacity-70" />
+                      )}
                     </div>
                     
                     {tracks && totalStock === 0 && (
@@ -1206,24 +1316,7 @@ const ProductDisplayPageNew = () => {
                       <span className="text-lg line-through" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                         ₹{pricingDetails.mrp}
                       </span>
-                      <span className="relative inline-flex items-center overflow-hidden">
-                        <span className="text-base font-bold px-3 py-1 bg-white" style={{ 
-                          color: '#16a34a',
-                          transform: 'skewX(-10deg)',
-                          display: 'inline-block'
-                        }}>
-                          {pricingDetails.discountPercentage}%
-                        </span>
-                        <span className="text-base font-bold px-3 py-1" style={{ 
-                          color: '#16a34a',
-                          backgroundColor: '#dcfce7',
-                          transform: 'skewX(-10deg)',
-                          display: 'inline-block',
-                          marginLeft: '-2px'
-                        }}>
-                          OFF
-                        </span>
-                      </span>
+                      <OfferBadge label={`${pricingDetails.discountPercentage}% OFF`} className="text-sm md:text-base" />
                     </>
                   )}
                 </div>
@@ -1241,6 +1334,16 @@ const ProductDisplayPageNew = () => {
                     <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>|</span>
                     <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>{ratingCountDisplay}</span>
                   </div>
+                </div>
+
+                {/* Returning customer badge */}
+                <div className="mb-4">
+                  <span
+                    className="text-base font-semibold tracking-wide"
+                    style={{ color: orderExperience.color, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    {orderExperience.label}
+                  </span>
                 </div>
 
                 {/* Dietary Indicators */}
@@ -1311,9 +1414,11 @@ const ProductDisplayPageNew = () => {
                         >
                           <div className="mb-2">
                             <MediaDisplay
-                              src={product.images?.[0] || '/placeholder-image.jpg'}
+                              src={fallbackMediaSrc || '/placeholder-image.jpg'}
+                              type={fallbackMediaType}
                               alt={`${product.name} ${variant.quantity}${variant.measuringUnit}`}
                               className="w-full h-20 object-cover"
+                              videoProps={{ controls: false, muted: true, loop: true, playsInline: true, autoPlay: true }}
                             />
                           </div>
                           
@@ -1432,11 +1537,11 @@ const ProductDisplayPageNew = () => {
       </div>
 
       {/* Image Modal */}
-      {isImageModalOpen && (
+      {isImageModalOpen && modalImages.length > 0 && (
         <ProductImageModal
           isOpen={isImageModalOpen}
-          images={product.images || []}
-          initialIndex={selectedImageIndex}
+          images={modalImages.map((item) => item.src)}
+          initialIndex={modalInitialIndex}
           onClose={() => setIsImageModalOpen(false)}
         />
       )}

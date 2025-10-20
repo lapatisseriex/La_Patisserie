@@ -1,11 +1,106 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, DollarSign } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar } from 'lucide-react';
 import { calculatePricing } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
+import OfferBadge from '../common/OfferBadge';
+import { useAuth } from '../../hooks/useAuth';
+import { getOrderExperienceInfo } from '../../utils/orderExperience';
 
 const OrderTrackingContent = ({ order }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
+  const formatAmount = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.round(parsed) : 0;
+  };
+  const cartItemsWithPricing = useMemo(() => {
+    if (!order?.cartItems) return [];
+
+    return order.cartItems.map((item) => {
+      const pricing = item?.variant ? calculatePricing(item.variant) : null;
+      const parsedMrp = Number.isFinite(pricing?.mrp) ? pricing.mrp : Number(item?.originalPrice);
+      const parsedPrice = Number.isFinite(pricing?.finalPrice) ? pricing.finalPrice : Number(item?.price);
+      const unitMrp = Number.isFinite(parsedMrp) ? parsedMrp : Number.isFinite(parsedPrice) ? parsedPrice : 0;
+      const unitFinalPrice = Number.isFinite(parsedPrice) ? parsedPrice : unitMrp;
+      const quantity = Number.isFinite(Number(item?.quantity)) ? Number(item.quantity) : 0;
+      const originalLineTotal = unitMrp * quantity;
+      const lineTotal = unitFinalPrice * quantity;
+      const inferredDiscount = unitMrp > 0 ? Math.max(0, Math.round(((unitMrp - unitFinalPrice) / unitMrp) * 100)) : 0;
+      const discountPercentage = Number.isFinite(pricing?.discountPercentage)
+        ? pricing.discountPercentage
+        : inferredDiscount;
+      const hasDiscount = unitMrp > unitFinalPrice && discountPercentage > 0;
+
+      return {
+        ...item,
+        quantity,
+        unitMrp,
+        unitFinalPrice,
+        lineTotal,
+        originalLineTotal,
+        discountPercentage,
+        hasDiscount,
+        variantLabel: resolveOrderItemVariantLabel(item)
+      };
+    });
+  }, [order?.cartItems]);
+  const summary = useMemo(() => {
+    if (!order) return null;
+
+    const parseAmount = (value) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const rawSummary = order.orderSummary || {};
+    const subtotalFromSummary = parseAmount(rawSummary.cartTotal ?? rawSummary.subtotal);
+    const discountedTotalFromSummary = parseAmount(
+      rawSummary.discountedTotal ?? rawSummary.discountedCartTotal ?? rawSummary.totalAfterDiscount
+    );
+    const discountFromSummary = parseAmount(rawSummary.totalDiscount ?? rawSummary.discount);
+    const deliveryChargeFromSummary = parseAmount(rawSummary.deliveryCharge);
+    const freeCashUsedFromSummary = parseAmount(rawSummary.freeCashDiscount ?? rawSummary.freeCashUsed);
+    const grandTotalFromSummary = parseAmount(rawSummary.grandTotal ?? rawSummary.finalAmount);
+
+    const derivedTotals = cartItemsWithPricing.reduce(
+      (acc, item) => {
+        acc.subtotal += item.originalLineTotal;
+        acc.discounted += item.lineTotal;
+        return acc;
+      },
+      { subtotal: 0, discounted: 0 }
+    );
+
+    const resolvedSubtotal = derivedTotals.subtotal > 0
+      ? derivedTotals.subtotal
+      : Math.max(0, subtotalFromSummary ?? 0);
+
+    const resolvedDiscounted = derivedTotals.discounted > 0
+      ? derivedTotals.discounted
+      : Math.max(0, discountedTotalFromSummary ?? grandTotalFromSummary ?? resolvedSubtotal);
+
+    let discountTotal = Number.isFinite(discountFromSummary)
+      ? discountFromSummary
+      : resolvedSubtotal - resolvedDiscounted;
+  discountTotal = Math.max(0, Number.isFinite(discountTotal) ? Math.abs(discountTotal) : 0);
+    const deliveryChargeRaw = deliveryChargeFromSummary ?? parseAmount(order?.deliveryCharge);
+    const deliveryCharge = Math.max(0, Number.isFinite(deliveryChargeRaw) ? deliveryChargeRaw : 0);
+    const freeCashRaw = freeCashUsedFromSummary ?? parseAmount(order?.freeCashUsed);
+    const freeCashUsed = Math.max(0, Number.isFinite(freeCashRaw) ? Math.abs(freeCashRaw) : 0);
+    const computedGrandTotal = resolvedDiscounted + deliveryCharge - freeCashUsed;
+    const grandTotal = Math.max(0, grandTotalFromSummary ?? computedGrandTotal);
+
+    return {
+      subtotal: resolvedSubtotal,
+      discountedTotal: resolvedDiscounted,
+      discountTotal,
+      deliveryCharge,
+      freeCashUsed,
+      grandTotal,
+    };
+  }, [order, cartItemsWithPricing]);
   
   if (!order) return null;
 
@@ -208,6 +303,14 @@ const OrderTrackingContent = ({ order }) => {
               <Calendar className="w-4 h-4 mr-1.5" />
               Placed on {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
             </div>
+            <div className="mt-2">
+              <span
+                className="text-xs font-semibold tracking-wide"
+                style={{ color: orderExperience.color }}
+              >
+                {orderExperience.label}
+              </span>
+            </div>
           </div>
           
           {/* Status Badge - Responsive */}
@@ -251,7 +354,7 @@ const OrderTrackingContent = ({ order }) => {
           <div className="flex items-center justify-between">
             <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>Total Amount</span>
             <span className="text-xl sm:text-2xl font-medium" style={{ color: '#733857' }}>
-              ₹{order.orderSummary?.grandTotal || order.amount}
+              ₹{formatAmount(summary?.grandTotal ?? order.amount ?? 0)}
             </span>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center mt-2 text-sm gap-1 sm:gap-0" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
@@ -300,7 +403,7 @@ const OrderTrackingContent = ({ order }) => {
           Order Items ({order.cartItems?.length || 0})
         </h3>
         <div className="space-y-4">
-          {order.cartItems?.map((item, index) => {
+          {cartItemsWithPricing.map((item, index) => {
             const itemStatus = item.dispatchStatus;
             const itemStatusConfig = itemStatus === 'delivered' 
               ? { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.08)', label: 'Delivered', icon: CheckCircle }
@@ -308,7 +411,11 @@ const OrderTrackingContent = ({ order }) => {
               ? { color: '#8d4466', bgColor: 'rgba(141, 68, 102, 0.08)', label: 'Dispatched', icon: Truck }
               : { color: '#733857', bgColor: 'rgba(115, 56, 87, 0.08)', label: 'Preparing', icon: Clock };
             const ItemIcon = itemStatusConfig.icon;
-            const variantLabel = resolveOrderItemVariantLabel(item);
+            const safeUnitPrice = Number.isFinite(item.unitFinalPrice) ? item.unitFinalPrice : 0;
+            const hasDiscount = Boolean(item.hasDiscount);
+            const discountPercentage = Number.isFinite(item.discountPercentage) ? item.discountPercentage : 0;
+            const lineTotal = Number.isFinite(item.lineTotal) ? item.lineTotal : safeUnitPrice * item.quantity;
+            const originalLineTotal = Number.isFinite(item.originalLineTotal) ? item.originalLineTotal : lineTotal;
 
             return (
               <div 
@@ -367,12 +474,12 @@ const OrderTrackingContent = ({ order }) => {
                   </div>
                   <p className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                     Quantity: {item.quantity}
-                    {variantLabel && (
+                    {item.variantLabel && (
                       <>
                         {' '}
                         •
                         {' '}
-                        <span className="font-medium" style={{ color: '#1a1a1a' }}>{variantLabel}</span>
+                        <span className="font-medium" style={{ color: '#1a1a1a' }}>{item.variantLabel}</span>
                       </>
                     )}
                   </p>
@@ -385,33 +492,22 @@ const OrderTrackingContent = ({ order }) => {
 
                 {/* Price */}
                 <div className="text-right flex-shrink-0">
-                  {(() => {
-                    if (item.variant) {
-                      const pricing = calculatePricing(item.variant);
-                      const itemTotal = pricing.finalPrice * item.quantity;
-                      return (
-                        <>
-                          <p className="font-medium" style={{ color: '#733857' }}>
-                            ₹{Math.round(itemTotal)}
-                          </p>
-                          <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
-                            ₹{Math.round(pricing.finalPrice)} each
-                          </p>
-                        </>
-                      );
-                    } else {
-                      return (
-                        <>
-                          <p className="font-medium" style={{ color: '#733857' }}>
-                            ₹{Math.round(item.price * item.quantity)}
-                          </p>
-                          <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
-                            ₹{Math.round(item.price)} each
-                          </p>
-                        </>
-                      );
-                    }
-                  })()}
+                  {hasDiscount && (
+                    <div className="text-xs line-through" style={{ color: 'rgba(26, 26, 26, 0.45)' }}>
+                      ₹{formatAmount(originalLineTotal)}
+                    </div>
+                  )}
+                  <p className="font-medium" style={{ color: '#733857' }}>
+                    ₹{formatAmount(lineTotal)}
+                  </p>
+                  <p className="text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
+                    ₹{formatAmount(safeUnitPrice)} each
+                  </p>
+                  {hasDiscount && (
+                    <div className="mt-1 flex justify-end">
+                      <OfferBadge label={`${discountPercentage}% OFF`} className="text-[10px]" />
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -420,7 +516,7 @@ const OrderTrackingContent = ({ order }) => {
       </div>
 
       {/* Order Summary */}
-      {order.orderSummary && (
+      {summary && (
         <div 
           className="bg-white border border-gray-100 p-6"
           style={{ 
@@ -434,23 +530,29 @@ const OrderTrackingContent = ({ order }) => {
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span style={{ color: 'rgba(26, 26, 26, 0.6)' }}>Subtotal</span>
-              <span style={{ color: '#1a1a1a' }}>₹{order.orderSummary.subtotal}</span>
+              <span style={{ color: '#1a1a1a' }}>₹{formatAmount(summary.subtotal)}</span>
             </div>
-            {order.orderSummary.deliveryCharge > 0 && (
+            {summary.discountTotal > 0 && (
               <div className="flex justify-between text-sm">
-                <span style={{ color: 'rgba(26, 26, 26, 0.6)' }}>Delivery Charge</span>
-                <span style={{ color: '#1a1a1a' }}>₹{order.orderSummary.deliveryCharge}</span>
+                <span style={{ color: '#10b981' }}>Discount</span>
+                <span style={{ color: '#10b981' }}>-₹{formatAmount(summary.discountTotal)}</span>
               </div>
             )}
-            {order.orderSummary.freeCashUsed > 0 && (
+            {summary.deliveryCharge > 0 && (
+              <div className="flex justify-between text-sm">
+                <span style={{ color: 'rgba(26, 26, 26, 0.6)' }}>Delivery Charge</span>
+                <span style={{ color: '#1a1a1a' }}>₹{formatAmount(summary.deliveryCharge)}</span>
+              </div>
+            )}
+            {summary.freeCashUsed > 0 && (
               <div className="flex justify-between text-sm">
                 <span style={{ color: '#10b981' }}>Free Cash Used</span>
-                <span style={{ color: '#10b981' }}>-₹{order.orderSummary.freeCashUsed}</span>
+                <span style={{ color: '#10b981' }}>-₹{formatAmount(summary.freeCashUsed)}</span>
               </div>
             )}
             <div className="flex justify-between text-base font-medium pt-3 border-t border-gray-100">
               <span style={{ color: '#1a1a1a' }}>Total</span>
-              <span style={{ color: '#733857' }}>₹{order.orderSummary.grandTotal}</span>
+              <span style={{ color: '#733857' }}>₹{formatAmount(summary.grandTotal)}</span>
             </div>
           </div>
         </div>

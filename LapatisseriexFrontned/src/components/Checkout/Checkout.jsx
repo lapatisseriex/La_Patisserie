@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 import { useCart } from '../../hooks/useCart';
@@ -6,6 +6,8 @@ import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useHostel } from '../../context/HostelContext/HostelContext';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
+import OfferBadge from '../common/OfferBadge';
+import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import {
   Mail,
   Phone,
@@ -34,6 +36,8 @@ const Checkout = () => {
   const { locations, loading: locationsLoading, updateUserLocation, getCurrentLocationName } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
   const navigate = useNavigate();
+
+  const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
 
   const [email, setEmail] = useState(user?.email || '');
   const [error, setError] = useState('');
@@ -266,7 +270,15 @@ const Checkout = () => {
             {/* Order Summary - Shows FIRST on mobile, SECOND on desktop */}
             <div className="order-1 lg:order-2 lg:sticky lg:top-4 h-fit border-none shadow-none">
               <div className="p-8 border-none shadow-none">
-                <h2 className="text-xl font-semibold text-[#733857] mb-8">Order Summary</h2>
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-xl font-semibold text-[#733857]">Order Summary</h2>
+                  <span
+                    className="text-sm font-semibold tracking-wide"
+                    style={{ color: orderExperience.color, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  >
+                    {orderExperience.label}
+                  </span>
+                </div>
 
                 {/* Cart Items */}
                 <div className="space-y-6 mb-8 max-h-96 overflow-y-auto pt-2 pr-2">
@@ -284,9 +296,15 @@ const Checkout = () => {
 
                     const displayLabel = variantLabel || fallbackLabel || 'Standard';
                     const pricing = variant ? calculatePricing(variant) : null;
-                    const unitPrice = pricing ? pricing.finalPrice : Number(item?.price) || 0;
-                    const safeUnitPrice = Number.isFinite(unitPrice) ? unitPrice : 0;
-                    const itemTotal = safeUnitPrice * Number(item.quantity || 0);
+                    const itemQuantity = Number(item.quantity || 0);
+                    const rawUnitPrice = pricing ? pricing.finalPrice : Number(item?.price) || 0;
+                    const safeUnitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
+                    const mrpValue = pricing ? pricing.mrp : rawUnitPrice;
+                    const safeMrp = Number.isFinite(mrpValue) ? mrpValue : safeUnitPrice;
+                    const discountPercentage = Number.isFinite(pricing?.discountPercentage) ? pricing.discountPercentage : 0;
+                    const hasDiscount = discountPercentage > 0;
+                    const itemTotal = safeUnitPrice * itemQuantity;
+                    const originalTotal = hasDiscount ? safeMrp * itemQuantity : itemTotal;
 
                     return (
                       <div key={item.id} className="flex items-start gap-4">
@@ -307,10 +325,22 @@ const Checkout = () => {
                           <p className="text-sm text-gray-500">
                             {displayLabel}
                           </p>
+                          {hasDiscount && (
+                            <div className="mt-1">
+                              <OfferBadge label={`${discountPercentage}% OFF`} className="text-[10px]" />
+                            </div>
+                          )}
                         </div>
-                        <p className="text-sm font-normal text-gray-900 whitespace-nowrap">
-                          {Number.isFinite(itemTotal) ? `₹${itemTotal.toFixed(2)}` : '₹0.00'}
-                        </p>
+                        <div className="text-sm font-normal text-gray-900 whitespace-nowrap text-right">
+                          {hasDiscount && (
+                            <div className="text-xs text-gray-500 line-through">
+                              ₹{originalTotal.toFixed(2)}
+                            </div>
+                          )}
+                          <div>
+                            {Number.isFinite(itemTotal) ? `₹${itemTotal.toFixed(2)}` : '₹0.00'}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -328,8 +358,13 @@ const Checkout = () => {
                           <span className="text-gray-900">{formatCurrency(totals.originalTotal > 0 ? totals.originalTotal : totals.finalTotal)}</span>
                         </div>
                         {totals.totalSavings > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-700">Discount {totals.averageDiscountPercentage > 0 && `(${totals.averageDiscountPercentage}% OFF)`}</span>
+                          <div className="flex justify-between text-sm items-center">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-700">Discount</span>
+                              {totals.averageDiscountPercentage > 0 && (
+                                <OfferBadge label={`${totals.averageDiscountPercentage}% OFF`} className="text-[10px]" />
+                              )}
+                            </div>
                             <span className="text-green-600 font-normal">-{formatCurrency(totals.totalSavings)}</span>
                           </div>
                         )}

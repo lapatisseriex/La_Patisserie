@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import MediaDisplay from '../common/MediaDisplay';
 import { useCart } from '../../hooks/useCart';
@@ -13,10 +13,13 @@ import { useSparkToCart } from '../../hooks/useSparkToCart';
 import { toast } from 'react-toastify';
 import { calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 import productLiveCache from '../../utils/productLiveCache';
+import { getOrderExperienceInfo } from '../../utils/orderExperience';
+import OfferBadge from '../common/OfferBadge';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
+  const [videoHasEnded, setVideoHasEnded] = useState(false);
   const [refreshedProduct, setRefreshedProduct] = useState(product);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -30,6 +33,8 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const { trackProductView } = useRecentlyViewed();
   const { buttonRef: addToCartButtonRef } = useSparkToCart();
   const navigate = useNavigate();
+
+  const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
 
   // Subscribe to shared live cache for this product (dedupes network requests)
   useEffect(() => {
@@ -49,6 +54,30 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   // Use refreshed product data
   const currentProduct = refreshedProduct || product;
+  const imageUrls = Array.isArray(currentProduct?.images) ? currentProduct.images : [];
+  const videoUrls = Array.isArray(currentProduct?.videos) ? currentProduct.videos : [];
+  const mediaItems = useMemo(() => {
+    const items = [];
+    imageUrls.forEach((url) => {
+      if (url) items.push({ type: 'image', src: url });
+    });
+    videoUrls.forEach((url) => {
+      if (url) items.push({ type: 'video', src: url });
+    });
+    return items;
+  }, [imageUrls, videoUrls]);
+
+  const mediaCount = mediaItems.length;
+  const hasVideos = videoUrls.length > 0;
+  const activeMedia = mediaCount > 0 ? mediaItems[Math.min(currentMediaIndex, mediaCount - 1)] : null;
+  const fallbackImage = imageUrls[0] || null;
+  const fallbackVideo = videoUrls[0] || null;
+  const primaryMediaType = activeMedia?.type || (fallbackImage ? 'image' : fallbackVideo ? 'video' : 'image');
+  const primaryMediaSrc = activeMedia?.src || fallbackImage || fallbackVideo || null;
+  const displayMediaSrc = primaryMediaSrc || '/images/cake1.png';
+  const displayMediaType = primaryMediaSrc ? primaryMediaType : 'image';
+  const isActiveVideo = displayMediaType === 'video';
+  const videoPoster = isActiveVideo ? (fallbackImage || null) : null;
 
   // Get current quantity from cart (will re-run when cartItems changes)
   const currentQuantity = useMemo(() => {
@@ -61,6 +90,17 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     quantityRef.current = currentQuantity;
   }, [currentQuantity]);
   
+  useEffect(() => {
+    setCurrentMediaIndex((prevIndex) => {
+      if (mediaCount === 0) return 0;
+      return prevIndex >= mediaCount ? 0 : prevIndex;
+    });
+  }, [mediaCount]);
+
+  useEffect(() => {
+    setVideoHasEnded(false);
+  }, [isActiveVideo, displayMediaSrc]);
+
   // Memoize button state to prevent unnecessary re-renders
   const buttonState = useMemo(() => ({
     shouldShowAdd: currentQuantity === 0,
@@ -91,6 +131,14 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const productRating = getProductRating(currentProduct._id);
 
+  const handleVideoPlay = useCallback(() => {
+    setVideoHasEnded(false);
+  }, []);
+
+  const handleVideoEnded = useCallback(() => {
+    setVideoHasEnded(true);
+  }, []);
+
   // Deterministic rating count like "3.9K" for display purposes (consistent per product)
   const getRatingCount = (productId) => {
     if (!productId) return '3.9K';
@@ -107,16 +155,30 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   // Auto-slide functionality for multiple images - very slow and smooth
   useEffect(() => {
-    if (currentProduct.images && currentProduct.images.length > 1 && !isHoveringImage) {
-      const interval = setInterval(() => {
-        setCurrentImageIndex((prevIndex) => 
-          (prevIndex + 1) % currentProduct.images.length
-        );
-      }, 8000); // Change image every 8 seconds for very slow, gentle experience
-
-      return () => clearInterval(interval);
+    if (mediaCount <= 1) {
+      return undefined;
     }
-  }, [currentProduct.images, isHoveringImage]);
+
+    if (isHoveringImage) {
+      return undefined;
+    }
+
+    if (isActiveVideo) {
+      if (videoHasEnded) {
+        const timeout = setTimeout(() => {
+          setCurrentMediaIndex((prevIndex) => (prevIndex + 1) % mediaCount);
+        }, 1500);
+        return () => clearTimeout(timeout);
+      }
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentMediaIndex((prevIndex) => (prevIndex + 1) % mediaCount);
+    }, 8000); // Change image every 8 seconds for very slow, gentle experience
+
+    return () => clearInterval(interval);
+  }, [mediaCount, isHoveringImage, isActiveVideo, videoHasEnded]);
 
   // Ensure we have variants and handle missing data
   // Use the first active variant or fallback to first variant
@@ -352,18 +414,55 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                 className="drop-shadow-md hover:scale-110 transition-transform duration-300"
               />
             </div>
+
+            <div className="absolute inset-0 w-full h-full overflow-hidden">
+              <AnimatePresence initial={false} mode="sync">
+                <motion.div
+                  key={`${displayMediaType}-${displayMediaSrc}`}
+                  initial={{ opacity: 0, scale: 1.02 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.6, ease: 'easeInOut' }}
+                  className="absolute inset-0 will-change-transform"
+                >
+                  <MediaDisplay
+                    src={displayMediaSrc}
+                    type={displayMediaType}
+                    alt={currentProduct.name}
+                    className="w-full h-full"
+                    aspectRatio="auto"
+                    objectFit="cover"
+                    videoProps={{
+                      controls: false,
+                      muted: true,
+                      playsInline: true,
+                      preload: 'metadata',
+                      autoPlay: true,
+                      onPlay: handleVideoPlay,
+                      onLoadedData: handleVideoPlay,
+                      onEnded: handleVideoEnded,
+                      poster: videoPoster || undefined
+                    }}
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+           {displayMediaType === 'video' && (
+              <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full  px-2 py-1 text-xs text-white">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-3 w-3"
+                >
+                  <path d="M7 4c-1.105 0-2 .895-2 2v12c0 1.105.895 2 2 2h6c1.105 0 2-.895 2-2v-3l4 3V6l-4 3V6c0-1.105-.895-2-2-2H7z" />
+                </svg>
             
-            <MediaDisplay
-          src={currentProduct.images?.[currentImageIndex] || null}
-          alt={currentProduct.name}
-          className="w-full h-full transition-all duration-[3000ms] ease-in-out"
-          style={{
-            transition: 'opacity 3s ease-in-out, transform 3s ease-in-out',
-            opacity: 1
-          }}
-          aspectRatio="auto"
-          objectFit="cover"
-            />
+              </div>
+            )}
+
+       
 
             {/* Shop Closed / Unavailable Overlay */}
             {(!isShopOpen || isOutOfStockTracked) && (
@@ -551,13 +650,14 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </div>
             </div>
 
-            {/* Welcome Offer or Special Text */}
+            {/* Customer experience badge */}
             <div className="text-xs flex-shrink-0">
-              {user && user.hasPlacedOrder ? (
-                <span className="bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Premium Choice</span>
-              ) : (
-                <span className="bg-gradient-to-r from-[#d30f0f] via-[#db3956] to-[#7a1313] bg-clip-text text-transparent font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Welcome Gift</span>
-              )}
+              <span
+                className="font-bold"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: orderExperience.color }}
+              >
+                {orderExperience.label}
+              </span>
             </div>
           </div>
 
@@ -583,9 +683,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </span>
             </div>
             {discountPercentage > 0 && (
-              <span className="bg-gradient-to-r from-[#71de73] via-[#69c94b] to-[#3fc62d] bg-clip-text text-transparent text-xs font-bold" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                {discountPercentage}% OFF
-              </span>
+              <OfferBadge label={`${discountPercentage}% OFF`} />
             )}
           </div>
         </div>
@@ -594,7 +692,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         <button
           onClick={handleReserve}
           disabled={!isActive || totalStock === 0 || !isProductAvailable}
-          className={`group relative w-3/4 mx-auto py-2 px-3 text-xs font-light transition-all duration-200 rounded-lg overflow-hidden ${
+          className={`group relative w-full sm:w-11/12 lg:w-3/4 mx-auto mt-3 sm:mt-4 py-2 px-3 text-xs font-light transition-all duration-200 rounded-lg overflow-hidden ${
             !isActive || totalStock === 0 || !isProductAvailable
               ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
               : 'bg-white text-gray-900 border-2 border-[#733857] hover:text-white active:text-white touch-manipulation'

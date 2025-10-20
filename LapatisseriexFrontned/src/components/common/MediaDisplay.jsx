@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { normalizeImageUrl } from '../../utils/imageUtils';
+import { normalizeImageUrl, normalizeVideoUrl } from '../../utils/imageUtils';
 
 /**
  * MediaDisplay component for rendering images or videos from Cloudinary or local sources
@@ -24,9 +24,11 @@ const MediaDisplay = ({
   aspectRatio = 'auto',
   objectFit = 'cover',
   lazy = true,
-  transparent = false // New prop to handle transparent images better
+  transparent = false, // New prop to handle transparent images better
+  videoProps = {}
 }) => {
   const [error, setError] = useState(false);
+  const isVideo = type === 'video';
   
   // Function to handle image load errors
   const handleError = () => {
@@ -40,18 +42,31 @@ const MediaDisplay = ({
     aspectRatio
   };
   
+  const effectiveFallback = isVideo
+    ? (fallbackSrc && fallbackSrc !== '/images/cake1.png' ? fallbackSrc : '')
+    : fallbackSrc;
+
+  const normalizedPrimary = isVideo ? normalizeVideoUrl(src) : normalizeImageUrl(src);
+  const normalizedFallback = isVideo
+    ? normalizeVideoUrl(effectiveFallback)
+    : normalizeImageUrl(effectiveFallback, effectiveFallback);
+
   // Use fallback if error occurred or no src is provided
-  const mediaSource = (error || !src) ? fallbackSrc : normalizeImageUrl(src);
+  const mediaSource = (error || !normalizedPrimary) ? normalizedFallback : normalizedPrimary;
+  const { controls = true, muted = true, ...restVideoProps } = videoProps || {};
   
   return (
     <div className={`media-display ${className}`} style={{ aspectRatio }}>
       {type === 'video' ? (
         <video
           src={mediaSource}
-          controls
+          controls={controls}
+          muted={muted}
           style={mediaStyles}
           className="w-full h-full"
+          preload="metadata"
           onError={handleError}
+          {...restVideoProps}
         >
           <source src={mediaSource} type="video/mp4" />
           Your browser does not support the video tag.
@@ -79,7 +94,8 @@ MediaDisplay.propTypes = {
   aspectRatio: PropTypes.string,
   objectFit: PropTypes.string,
   lazy: PropTypes.bool,
-  transparent: PropTypes.bool // New prop for handling transparent images
+  transparent: PropTypes.bool, // New prop for handling transparent images
+  videoProps: PropTypes.object
 };
 
 export default MediaDisplay;

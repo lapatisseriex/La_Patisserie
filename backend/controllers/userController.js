@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
+import Order from '../models/orderModel.js';
 import firebaseAdmin from '../config/firebase.js';
 import { deleteFromCloudinary } from '../utils/cloudinary.js';
 
@@ -21,6 +22,29 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   // Ensure we're getting the latest data from the database
   // This helps avoid any cached data issues
   await user.save();
+
+  // Gather order stats to inform frontend offers and messaging
+  let totalCompletedOrders = 0;
+  let lastOrderAt = null;
+  try {
+    totalCompletedOrders = await Order.countDocuments({
+      userId: user._id,
+      orderStatus: { $ne: 'cancelled' }
+    });
+
+    if (totalCompletedOrders > 0) {
+      const latestOrder = await Order.findOne({ userId: user._id })
+        .sort({ createdAt: -1 })
+        .select('createdAt');
+      if (latestOrder) {
+        lastOrderAt = latestOrder.createdAt;
+      }
+    }
+  } catch (orderStatsError) {
+    console.error('Error computing order stats for user profile response:', orderStatsError);
+  }
+
+  const hasPlacedOrder = totalCompletedOrders > 0;
 
   // Format dates for the response
   const formattedDob = user.dob ? user.dob.toISOString().split('T')[0] : null;
@@ -47,7 +71,12 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       emailVerifiedAt: user.emailVerifiedAt || null,
       phone: user.phone || '',
       phoneVerified: user.phoneVerified || false,
-      phoneVerifiedAt: user.phoneVerifiedAt || null
+      phoneVerifiedAt: user.phoneVerifiedAt || null,
+      hasPlacedOrder,
+      ordersSummary: {
+        totalOrders: totalCompletedOrders,
+        lastOrderAt
+      }
     }
   });
 });

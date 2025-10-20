@@ -11,6 +11,13 @@ export const normalizeImageUrl = (imageUrl, fallbackUrl = '/images/placeholder-i
   if (!imageUrl) {
     return fallbackUrl;
   }
+
+  const lowerUrl = typeof imageUrl === 'string' ? imageUrl.toLowerCase() : '';
+
+  // Do not attempt to transform Cloudinary video URLs
+  if (lowerUrl.includes('/video/') || lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.ogg')) {
+    return imageUrl;
+  }
   
   // Handle Cloudinary raw URLs that need to be converted to image URLs
   if (imageUrl.includes('/raw/upload/')) {
@@ -31,4 +38,41 @@ export const normalizeImageUrl = (imageUrl, fallbackUrl = '/images/placeholder-i
   
   // Return original URL if it's already properly formatted
   return imageUrl;
+};
+
+export const normalizeVideoUrl = (videoUrl) => {
+  if (!videoUrl) {
+    return videoUrl;
+  }
+
+  if (!videoUrl.includes('cloudinary.com') || !videoUrl.includes('/video/upload/')) {
+    return videoUrl;
+  }
+
+  const [prefix, suffix] = videoUrl.split('/video/upload/');
+  if (!suffix) {
+    return videoUrl;
+  }
+
+  const segments = suffix.split('/');
+  if (segments.length === 0) {
+    return videoUrl;
+  }
+
+  const [firstSegment, ...rest] = segments;
+  const isVersionSegment = /^v\d+$/i.test(firstSegment) || firstSegment === '';
+
+  if (isVersionSegment) {
+    return `${prefix}/video/upload/f_mp4,vc_auto/${segments.join('/')}`;
+  }
+
+  let transformation = firstSegment;
+  if (!transformation.includes('f_mp4')) {
+    transformation = `f_mp4,${transformation}`;
+  }
+  if (!/vc_[a-z0-9]+/i.test(transformation)) {
+    transformation = `${transformation},vc_auto`;
+  }
+
+  return `${prefix}/video/upload/${[transformation, ...rest].join('/')}`;
 };

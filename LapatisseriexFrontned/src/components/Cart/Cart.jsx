@@ -10,6 +10,8 @@ import ShopClosureOverlay from '../common/ShopClosureOverlay';
 import { toast } from 'react-toastify';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 import { formatVariantLabel } from '../../utils/variantUtils';
+import OfferBadge from '../common/OfferBadge';
+import { getOrderExperienceInfo } from '../../utils/orderExperience';
 
 const deriveEggStatus = (productLike) => {
   if (!productLike) return null;
@@ -97,6 +99,8 @@ const Cart = () => {
   const [animationDirections, setAnimationDirections] = useState({});
   
   const navigate = useNavigate();
+
+  const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
 
   // Helper function to check if user can proceed to checkout
   const canProceedToCheckout = () => {
@@ -317,9 +321,17 @@ const Cart = () => {
             <h1 className="text-xl font-medium text-gray-900 mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
               Your Cart
             </h1>
-            <p className="text-sm text-gray-600">
-              {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-gray-600">
+                {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+              </p>
+              <span
+                className="text-sm font-semibold"
+                style={{ color: orderExperience.color, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                {orderExperience.label}
+              </span>
+            </div>
           </div>
           
           <div className="w-full">
@@ -382,6 +394,13 @@ const Cart = () => {
                     || formatVariantLabel(Array.isArray(prod?.variants) && prod.variants[vi]);
                   
                   if (!variant) return null;
+
+                  const pricing = calculatePricing(variant);
+                  const unitFinalPrice = Number.isFinite(pricing.finalPrice) ? pricing.finalPrice : 0;
+                  const unitMrp = Number.isFinite(pricing.mrp) ? pricing.mrp : unitFinalPrice;
+                  const discountPercentage = Number.isFinite(pricing.discountPercentage) ? pricing.discountPercentage : 0;
+                  const hasDiscount = discountPercentage > 0;
+                  const lineTotal = unitFinalPrice * Number(item.quantity || 0);
                   
                   return (
                     <div key={item.id} className="md:grid md:grid-cols-12 gap-4 items-center py-4 bg-white border-b border-[#733857] mb-5 pb-5">
@@ -409,12 +428,17 @@ const Cart = () => {
                             <h3 className="font-medium text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                               {item.name || 'Product'}
                             </h3>
-                            <p className="text-sm text-gray-700 font-medium">
-                              ₹ {(() => {
-                                const pricing = calculatePricing(variant);
-                                return pricing.finalPrice.toFixed(0);
-                              })()} each
-                            </p>
+                            <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+                              <span>₹{unitFinalPrice.toFixed(0)} each</span>
+                              {hasDiscount && (
+                                <span className="text-xs text-gray-500 line-through">₹{unitMrp.toFixed(0)}</span>
+                              )}
+                            </div>
+                            {hasDiscount && (
+                              <div className="mt-1">
+                                <OfferBadge label={`${discountPercentage}% OFF`} className="text-[10px]" />
+                              </div>
+                            )}
                             <p className="text-xs text-gray-600 mt-1">
                               Variant: <span className="font-medium text-gray-800">{variantLabel || 'Default'}</span>
                             </p>
@@ -474,12 +498,13 @@ const Cart = () => {
                           </div>
                           
                           {/* Item Total - Mobile */}
-                          <div className="font-medium">
-                            Total: ₹ {(() => {
-                              const pricing = calculatePricing(variant);
-                              const itemTotal = pricing.finalPrice * item.quantity;
-                              return itemTotal.toFixed(0);
-                            })()}
+                          <div className="font-medium text-right">
+                            <div>₹{lineTotal.toFixed(0)}</div>
+                            {hasDiscount && (
+                              <div className="text-xs text-gray-500 line-through">
+                                ₹{(unitMrp * item.quantity).toFixed(0)}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -516,12 +541,19 @@ const Cart = () => {
 
                       {/* Price - spans 2 */}
                       <div className="hidden md:flex col-span-2 items-center justify-center">
-                        <span className="text-sm text-gray-600">
-                          ₹{(() => {
-                            const pricing = calculatePricing(variant);
-                            return pricing.finalPrice.toFixed(2);
-                          })()}
-                        </span>
+                        <div className="text-center space-y-1">
+                          {hasDiscount && (
+                            <span className="block text-xs text-gray-400 line-through">
+                              ₹{unitMrp.toFixed(2)}
+                            </span>
+                          )}
+                          <span className="text-sm text-gray-800 font-medium">
+                            ₹{unitFinalPrice.toFixed(2)}
+                          </span>
+                          {hasDiscount && (
+                            <OfferBadge label={`${discountPercentage}% OFF`} className="mt-1 text-[10px]" />
+                          )}
+                        </div>
                       </div>
 
                       {/* Quantity Controls - spans 2 */}
@@ -567,13 +599,16 @@ const Cart = () => {
 
                       {/* Total - spans 2 */}
                       <div className="hidden md:flex col-span-2 items-center justify-center relative">
-                        <span className="text-sm font-semibold text-[#733857]">
-                          ₹{(() => {
-                            const pricing = calculatePricing(variant);
-                            const itemTotal = pricing.finalPrice * item.quantity;
-                            return itemTotal.toFixed(2);
-                          })()}
-                        </span>
+                        <div className="text-center space-y-1">
+                          {hasDiscount && (
+                            <span className="block text-xs text-gray-400 line-through">
+                              ₹{(unitMrp * item.quantity).toFixed(2)}
+                            </span>
+                          )}
+                          <span className="text-sm font-semibold text-[#733857]">
+                            ₹{lineTotal.toFixed(2)}
+                          </span>
+                        </div>
                         <button 
                           onClick={() => removeFromCart(item.productId)}
                           className="text-gray-300 hover:text-red-500 transition-colors absolute top-0 right-4"

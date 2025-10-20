@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import firebaseAdmin from '../config/firebase.js';
 import User from '../models/userModel.js';
+import Order from '../models/orderModel.js';
 import { 
   generateOTP, 
   generateOTPExpiry, 
@@ -733,6 +734,29 @@ export const verifyToken = asyncHandler(async (req, res) => {
     // Format the date of birth for the response
     const formattedDob = user.dob ? user.dob.toISOString().split('T')[0] : null;
 
+    // Compute order summary so frontend can tailor messaging (e.g. welcome gift vs premium)
+    let totalCompletedOrders = 0;
+    let lastOrderAt = null;
+    try {
+      totalCompletedOrders = await Order.countDocuments({
+        userId: user._id,
+        orderStatus: { $ne: 'cancelled' }
+      });
+
+      if (totalCompletedOrders > 0) {
+        const latestOrder = await Order.findOne({ userId: user._id })
+          .sort({ createdAt: -1 })
+          .select('createdAt');
+        if (latestOrder) {
+          lastOrderAt = latestOrder.createdAt;
+        }
+      }
+    } catch (orderStatsError) {
+      console.error('Error computing order stats for user:', user._id, orderStatsError);
+    }
+
+    const hasPlacedOrder = totalCompletedOrders > 0;
+
     res.status(200).json({
       success: true,
       isNewUser: isNewUser || isProfileIncomplete, // Mark as new user if profile is incomplete
@@ -755,7 +779,12 @@ export const verifyToken = asyncHandler(async (req, res) => {
         emailVerifiedAt: user.emailVerifiedAt || null,
         phoneVerified: user.phoneVerified || false,
         phoneVerifiedAt: user.phoneVerifiedAt || null,
-        isProfileIncomplete // Add flag for profile completion status
+        isProfileIncomplete, // Add flag for profile completion status
+        hasPlacedOrder,
+        ordersSummary: {
+          totalOrders: totalCompletedOrders,
+          lastOrderAt
+        }
       }
     });
   } catch (error) {

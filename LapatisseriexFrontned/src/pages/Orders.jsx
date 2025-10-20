@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle, XCircle, Eye, Calendar, MapPin, ShoppingBag, ChevronRight, CreditCard, Banknote } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { calculatePricing } from '../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../utils/variantUtils';
+import OfferBadge from '../components/common/OfferBadge';
+import { getOrderExperienceInfo } from '../utils/orderExperience';
 import webSocketService from '../services/websocketService';
 
 // Helper function to get product image URL
@@ -28,6 +30,7 @@ const Orders = () => {
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const { user } = useAuth();
+  const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
 
   const fetchUserOrders = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -182,12 +185,20 @@ const Orders = () => {
               >
                 My Orders
               </h1>
-              <p className="text-sm tracking-wide" style={{ 
-                color: 'rgba(26, 26, 26, 0.5)',
-                letterSpacing: '0.05em'
-              }}>
-                {orders.length} {orders.length === 1 ? 'ORDER' : 'ORDERS'} PLACED
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-sm tracking-wide" style={{ 
+                  color: 'rgba(26, 26, 26, 0.5)',
+                  letterSpacing: '0.05em'
+                }}>
+                  {orders.length} {orders.length === 1 ? 'ORDER' : 'ORDERS'} PLACED
+                </p>
+                <span
+                  className="text-xs font-semibold tracking-wide"
+                  style={{ color: orderExperience.color }}
+                >
+                  {orderExperience.label}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -483,6 +494,9 @@ const OrderCard = ({ order, index }) => {
               <div className="mt-3 space-y-1">
                 {previewItems.map((item, itemIdx) => {
                   const variantLabel = resolveOrderItemVariantLabel(item);
+                  const pricing = item?.variant ? calculatePricing(item.variant) : null;
+                  const discountPercentage = Number.isFinite(pricing?.discountPercentage) ? pricing.discountPercentage : 0;
+                  const hasDiscount = discountPercentage > 0;
 
                   return (
                     <p
@@ -497,6 +511,9 @@ const OrderCard = ({ order, index }) => {
                         <span className="text-[11px] uppercase" style={{ color: '#733857' }}>
                           • {variantLabel}
                         </span>
+                      )}
+                      {hasDiscount && (
+                        <OfferBadge label={`${discountPercentage}% OFF`} className="text-[9px]" />
                       )}
                       <span className="text-[11px]" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                         ×{item.quantity}
