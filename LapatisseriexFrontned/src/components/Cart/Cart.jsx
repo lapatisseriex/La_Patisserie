@@ -629,7 +629,7 @@ const Cart = () => {
                 <div className="md:hidden px-4">
                   <div className="flex justify-between items-center border-t border-b border-gray-300 py-4">
                     <span className="text-lg font-medium">Total: </span>
-                    <span className="text-lg font-bold">₹ {formatCurrency(discountedCartTotal)}</span>
+                    <span className="text-lg font-bold">{formatCurrency(discountedCartTotal)}</span>
                   </div>
                 </div>
                 
@@ -637,7 +637,7 @@ const Cart = () => {
                 <div className="hidden md:flex justify-end pr-4">
                   <div className="w-64 border-t border-b border-brown-300 py-4 flex justify-end">
                     <span className="text-xl font-bold text-black pr-2" style={{fontFamily: 'Montserrat, Arial, sans-serif'}}>
-                      Total : ₹ {formatCurrency(discountedCartTotal)}
+                      Total : {formatCurrency(discountedCartTotal)}
                     </span>
                   </div>
                 </div>

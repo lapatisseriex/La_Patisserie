@@ -41,6 +41,16 @@ const OrderCard = ({ order }) => {
         color: '#10b981',
         label: 'CONFIRMED'
       },
+      'preparing': {
+        icon: Clock,
+        color: '#f59e0b',
+        label: 'PREPARING'
+      },
+      'ready': {
+        icon: CheckCircle,
+        color: '#7c3aed',
+        label: 'READY FOR DISPATCH'
+      },
       'out_for_delivery': {
         icon: Truck,
         color: '#8d4466',

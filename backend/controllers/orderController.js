@@ -3,8 +3,105 @@ import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js';
 import DeliveryLocationMapping from '../models/deliveryLocationMappingModel.js';
 import Payment from '../models/paymentModel.js';
+import User from '../models/userModel.js';
 import { createNotification } from './notificationController.js';
 import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
+import { getActiveAdminEmails } from '../utils/adminUtils.js';
+import {
+  sendOrderStatusNotification,
+  sendAdminOrderStatusNotification
+} from '../utils/orderEmailService.js';
+
+const normalizeOrderForEmail = async (orderDoc) => {
+  if (!orderDoc) {
+    return null;
+  }
+
+  let plainOrder;
+  if (typeof orderDoc.toObject === 'function') {
+    plainOrder = orderDoc.toObject({ virtuals: true });
+  } else if (orderDoc._doc) {
+    plainOrder = { ...orderDoc._doc };
+  } else {
+    plainOrder = { ...orderDoc };
+  }
+
+  if (!plainOrder.cartItems && orderDoc.cartItems) {
+    plainOrder.cartItems = Array.isArray(orderDoc.cartItems)
+      ? orderDoc.cartItems.map(item => (typeof item.toObject === 'function' ? item.toObject() : { ...item }))
+      : [];
+  }
+
+  const userDetails = { ...(plainOrder.userDetails || {}) };
+  let userCandidate = null;
+
+  if (orderDoc.userId) {
+    if (typeof orderDoc.userId === 'object' && orderDoc.userId !== null && orderDoc.userId.email) {
+      userCandidate = orderDoc.userId;
+    } else {
+      userCandidate = await User.findById(orderDoc.userId).select('name email phone').lean();
+    }
+  }
+
+  if (userCandidate) {
+    if (userCandidate.name && !userDetails.name) userDetails.name = userCandidate.name;
+    if (userCandidate.email && !userDetails.email) userDetails.email = userCandidate.email;
+    if (userCandidate.phone && !userDetails.phone) userDetails.phone = userCandidate.phone;
+
+    plainOrder.userId = {
+      ...(typeof plainOrder.userId === 'object' && plainOrder.userId !== null ? plainOrder.userId : {}),
+      _id: userCandidate._id || plainOrder.userId,
+      name: userCandidate.name || userDetails.name || plainOrder.userId?.name,
+      email: userCandidate.email || userDetails.email || plainOrder.userId?.email,
+      phone: userCandidate.phone || userDetails.phone || plainOrder.userId?.phone
+    };
+  }
+
+  plainOrder.userDetails = userDetails;
+
+  return plainOrder;
+};
+
+const sendStatusEmails = async (orderDoc, previousStatus, newStatus) => {
+  try {
+    if (!orderDoc || !newStatus || newStatus === previousStatus) {
+      return;
+    }
+
+    const normalizedOrder = await normalizeOrderForEmail(orderDoc);
+    if (!normalizedOrder) {
+      return;
+    }
+
+    normalizedOrder.orderStatus = newStatus;
+
+    const userEmail = normalizedOrder.userDetails?.email || normalizedOrder.userId?.email;
+    if (userEmail) {
+      try {
+        await sendOrderStatusNotification(normalizedOrder, newStatus, userEmail);
+      } catch (userEmailError) {
+        console.error('Failed to send user status email:', userEmailError.message);
+      }
+    }
+
+    let adminEmails = [];
+    try {
+      adminEmails = await getActiveAdminEmails();
+    } catch (adminLookupError) {
+      console.error('Failed to fetch admin recipients:', adminLookupError.message);
+    }
+
+    if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+      try {
+        await sendAdminOrderStatusNotification(normalizedOrder, newStatus, adminEmails);
+      } catch (adminEmailError) {
+        console.error('Failed to send admin status email:', adminEmailError.message);
+      }
+    }
+  } catch (error) {
+    console.error('Status email workflow failed:', error.message);
+  }
+};
 
 // @desc    Get grouped pending orders for order tracking
 // @route   GET /api/admin/orders/grouped
@@ -355,44 +452,56 @@ export const dispatchOrders = asyncHandler(async (req, res) => {
 
     // Update specific cart items to dispatched status and recalculate order status
     const dispatchPromises = ordersToDispatch.map(async (order) => {
-      // Find and update the specific product in cart items
+      const previousStatus = order.orderStatus;
+
       const updatedCartItems = order.cartItems.map(item => {
-        if (item.productName === productName) {
-          // Get category name for comparison
-          const itemCategoryName = item.productId && 
-                                 item.productId.category && 
-                                 item.productId.category.name ? 
-                                 item.productId.category.name : 'Unknown Category';
-          
+        const plainItem = typeof item.toObject === 'function' ? item.toObject() : { ...item };
+        if (plainItem.productName === productName) {
+          const itemCategoryName = plainItem.productId &&
+                                   plainItem.productId.category &&
+                                   plainItem.productId.category.name
+            ? plainItem.productId.category.name
+            : 'Unknown Category';
+
           if (itemCategoryName === category) {
             return {
-              ...item,
+              ...plainItem,
               dispatchStatus: 'dispatched',
               dispatchedAt: new Date()
             };
           }
         }
-        return item;
+        return plainItem;
       });
 
-      // Update the order with new cart items
       await Order.findByIdAndUpdate(order._id, {
         cartItems: updatedCartItems,
         updatedAt: new Date()
       });
 
-      // Get the updated order to calculate new status
-      const updatedOrder = await Order.findById(order._id);
-      const newOrderStatus = updatedOrder.calculateOrderStatus();
-      
-      // Update order status if it changed
-      if (newOrderStatus !== updatedOrder.orderStatus) {
+      const statusProbe = await Order.findById(order._id);
+      const calculatedStatus = statusProbe.calculateOrderStatus();
+      let newOrderStatus = calculatedStatus;
+
+      if (calculatedStatus !== statusProbe.orderStatus) {
         await Order.findByIdAndUpdate(order._id, {
-          orderStatus: newOrderStatus
+          orderStatus: calculatedStatus
         });
       }
 
-      return { ...order.toObject(), cartItems: updatedCartItems, orderStatus: newOrderStatus };
+      const finalOrderDoc = await Order.findById(order._id)
+        .populate('userId', 'name email phone');
+
+      if (finalOrderDoc) {
+        finalOrderDoc.cartItems = updatedCartItems;
+        await sendStatusEmails(finalOrderDoc, previousStatus, newOrderStatus);
+      }
+
+      const finalOrder = finalOrderDoc ? finalOrderDoc.toObject({ virtuals: true }) : order.toObject();
+      finalOrder.cartItems = updatedCartItems;
+      finalOrder.orderStatus = newOrderStatus;
+
+      return finalOrder;
     });
 
     const updatedOrders = await Promise.all(dispatchPromises);
@@ -512,6 +621,11 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
       });
     }
 
+    const previousStatus = order.orderStatus;
+
+
+   
+
     // Check if order is in a dispatchable state
     if (!['placed', 'confirmed', 'out_for_delivery'].includes(order.orderStatus)) {
       return res.status(400).json({
@@ -557,6 +671,8 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
     order.updatedAt = new Date();
 
     await order.save();
+
+    await sendStatusEmails(order, previousStatus, newOrderStatus);
 
     // Send notification to user
     try {
@@ -740,10 +856,12 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
       order.paymentStatus = 'paid';
     }
 
-    order.orderStatus = newOrderStatus;
+  order.orderStatus = newOrderStatus;
     order.updatedAt = new Date();
 
     await order.save();
+
+  await sendStatusEmails(order, previousStatus, newOrderStatus);
 
     if (shouldFinalizeCodPayment) {
       try {

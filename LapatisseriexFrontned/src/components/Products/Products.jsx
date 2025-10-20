@@ -717,7 +717,7 @@ const Products = () => {
                         key={category._id} 
                         ref={(el) => setCategoryRef(el, category._id)}
                         id={`category-section-${category._id}`}
-                        className={`mb-12 md:mb-16 ${isSelectedCategory ? 'bg-gray-50 p-4 rounded-xl' : ''}`}
+                        className={`mb-12 md:mb-16 ${isSelectedCategory ? 'p-4 rounded-xl' : ''}`}
                       >
                         {renderProductRow(productsByCategory[category._id], category.name, category._id)}
                       </div>

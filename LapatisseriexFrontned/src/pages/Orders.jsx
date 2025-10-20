@@ -24,6 +24,13 @@ const getProductImageUrl = (item) => {
   return null;
 };
 
+const ORDER_FILTERS = [
+  { key: 'all', label: 'ALL ORDERS' },
+  { key: 'processing', label: 'PROCESSING', statuses: ['placed', 'confirmed', 'preparing', 'ready'] },
+  { key: 'out_for_delivery', label: 'IN TRANSIT', statuses: ['out_for_delivery'] },
+  { key: 'delivered', label: 'DELIVERED', statuses: ['delivered'] }
+];
+
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -126,6 +133,16 @@ const Orders = () => {
         color: '#10b981',
         label: 'CONFIRMED'
       },
+      preparing: {
+        icon: Clock,
+        color: '#f59e0b',
+        label: 'PREPARING'
+      },
+      ready: {
+        icon: CheckCircle,
+        color: '#7c3aed',
+        label: 'READY FOR DISPATCH'
+      },
       out_for_delivery: {
         icon: Truck,
         color: '#8d4466',
@@ -145,9 +162,17 @@ const Orders = () => {
     return configs[status] || configs['placed'];
   };
 
-  const filterOrders = (status) => {
-    if (status === 'all') return orders;
-    return orders.filter(order => order.orderStatus === status);
+  const filterOrders = (filterKey) => {
+    if (filterKey === 'all') {
+      return orders;
+    }
+
+    const filterConfig = ORDER_FILTERS.find(filter => filter.key === filterKey);
+    if (!filterConfig || !Array.isArray(filterConfig.statuses)) {
+      return orders;
+    }
+
+    return orders.filter(order => filterConfig.statuses.includes(order.orderStatus));
   };
 
   const filteredOrders = filterOrders(activeFilter);
@@ -208,12 +233,7 @@ const Orders = () => {
       <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 overflow-x-auto no-scrollbar py-4">
-            {[
-              { key: 'all', label: 'ALL ORDERS' },
-              { key: 'placed', label: 'PROCESSING' },
-              { key: 'out_for_delivery', label: 'IN TRANSIT' },
-              { key: 'delivered', label: 'DELIVERED' }
-            ].map((filter) => (
+            {ORDER_FILTERS.map((filter) => (
               <button
                 key={filter.key}
                 onClick={() => setActiveFilter(filter.key)}

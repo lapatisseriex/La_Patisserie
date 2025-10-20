@@ -272,3 +272,210 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail) => {
     };
   }
 };
+
+const formatStatusLabel = (status) => {
+  if (!status) return 'Status';
+  return status
+    .split('_')
+    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+};
+
+const buildAdminItemsTable = (cartItems = []) => {
+  if (!Array.isArray(cartItems) || cartItems.length === 0) {
+    return "<tr><td colspan='3' style='padding: 8px; text-align: center; color: #6B7280;'>No items recorded</td></tr>";
+  }
+
+  return cartItems.map(item => `
+    <tr>
+      <td style='padding: 8px; border-bottom: 1px solid #f3f4f6;'>
+        ${item.productName || 'Item'}
+      </td>
+      <td style='padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: center;'>
+        ${item.quantity || 0}
+      </td>
+      <td style='padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: right;'>
+        ₹${(((item.price || 0) * (item.quantity || 0)) || 0).toFixed(2)}
+      </td>
+    </tr>
+  `).join('');
+};
+
+const buildAdminOrderHeader = (orderDetails = {}) => {
+  const customerName = orderDetails?.userDetails?.name || orderDetails?.userId?.name || 'Customer';
+  const customerPhone = orderDetails?.userDetails?.phone || orderDetails?.userId?.phone || 'Not provided';
+  const delivery = orderDetails?.deliveryLocation || 'Not provided';
+  const hostel = orderDetails?.hostelName || 'Not provided';
+
+  return `
+    <div style='margin-bottom: 20px;'>
+      <p style='margin: 4px 0; color: #1F2937;'><strong>Customer:</strong> ${customerName}</p>
+      <p style='margin: 4px 0; color: #1F2937;'><strong>Phone:</strong> ${customerPhone}</p>
+      <p style='margin: 4px 0; color: #1F2937;'><strong>Delivery:</strong> ${delivery}</p>
+      <p style='margin: 4px 0; color: #1F2937;'><strong>Hostel:</strong> ${hostel}</p>
+    </div>
+  `;
+};
+
+export const sendOrderPlacedAdminNotification = async (orderDetails, adminEmails) => {
+  if (!Array.isArray(adminEmails) || adminEmails.length === 0) {
+    return { success: false, skipped: true, reason: 'No admin recipients' };
+  }
+
+  try {
+    const transporter = createTransporter();
+    const { orderNumber, orderSummary, cartItems, paymentMethod, orderStatus, createdAt } = orderDetails;
+    const customerEmail = orderDetails?.userDetails?.email || orderDetails?.userId?.email || 'Not provided';
+
+    const mailOptions = {
+      from: {
+        name: 'La Patisserie Alerts',
+        address: process.env.EMAIL_USER
+      },
+      to: adminEmails,
+      subject: `New Order Placed - ${orderNumber}`,
+      html: `
+        <!DOCTYPE html>
+        <html lang='en'>
+        <head>
+          <meta charset='UTF-8'>
+          <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+          <title>New Order Placed</title>
+        </head>
+        <body style='margin:0; padding:20px; font-family: "Segoe UI", Arial, sans-serif; background-color:#f9fafb;'>
+          <div style='max-width:640px; margin:0 auto; background:#ffffff; border-radius:12px; border:1px solid #e5e7eb; padding:24px;'>
+            <h2 style='margin:0 0 12px; color:#111827;'>New Order Placed</h2>
+            <p style='margin:0 0 16px; color:#374151;'>Order <strong>#${orderNumber}</strong> has been placed.</p>
+            ${buildAdminOrderHeader(orderDetails)}
+            <table style='width:100%; border-collapse:collapse; margin-top:12px;'>
+              <thead>
+                <tr style='background:#f3f4f6; color:#1F2937;'>
+                  <th style='padding:8px; text-align:left;'>Item</th>
+                  <th style='padding:8px; text-align:center;'>Qty</th>
+                  <th style='padding:8px; text-align:right;'>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${buildAdminItemsTable(cartItems)}
+              </tbody>
+            </table>
+            <div style='margin-top:16px; padding-top:12px; border-top:1px solid #e5e7eb;'>
+              <p style='margin:4px 0; color:#1F2937;'><strong>Grand Total:</strong> ₹${(orderSummary?.grandTotal ?? 0).toFixed(2)}</p>
+              <p style='margin:4px 0; color:#1F2937;'><strong>Payment Method:</strong> ${(paymentMethod || 'N/A').toUpperCase()}</p>
+              <p style='margin:4px 0; color:#1F2937;'><strong>Current Status:</strong> ${formatStatusLabel(orderStatus)}</p>
+              <p style='margin:4px 0; color:#1F2937;'><strong>Customer Email:</strong> ${customerEmail}</p>
+              <p style='margin:4px 0; color:#6B7280; font-size:13px;'>Placed at: ${new Date(createdAt || Date.now()).toLocaleString()}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    return {
+      success: true,
+      messageId: result.messageId,
+      orderNumber,
+      recipients: adminEmails
+    };
+  } catch (error) {
+    console.error('Error sending admin order placed email:', {
+      error: error.message,
+      orderNumber: orderDetails?.orderNumber
+    });
+
+    return {
+      success: false,
+      error: error.message,
+      orderNumber: orderDetails?.orderNumber
+    };
+  }
+};
+
+export const sendAdminOrderStatusNotification = async (orderDetails, newStatus, adminEmails) => {
+  if (!Array.isArray(adminEmails) || adminEmails.length === 0) {
+    return { success: false, skipped: true, reason: 'No admin recipients' };
+  }
+
+  try {
+    const transporter = createTransporter();
+    const { orderNumber, orderSummary, cartItems } = orderDetails;
+    const statusLabel = formatStatusLabel(newStatus);
+
+    const statusMessages = {
+      confirmed: 'Kitchen has confirmed the order and preparation will begin shortly.',
+      preparing: 'Kitchen has started preparing the items.',
+      ready: 'The order is ready for dispatch or pickup.',
+      out_for_delivery: 'The delivery team has collected the order.',
+      delivered: 'The customer has received the complete order.'
+    };
+
+    const mailOptions = {
+      from: {
+        name: 'La Patisserie Alerts',
+        address: process.env.EMAIL_USER
+      },
+      to: adminEmails,
+      subject: `Order ${orderNumber} Status ${statusLabel}`,
+      html: `
+        <!DOCTYPE html>
+        <html lang='en'>
+        <head>
+          <meta charset='UTF-8'>
+          <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+          <title>Order Status Update</title>
+        </head>
+        <body style='margin:0; padding:20px; font-family:"Segoe UI", Arial, sans-serif; background-color:#f9fafb;'>
+          <div style='max-width:640px; margin:0 auto; background:#ffffff; border-radius:12px; border:1px solid #e5e7eb; padding:24px;'>
+            <h2 style='margin:0 0 12px; color:#111827;'>Status Update: ${statusLabel}</h2>
+            <p style='margin:0 0 16px; color:#374151;'>Order <strong>#${orderNumber}</strong> has moved to <strong>${statusLabel}</strong>.</p>
+            <p style='margin:0 0 20px; color:#4B5563;'>${statusMessages[newStatus] || 'Order status updated.'}</p>
+            ${buildAdminOrderHeader(orderDetails)}
+            <table style='width:100%; border-collapse:collapse; margin-top:12px;'>
+              <thead>
+                <tr style='background:#f3f4f6; color:#1F2937;'>
+                  <th style='padding:8px; text-align:left;'>Item</th>
+                  <th style='padding:8px; text-align:center;'>Qty</th>
+                  <th style='padding:8px; text-align:right;'>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${buildAdminItemsTable(cartItems)}
+              </tbody>
+            </table>
+            <div style='margin-top:16px; padding-top:12px; border-top:1px solid #e5e7eb;'>
+              <p style='margin:4px 0; color:#1F2937;'><strong>Grand Total:</strong> ₹${(orderSummary?.grandTotal ?? 0).toFixed(2)}</p>
+              <p style='margin:4px 0; color:#1F2937;'><strong>New Status:</strong> ${statusLabel}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    return {
+      success: true,
+      messageId: result.messageId,
+      orderNumber,
+      status: newStatus,
+      recipients: adminEmails
+    };
+  } catch (error) {
+    console.error('Error sending admin status email:', {
+      error: error.message,
+      orderNumber: orderDetails?.orderNumber,
+      status: newStatus
+    });
+
+    return {
+      success: false,
+      error: error.message,
+      orderNumber: orderDetails?.orderNumber,
+      status: newStatus
+    };
+  }
+};

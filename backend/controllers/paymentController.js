@@ -10,7 +10,12 @@ import DeliveryLocationMapping from '../models/deliveryLocationMappingModel.js';
 import mongoose from 'mongoose';
 import Payment from '../models/paymentModel.js';
 import Notification from '../models/notificationModel.js';
-import { sendOrderStatusNotification, sendOrderConfirmationEmail } from '../utils/orderEmailService.js';
+import {
+  sendOrderStatusNotification,
+  sendOrderConfirmationEmail,
+  sendOrderPlacedAdminNotification
+} from '../utils/orderEmailService.js';
+import { getActiveAdminEmails } from '../utils/adminUtils.js';
 import { createNotification } from './notificationController.js';
 import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
 
@@ -112,6 +117,52 @@ const resolveLocationInfo = async (deliveryLocation, userDetails) => {
     console.error('resolveLocationInfo error:', e.message);
     return null;
   }
+};
+
+const buildOrderDetailsForEmail = (orderDoc, userLike) => {
+  if (!orderDoc) return null;
+
+  let plainOrder;
+  if (typeof orderDoc.toObject === 'function') {
+    plainOrder = orderDoc.toObject({ virtuals: true });
+  } else if (orderDoc._doc) {
+    plainOrder = { ...orderDoc._doc };
+  } else {
+    plainOrder = { ...orderDoc };
+  }
+
+  if (!plainOrder.cartItems && orderDoc.cartItems) {
+    plainOrder.cartItems = Array.isArray(orderDoc.cartItems)
+      ? orderDoc.cartItems.map(item => (typeof item.toObject === 'function' ? item.toObject() : { ...item }))
+      : [];
+  }
+
+  const userDetails = { ...(plainOrder.userDetails || {}) };
+  const userCandidate = userLike && typeof userLike === 'object' ? userLike : null;
+
+  if (userCandidate) {
+    if (userCandidate.name && !userDetails.name) userDetails.name = userCandidate.name;
+    if (userCandidate.email && !userDetails.email) userDetails.email = userCandidate.email;
+    if (userCandidate.phone && !userDetails.phone) userDetails.phone = userCandidate.phone;
+  }
+
+  plainOrder.userDetails = userDetails;
+
+  if (userCandidate && userCandidate._id) {
+    const populatedUser = typeof plainOrder.userId === 'object' && plainOrder.userId !== null
+      ? { ...plainOrder.userId }
+      : {};
+
+    plainOrder.userId = {
+      ...populatedUser,
+      _id: populatedUser._id || userCandidate._id,
+      name: populatedUser.name || userCandidate.name,
+      email: populatedUser.email || userCandidate.email,
+      phone: populatedUser.phone || userCandidate.phone
+    };
+  }
+
+  return plainOrder;
 };
 
 // Helper function to restore product stock when orders are cancelled
@@ -533,10 +584,13 @@ export const createOrder = asyncHandler(async (req, res) => {
       // Send email asynchronously
       setImmediate(async () => {
         try {
-          const user = await User.findById(userId).select('email name');
-          if (user && user.email) {
-            console.log('Sending COD order confirmation email to:', user.email);
-            const emailResult = await sendOrderConfirmationEmail(order, user.email);
+          const user = await User.findById(userId).select('email name phone');
+          const orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
+
+          const userEmailTarget = user?.email || orderDetailsForEmail?.userDetails?.email;
+          if (userEmailTarget) {
+            console.log('Sending COD order confirmation email to:', userEmailTarget);
+            const emailResult = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget);
             if (emailResult.success) {
               console.log('Order confirmation email sent successfully:', emailResult.messageId);
             } else {
@@ -545,8 +599,24 @@ export const createOrder = asyncHandler(async (req, res) => {
           } else {
             console.log('User email not found, skipping confirmation email');
           }
+
+          try {
+            const adminEmails = await getActiveAdminEmails();
+            if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+              const adminResult = await sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails);
+              if (adminResult.success) {
+                console.log('Admin new-order email sent:', adminResult.messageId);
+              } else if (!adminResult.skipped) {
+                console.error('Failed to send admin new-order email:', adminResult.error);
+              }
+            } else {
+              console.log('No admin recipients configured; skipping admin order email');
+            }
+          } catch (adminError) {
+            console.error('Error sending admin new-order email:', adminError.message);
+          }
         } catch (emailError) {
-          console.error('Error sending order confirmation email (async):', emailError.message);
+          console.error('Error sending order placement emails (async):', emailError.message);
         }
       });
     }
@@ -691,13 +761,16 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         await updateProductOrderCounts(order.cartItems);
       }
 
-      // Send order confirmation email asynchronously for online payments
+      // Send order confirmation email asynchronously for online payments and notify admins
       setImmediate(async () => {
         try {
-          const user = await User.findById(order.userId).select('email name');
-          if (user && user.email) {
-            console.log('Sending online payment order confirmation email to:', user.email);
-            const emailResult = await sendOrderConfirmationEmail(order, user.email);
+          const user = await User.findById(order.userId).select('email name phone');
+          const orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
+
+          const userEmailTarget = user?.email || orderDetailsForEmail?.userDetails?.email;
+          if (userEmailTarget) {
+            console.log('Sending online payment order confirmation email to:', userEmailTarget);
+            const emailResult = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget);
             if (emailResult.success) {
               console.log('Order confirmation email sent successfully:', emailResult.messageId);
             } else {
@@ -706,8 +779,24 @@ export const verifyPayment = asyncHandler(async (req, res) => {
           } else {
             console.log('User email not found, skipping confirmation email');
           }
+
+          try {
+            const adminEmails = await getActiveAdminEmails();
+            if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+              const adminResult = await sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails);
+              if (adminResult.success) {
+                console.log('Admin new-order email sent:', adminResult.messageId);
+              } else if (!adminResult.skipped) {
+                console.error('Failed to send admin new-order email:', adminResult.error);
+              }
+            } else {
+              console.log('No admin recipients configured; skipping admin order email');
+            }
+          } catch (adminError) {
+            console.error('Error sending admin new-order email:', adminError.message);
+          }
         } catch (emailError) {
-          console.error('Error sending order confirmation email (async):', emailError.message);
+          console.error('Error sending order placement emails (async):', emailError.message);
         }
       });
 

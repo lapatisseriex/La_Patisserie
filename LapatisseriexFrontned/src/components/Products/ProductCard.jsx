@@ -709,7 +709,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
             {!isActive ? (
               'Unavailable'
             ) : totalStock === 0 ? (
-              'Out of Stock'
+              'No Stock'
             ) : !isProductAvailable ? (
               'Closed'
             ) : (

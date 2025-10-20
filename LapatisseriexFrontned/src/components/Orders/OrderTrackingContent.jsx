@@ -132,6 +132,16 @@ const OrderTrackingContent = ({ order }) => {
         color: '#10b981',
         label: 'CONFIRMED'
       },
+      'preparing': {
+        icon: Clock,
+        color: '#f59e0b',
+        label: 'PREPARING'
+      },
+      'ready': {
+        icon: CheckCircle,
+        color: '#7c3aed',
+        label: 'READY FOR DISPATCH'
+      },
       'out_for_delivery': {
         icon: Truck,
         color: '#8d4466',
@@ -154,11 +164,21 @@ const OrderTrackingContent = ({ order }) => {
   const StatusTimeline = ({ orderStatus }) => {
     const steps = [
       { key: 'placed', label: 'Order Placed', pngSrc: '/checkout.png', description: 'We have received your order' },
+      { key: 'confirmed', label: 'Confirmed', pngSrc: '/support.png', description: 'Our team has confirmed your order' },
+      { key: 'preparing', label: 'Preparing', pngSrc: '/clock.png', description: 'We are carefully preparing your order' },
+      { key: 'ready', label: 'Ready for Dispatch', pngSrc: '/delivery.png', description: 'Packed and waiting to leave the kitchen' },
       { key: 'out_for_delivery', label: 'Out for Delivery', pngSrc: '/market-capitalization.png', description: 'Your order is on the way' },
       { key: 'delivered', label: 'Delivered', pngSrc: '/delivery-box.png', description: 'Order delivered successfully' }
     ];
 
-    const currentStepIndex = steps.findIndex(step => step.key === orderStatus);
+    const normalizedStatus = steps.some(step => step.key === orderStatus) ? orderStatus : steps[0].key;
+    const currentStepIndex = steps.findIndex(step => step.key === normalizedStatus);
+    const stepsCount = Math.max(steps.length - 1, 1);
+    const progressPercentValue = currentStepIndex >= 0 ? (currentStepIndex / stepsCount) * 100 : 0;
+    const clampedProgress = Math.min(100, Math.max(0, progressPercentValue));
+    const progressPercent = `${clampedProgress.toFixed(2)}%`;
+    const verticalProgress = currentStepIndex <= 0 ? '0%' : progressPercent;
+    const horizontalProgress = currentStepIndex <= 0 ? '0%' : `calc(${progressPercent} - 3rem)`;
     
     return (
       <div className="relative py-4 sm:py-8 px-2 sm:px-4">
@@ -169,7 +189,7 @@ const OrderTrackingContent = ({ order }) => {
           <div 
             className="absolute left-7 top-0 w-0.5 transition-all duration-700 ease-out"
             style={{ 
-              height: currentStepIndex >= 0 ? `${(currentStepIndex / (steps.length - 1)) * 100}%` : '0%',
+              height: verticalProgress,
               background: 'linear-gradient(180deg, #733857 0%, #8d4466 50%, #412434 100%)'
             }}
           ></div>
@@ -181,7 +201,7 @@ const OrderTrackingContent = ({ order }) => {
           <div 
             className="absolute left-0 top-10 h-0.5 transition-all duration-700 ease-out"
             style={{ 
-              width: currentStepIndex >= 0 ? `calc(${(currentStepIndex / (steps.length - 1)) * 100}% - ${currentStepIndex === 0 ? '3rem' : '0rem'})` : '0%',
+              width: horizontalProgress,
               marginLeft: '3rem',
               background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)'
             }}
@@ -320,7 +340,9 @@ const OrderTrackingContent = ({ order }) => {
               // Get appropriate PNG based on status
               const statusToPng = {
                 'placed': '/checkout.png',
-                'confirmed': '/checkout.png', 
+                'confirmed': '/support.png',
+                'preparing': '/clock.png',
+                'ready': '/delivery.png',
                 'out_for_delivery': '/market-capitalization.png',
                 'delivered': '/delivery-box.png',
                 'pending': '/checkout.png',
