@@ -11,6 +11,7 @@ import {
   sendOrderStatusNotification,
   sendAdminOrderStatusNotification
 } from '../utils/orderEmailService.js';
+import { getLogoData } from '../utils/logoUtils.js';
 
 const normalizeOrderForEmail = async (orderDoc) => {
   if (!orderDoc) {
@@ -78,7 +79,10 @@ const sendStatusEmails = async (orderDoc, previousStatus, newStatus) => {
     const userEmail = normalizedOrder.userDetails?.email || normalizedOrder.userId?.email;
     if (userEmail) {
       try {
-        await sendOrderStatusNotification(normalizedOrder, newStatus, userEmail);
+        // Get logo data for email attachment
+        const logoData = getLogoData();
+        
+        await sendOrderStatusNotification(normalizedOrder, newStatus, userEmail, logoData);
       } catch (userEmailError) {
         console.error('Failed to send user status email:', userEmailError.message);
       }

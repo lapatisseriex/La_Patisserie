@@ -8,6 +8,7 @@ import {
   sendPasswordResetOTP as sendOTPEmail, 
   PASSWORD_RESET_LIMITS 
 } from '../utils/passwordResetService.js';
+import { sendWelcomeEmail } from '../utils/welcomeEmailService.js';
 
 // Helper function to handle user conflicts
 const resolveUserConflict = async (uid, email, locationId) => {
@@ -167,6 +168,27 @@ export const verifyToken = asyncHandler(async (req, res) => {
         
         console.log(`New user created successfully: ${user._id} (${email})`);
         
+        // Send welcome email to new user (don't await - send asynchronously)
+        if (email_verified) {
+          // Send welcome email immediately if email is already verified (e.g., Google sign-in)
+          sendWelcomeEmail({ 
+            name: name || user.name || 'Valued Customer', 
+            email: email 
+          })
+            .then(result => {
+              if (result.success) {
+                console.log(`✅ Welcome email queued for ${email}`);
+              } else {
+                console.error(`❌ Failed to send welcome email to ${email}:`, result.error);
+              }
+            })
+            .catch(err => {
+              console.error(`❌ Error queueing welcome email for ${email}:`, err);
+            });
+        } else {
+          console.log(`📧 Welcome email will be sent after email verification for ${email}`);
+        }
+        
         // Emit WebSocket event to notify admin of new user signup
         try {
           const io = global.io;
@@ -245,11 +267,15 @@ export const verifyToken = asyncHandler(async (req, res) => {
         isActive: true
       };
       
+      // Track if email was just verified to send welcome email
+      let emailJustVerified = false;
+      
       // If Firebase says email is verified but our DB doesn't reflect this, update it
       if (email_verified && !user.emailVerified) {
         console.log(`Updating email verification for existing user ${user.email} based on Firebase token`);
         updateFields.emailVerified = true;
         updateFields.emailVerifiedAt = new Date();
+        emailJustVerified = true;
       }
       
       // Add location if provided
@@ -262,6 +288,25 @@ export const verifyToken = asyncHandler(async (req, res) => {
         { _id: user._id },
         { $set: updateFields }
       );
+      
+      // Send welcome email if email was just verified
+      if (emailJustVerified) {
+        console.log(`📧 Email verified for existing user ${user.email}, sending welcome email`);
+        sendWelcomeEmail({ 
+          name: name || user.name || 'Valued Customer', 
+          email: user.email 
+        })
+          .then(result => {
+            if (result.success) {
+              console.log(`✅ Welcome email queued for ${user.email} after verification`);
+            } else {
+              console.error(`❌ Failed to send welcome email to ${user.email}:`, result.error);
+            }
+          })
+          .catch(err => {
+            console.error(`❌ Error queueing welcome email for ${user.email}:`, err);
+          });
+      }
 
 
 

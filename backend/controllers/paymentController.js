@@ -15,6 +15,7 @@ import {
   sendOrderConfirmationEmail,
   sendOrderPlacedAdminNotification
 } from '../utils/orderEmailService.js';
+import { getLogoData } from '../utils/logoUtils.js';
 import { getActiveAdminEmails } from '../utils/adminUtils.js';
 import { createNotification } from './notificationController.js';
 import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
@@ -590,7 +591,11 @@ export const createOrder = asyncHandler(async (req, res) => {
           const userEmailTarget = user?.email || orderDetailsForEmail?.userDetails?.email;
           if (userEmailTarget) {
             console.log('Sending COD order confirmation email to:', userEmailTarget);
-            const emailResult = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget);
+            
+            // Get logo data for email attachment
+            const logoData = getLogoData();
+            
+            const emailResult = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData);
             if (emailResult.success) {
               console.log('Order confirmation email sent successfully:', emailResult.messageId);
             } else {
@@ -770,7 +775,11 @@ export const verifyPayment = asyncHandler(async (req, res) => {
           const userEmailTarget = user?.email || orderDetailsForEmail?.userDetails?.email;
           if (userEmailTarget) {
             console.log('Sending online payment order confirmation email to:', userEmailTarget);
-            const emailResult = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget);
+            
+            // Get logo data for email attachment
+            const logoData = getLogoData();
+            
+            const emailResult = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData);
             if (emailResult.success) {
               console.log('Order confirmation email sent successfully:', emailResult.messageId);
             } else {

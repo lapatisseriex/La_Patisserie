@@ -37,6 +37,7 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
+import publicRoutes from './routes/publicRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
 
 // Initialize Express app
@@ -180,6 +181,12 @@ const startServer = async () => {
   // Apply rate limiting and connection pool protection
   app.use(connectionPoolMiddleware);
   app.use('/api', generalRateLimit);
+
+  // Serve static files from public directory
+  app.use('/public', express.static('public'));
+  
+  // Public routes (no rate limiting needed for static assets)
+  app.use('/api/public', publicRoutes);
 
   // Routes - only set up after DB connection is established
   // Apply the DB readiness gate to API routes
