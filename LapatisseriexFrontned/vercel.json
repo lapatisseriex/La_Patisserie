@@ -1,5 +1,16 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html"  }
+    {
+      "source": "/sitemap.xml",
+      "destination": "YOUR_BACKEND_URL/sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "YOUR_BACKEND_URL/robots.txt"
+    },
+    { 
+      "source": "/(.*)", 
+      "destination": "/index.html"  
+    }
   ]
 }
