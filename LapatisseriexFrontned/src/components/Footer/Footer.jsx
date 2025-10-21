@@ -312,7 +312,9 @@ const Footer = () => {
         {/* Social Media - Centered */}
         <div className="flex items-center justify-center space-x-3 sm:space-x-4 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-[#733857]/20">
           <a 
-            href="#" 
+            href="https://www.facebook.com/lapatisserie" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300 hover:scale-110"
             aria-label="Facebook"
           >
@@ -321,7 +323,9 @@ const Footer = () => {
             </svg>
           </a>
           <a 
-            href="#" 
+            href="https://www.instagram.com/la_patisserie_coimbatore/" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300 hover:scale-110"
             aria-label="Instagram"
           >
@@ -330,7 +334,9 @@ const Footer = () => {
             </svg>
           </a>
           <a 
-            href="#" 
+            href="https://www.linkedin.com/company/lapatisserie" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300 hover:scale-110"
             aria-label="LinkedIn"
           >

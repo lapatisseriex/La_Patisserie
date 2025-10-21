@@ -39,6 +39,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import ngoMediaRoutes from './routes/ngoMediaRoutes.js';
+import sitemapRoutes from './routes/sitemapRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
 
 // Initialize Express app
@@ -186,6 +187,9 @@ const startServer = async () => {
 
   // Serve static files from public directory
   app.use('/public', express.static('public'));
+  
+  // SEO Routes (sitemap.xml and robots.txt) - before public routes
+  app.use('/', sitemapRoutes);
   
   // Public routes (no rate limiting needed for static assets)
   app.use('/api/public', publicRoutes);
