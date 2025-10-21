@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaLeaf, FaEgg, FaCheckCircle, FaImage, FaVideo, FaMoneyBillAlt, FaCog, FaPen, FaBox } from 'react-icons/fa';
+import { GripVertical } from 'lucide-react';
 import { useProduct } from '../../../context/ProductContext/ProductContext';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import MediaUploader from '../../common/MediaUpload/MediaUploader';
@@ -7,6 +8,92 @@ import MediaPreview from '../../common/MediaUpload/MediaPreview';
 import PricingCalculator from '../../common/PricingCalculator';
 import QuickStockUpdate from './QuickStockUpdate';
 import { calculatePricing } from '../../../utils/pricingUtils';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Sortable Media Item Component
+const SortableMediaItem = ({ id, url, type, onRemove, index }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative group"
+    >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-1 left-1 z-10 cursor-grab active:cursor-grabbing bg-white/90 rounded p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <GripVertical className="w-4 h-4 text-gray-600" />
+      </div>
+
+      {/* Media Preview */}
+      <div className="relative aspect-square border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+        {type === 'video' ? (
+          <video
+            src={url}
+            className="w-full h-full object-cover"
+            muted
+            playsInline
+          />
+        ) : (
+          <img
+            src={url}
+            alt={`Media ${index + 1}`}
+            className="w-full h-full object-cover"
+          />
+        )}
+        
+        {/* Remove Button */}
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="absolute top-1 right-1 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 shadow-md z-10"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Order Badge */}
+        <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+          {index + 1}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Custom hook to detect admin sidebar state
 const useAdminSidebar = () => {
@@ -223,6 +310,44 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
   const handleRemoveVideo = (index) => {
     setFormData(prev => ({ ...prev, videos: prev.videos.filter((_, i) => i !== index) }));
   };
+
+  // Drag and drop handlers for images
+  const handleImageDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      setFormData(prev => {
+        const oldIndex = prev.images.findIndex((_, idx) => `image-${idx}` === active.id);
+        const newIndex = prev.images.findIndex((_, idx) => `image-${idx}` === over.id);
+        return {
+          ...prev,
+          images: arrayMove(prev.images, oldIndex, newIndex)
+        };
+      });
+    }
+  };
+
+  // Drag and drop handlers for videos
+  const handleVideoDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      setFormData(prev => {
+        const oldIndex = prev.videos.findIndex((_, idx) => `video-${idx}` === active.id);
+        const newIndex = prev.videos.findIndex((_, idx) => `video-${idx}` === over.id);
+        return {
+          ...prev,
+          videos: arrayMove(prev.videos, oldIndex, newIndex)
+        };
+      });
+    }
+  };
+
+  // Sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Extra fields
   const handleAddExtraField = () => {
@@ -567,12 +692,35 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                       </svg>
                       <span>{formData.images.length} image{formData.images.length !== 1 ? 's' : ''} uploaded</span>
                     </div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <GripVertical className="w-3 h-3" />
+                      <span>Drag to reorder</span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg border">
-                    <MediaPreview
-                      mediaUrls={formData.images}
-                      onRemove={handleRemoveImage}
-                    />
+                  <div className="p-4 bg-gray-50 rounded-lg border">
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleImageDragEnd}
+                    >
+                      <SortableContext
+                        items={formData.images.map((_, idx) => `image-${idx}`)}
+                        strategy={rectSortingStrategy}
+                      >
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {formData.images.map((url, idx) => (
+                            <SortableMediaItem
+                              key={`image-${idx}`}
+                              id={`image-${idx}`}
+                              url={url}
+                              type="image"
+                              index={idx}
+                              onRemove={handleRemoveImage}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   </div>
                 </div>
               )}
@@ -613,12 +761,35 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                       </svg>
                       <span>{formData.videos.length} video{formData.videos.length !== 1 ? 's' : ''} uploaded</span>
                     </div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <GripVertical className="w-3 h-3" />
+                      <span>Drag to reorder</span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border">
-                    <MediaPreview
-                      mediaUrls={formData.videos}
-                      onRemove={handleRemoveVideo}
-                    />
+                  <div className="p-4 bg-gray-50 rounded-lg border">
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleVideoDragEnd}
+                    >
+                      <SortableContext
+                        items={formData.videos.map((_, idx) => `video-${idx}`)}
+                        strategy={rectSortingStrategy}
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {formData.videos.map((url, idx) => (
+                            <SortableMediaItem
+                              key={`video-${idx}`}
+                              id={`video-${idx}`}
+                              url={url}
+                              type="video"
+                              index={idx}
+                              onRemove={handleRemoveVideo}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   </div>
                 </div>
               )}

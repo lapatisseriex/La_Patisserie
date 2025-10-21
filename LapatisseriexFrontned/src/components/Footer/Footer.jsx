@@ -94,6 +94,13 @@ const Footer = () => {
               >
                 Products
               </Link>
+              <Link 
+                to="/support-education" 
+                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                Support Education
+              </Link>
             </nav>
           </div>
 

@@ -12,6 +12,7 @@ import { calculateCartTotals, calculatePricing, formatCurrency } from '../../uti
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import api from '../../services/apiService';
+import NGOSidePanel from './NGOSidePanel';
                   
 const Payment = () => {
   // --- All original logic, hooks, and state are preserved ---
@@ -22,6 +23,14 @@ const Payment = () => {
   const navigate = useNavigate();
   const [showLocationError, setShowLocationError] = useState(false);
   const [useFreeCash, setUseFreeCash] = useState(false);
+  const [showNGOPanel, setShowNGOPanel] = useState(false);
+
+  // Handle navigation with side panel trigger
+  const handleNavigateWithPanel = (path) => {
+    // Set flag in sessionStorage to show panel after navigation
+    sessionStorage.setItem('showNGOPanel', 'true');
+    navigate(path);
+  };
 
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
 
@@ -153,6 +162,41 @@ const Payment = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOrderComplete, setIsOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+
+  // Auto-open NGO panel after payment success (with minimal delay)
+  useEffect(() => {
+    if (isOrderComplete) {
+      // Scroll to top immediately to prevent auto-scroll to footer
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      
+      // Replace the entire history stack to prevent going back to checkout/payment
+      // Push a new state for the payment confirmation
+      window.history.pushState({ orderComplete: true }, '', '/payment');
+      
+      // Show NGO panel after 800ms (just enough for smooth transition)
+      const timer = setTimeout(() => {
+        setShowNGOPanel(true);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOrderComplete]);
+
+  // Handle browser back button - redirect to products page (skip checkout)
+  useEffect(() => {
+    if (isOrderComplete) {
+      const handlePopState = (e) => {
+        // When user presses back from payment confirmation, go to products page
+        navigate('/products', { replace: true });
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [isOrderComplete, navigate]);
 
   const timezoneAbbreviation = useMemo(() => {
     if (!timezone) {
@@ -540,29 +584,32 @@ if (isOrderComplete) {
             </div>
 
             {/* 4. Updated Button Styles (Sharp Corners) */}
-            <div className="mt-10 flex w-full flex-col-reverse gap-4 sm:flex-row sm:justify-center">
-              <Link
-                to="/"
-                className="w-full border border-slate-300 px-6 py-3 text-center text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 sm:w-auto"
+            <div className="mt-8 sm:mt-10 flex w-full flex-col-reverse gap-3 sm:gap-4 sm:flex-row sm:justify-center px-2 sm:px-0">
+              <button
+                onClick={() => handleNavigateWithPanel('/')}
+                className="w-full border-2 border-slate-300 px-4 py-2.5 sm:px-6 sm:py-3 text-center text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 sm:w-auto active:scale-95"
               >
                 Back to home
-              </Link>
-              <Link
-                to="/products"
-                className="w-full bg-[#733857] px-6 py-3 text-center text-sm font-medium text-white transition hover:bg-[#5e2c46] focus:outline-none focus:ring-2 focus:ring-[#733857] focus:ring-offset-2 sm:w-auto"
+              </button>
+              <button
+                onClick={() => handleNavigateWithPanel('/products')}
+                className="w-full bg-[#733857] px-4 py-2.5 sm:px-6 sm:py-3 text-center text-sm font-medium text-white transition hover:bg-[#5e2c46] focus:outline-none focus:ring-2 focus:ring-[#733857] focus:ring-offset-2 sm:w-auto active:scale-95"
               >
-                Continue shopping
-              </Link>
-                <Link
-                to="/orders"
-                className="w-full bg-[#cf91d9] px-6 py-3 text-center text-sm font-medium text-white transition hover:bg-[#f2a9ce] focus:outline-none focus:ring-2 focus:ring-[#733857] focus:ring-offset-2 sm:w-auto"
+                Browse products
+              </button>
+              <button
+                onClick={() => handleNavigateWithPanel('/orders')}
+                className="w-full bg-[#cf91d9] px-4 py-2.5 sm:px-6 sm:py-3 text-center text-sm font-medium text-white transition hover:bg-[#f2a9ce] focus:outline-none focus:ring-2 focus:ring-[#733857] focus:ring-offset-2 sm:w-auto active:scale-95"
               >
-               My Orders
-              </Link>
+                My Orders
+              </button>
             </div>
             
           </div>
         </div>
+
+        {/* NGO Side Panel */}
+        <NGOSidePanel isOpen={showNGOPanel} onClose={() => setShowNGOPanel(false)} />
       </div>
     );
   }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ZoomIn, ChevronDown, ChevronUp, Package, Truck, Shield, Clock } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ChevronDown, ChevronUp, Package, Truck, Shield, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fetchProductById, fetchProducts, makeSelectListByKey } from '../redux/productsSlice';
 import { useCart } from '../hooks/useCart';
@@ -1183,7 +1183,7 @@ const ProductDisplayPageNew = () => {
                     />
                     
                     <div className="absolute inset-0 bg-black bg-opacity-5 transition-all flex items-center justify-center">
-                      {selectedMediaType === 'video' ? (
+                      {selectedMediaType === 'video' && (
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
@@ -1194,8 +1194,6 @@ const ProductDisplayPageNew = () => {
                         >
                           <path d="M10 8l6 4-6 4V8z" />
                         </svg>
-                      ) : (
-                        <ZoomIn className="w-8 h-8 text-white opacity-70" />
                       )}
                     </div>
                     

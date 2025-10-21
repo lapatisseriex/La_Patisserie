@@ -239,28 +239,28 @@ const ProductImageModal = ({
         </>
       )}
 
-      {/* Main Content Panel: large white card on md+, simple on mobile */}
+      {/* Main Content Panel: Fixed medium size white card */}
       <div 
         className={`relative transition-all duration-300 ease-out ${
           isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        } max-w-[95vw] max-h-[95vh] md:max-w-[85vw]`}
+        } w-[90vw] md:w-[700px] lg:w-[800px]`}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="md:bg-white md:rounded-2xl md:shadow-2xl md:border md:border-gray-200 md:p-4 flex md:gap-4">
+        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 flex gap-4">
           {/* Big image area */}
-          <div className="relative">
-            <div className="relative cursor-pointer group overflow-hidden rounded-2xl" onClick={toggleZoom}>
+          <div className="relative flex-1">
+            <div className="relative cursor-pointer group overflow-hidden rounded-lg" onClick={toggleZoom}>
               <img
                 ref={imageRef}
                 src={images[currentIndex]}
                 alt={`Product image ${currentIndex + 1}`}
-                className={`block w-auto h-auto max-w-[90vw] max-h-[85vh] md:max-w-[70vw] md:max-h-[75vh] object-contain rounded-2xl transition-all duration-500 ease-out ${
+                className={`block w-full h-[400px] md:h-[500px] lg:h-[550px] object-contain rounded-lg transition-all duration-500 ease-out ${
                   isZoomed ? 'scale-150 cursor-grab active:cursor-grabbing' : 'scale-100'
                 }`}
-                style={{ filter: 'drop-shadow(0 25px 50px rgba(0,0,0,0.3))' }}
+                style={{ filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.15))' }}
                 draggable={false}
               />
               {!isZoomed && (
@@ -277,9 +277,9 @@ const ProductImageModal = ({
               )}
             </div>
 
-            {/* Mobile counter (hidden on md+) */}
+            {/* Counter badge */}
             {images.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/40 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-medium md:hidden">
+              <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium">
                 {currentIndex + 1} / {images.length}
               </div>
             )}
@@ -296,24 +296,22 @@ const ProductImageModal = ({
             )}
           </div>
 
-          {/* Right-side thumbnails (desktop only) */}
+          {/* Right-side thumbnails */}
           {images.length > 1 && (
-            <div className="hidden md:flex flex-col justify-start items-start pt-2 pr-1">
-              <div className="flex gap-3">
-                {images.map((thumb, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => !isZoomed && setCurrentIndex(idx)}
-                    className={`w-20 h-20 rounded-md overflow-hidden border-2 transition-all duration-200 ${
-                      idx === currentIndex ? 'border-black shadow' : 'border-gray-200 hover:border-gray-400'
-                    } ${isZoomed ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
-                    aria-label={`View image ${idx + 1}`}
-                    title={`Image ${idx + 1}`}
-                  >
-                    <img src={thumb} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
+            <div className="flex md:flex-col justify-center md:justify-start items-center md:items-start gap-2 md:gap-3 pt-2 md:pt-0">
+              {images.map((thumb, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => !isZoomed && setCurrentIndex(idx)}
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-md overflow-hidden border-2 transition-all duration-200 flex-shrink-0 ${
+                    idx === currentIndex ? 'border-[#733857] shadow-lg' : 'border-gray-200 hover:border-gray-400'
+                  } ${isZoomed ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
+                  aria-label={`View image ${idx + 1}`}
+                  title={`Image ${idx + 1}`}
+                >
+                  <img src={thumb} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
             </div>
           )}
         </div>

@@ -23,7 +23,7 @@ const API_URL = resolveApiBaseUrl();
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000, // 30 seconds timeout
+  timeout: 120000, // 120 seconds timeout (increased for video uploads)
   headers: {
     'Content-Type': 'application/json',
   },

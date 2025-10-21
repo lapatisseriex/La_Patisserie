@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaShoppingCart, FaExclamationTriangle, FaBuilding } from 'react-icons/fa';
 import { motion } from 'framer-motion';
@@ -98,6 +98,9 @@ const Cart = () => {
   const [jellyAnimations, setJellyAnimations] = useState({});
   const [animationDirections, setAnimationDirections] = useState({});
   
+  // Refs for debouncing - one per product
+  const lastQuantityChangeTimes = useRef({});
+  
   const navigate = useNavigate();
 
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
@@ -187,38 +190,26 @@ const Cart = () => {
     return isNaN(discountedCartTotal) ? 0 : Math.max(0, discountedCartTotal);
   }, [discountedCartTotal]);
 
-  const handleQuantityChange = async (productId, nextQuantity, maxStock) => {
-    const normalizedQuantity = Number(nextQuantity);
-    const safeQuantity = Math.max(0, Number.isNaN(normalizedQuantity) ? 0 : Math.round(normalizedQuantity));
-
-    const currentItem = getCartItem(productId);
-    const existingQuantity = Number(currentItem?.quantity ?? 0);
-    if (Number.isFinite(existingQuantity) && safeQuantity === existingQuantity) {
-      return;
-    }
-
-    if (maxStock !== undefined && safeQuantity > maxStock) {
-      setStockError(`Cannot add more items. Only ${maxStock} available in stock.`);
-      // Clear error after 3 seconds
-      setTimeout(() => setStockError(''), 3000);
-      return;
-    }
-    try {
-      await updateQuantity(productId, safeQuantity);
-      setStockError(''); // Clear any previous error
-    } catch (error) {
-      setStockError(error?.message || 'Failed to update quantity');
-      setTimeout(() => setStockError(''), 3000);
-    }
-  };
-
-  // Enhanced quantity handler with animation
-  const handleQuantityChangeWithAnimation = async (productId, delta, maxStock) => {
+  // Exact same quantity change logic as ProductCard and ProductDisplayPage
+  const handleQuantityChangeWithAnimation = useCallback((productId, delta, maxStock) => {
+    if (delta === 0 || !productId) return;
+    
+    // Debounce rapid clicks - 50ms like ProductDisplayPage
+    const now = Date.now();
+    const lastTime = lastQuantityChangeTimes.current[productId] || 0;
+    const timeSinceLastClick = now - lastTime;
+    
+    if (timeSinceLastClick < 50) return;
+    
+    lastQuantityChangeTimes.current[productId] = now;
+    
+    // Check if there's a pending operation
     const pendingOp = pendingOperations?.[productId];
     if (pendingOp && ['updating', 'removing'].includes(pendingOp.type)) {
       return;
     }
 
+    // Get current quantity
     const item = getCartItem(productId);
     const numericQuantity = Number(item?.quantity ?? 0);
     const currentQuantity = Number.isFinite(numericQuantity) ? numericQuantity : 0;
@@ -227,14 +218,25 @@ const Cart = () => {
     if (newQuantity === currentQuantity) {
       return;
     }
+
+    // Check stock limits
+    if (maxStock !== undefined && newQuantity > maxStock) {
+      setStockError(`Cannot add more items. Only ${maxStock} available in stock.`);
+      setTimeout(() => setStockError(''), 3000);
+      return;
+    }
     
-    // Set animation direction and trigger animation
+    // Set animation direction and trigger jelly animation
     setAnimationDirections(prev => ({ ...prev, [productId]: delta > 0 ? 'up' : 'down' }));
     setJellyAnimations(prev => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
     
-    // Call the original handler
-    await handleQuantityChange(productId, newQuantity, maxStock);
-  };
+    // Update quantity in cart
+    updateQuantity(productId, newQuantity).catch(error => {
+      console.error('Error updating quantity:', error);
+      setStockError(error?.message || 'Failed to update quantity');
+      setTimeout(() => setStockError(''), 3000);
+    });
+  }, [updateQuantity, getCartItem, pendingOperations]);
 
   // Handle location change
   const handleChangeLocation = async () => {
@@ -459,14 +461,18 @@ const Cart = () => {
                         
                         {/* Quantity Controls - Mobile */}
                         <div className="mt-3 flex justify-between items-center">
-                          <div className="flex items-center border border-gray-300 rounded-lg">
+                          <div className="flex items-center border border-[#733857] rounded-lg bg-white">
                             <button 
                               type="button"
-                              onClick={() => handleQuantityChangeWithAnimation(item.productId, -1, stock)}
-                              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors rounded-l-lg"
-                                disabled={item.quantity <= 1 || isQuantityUpdating}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuantityChangeWithAnimation(item.productId, -1, stock);
+                              }}
+                              className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 rounded-l-lg font-light select-none"
+                              disabled={item.quantity <= 1 || isQuantityUpdating}
+                              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                             >
-                              -
+                              −
                             </button>
                             <motion.span
                               key={`jelly-mobile-cart-${item.productId}-${jellyAnimations[item.productId] || 0}`}
@@ -476,22 +482,43 @@ const Cart = () => {
                                 y: animationDirections[item.productId] === 'up' ? -10 : animationDirections[item.productId] === 'down' ? 10 : 0,
                                 opacity: animationDirections[item.productId] ? 0.7 : 1
                               }}
-                              animate={{ scaleX: 1, scaleY: 1, y: 0, opacity: 1 }}
-                              transition={{ 
-                                type: "spring", 
-                                stiffness: 500, 
-                                damping: 25,
-                                duration: 0.3
+                              animate={{
+                                scaleX: [1, 1.15, 0.95, 1.03, 1],
+                                scaleY: [1, 0.85, 1.05, 0.98, 1],
+                                y: [
+                                  animationDirections[item.productId] === 'up' ? -10 : animationDirections[item.productId] === 'down' ? 10 : 0,
+                                  animationDirections[item.productId] === 'up' ? -5 : animationDirections[item.productId] === 'down' ? 5 : 0,
+                                  0,
+                                  0,
+                                  0
+                                ],
+                                opacity: [
+                                  animationDirections[item.productId] !== 'none' ? 0.7 : 1,
+                                  1,
+                                  1,
+                                  1,
+                                  1
+                                ]
                               }}
-                              className="w-12 h-8 flex items-center justify-center text-sm font-medium text-gray-900 bg-white border-l border-r border-gray-300"
+                              transition={{
+                                duration: 0.6,
+                                times: [0, 0.2, 0.5, 0.8, 1],
+                                ease: "easeInOut"
+                              }}
+                              className="px-3 py-1 font-light text-sm min-w-[2.5rem] text-center border-l border-r border-[#733857] text-[#733857] inline-block select-none"
+                              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                             >
                               {item.quantity}
                             </motion.span>
                             <button 
                               type="button"
-                              onClick={() => handleQuantityChangeWithAnimation(item.productId, 1, stock)}
-                              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors rounded-r-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuantityChangeWithAnimation(item.productId, 1, stock);
+                              }}
+                              className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light select-none"
                               disabled={!canIncrease || isQuantityUpdating}
+                              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                             >
                               +
                             </button>
@@ -558,14 +585,18 @@ const Cart = () => {
 
                       {/* Quantity Controls - spans 2 */}
                       <div className="hidden md:flex col-span-2 items-center justify-center">
-                        <div className="flex items-center border border-gray-300 rounded-lg">
+                        <div className="flex items-center border border-[#733857] rounded-lg bg-white">
                           <button 
                             type="button"
-                            onClick={() => handleQuantityChangeWithAnimation(item.productId, -1, stock)}
-                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors rounded-l-lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuantityChangeWithAnimation(item.productId, -1, stock);
+                            }}
+                            className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 rounded-l-lg font-light select-none"
                             disabled={item.quantity <= 1 || isQuantityUpdating}
+                            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                           >
-                            -
+                            −
                           </button>
                           <motion.span
                             key={`jelly-cart-${item.productId}-${jellyAnimations[item.productId] || 0}`}
@@ -575,22 +606,43 @@ const Cart = () => {
                               y: animationDirections[item.productId] === 'up' ? -10 : animationDirections[item.productId] === 'down' ? 10 : 0,
                               opacity: animationDirections[item.productId] ? 0.7 : 1
                             }}
-                            animate={{ scaleX: 1, scaleY: 1, y: 0, opacity: 1 }}
-                            transition={{ 
-                              type: "spring", 
-                              stiffness: 500, 
-                              damping: 25,
-                              duration: 0.3
+                            animate={{
+                              scaleX: [1, 1.15, 0.95, 1.03, 1],
+                              scaleY: [1, 0.85, 1.05, 0.98, 1],
+                              y: [
+                                animationDirections[item.productId] === 'up' ? -10 : animationDirections[item.productId] === 'down' ? 10 : 0,
+                                animationDirections[item.productId] === 'up' ? -5 : animationDirections[item.productId] === 'down' ? 5 : 0,
+                                0,
+                                0,
+                                0
+                              ],
+                              opacity: [
+                                animationDirections[item.productId] !== 'none' ? 0.7 : 1,
+                                1,
+                                1,
+                                1,
+                                1
+                              ]
                             }}
-                            className="w-12 h-8 flex items-center justify-center text-sm font-medium text-gray-900 bg-white border-l border-r border-gray-300"
+                            transition={{
+                              duration: 0.6,
+                              times: [0, 0.2, 0.5, 0.8, 1],
+                              ease: "easeInOut"
+                            }}
+                            className="px-3 py-1 font-light text-sm min-w-[2.5rem] text-center border-l border-r border-[#733857] text-[#733857] inline-block select-none"
+                            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                           >
                             {item.quantity}
                           </motion.span>
                           <button 
                             type="button"
-                            onClick={() => handleQuantityChangeWithAnimation(item.productId, 1, stock)}
-                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors rounded-r-lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuantityChangeWithAnimation(item.productId, 1, stock);
+                            }}
+                            className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light select-none"
                             disabled={!canIncrease || isQuantityUpdating}
+                            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                           >
                             +
                           </button>

@@ -14,6 +14,7 @@ import CategorySwiper from './categorySwiper';
 import PageLoadingAnimation from '../common/PageLoadingAnimation';
 import AdvertisementBanner from './AdvertisementBanner';
 import Newsletter from '../Newsletter/Newsletter';
+import NGORibbon from '../NGO/NGORibbon';
 
 const Home = () => {
   const headingRef = useRef(null);
@@ -198,8 +199,12 @@ const Home = () => {
         <HandpickedForYou />
       </section>
 
+      {/* NGO Support Ribbon - Before Newsletter */}
+      <section className="w-full">
+        <NGORibbon />
+      </section>
 
-<Newsletter />
+      <Newsletter />
     </div>
     </>
   );

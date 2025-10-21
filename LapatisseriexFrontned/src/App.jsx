@@ -26,6 +26,7 @@ import RefundPolicy from './pages/RefundPolicy';
 import ShippingPolicy from './pages/ShippingPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import FAQ from './pages/FAQ';
+import NGODonationPage from './pages/NGODonationPage';
 
 // Error Boundary for Product Pages
 import ProductErrorBoundary from './components/common/ProductErrorBoundary';
@@ -51,6 +52,7 @@ import AdminOrderTracking from './components/Admin/AdminOrderTracking';
 import AdminPayments from './components/Admin/AdminPayments';
 import AdminAnalyticsDashboard from './pages/Admin/AdminAnalyticsDashboard';
 import AdminNewsletter from './components/Admin/AdminNewsletter';
+import AdminNGOMedia from './components/Admin/AdminNGOMedia';
 
 // Contact Components
 import Contact from './pages/Contact';
@@ -170,6 +172,7 @@ function App() {
                             <Route path="terms" element={<TermsAndConditions />} />
                             <Route path="faq" element={<FAQ />} />
                             <Route path="our-services" element={<OurServices />} />
+                            <Route path="support-education" element={<NGODonationPage />} />
                             <Route path="product/:productId" element={
                               <ProductErrorBoundary>
                                 <ProductDisplayPage />
@@ -236,6 +239,7 @@ function App() {
                               <Route path="time-settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTimeSettings /></React.Suspense>} />
                               <Route path="contacts" element={<React.Suspense fallback={<div>Loading...</div>}><ContactManagement /></React.Suspense>} />
                               <Route path="newsletter" element={<React.Suspense fallback={<div>Loading...</div>}><AdminNewsletter /></React.Suspense>} />
+                              <Route path="ngo-media" element={<React.Suspense fallback={<div>Loading...</div>}><AdminNGOMedia /></React.Suspense>} />
                             </Route>
                           </Route>
                           {/* Catch-all route for any undefined paths */}

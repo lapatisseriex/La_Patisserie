@@ -3,8 +3,12 @@ import { Outlet } from 'react-router-dom';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
 import BottomNavigation from '../common/BottomNavigation';
+import NGOSidePanel from '../Payment/NGOSidePanel';
+import { useNGOPanel } from '../../hooks/useNGOPanel';
 
 const Layout = () => {
+  const { showNGOPanel, closePanel } = useNGOPanel();
+
   // Apply header spacing class
   useEffect(() => {
     // Apply a class to handle header spacing
@@ -24,6 +28,9 @@ const Layout = () => {
       </main>
       <Footer />
       <BottomNavigation />
+      
+      {/* NGO Side Panel - Available on all pages using Layout */}
+      <NGOSidePanel isOpen={showNGOPanel} onClose={closePanel} />
     </>
   );
 };

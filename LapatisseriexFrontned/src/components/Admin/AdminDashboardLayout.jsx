@@ -281,6 +281,16 @@ const AdminDashboardLayout = () => {
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Newsletter</span>
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/admin/ngo-media"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/ngo-media' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaEnvelope className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>NGO Media</span>
+                </Link>
+              </li>
             </ul>
           </nav>
 

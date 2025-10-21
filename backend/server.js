@@ -38,6 +38,7 @@ import contactRoutes from './routes/contactRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
+import ngoMediaRoutes from './routes/ngoMediaRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
 
 // Initialize Express app
@@ -98,8 +99,9 @@ app.use(cors({
 }));
 // Tighten request body limits (configurable)
 const REQ_LIMIT = process.env.REQUEST_LIMIT_MB ? `${process.env.REQUEST_LIMIT_MB}mb` : '10mb';
-app.use(express.json({ limit: REQ_LIMIT }));
-app.use(express.urlencoded({ extended: true, limit: REQ_LIMIT }));
+const UPLOAD_LIMIT = process.env.UPLOAD_LIMIT_MB ? `${process.env.UPLOAD_LIMIT_MB}mb` : '100mb'; // Higher limit for media uploads
+app.use(express.json({ limit: UPLOAD_LIMIT })); // Use higher limit for all JSON (includes base64 uploads)
+app.use(express.urlencoded({ extended: true, limit: UPLOAD_LIMIT }));
 
 // Track API request rates
 const requestCounts = new Map();
@@ -212,6 +214,7 @@ const startServer = async () => {
     app.use('/api/contact', contactRoutes);
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/newsletter', newsletterRoutes);
+    app.use('/api/ngo-media', ngoMediaRoutes);
 
     // WebSocket setup
     const io = new Server(server, {
