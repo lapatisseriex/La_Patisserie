@@ -32,36 +32,57 @@ import PhoneVerification from './PhoneVerification';
 
 // A portal-based overlay that renders at the document.body level so it always sits on top
 const LoadingOverlayPortal = ({ show }) => {
-  const mountedRef = useRef(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+  
   useEffect(() => {
-    if (!show) return;
-    mountedRef.current = true;
-    console.log('🟢 LoadingOverlayPortal mounted');
-    return () => {
-      console.log('🔴 LoadingOverlayPortal unmounted');
-      mountedRef.current = false;
-    };
+    if (show) {
+      setShouldRender(true);
+      setTimeout(() => setIsVisible(true), 10);
+      console.log('🟢 LoadingOverlayPortal mounted');
+    } else {
+      setIsVisible(false);
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+        console.log('🔴 LoadingOverlayPortal fully unmounted');
+      }, 350); // Wait for fade out animation
+      return () => clearTimeout(timer);
+    }
   }, [show]);
 
-  if (!show || typeof document === 'undefined') return null;
+  // Don't render anything if shouldRender is false
+  if (!shouldRender) return null;
+  if (typeof document === 'undefined') return null;
+  
   return ReactDOM.createPortal(
     (
       <div
-        className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn"
+        className={`fixed inset-0 z-[99999] flex items-center justify-center transition-all duration-300 ${
+          isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          display: 'flex',
+          display: isVisible ? 'flex' : 'none',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 99999,
-          pointerEvents: 'all',
+          zIndex: 999999,
+          pointerEvents: isVisible ? 'all' : 'none',
+          backgroundColor: isVisible ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
+          backdropFilter: isVisible ? 'blur(4px)' : 'none',
         }}
       >
-        <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm mx-4 transform animate-scaleIn" style={{ textAlign: 'center' }}>
+        <div className={`bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm mx-4 transform transition-all duration-300 ${
+          isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        }`} style={{ 
+          textAlign: 'center',
+          backgroundColor: '#ffffff',
+          position: 'relative',
+          zIndex: 1000000
+        }}>
           <div className="flex flex-col items-center justify-center space-y-4 text-center w-full">
             {/* Animated Spinner with inline fallbacks */}
             <div className="relative mx-auto" style={{ width: 64, height: 64 }}>
@@ -595,11 +616,19 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // IMMEDIATELY scroll to top so user can see loading
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    
+    // Then lock scroll at top
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100vh';
     
     if (!formData.name.trim()) {
       setLocalError('Please enter your full name');
-      // Scroll to error message smoothly
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.body.style.overflow = 'auto';
+      document.body.style.height = '';
       return;
     }
     
@@ -611,12 +640,8 @@ const Profile = () => {
     savingRef.current = true;
     setIsSaving(true);
     
-    // Force a small delay to ensure state updates
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Prevent any scroll behavior during save
-    document.body.style.overflow = 'hidden';
-    console.log('🔒 Body overflow set to hidden');
+    // Force a small delay to ensure state updates and loading shows
+    await new Promise(resolve => setTimeout(resolve, 150));
     
     // Create a clean copy of form data with date fields properly formatted
     const profileData = { 
@@ -669,21 +694,28 @@ const Profile = () => {
       const success = await updateProfile(profileDataWithoutEmail);
 
       if (success) {
-        // Keep loading for minimum 2 seconds, then show success
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Now turn off loading and show success
-        savingRef.current = false;
-        setIsSaving(false);
-        setSuccessMessage('Profile updated successfully!');
+        // Keep loading for minimum 3 seconds so user can see it
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
         console.log('✅ Profile saved successfully - showing success message');
         
-        // Re-enable scrolling
+        // Re-enable scrolling first
         document.body.style.overflow = 'auto';
+        document.body.style.height = '';
+        
+        // Now turn off loading flags synchronously
+        savingRef.current = false;
+        setIsSaving(false);
+        
+        // Set success message after a delay to ensure loading is fully hidden
+        setTimeout(() => {
+          setSuccessMessage('Profile updated successfully!');
+        }, 400);
         
         // Scroll to top smoothly to show success message
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 450);
         
         // Wait a moment to show success, then exit edit mode
         setTimeout(() => {
@@ -725,34 +757,55 @@ const Profile = () => {
           }
         }
       } else {
-        // Keep loading for minimum 2 seconds, then show error
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Keep loading for minimum 3 seconds, then show error
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
+        // Re-enable scrolling first
+        document.body.style.overflow = 'auto';
+        document.body.style.height = '';
+        
+        // Turn off loading flags
         savingRef.current = false;
         setIsSaving(false);
-        setLocalError('Failed to update profile. Please try again.');
-        // Re-enable scrolling
-        document.body.style.overflow = 'auto';
+        
+        // Set error message after delay to ensure loading is fully hidden
+        setTimeout(() => {
+          setLocalError('Failed to update profile. Please try again.');
+        }, 400);
+        
         // Scroll to error message
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 450);
       }
     } catch (error) {
       console.error('Error in profile update:', error);
       
-      // Keep loading for minimum 2 seconds, then show error
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Keep loading for minimum 3 seconds, then show error
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
+      // Re-enable scrolling first
+      document.body.style.overflow = 'auto';
+      document.body.style.height = '';
+      
+      // Turn off loading flags
       savingRef.current = false;
       setIsSaving(false);
-      setLocalError('Failed to update profile. Please try again.');
-      // Re-enable scrolling
-      document.body.style.overflow = 'auto';
+      
+      // Set error message after delay to ensure loading is fully hidden
+      setTimeout(() => {
+        setLocalError('Failed to update profile. Please try again.');
+      }, 400);
+      
       // Scroll to error message
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 450);
     } finally {
       // Final safety check to ensure scrolling is re-enabled and loading is stopped
       savingRef.current = false;
       document.body.style.overflow = 'auto';
+      document.body.style.height = '';
     }
   };
 
@@ -896,11 +949,23 @@ const Profile = () => {
               <div className="flex items-center justify-center md:justify-start gap-4 text-sm">
                 <div className="flex items-center gap-1 text-gray-500" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   <MapPinned className="h-4 w-4" />
-                  <span>{formData.location ? 'Location Set' : 'Set Location'}</span>
+                  <span>
+                    {formData.location 
+                      ? locations.find(loc => loc._id === formData.location)?.name || 'Location Set'
+                      : 'Set Location'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 text-gray-500" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   <Cake className="h-4 w-4" />
-                  <span>{formData.dob ? 'Birthday Added' : 'Add Birthday'}</span>
+                  <span>
+                    {formData.dob 
+                      ? new Date(formData.dob).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })
+                      : 'Add Birthday'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -924,7 +989,17 @@ const Profile = () => {
       {/* Main content container - Reduced mobile padding: py-4 instead of py-8 for mobile */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 relative">
 
-      <form onSubmit={handleSubmit} className="profile-form-mobile space-y-8 pb-20 md:pb-6">
+      <form 
+        onSubmit={handleSubmit} 
+        className="profile-form-mobile space-y-8 pb-20 md:pb-6"
+        onFocus={(e) => {
+          // Prevent any scroll when form elements get focus
+          if (savingRef.current) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
+      >
         {/* Loading Overlay via Portal (always above everything) */}
         <LoadingOverlayPortal show={isSaving || savingRef.current} />
         
@@ -1336,6 +1411,11 @@ const Profile = () => {
               <button
                 type="submit"
                 disabled={isSaving || !formData.name.trim()}
+                onFocus={(e) => {
+                  // Prevent scroll when button gets focus
+                  const scrollY = window.scrollY;
+                  setTimeout(() => window.scrollTo(0, scrollY), 0);
+                }}
                 className="flex-1 relative px-8 py-4 bg-black text-white overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               >

@@ -11,7 +11,7 @@ const EmailAuth = ({ isSignUp = false }) => {
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState('');
   
-  const { signUpWithEmail, signInWithEmail, error, clearError, toggleAuthPanel, user, isAuthenticated, changeAuthType, setLoginFormEmail } = useAuth();
+  const { signUpWithEmail, signInWithEmail, clearError, toggleAuthPanel, user, isAuthenticated, changeAuthType, setLoginFormEmail } = useAuth();
 
   // Clear local error when switching between sign in and sign up
   useEffect(() => {
@@ -139,8 +139,6 @@ const EmailAuth = ({ isSignUp = false }) => {
     }
   }, [isAuthenticated, user, toggleAuthPanel]);
 
-  const displayError = localError || error;
-
   return (
     <div className="email-auth-container">
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -198,9 +196,9 @@ const EmailAuth = ({ isSignUp = false }) => {
           </div>
         )}
         
-        {displayError && (
+        {localError && (
           <div className="error-message text-red-600 text-sm">
-            {displayError}
+            {localError}
           </div>
         )}
         

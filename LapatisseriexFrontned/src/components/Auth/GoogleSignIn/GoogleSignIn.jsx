@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import '../auth.css';
 
@@ -7,64 +7,81 @@ const GoogleSignIn = () => {
   const { signInWithGoogle, error, clearError, toggleAuthPanel, user, isAuthenticated } = useAuth();
 
   const handleGoogleSignIn = async () => {
-    setLoading(true);
     clearError();
-    
+    setLoading(true);
+
+    let cancelled = false;
+
     try {
       console.log('🔄 Starting Google sign in...');
-      const success = await signInWithGoogle({});
-      console.log('✅ Google sign in result:', success);
-      
-      if (success) {
-        console.log('🎉 Google sign in successful, closing modal...');
-        // Small delay to allow Redux state to update
-        setTimeout(() => {
-          toggleAuthPanel();
-        }, 100);
-      } else {
-        console.log('❌ Google sign in failed');
+      const result = await Promise.race([
+        signInWithGoogle({}),
+        new Promise((_, reject) =>
+          // Timeout fallback — ensures loading resets even if signInWithGoogle hangs
+          setTimeout(() => reject(new Error('timeout')), 15000)
+        ),
+      ]);
+
+      if (!result) {
+        console.log('❌ Google sign-in returned no result.');
+        cancelled = true;
+        return;
       }
+
+      console.log('✅ Google sign in result:', result);
+
+      // Success flow
+      console.log('🎉 Google sign in successful, closing modal...');
+      setTimeout(() => toggleAuthPanel(), 200);
+
     } catch (err) {
       console.error('❌ Google sign in error:', err);
-      
-      // Handle specific error cases
-      if (err.code === 'auth/cancelled-popup-request' || 
-          err.code === 'auth/popup-closed-by-user' ||
-          err.message.includes('cancelled') ||
-          err.message.includes('closed')) {
-        console.log('🚫 Google sign in cancelled by user');
-        // Dispatch cancellation event
-        window.dispatchEvent(new CustomEvent('auth:cancelled', { 
-          detail: { provider: 'google', reason: 'user_cancelled' } 
+
+      if (
+        err.code === 'auth/popup-closed-by-user' ||
+        err.code === 'auth/cancelled-popup-request' ||
+        err.message.includes('cancelled') ||
+        err.message.includes('closed')
+      ) {
+        console.log('🚫 Google popup closed by user.');
+        cancelled = true;
+        window.dispatchEvent(new CustomEvent('auth:cancelled', { detail: { provider: 'google' } }));
+        clearError();
+      } else if (
+        err.code === 'auth/network-request-failed' ||
+        err.message.includes('network')
+      ) {
+        console.log('🌐 Network issue during Google sign in.');
+        window.dispatchEvent(new CustomEvent('network:error', {
+          detail: { message: 'Network connection issue', critical: false },
         }));
-        clearError(); // Don't show error for user cancellation
-      } else if (err.code === 'auth/network-request-failed' || 
-                 err.message.includes('network') || 
-                 err.message.includes('fetch')) {
-        console.log('🌐 Google sign in network error');
-        window.dispatchEvent(new CustomEvent('network:error', { 
-          detail: { message: 'Network connection issue', critical: false } 
-        }));
+      } else if (err.message === 'timeout') {
+        console.log('⏳ Google sign-in timed out.');
+        cancelled = true;
       }
     } finally {
-      setLoading(false);
+      // Always reset loading state
+      if (cancelled || !isAuthenticated) {
+        setLoading(false);
+      }
     }
   };
 
-  // Also close modal if user becomes authenticated
-  React.useEffect(() => {
+  // Automatically close modal when user becomes authenticated
+  useEffect(() => {
     if (isAuthenticated && user) {
       console.log('🔐 User authenticated, closing modal via useEffect');
       toggleAuthPanel();
+      setLoading(false);
     }
   }, [isAuthenticated, user, toggleAuthPanel]);
 
   return (
     <div className="google-signin-container">
-      <button 
+      <button
         onClick={handleGoogleSignIn}
         disabled={loading}
-        className="google-signin-btn"
+        className={`google-signin-btn ${loading ? 'loading' : ''}`}
       >
         <div className="google-icon">
           <svg viewBox="0 0 24 24" className="w-5 h-5">
@@ -74,16 +91,8 @@ const GoogleSignIn = () => {
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
         </div>
-        <span>
-          {loading ? 'Signing in...' : 'Continue with Google'}
-        </span>
+        <span>{loading ? 'Signing in...' : 'Continue with Google'}</span>
       </button>
-      
-      {error && (
-        <div className="error-message mt-2">
-          {error}
-        </div>
-      )}
     </div>
   );
 };
