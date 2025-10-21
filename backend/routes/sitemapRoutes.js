@@ -1,4 +1,6 @@
 import express from 'express';
+import Category from '../models/categoryModel.js';
+import Product from '../models/productModel.js';
 
 const router = express.Router();
 
@@ -28,12 +30,10 @@ router.get('/sitemap.xml', async (req, res) => {
       { url: '/shipping-policy', changefreq: 'yearly', priority: '0.3', lastmod: currentDate },
     ];
 
-    // Fetch categories (assuming you have Category model)
-    const Category = require('../models/categoryModel');
+    // Fetch categories
     const categories = await Category.find({ isActive: true }).select('_id name updatedAt');
 
-    // Fetch products (assuming you have Product model)
-    const Product = require('../models/productModel');
+    // Fetch products
     const products = await Product.find({ 
       isActive: true,
       stockQuantity: { $gt: 0 } 
