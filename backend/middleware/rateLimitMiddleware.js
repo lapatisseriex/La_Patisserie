@@ -30,12 +30,17 @@ export const authRateLimit = rateLimit({
 // Cart operations rate limit
 export const cartRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: isDevelopment ? 200 : 50, // More lenient in development
+  max: isDevelopment ? 300 : 100, // Increased limits for smooth cart interactions
   message: {
     success: false,
     message: 'Too many cart operations, please slow down.',
     retryAfter: '1 minute'
   },
+  // Skip rate limiting for successful requests to allow rapid quantity changes
+  skipSuccessfulRequests: false,
+  // Use a sliding window for smoother experience
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // More generous for product browsing

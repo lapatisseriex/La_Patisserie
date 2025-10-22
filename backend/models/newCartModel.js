@@ -90,6 +90,11 @@ newCartSchema.virtual('cartCount').get(function() {
   return this.items.reduce((total, item) => total + item.quantity, 0);
 });
 
+// Add indexes for faster lookups
+newCartSchema.index({ userId: 1 });
+newCartSchema.index({ 'items.productId': 1 });
+newCartSchema.index({ lastUpdated: -1 });
+
 // Instance method to add or update item
 newCartSchema.methods.addOrUpdateItem = async function(productId, quantity, productDetails, { absolute = false } = {}) {
   const existingItemIndex = this.items.findIndex(

@@ -4,12 +4,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 // Request throttling to prevent rapid API calls
 const pendingRequests = new Map();
-const REQUEST_THROTTLE_MS = 50; // Reduced from 100ms for better UX
+const REQUEST_THROTTLE_MS = 100; // Debounce time for batch updates
 
 const throttleRequest = (key, requestFn) => {
   // Cancel any pending request for this key
   if (pendingRequests.has(key)) {
-    clearTimeout(pendingRequests.get(key));
+    const pending = pendingRequests.get(key);
+    clearTimeout(pending.timeoutId);
+    // Reject the previous promise since we're replacing it
+    pending.reject(new Error('Request superseded by newer request'));
   }
   
   return new Promise((resolve, reject) => {
@@ -23,7 +26,7 @@ const throttleRequest = (key, requestFn) => {
       }
     }, REQUEST_THROTTLE_MS);
     
-    pendingRequests.set(key, timeoutId);
+    pendingRequests.set(key, { timeoutId, reject });
   });
 };
 

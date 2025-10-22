@@ -87,26 +87,24 @@ const ProfilePage = () => {
     addToCart
   } = useCart();
   
-  const handleQuantityIncrease = async (productId, currentQuantity, product) => {
-    try {
-      await updateQuantity(productId, currentQuantity + 1);
-    } catch (error) {
+  const handleQuantityIncrease = (productId, currentQuantity, product) => {
+    // Fire-and-forget for instant UI updates
+    updateQuantity(productId, currentQuantity + 1).catch(error => {
       console.error('Error increasing quantity:', error);
       alert('Failed to update quantity. Please try again.');
-    }
+    });
   };
 
-  const handleQuantityDecrease = async (productId, currentQuantity, product) => {
+  const handleQuantityDecrease = (productId, currentQuantity, product) => {
     if (currentQuantity <= 1) {
-      await handleRemoveFromCart(productId);
+      handleRemoveFromCart(productId);
       return;
     }
-    try {
-      await updateQuantity(productId, currentQuantity - 1);
-    } catch (error) {
+    // Fire-and-forget for instant UI updates
+    updateQuantity(productId, currentQuantity - 1).catch(error => {
       console.error('Error decreasing quantity:', error);
       alert('Failed to update quantity. Please try again.');
-    }
+    });
   };
 
   const handleRemoveFromCart = async (productId) => {

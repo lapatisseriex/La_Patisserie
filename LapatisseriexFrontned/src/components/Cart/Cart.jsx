@@ -202,12 +202,6 @@ const Cart = () => {
     if (timeSinceLastClick < 50) return;
     
     lastQuantityChangeTimes.current[productId] = now;
-    
-    // Check if there's a pending operation
-    const pendingOp = pendingOperations?.[productId];
-    if (pendingOp && ['updating', 'removing'].includes(pendingOp.type)) {
-      return;
-    }
 
     // Get current quantity
     const item = getCartItem(productId);
@@ -226,17 +220,17 @@ const Cart = () => {
       return;
     }
     
-    // Set animation direction and trigger jelly animation
+    // Set animation direction and trigger jelly animation IMMEDIATELY for instant feedback
     setAnimationDirections(prev => ({ ...prev, [productId]: delta > 0 ? 'up' : 'down' }));
     setJellyAnimations(prev => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
     
-    // Update quantity in cart
+    // Fire-and-forget: Update quantity without blocking UI (non-blocking, instant updates)
     updateQuantity(productId, newQuantity).catch(error => {
       console.error('Error updating quantity:', error);
       setStockError(error?.message || 'Failed to update quantity');
       setTimeout(() => setStockError(''), 3000);
     });
-  }, [updateQuantity, getCartItem, pendingOperations]);
+  }, [updateQuantity, getCartItem]);
 
   // Handle location change
   const handleChangeLocation = async () => {
@@ -377,8 +371,7 @@ const Cart = () => {
                   const { unavailable, tracks, stock } = getItemAvailability(item);
                   const maxReached = tracks && item.quantity >= stock;
                   const canIncrease = !unavailable && !maxReached;
-                  const pendingOp = pendingOperations?.[item.productId];
-                  const isQuantityUpdating = pendingOp && ['updating', 'removing'].includes(pendingOp.type);
+                  // Removed pendingOp check to allow instant, non-blocking updates
                   
                   // Get variant data
                   const prod = item.productDetails || item.product || item;
@@ -469,7 +462,7 @@ const Cart = () => {
                                 handleQuantityChangeWithAnimation(item.productId, -1, stock);
                               }}
                               className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 rounded-l-lg font-light select-none"
-                              disabled={item.quantity <= 1 || isQuantityUpdating}
+                              disabled={item.quantity <= 1}
                               style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                             >
                               −
@@ -517,7 +510,7 @@ const Cart = () => {
                                 handleQuantityChangeWithAnimation(item.productId, 1, stock);
                               }}
                               className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light select-none"
-                              disabled={!canIncrease || isQuantityUpdating}
+                              disabled={!canIncrease}
                               style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                             >
                               +
@@ -593,7 +586,7 @@ const Cart = () => {
                               handleQuantityChangeWithAnimation(item.productId, -1, stock);
                             }}
                             className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 rounded-l-lg font-light select-none"
-                            disabled={item.quantity <= 1 || isQuantityUpdating}
+                            disabled={item.quantity <= 1}
                             style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                           >
                             −
@@ -641,7 +634,7 @@ const Cart = () => {
                               handleQuantityChangeWithAnimation(item.productId, 1, stock);
                             }}
                             className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light select-none"
-                            disabled={!canIncrease || isQuantityUpdating}
+                            disabled={!canIncrease}
                             style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
                           >
                             +

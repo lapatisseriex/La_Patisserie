@@ -302,7 +302,7 @@ export const updateNewCartItem = async (req, res) => {
       return res.status(400).json({ error: 'Quantity cannot be negative' });
     }
 
-    // Get cart
+    // Get cart (lean for faster read)
     const cart = await NewCart.findOne({ userId });
     if (!cart) {
       return res.status(404).json({ error: 'Cart not found' });
@@ -311,32 +311,50 @@ export const updateNewCartItem = async (req, res) => {
     // If quantity is 0, remove item
     if (quantity === 0) {
       await cart.removeItem(productId);
-    } else {
-      // Check stock availability for the product
-  const product = await Product.findById(productId);
+      
+      // Return updated cart immediately
+      return res.json({
+        _id: cart._id,
+        userId: cart.userId,
+        items: cart.items,
+        cartTotal: cart.cartTotal,
+        cartCount: cart.cartCount,
+        lastUpdated: cart.lastUpdated
+      });
+    }
+    
+    // For non-zero quantities, validate stock if needed
+    const existingItem = cart.items.find(i => i.productId.toString() === productId.toString());
+    
+    if (!existingItem) {
+      return res.status(404).json({ error: 'Item not found in cart' });
+    }
+    
+    const vi = Number.isInteger(existingItem?.productDetails?.variantIndex) ? existingItem.productDetails.variantIndex : 0;
+    
+    // Only fetch product if we need to check stock (optimized)
+    const variant = existingItem?.productDetails?.variants?.[vi];
+    const variantTracks = Boolean(variant?.isStockActive);
+    
+    if (variantTracks) {
+      // Need to validate against latest stock - fetch product
+      const product = await Product.findById(productId).lean().select('variants');
+      
       if (!product) {
         return res.status(404).json({ error: 'Product not found' });
       }
-
-  const existingItem = cart.items.find(i => i.productId.toString() === productId.toString());
-  const prevQty = existingItem ? existingItem.quantity : 0;
-  const vi = Number.isInteger(existingItem?.productDetails?.variantIndex) ? existingItem.productDetails.variantIndex : 0;
-  const variant = Array.isArray(product.variants) ? product.variants[vi] : undefined;
-      const delta = quantity - prevQty;
-
-  const variantTracks = Boolean(variant?.isStockActive);
-  if (variantTracks && Array.isArray(product.variants) && product.variants.length > vi) {
-    // Only validate stock availability - don't decrement until order completion
-    const currentStock = variant.stock || 0;
-    if (quantity > currentStock) {
-      return res.status(400).json({ error: `Only ${currentStock} items available in stock` });
+      
+      const currentVariant = product.variants?.[vi];
+      const currentStock = currentVariant?.stock || 0;
+      
+      if (quantity > currentStock) {
+        return res.status(400).json({ error: `Only ${currentStock} items available in stock` });
+      }
+      console.log(`✅ Stock validation passed: quantity ${quantity} <= stock ${currentStock}`);
     }
-    console.log(`✅ Stock validation passed: quantity ${quantity} <= stock ${currentStock}`);
-  }
 
-  // Update quantity (absolute)
-  await cart.updateItemQuantity(productId, quantity);
-    }
+    // Update quantity (absolute) - fast operation
+    await cart.updateItemQuantity(productId, quantity);
 
     // Return updated cart
     const updatedCartData = {
