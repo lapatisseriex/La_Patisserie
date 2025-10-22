@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import '../auth.css';
 
 const GoogleSignIn = () => {
   const [loading, setLoading] = useState(false);
-  const { signInWithGoogle, error, clearError, toggleAuthPanel, user, isAuthenticated } = useAuth();
+  const { signInWithGoogle, error, clearError } = useAuth();
 
   const handleGoogleSignIn = async () => {
     clearError();
@@ -30,9 +30,8 @@ const GoogleSignIn = () => {
 
       console.log('✅ Google sign in result:', result);
 
-      // Success flow
-      console.log('🎉 Google sign in successful, closing modal...');
-      setTimeout(() => toggleAuthPanel(), 200);
+  // Success flow handled by Redux: modal closes automatically via state
+  console.log('🎉 Google sign in successful');
 
     } catch (err) {
       console.error('❌ Google sign in error:', err);
@@ -60,21 +59,12 @@ const GoogleSignIn = () => {
         cancelled = true;
       }
     } finally {
-      // Always reset loading state
-      if (cancelled || !isAuthenticated) {
-        setLoading(false);
-      }
+      // Always reset loading state, regardless of outcome
+      setLoading(false);
     }
   };
 
-  // Automatically close modal when user becomes authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log('🔐 User authenticated, closing modal via useEffect');
-      toggleAuthPanel();
-      setLoading(false);
-    }
-  }, [isAuthenticated, user, toggleAuthPanel]);
+  // Modal close is managed centrally by Redux state; no extra toggle here
 
   return (
     <div className="google-signin-container">

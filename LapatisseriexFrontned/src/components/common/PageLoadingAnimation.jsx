@@ -1,53 +1,84 @@
 import React, { useState } from 'react';
 
-// Matches brand palette: #733857 (primary), #8d4466, #412434
-const PageLoadingAnimation = ({ isVisible = true, title = 'Welcome to La Patisserie', subtitle = 'Loading delicious cakes...' }) => {
+// Elegant pastel version for La Patisserie aesthetic
+const PageLoadingAnimation = ({
+  isVisible = true,
+  title = 'La Patisserie',
+  subtitle = 'Baking happiness, please wait...'
+}) => {
   const [imgError, setImgError] = useState(false);
   if (!isVisible) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center flex-col text-center"
       style={{
-        background:
-          'linear-gradient(135deg, rgba(115,56,87,0.06), rgba(141,68,102,0.04))',
-        backdropFilter: 'blur(2px)'
+        
+       
       }}
-      role="status"
-      aria-live="polite"
-      aria-label="Page loading"
     >
-      <div className="flex flex-col items-center ">
-        <div className="mb-4">
-          {!imgError ? (
-            <img
-              src="/Vw3HJiDqa9-unscreen.gif"
-              alt="Loading animation"
-              className="w-28 h-28 md:w-32 md:h-32 object-contain drop-shadow-sm"
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full border-4 border-[#e9d5df] border-t-[#733857] animate-spin" />
-          )}
-        </div>
-
-        <div className="text-center">
-          <h2 className="text-2xl md:text-3xl font-semibold mb-2 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">
-            {title}
-          </h2>
-          <p className="text-sm md:text-base text-[#6b6b6b]">{subtitle}</p>
-        </div>
-
-        <div className="flex space-x-1 mt-5" aria-hidden="true">
-          <div className="w-2 h-2 rounded-full bg-[#733857] animate-bounce" />
-          <div className="w-2 h-2 rounded-full bg-[#8d4466] animate-bounce" style={{ animationDelay: '0.1s' }} />
-          <div className="w-2 h-2 rounded-full bg-[#412434] animate-bounce" style={{ animationDelay: '0.2s' }} />
-        </div>
-
-        <div className="mt-4">
-          <div className="h-1 w-24 rounded-full bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] opacity-70" />
-        </div>
+      {/* Logo / Cake GIF */}
+      <div className="mb-6">
+        {!imgError ? (
+          <img
+            src="/Vw3HJiDqa9-unscreen.gif"
+            alt="Patisserie loading animation"
+            className="w-28 h-28 md:w-32 md:h-32 drop-shadow-md animate-pulse-smooth"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-full border-[3px] border-[#e9bcbc] border-t-[#d98fa5] animate-spin" />
+        )}
       </div>
+
+      {/* Title */}
+      <h2
+        className="text-3xl md:text-4xl font-serif font-semibold mb-2"
+        style={{
+          background:
+            'linear-gradient(to right, #b86b77, #d98fa5, #b86b77)',
+          WebkitBackgroundClip: 'text',
+          color: 'transparent',
+        }}
+      >
+        {title}
+      </h2>
+
+      {/* Subtitle */}
+      <p className="text-sm md:text-base text-[#6b6b6b] italic opacity-80 mb-4">
+        {subtitle}
+      </p>
+
+      {/* Animated dots */}
+      <div className="flex justify-center space-x-2 mt-2">
+        <div className="w-2.5 h-2.5 rounded-full bg-[#d98fa5] animate-bounce" />
+        <div
+          className="w-2.5 h-2.5 rounded-full bg-[#b86b77] animate-bounce"
+          style={{ animationDelay: '0.15s' }}
+        />
+        <div
+          className="w-2.5 h-2.5 rounded-full bg-[#8d5b68] animate-bounce"
+          style={{ animationDelay: '0.3s' }}
+        />
+      </div>
+
+      {/* Elegant underline */}
+      <div className="mt-6">
+        <div className="h-0.5 w-32 mx-auto bg-gradient-to-r from-[#d98fa5] via-[#b86b77] to-[#8d5b68] opacity-80 rounded-full" />
+      </div>
+
+      {/* Custom smooth pulse animation */}
+      <style>
+        {`
+          @keyframes pulseSmooth {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.9; }
+          }
+          .animate-pulse-smooth {
+            animation: pulseSmooth 1.8s ease-in-out infinite;
+          }
+        `}
+      </style>
     </div>
   );
 };

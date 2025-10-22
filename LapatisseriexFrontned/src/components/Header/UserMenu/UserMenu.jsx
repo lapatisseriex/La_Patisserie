@@ -59,7 +59,9 @@ const UserMenu = memo(() => {
         style={{fontFamily: 'sans-serif', color: '#281c20'}}
         aria-label="My Account"
       >
-        {user?.profilePhoto?.url ? (
+        {/* Show only CUSTOM uploaded profile photos (with a valid public_id). 
+            Suppress provider photos (e.g., Google) to avoid the brief flash. */}
+        {user?.profilePhoto?.url && user?.profilePhoto?.public_id ? (
           <div className="relative">
             <img 
               src={user.profilePhoto.url} 

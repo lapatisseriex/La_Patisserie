@@ -120,16 +120,41 @@ export const initializeAuthListener = createAsyncThunk(
 // Google Sign-In
 export const signInWithGoogle = createAsyncThunk(
   'auth/signInWithGoogle',
-  async ({ locationId = null }, { rejectWithValue }) => {
+  async ({ locationId = null }, { rejectWithValue, dispatch }) => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+      const isNewFirebaseUser = !!(result && result.additionalUserInfo && result.additionalUserInfo.isNewUser);
+
+      // Optimistically close modal immediately for returning users to feel snappier
+      if (!isNewFirebaseUser) {
+        dispatch({ type: 'auth/setIsAuthPanelOpen', payload: false });
+      } else {
+        // For brand new users, switch modal view to profile while backend prepares the user
+        dispatch({ type: 'auth/setAuthType', payload: 'profile' });
+      }
       
       // Get ID token
       const idToken = await user.getIdToken();
       
       // Store token in localStorage for API requests
       localStorage.setItem('authToken', idToken);
+      
+      // Optimistically set user immediately so UI switches from "Login" to "Profile" without delay
+      // This uses Firebase data first; it will be enriched by backend response below.
+      dispatch({
+        type: 'auth/setUser',
+        payload: {
+          user: {
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName,
+            profilePhoto: { url: user.photoURL || '', public_id: '' },
+          },
+          token: idToken,
+          isAuthenticated: true
+        }
+      });
       
       // Send to backend for verification and user creation/update
       const response = await axios.post(`${API_URL}/auth/verify`, {
@@ -265,7 +290,7 @@ export const signUpWithEmail = createAsyncThunk(
 // Email Sign In
 export const signInWithEmail = createAsyncThunk(
   'auth/signInWithEmail',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password }, { rejectWithValue, dispatch }) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const user = result.user;
@@ -275,6 +300,22 @@ export const signInWithEmail = createAsyncThunk(
       
       // Store token in localStorage for API requests
       localStorage.setItem('authToken', idToken);
+      
+      // Optimistically set user immediately so UI switches from "Login" to "Profile" without delay
+      // This uses Firebase user data; backend verification below will enrich it.
+      dispatch({
+        type: 'auth/setUser',
+        payload: {
+          user: {
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName,
+            profilePhoto: { url: user.photoURL || '', public_id: '' },
+          },
+          token: idToken,
+          isAuthenticated: true
+        }
+      });
       
       // Send to backend for verification
       const response = await axios.post(`${API_URL}/auth/verify`, {
