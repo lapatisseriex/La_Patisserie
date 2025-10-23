@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ChevronDown, ChevronUp, Package, Truck, Shield, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ChevronDown, ChevronUp, Package, Truck, Shield, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { fetchProductById, fetchProducts, makeSelectListByKey } from '../redux/productsSlice';
 import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
@@ -167,25 +167,60 @@ const ProductDisplayPageNew = () => {
 
   const isSelectedMediaImage = mediaItems[selectedMediaIndex]?.type === 'image';
 
+  // Auto-advance through ALL media (images + videos) with simple timing
+  const timerRef = useRef(null);
+  const [mediaDelay, setMediaDelay] = useState(4000);
+  const [isUserPausing, setIsUserPausing] = useState(false);
+  const advanceToNextMedia = useCallback(() => {
+    setSelectedMediaIndex((prev) => {
+      if (!mediaItems.length) return 0;
+      return (prev + 1) % mediaItems.length;
+    });
+  }, [mediaItems.length]);
+
+  const advanceToPrevMedia = useCallback(() => {
+    setSelectedMediaIndex((prev) => {
+      if (!mediaItems.length) return 0;
+      return (prev - 1 + mediaItems.length) % mediaItems.length;
+    });
+  }, [mediaItems.length]);
+
   useEffect(() => {
-    if (imageIndices.length <= 1) {
-      return undefined;
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
 
-    if (isHoveringImage || !isSelectedMediaImage) {
-      return undefined;
+    // Pause when page hidden or no media or user hovering (desktop)
+    if (document.hidden || mediaItems.length <= 1 || isHoveringImage || isUserPausing) {
+      return () => {};
     }
 
-    const interval = setInterval(() => {
-      setSelectedMediaIndex((prev) => {
-        const currentPosition = imageIndices.indexOf(prev);
-        const nextPosition = currentPosition === -1 ? 0 : (currentPosition + 1) % imageIndices.length;
-        return imageIndices[nextPosition];
-      });
-    }, 4000);
+    const current = mediaItems[selectedMediaIndex];
+    const delay = current?.type === 'video' ? 8000 : 4000; // videos show a bit longer
+    setMediaDelay(delay);
 
-    return () => clearInterval(interval);
-  }, [imageIndices, isHoveringImage, isSelectedMediaImage]);
+    timerRef.current = setTimeout(() => {
+      advanceToNextMedia();
+    }, delay);
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [selectedMediaIndex, mediaItems.length, isHoveringImage, isUserPausing, advanceToNextMedia]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      // retrigger effect by updating state subtly when visibility changes
+      setSelectedMediaIndex((i) => i);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
 
   // Track product view
   useEffect(() => {
@@ -646,13 +681,31 @@ const ProductDisplayPageNew = () => {
               className={`relative w-full aspect-square ${selectedMediaType === 'image' ? 'cursor-pointer group' : 'cursor-default'}`}
               onClick={handleImageZoom}
             >
-              <MediaDisplay
-                src={selectedMediaSrc}
-                type={selectedMediaType}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                videoProps={{ controls: true, playsInline: true, autoPlay: true, muted: true, loop: true }}
-              />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={selectedMediaIndex}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full h-full"
+                >
+                  <MediaDisplay
+                    src={selectedMediaSrc}
+                    type={selectedMediaType}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    videoProps={{
+                      controls: false,
+                      playsInline: true,
+                      autoPlay: true,
+                      muted: true,
+                      loop: false,
+                      onEnded: advanceToNextMedia
+                    }}
+                  />
+                </motion.div>
+              </AnimatePresence>
               
               {/* Share button only */}
               <div className="absolute top-3 right-3 flex gap-2 z-30">
@@ -663,6 +716,42 @@ const ProductDisplayPageNew = () => {
                   <Share2 className="w-5 h-5" style={{ color: '#1a1a1a' }} />
                 </button>
               </div>
+
+              {/* Innovative Mobile Navigation: Left tap zone + Next Orb with progress */}
+              {mediaCount > 1 && (
+                <>
+                  {/* Invisible left tap zone for Previous */}
+                  <button
+                    aria-label="Previous media"
+                    onClick={(e) => { e.stopPropagation(); advanceToPrevMedia(); }}
+                    className="md:hidden absolute inset-y-0 left-0 w-1/3 opacity-0 z-20"
+                  />
+
+                  {/* Next Orb */}
+                  <div className="md:hidden absolute bottom-3 right-3 z-30 pointer-events-none">
+                    <motion.button
+                      aria-label="Next media"
+                      onClick={(e) => { e.stopPropagation(); advanceToNextMedia(); }}
+                      onPointerDown={() => setIsUserPausing(true)}
+                      onPointerUp={() => setIsUserPausing(false)}
+                      onPointerCancel={() => setIsUserPausing(false)}
+                      className="pointer-events-auto relative w-10 h-10 rounded-full shadow-lg border border-white/40 backdrop-blur-sm flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(115,56,87,0.95) 0%, rgba(141,68,102,0.95) 50%, rgba(65,36,52,0.95) 100%)'
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {/* Progress ring */}
+                      <svg className="absolute -inset-0.5" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="14" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+                      
+                      </svg>
+
+                      <ChevronRight className="w-4 h-4 text-white drop-shadow" />
+                    </motion.button>
+                  </div>
+                </>
+              )}
             </div>
             
             {/* Media dots indicator */}
@@ -1174,28 +1263,32 @@ const ProductDisplayPageNew = () => {
                     onMouseEnter={() => setIsHoveringImage(true)}
                     onMouseLeave={() => setIsHoveringImage(false)}
                   >
-                    <MediaDisplay
-                      src={selectedMediaSrc}
-                      type={selectedMediaType}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                      videoProps={{ controls: true, playsInline: true, autoPlay: true, muted: true, loop: true }}
-                    />
-                    
-                    <div className="absolute inset-0 bg-black bg-opacity-5 transition-all flex items-center justify-center">
-                      {selectedMediaType === 'video' && (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="white"
-                          strokeWidth="2"
-                          className="h-10 w-10 opacity-80"
-                        >
-                          <path d="M10 8l6 4-6 4V8z" />
-                        </svg>
-                      )}
-                    </div>
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={selectedMediaIndex}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="w-full h-full"
+                      >
+                        <MediaDisplay
+                          src={selectedMediaSrc}
+                          type={selectedMediaType}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          videoProps={{
+                            controls: false,
+                            playsInline: true,
+                            autoPlay: true,
+                            muted: true,
+                            loop: false,
+                            onEnded: advanceToNextMedia
+                          }}
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+                    {/* Removed play icon overlay to prevent covering native controls and improve UX */}
                     
                     {tracks && totalStock === 0 && (
                       <div 

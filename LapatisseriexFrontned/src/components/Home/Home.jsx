@@ -60,7 +60,10 @@ const Home = () => {
   // Load products for homepage sections using keys so they don't overwrite each other
   useEffect(() => {
     dispatch(fetchBestSellers({ limit: 3 }));
-    dispatch(fetchProducts({ key: 'newlyLaunched', limit: 3, sort: 'createdAt:-1' }));
+    const t = setTimeout(() => {
+      dispatch(fetchProducts({ key: 'newlyLaunched', limit: 3, sort: 'createdAt:-1' }));
+    }, 150);
+    return () => clearTimeout(t);
   }, [dispatch]);
 
   // Load special images only once on mount

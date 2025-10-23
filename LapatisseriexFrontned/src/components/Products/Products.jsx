@@ -329,6 +329,33 @@ const Products = () => {
           // For visible categories near the selected one, prefetch them in the background
           // This will be handled by the intersection observer instead
         }
+
+        // Proactively prefetch the first few categories to avoid "empty until scroll" perception
+        try {
+          const candidateCategories = (categories || [])
+            .filter(c => c && c._id && c.name !== '__SPECIAL_IMAGES__' && !c.name?.includes('__SPECIAL_IMAGES__') && !c.name?.includes('_SPEC'))
+            .map(c => c._id);
+
+          const toPrefetch = candidateCategories
+            .filter(id => id !== selectedCategory)
+            .slice(0, 2); // prefetch top 2 categories in view order
+
+          await Promise.all(toPrefetch.map(async (catId) => {
+            try {
+              const res = await dispatch(fetchProducts({
+                key: `category_${catId}`,
+                limit: 20,
+                category: catId,
+                sort: 'createdAt:-1',
+              })).unwrap();
+              productsByCat[catId] = res.products || [];
+            } catch (e) {
+              console.warn('Prefetch category failed:', catId, e?.message || e);
+            }
+          }));
+        } catch (e) {
+          console.warn('Category prefetch skipped due to error:', e?.message || e);
+        }
         
         setProductsByCategory(productsByCat);
         setIsLoading(false);

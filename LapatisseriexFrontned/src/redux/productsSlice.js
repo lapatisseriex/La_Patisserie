@@ -160,9 +160,11 @@ const productsSlice = createSlice({
       })
       .addCase(fetchBestSellers.fulfilled, (state, action) => {
         state.loadingByKey['bestSellers'] = false;
-        state.listsByKey['bestSellers'] = action.payload?.products || [];
-        // Store the hasBestSellers flag for conditional rendering
-        state.hasBestSellers = action.payload?.meta?.hasBestSellers || false;
+        const list = action.payload?.products || [];
+        state.listsByKey['bestSellers'] = list;
+        // Store the hasBestSellers flag for conditional rendering; fallback to list length
+        const flagFromMeta = action.payload?.meta?.hasBestSellers;
+        state.hasBestSellers = typeof flagFromMeta === 'boolean' ? flagFromMeta : list.length > 0;
       })
       .addCase(fetchBestSellers.rejected, (state, action) => {
         state.loadingByKey['bestSellers'] = false;
