@@ -96,7 +96,7 @@ const PaymentsTable = ({ items, onMarkPaid, onView }) => {
                 >
                   View
                 </button>
-                {p.paymentStatus === 'pending' && (
+                {p.paymentStatus === 'pending' && p.data?.order?.orderStatus !== 'cancelled' && (
                   <button
                     onClick={() => onMarkPaid && onMarkPaid(p)}
                     className="px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
