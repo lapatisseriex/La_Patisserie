@@ -59,7 +59,16 @@ const NotificationBell = () => {
 
       handleUnreadCountChange(newUnreadCount);
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // Silently handle auth errors to prevent console spam
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        // Token might be expired or invalid, reset count
+        handleUnreadCountChange(0);
+      } else if (error.response?.status !== 404) {
+        // Only log non-404 errors to avoid spam
+        console.error('Error fetching unread count:', error.response?.data?.message || error.message);
+      }
+      // Reset count on any error
+      handleUnreadCountChange(0);
     }
   }, [isAuthenticated, triggerPulse, handleUnreadCountChange]);
 

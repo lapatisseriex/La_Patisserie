@@ -777,7 +777,7 @@ const AdminUsers = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes slide-down {
           from {
             opacity: 0;

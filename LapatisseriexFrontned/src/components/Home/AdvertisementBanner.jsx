@@ -229,7 +229,7 @@ const AdvertisementBanner = () => {
 
 
       {/* Smooth animation styles */}
-      <style jsx>{`        
+      <style>{`        
         .cursor-grab:active {
           cursor: grabbing;
         }

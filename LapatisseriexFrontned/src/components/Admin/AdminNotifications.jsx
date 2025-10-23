@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { FaBell, FaShoppingCart, FaTimes, FaEnvelope, FaPhone } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const AdminNotifications = () => {
-  const [notifications, setNotifications] = useState([]);
+  const [allNotifications, setAllNotifications] = useState([]); // Store all notifications
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({ total: 0, cancelledCount: 0 });
   const [filter, setFilter] = useState('all'); // 'all' or 'order_cancelled'
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 20;
 
-  const fetchNotifications = async (page = 1, typeFilter = null) => {
+  // Fetch all notifications once
+  const fetchAllNotifications = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
       
-      let url = `${import.meta.env.VITE_API_URL}/notifications/admin?page=${page}&limit=20`;
-      if (typeFilter && typeFilter !== 'all') {
-        url += `&type=${typeFilter}`;
-      }
+      // Fetch a large number to get all notifications
+      const url = `${import.meta.env.VITE_API_URL}/notifications/admin?page=1&limit=1000`;
 
       const response = await axios.get(url, {
         headers: {
@@ -29,10 +28,8 @@ const AdminNotifications = () => {
       });
 
       if (response.data.success) {
-        setNotifications(response.data.notifications);
+        setAllNotifications(response.data.notifications);
         setStats(response.data.stats);
-        setCurrentPage(response.data.pagination.page);
-        setTotalPages(response.data.pagination.pages);
       }
     } catch (err) {
       console.error('Error fetching notifications:', err);
@@ -42,13 +39,40 @@ const AdminNotifications = () => {
     }
   };
 
+  // Filter notifications on client side for instant response
+  const filteredNotifications = useMemo(() => {
+    if (filter === 'all') return allNotifications;
+    return allNotifications.filter(notification => notification.type === filter);
+  }, [allNotifications, filter]);
+
+  // Calculate pagination for filtered results
+  const totalPages = Math.ceil(filteredNotifications.length / itemsPerPage);
+  const notifications = filteredNotifications.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Load all notifications on component mount
   useEffect(() => {
-    fetchNotifications(1, filter === 'all' ? null : filter);
+    fetchAllNotifications();
+  }, []);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
   }, [filter]);
+
+  // Calculate dynamic stats based on all notifications
+  const dynamicStats = useMemo(() => {
+    const total = allNotifications.length;
+    const cancelledCount = allNotifications.filter(n => n.type === 'order_cancelled').length;
+    const activeCount = total - cancelledCount;
+    return { total, cancelledCount, activeCount };
+  }, [allNotifications]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      fetchNotifications(newPage, filter === 'all' ? null : filter);
+      setCurrentPage(newPage);
     }
   };
 
@@ -123,7 +147,7 @@ const AdminNotifications = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Notifications</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.total}</p>
+              <p className="text-3xl font-bold text-gray-800">{dynamicStats.total}</p>
             </div>
             <div className="bg-blue-100 p-3 rounded-full">
               <FaBell className="text-blue-600 text-2xl" />
@@ -135,7 +159,7 @@ const AdminNotifications = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Cancelled Orders</p>
-              <p className="text-3xl font-bold text-red-600">{stats.cancelledCount}</p>
+              <p className="text-3xl font-bold text-red-600">{dynamicStats.cancelledCount}</p>
             </div>
             <div className="bg-red-100 p-3 rounded-full">
               <FaTimes className="text-red-600 text-2xl" />
@@ -147,7 +171,7 @@ const AdminNotifications = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Active Orders</p>
-              <p className="text-3xl font-bold text-green-600">{stats.total - stats.cancelledCount}</p>
+              <p className="text-3xl font-bold text-green-600">{dynamicStats.activeCount}</p>
             </div>
             <div className="bg-green-100 p-3 rounded-full">
               <FaShoppingCart className="text-green-600 text-2xl" />
