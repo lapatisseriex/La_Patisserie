@@ -16,7 +16,8 @@ import {
   FaBox,
   FaChartBar,
   FaEnvelope,
-  FaTruck
+  FaTruck,
+  FaBell
 } from 'react-icons/fa';
 import { MdPayment } from 'react-icons/md';
 
@@ -178,6 +179,16 @@ const AdminDashboardLayout = () => {
                 >
                   <FaChartBar className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Analytics</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/notifications"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/notifications' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaBell className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Notifications</span>
                 </Link>
               </li>
               <li>

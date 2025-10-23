@@ -53,6 +53,7 @@ import AdminPayments from './components/Admin/AdminPayments';
 import AdminAnalyticsDashboard from './pages/Admin/AdminAnalyticsDashboard';
 import AdminNewsletter from './components/Admin/AdminNewsletter';
 import AdminNGOMedia from './components/Admin/AdminNGOMedia';
+import AdminNotifications from './components/Admin/AdminNotifications';
 
 // Contact Components
 import Contact from './pages/Contact';
@@ -227,6 +228,7 @@ function App() {
                               <Route index element={<Navigate to="dashboard" />} />
                               <Route path="dashboard" element={<AdminDashboard />} />
                               <Route path="analytics" element={<AdminAnalyticsDashboard />} />
+                              <Route path="notifications" element={<React.Suspense fallback={<div>Loading...</div>}><AdminNotifications /></React.Suspense>} />
                               <Route path="users" element={<AdminUsers />} />
                               <Route path="locations" element={<AdminLocations />} />
                               <Route path="orders" element={<React.Suspense fallback={<div>Loading...</div>}><AdminOrders /></React.Suspense>} />

@@ -406,7 +406,7 @@ const Profile = () => {
   // Clear local error when authError changes
   useEffect(() => {
     if (authError) {
-      setLocalError(authError);
+      // Removed: setLocalError(authError); - Unnecessary network error display
       setSuccessMessage('');
     } else {
       setLocalError('');

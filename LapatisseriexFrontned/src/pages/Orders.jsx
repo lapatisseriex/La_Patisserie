@@ -7,6 +7,7 @@ import { resolveOrderItemVariantLabel } from '../utils/variantUtils';
 import OfferBadge from '../components/common/OfferBadge';
 import { getOrderExperienceInfo } from '../utils/orderExperience';
 import webSocketService from '../services/websocketService';
+import OrderCardComponent from '../components/Orders/OrderCard';
 
 // Helper function to get product image URL
 const getProductImageUrl = (item) => {
@@ -82,6 +83,12 @@ const Orders = () => {
         setLoading(false);
       }
     }
+  }, []);
+
+  // Handle order cancellation
+  const handleOrderCancelled = useCallback((orderNumber) => {
+    // Remove the cancelled order from the list
+    setOrders(prevOrders => prevOrders.filter(order => order.orderNumber !== orderNumber));
   }, []);
 
   useEffect(() => {
@@ -297,13 +304,13 @@ const Orders = () => {
         ) : (
           <div className="grid gap-4">
             {filteredOrders.map((order, index) => (
-              <OrderCard key={order._id} order={order} index={index} />
+              <OrderCardComponent key={order._id} order={order} onOrderCancelled={handleOrderCancelled} />
             ))}
           </div>
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -600,7 +607,7 @@ const OrderCard = ({ order, index }) => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

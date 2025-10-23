@@ -1,16 +1,22 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, X, RotateCcw } from 'lucide-react';
 import { calculatePricing } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import OfferBadge from '../common/OfferBadge';
 import { useAuth } from '../../hooks/useAuth';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
+import axios from 'axios';
 
 const OrderTrackingContent = ({ order }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showUndo, setShowUndo] = useState(false);
+  const [undoTimeout, setUndoTimeout] = useState(null);
   const formatAmount = (value) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? Math.round(parsed) : 0;
@@ -161,12 +167,60 @@ const OrderTrackingContent = ({ order }) => {
     return configs[status] || configs['placed'];
   };
 
+  // Check if order can be cancelled (before out_for_delivery)
+  const canCancel = !['out_for_delivery', 'delivered', 'cancelled'].includes(order.orderStatus);
+
+  const handleCancelClick = () => {
+    setShowCancelConfirm(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    setIsCancelling(true);
+    setShowCancelConfirm(false);
+    
+    // Show undo option
+    setShowUndo(true);
+    
+    // Set timeout to actually cancel the order
+    const timeout = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        await axios.put(
+          `${import.meta.env.VITE_API_URL}/payments/orders/${order.orderNumber}/cancel`,
+          { cancelReason: cancelReason || 'Cancelled by user' },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        
+        // Redirect to orders page after successful cancellation
+        navigate('/orders');
+      } catch (error) {
+        console.error('Error cancelling order:', error);
+        alert('Failed to cancel order. Please try again.');
+        setShowUndo(false);
+        setIsCancelling(false);
+      }
+    }, 5000); // 5 second window to undo
+
+    setUndoTimeout(timeout);
+  };
+
+  const handleUndo = () => {
+    if (undoTimeout) {
+      clearTimeout(undoTimeout);
+      setUndoTimeout(null);
+    }
+    setShowUndo(false);
+    setIsCancelling(false);
+    setCancelReason('');
+  };
+
   const StatusTimeline = ({ orderStatus }) => {
     const steps = [
       { key: 'placed', label: 'Order Placed', pngSrc: '/checkout.png', description: 'We have received your order' },
-      { key: 'confirmed', label: 'Confirmed', pngSrc: '/support.png', description: 'Our team has confirmed your order' },
-      { key: 'preparing', label: 'Preparing', pngSrc: '/clock.png', description: 'We are carefully preparing your order' },
-      { key: 'ready', label: 'Ready for Dispatch', pngSrc: '/delivery.png', description: 'Packed and waiting to leave the kitchen' },
       { key: 'out_for_delivery', label: 'Out for Delivery', pngSrc: '/market-capitalization.png', description: 'Your order is on the way' },
       { key: 'delivered', label: 'Delivered', pngSrc: '/delivery-box.png', description: 'Order delivered successfully' }
     ];
@@ -631,11 +685,134 @@ const OrderTrackingContent = ({ order }) => {
         </div>
       )}
 
-      <style jsx>{`
+      {/* Cancel Order Button - Only show if order can be cancelled */}
+      {canCancel && !isCancelling && (
+        <div 
+          className="bg-white border border-gray-100 p-6 flex justify-end"
+          style={{ 
+            animation: 'fadeIn 0.4s ease-out 0.5s both',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}
+        >
+          <button
+            onClick={handleCancelClick}
+            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold tracking-widest transition-all duration-300 border"
+            style={{ 
+              color: '#733857',
+              borderColor: '#733857',
+              letterSpacing: '0.08em'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#733857';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = '#733857';
+            }}
+          >
+            <X className="h-4 w-4" />
+            <span>CANCEL ORDER</span>
+          </button>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold mb-4" style={{ color: '#733857' }}>
+              Cancel Order #{order.orderNumber}?
+            </h3>
+            <p className="text-sm mb-4" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
+              Are you sure you want to cancel this order? You'll have 5 seconds to undo this action.
+            </p>
+            <textarea
+              placeholder="Reason for cancellation (optional)"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="w-full border border-gray-300 p-3 mb-4 text-sm"
+              rows="3"
+              style={{ color: '#1a1a1a' }}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowCancelConfirm(false);
+                  setCancelReason('');
+                }}
+                className="px-5 py-2.5 text-sm font-bold border transition-all duration-300"
+                style={{ 
+                  color: 'rgba(26, 26, 26, 0.6)',
+                  borderColor: 'rgba(26, 26, 26, 0.3)'
+                }}
+              >
+                KEEP ORDER
+              </button>
+              <button
+                onClick={handleCancelConfirm}
+                className="px-5 py-2.5 text-sm font-bold transition-all duration-300"
+                style={{ 
+                  backgroundColor: '#733857',
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#8d4466';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#733857';
+                }}
+              >
+                YES, CANCEL ORDER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo Button - Fixed bottom right */}
+      {showUndo && (
+        <div className="fixed bottom-24 right-6 z-[9999]" style={{
+          animation: 'slideUp 0.3s ease-out'
+        }}>
+          <button
+            onClick={handleUndo}
+            className="flex items-center gap-3 px-6 py-4 shadow-2xl text-white text-base font-bold tracking-wide transition-all duration-300 hover:shadow-3xl"
+            style={{ 
+              backgroundColor: '#733857',
+              zIndex: 9999
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#8d4466';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#733857';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <RotateCcw className="h-5 w-5" />
+            <span>UNDO CANCEL</span>
+          </button>
+        </div>
+      )}
+
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
             transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
           }
           to {
             opacity: 1;

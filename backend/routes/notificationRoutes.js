@@ -3,11 +3,15 @@ import {
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  deleteNotification
+  deleteNotification,
+  getAdminNotifications
 } from '../controllers/notificationController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+// Admin routes - must be before /:id routes
+router.get('/admin', protect, getAdminNotifications);
 
 // Get user notifications
 router.get('/', protect, getUserNotifications);

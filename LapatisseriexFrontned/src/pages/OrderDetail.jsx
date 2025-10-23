@@ -175,7 +175,7 @@ const OrderDetail = () => {
         <OrderTrackingContent order={order} />
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

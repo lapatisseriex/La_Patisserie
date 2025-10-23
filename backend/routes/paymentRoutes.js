@@ -14,6 +14,7 @@ import {
   createPaymentRecord,
   checkOrderStatus
 } from '../controllers/paymentController.js';
+import { cancelUserOrder } from '../controllers/orderController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import { backfillPaymentsFromOrders, updatePaymentStatus } from '../controllers/paymentController.js';
 
@@ -41,6 +42,7 @@ router.get('/payment/:paymentId', protect, getPaymentDetails);
 router.get('/orders', protect, getAllOrders); // Admin: Get all orders
 router.get('/orders/user', protect, getUserOrders); // User: Get user's orders
 router.get('/orders/:orderNumber', protect, getOrderDetails); // Get specific order details
+router.put('/orders/:orderNumber/cancel', protect, cancelUserOrder); // User: Cancel order
 
 // User payments route  
 router.get('/user/payments', protect, getUserPayments); // User: Get user's payments/transactions

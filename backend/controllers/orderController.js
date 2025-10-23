@@ -1007,3 +1007,127 @@ export const getOrderStats = asyncHandler(async (req, res) => {
     });
   }
 });
+
+// @desc    Cancel order by user
+// @route   PUT /api/payments/orders/:orderNumber/cancel
+// @access  Private
+export const cancelUserOrder = asyncHandler(async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { cancelReason } = req.body;
+    const userId = req.user?._id;
+
+    console.log('🚫 User cancelling order:', orderNumber);
+
+    // Find the order
+    const order = await Order.findOne({ orderNumber });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Verify the order belongs to the requesting user
+    if (order.userId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to cancel this order'
+      });
+    }
+
+    // Check if order can be cancelled (not out for delivery or delivered)
+    const canCancel = !['out_for_delivery', 'delivered', 'cancelled'].includes(order.orderStatus);
+    
+    if (!canCancel) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order cannot be cancelled at this stage',
+        currentStatus: order.orderStatus
+      });
+    }
+
+    const previousStatus = order.orderStatus;
+
+    // Restore stock for cancelled order
+    console.log('🔄 Restoring stock for cancelled order items...');
+    for (const item of order.cartItems) {
+      try {
+        const product = await Product.findById(item.productId);
+        if (!product) {
+          console.warn(`Product ${item.productId} not found, skipping stock restoration`);
+          continue;
+        }
+
+        // Check if product has variants
+        if (product.variants && product.variants.length > 0) {
+          const variantIndex = item.variantIndex || 0;
+          if (product.variants[variantIndex]) {
+            // Restore stock for specific variant
+            const currentStock = product.variants[variantIndex].stock || 0;
+            product.variants[variantIndex].stock = currentStock + item.quantity;
+            console.log(`✅ Restored ${item.quantity} units to variant ${variantIndex} of ${product.name}. New stock: ${product.variants[variantIndex].stock}`);
+          }
+        } else {
+          // Restore stock for product without variants
+          const currentStock = product.stock || 0;
+          product.stock = currentStock + item.quantity;
+          console.log(`✅ Restored ${item.quantity} units to ${product.name}. New stock: ${product.stock}`);
+        }
+
+        await product.save();
+      } catch (stockError) {
+        console.error(`Error restoring stock for product ${item.productId}:`, stockError);
+        // Continue with other items even if one fails
+      }
+    }
+
+    // Update order status to cancelled
+    order.orderStatus = 'cancelled';
+    order.cancelReason = cancelReason || 'Cancelled by user';
+    await order.save();
+
+    console.log('✅ Order cancelled successfully:', order.orderNumber);
+
+    // Send status update emails to user and admin
+    await sendStatusEmails(order, previousStatus, 'cancelled');
+
+    // Create notification for user
+    try {
+      await createNotification(
+        order.userId,
+        order.orderNumber,
+        'order_cancelled',
+        'Order Cancelled',
+        `Your order #${order.orderNumber} has been cancelled${cancelReason ? ': ' + cancelReason : ''}`,
+        {
+          cancelReason: cancelReason || 'No reason provided',
+          cancelledAt: new Date(),
+          previousStatus: previousStatus
+        }
+      );
+      console.log('✅ User notification created for order cancellation');
+    } catch (notificationError) {
+      console.error('Failed to create user cancellation notification:', notificationError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Order cancelled successfully. Stock has been restored.',
+      order: {
+        orderNumber: order.orderNumber,
+        orderStatus: order.orderStatus,
+        cancelReason: order.cancelReason
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in cancelUserOrder:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel order',
+      error: error.message
+    });
+  }
+});

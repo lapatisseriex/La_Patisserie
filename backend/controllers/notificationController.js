@@ -131,6 +131,58 @@ export const deleteNotification = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Get admin notifications (all notifications)
+// @route   GET /api/notifications/admin
+// @access  Private/Admin
+export const getAdminNotifications = asyncHandler(async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user.isAdmin()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin only.'
+      });
+    }
+
+    const { page = 1, limit = 50, type } = req.query;
+
+    const query = {};
+    if (type) {
+      query.type = type;
+    }
+
+    const notifications = await Notification.find(query)
+      .populate('userId', 'name email phoneNumber')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .lean();
+
+    const total = await Notification.countDocuments(query);
+    const cancelledCount = await Notification.countDocuments({ type: 'order_cancelled' });
+
+    res.json({
+      success: true,
+      notifications,
+      pagination: {
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
+        total
+      },
+      stats: {
+        total,
+        cancelledCount
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch admin notifications'
+    });
+  }
+});
+
 // Helper function to create notification
 export const createNotification = async (userId, orderNumber, type, title, message, data = {}) => {
   try {
