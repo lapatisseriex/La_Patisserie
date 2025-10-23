@@ -5,6 +5,7 @@ import { useCart } from '../../hooks/useCart';
 import { fetchProducts } from '../../redux/productsSlice';
 import { useProduct } from '../../context/ProductContext/ProductContext';
 import { useAuth } from '../../hooks/useAuth';
+import { useCategory } from '../../context/CategoryContext/CategoryContext';
 
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import ProductCard from '../Products/ProductCard';
@@ -18,6 +19,7 @@ const CartPickedForYou = () => {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recommendationType, setRecommendationType] = useState('');
+  const { categories } = useCategory();
 
   // Memoize cart analysis for performance
   const cartAnalysis = useMemo(() => {
@@ -67,12 +69,36 @@ const CartPickedForYou = () => {
         let recType = '';
 
         // Strategy 1: Products from same category as last added item
-        if (cartAnalysis.lastProduct?.category) {
+        if (cartAnalysis.lastProduct?.category || cartAnalysis.lastProduct?.productDetails?.category) {
           console.log('🎯 Finding products from same category as last item...');
           try {
+            // Normalize category to an ID if possible
+            const rawCategory = cartAnalysis.lastProduct?.category || cartAnalysis.lastProduct?.productDetails?.category;
+            let categoryId = null;
+            if (rawCategory && typeof rawCategory === 'object' && rawCategory._id) {
+              categoryId = rawCategory._id;
+            } else if (typeof rawCategory === 'string') {
+              const trimmed = rawCategory.trim();
+              // Heuristic: ObjectId-like string
+              if (/^[a-f\d]{24}$/i.test(trimmed)) {
+                categoryId = trimmed;
+              } else {
+                // Try to resolve by name from loaded categories
+                const match = (categories || []).find(
+                  c => c.name?.toLowerCase() === trimmed.toLowerCase()
+                );
+                if (match?._id) categoryId = match._id;
+              }
+            }
+
+            // If we couldn't resolve a valid category id, skip category-based recs
+            if (!categoryId) {
+              console.log('⚠️ Could not resolve category ID from cart item, skipping category-based recommendations');
+            }
+
             const categoryResult = await dispatch(fetchProducts({
               key: 'cartRecommendations',
-              category: cartAnalysis.lastProduct.category,
+              ...(categoryId ? { category: categoryId } : {}),
               limit: 15,
               sort: 'rating:-1',
               isActive: true
@@ -87,7 +113,8 @@ const CartPickedForYou = () => {
             
             if (categoryRecommendations.length >= 3) {
               recommendations = categoryRecommendations.slice(0, 3);
-              recType = `More ${cartAnalysis.lastProduct.category.name || 'similar items'}`;
+              const catName = typeof rawCategory === 'object' ? rawCategory.name : (rawCategory || 'similar items');
+              recType = `More ${catName}`;
             }
           } catch (error) {
             console.error('Error fetching category recommendations:', error);
@@ -96,7 +123,7 @@ const CartPickedForYou = () => {
 
         // Strategy 2: If category strategy didn't work, use recently viewed
         if (recommendations.length < 3 && recentlyViewed && recentlyViewed.length > 0) {
-          console.log('� Using recently viewed products...');
+          console.log('👀 Using recently viewed products...');
           const recentProducts = recentlyViewed
             .map(item => item.productId || item)
             .filter(product => 

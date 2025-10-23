@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosConfig';
+import { withRetry } from '../../utils/retry';
 import { useAuth } from '../../hooks/useAuth';
 
 const CategoryContext = createContext();
@@ -54,7 +55,7 @@ export const CategoryProvider = ({ children }) => {
         setLoading(true);
         setError(null);
 
-        const response = await axios.get(`${API_URL}/categories${queryParams}`);
+  const response = await withRetry(() => axiosInstance.get(`${API_URL}/categories${queryParams}`), { retries: 2, delay: 250 });
         console.log(`📂 Categories loaded: ${response.data.length} (${includeInactive ? 'all' : 'active only'})`);
 
         // Persist data
@@ -90,7 +91,7 @@ export const CategoryProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get(`${API_URL}/categories/${categoryId}`);
+  const response = await withRetry(() => axiosInstance.get(`${API_URL}/categories/${categoryId}`), { retries: 2, delay: 250 });
       return response.data;
     } catch (err) {
       console.error(`Error fetching category ${categoryId}:`, err);
@@ -107,7 +108,7 @@ export const CategoryProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get(`${API_URL}/categories/${categoryId}/products`);
+  const response = await withRetry(() => axiosInstance.get(`${API_URL}/categories/${categoryId}/products`), { retries: 2, delay: 250 });
       return response.data;
     } catch (err) {
       console.error(`Error fetching products for category ${categoryId}:`, err);
@@ -125,11 +126,11 @@ export const CategoryProvider = ({ children }) => {
       setError(null);
       
       // Get auth token
-      const { getAuth } = await import('firebase/auth');
+  const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_URL}/categories`, 
         categoryData,
         {
@@ -171,7 +172,7 @@ export const CategoryProvider = ({ children }) => {
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      const response = await axios.put(
+      const response = await axiosInstance.put(
         `${API_URL}/categories/${categoryId}`, 
         categoryData,
         {
@@ -217,7 +218,7 @@ export const CategoryProvider = ({ children }) => {
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      const response = await axios.delete(
+      const response = await axiosInstance.delete(
         `${API_URL}/categories/${categoryId}`,
         {
           headers: { 
@@ -303,7 +304,7 @@ export const CategoryProvider = ({ children }) => {
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_URL}/categories/${categoryId}/reprocess-images`,
         {},
         {
@@ -372,7 +373,7 @@ export const CategoryProvider = ({ children }) => {
       
       setError(null);
       
-      const response = await axios.get(`${API_URL}/categories/special-images`);
+  const response = await withRetry(() => axiosInstance.get(`${API_URL}/categories/special-images`), { retries: 2, delay: 250 });
       
       // Store the result in cache with current timestamp
       requestCache.current.set(cacheKey, {
@@ -404,7 +405,7 @@ export const CategoryProvider = ({ children }) => {
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      const response = await axios.put(`${API_URL}/categories/special-image/${type}`, 
+      const response = await axiosInstance.put(`${API_URL}/categories/special-image/${type}`, 
         { imageUrl },
         {
           headers: {
@@ -441,7 +442,7 @@ export const CategoryProvider = ({ children }) => {
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
       
-      const response = await axios.delete(`${API_URL}/categories/special-image/${type}`, 
+      const response = await axiosInstance.delete(`${API_URL}/categories/special-image/${type}`, 
         {
           headers: {
             'Authorization': `Bearer ${idToken}`,

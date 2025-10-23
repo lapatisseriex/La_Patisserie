@@ -57,7 +57,9 @@ const allowedOrigins = [
   'https://la-patisserie-cqyo.vercel.app',
   'https://la-patisserie-nine.vercel.app',
   'https://thelapatisserie.vercel.app',
-  'https://www.lapatisserie.shop/',
+  // Fixed custom domain entries (removed trailing slash and added apex domain)
+  'https://www.lapatisserie.shop',
+  'https://lapatisserie.shop',
   process.env.FRONTEND_URL
 ].filter(Boolean); // Remove any undefined values
 

@@ -13,7 +13,11 @@ const HandpickedForYou = () => {
   const loading = useSelector(selectLoading);
 
   useEffect(() => {
-    dispatch(fetchProducts({ key: 'handpicked', limit: 20, sort: 'createdAt:-1' }));
+    // Stagger slightly to avoid hammering the API together with other homepage calls
+    const t = setTimeout(() => {
+      dispatch(fetchProducts({ key: 'handpicked', limit: 20, sort: 'createdAt:-1' }));
+    }, 200);
+    return () => clearTimeout(t);
   }, [dispatch]);
 
   // Memoize the shuffled and sliced products

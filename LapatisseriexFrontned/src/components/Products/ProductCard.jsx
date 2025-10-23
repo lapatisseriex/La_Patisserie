@@ -435,7 +435,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                     videoProps={{
                       controls: false,
                       muted: true,
-                      playsInline: true,
+                      playsInline: true, // Ensure inline playback on mobile devices
                       preload: 'metadata',
                       autoPlay: true,
                       onPlay: handleVideoPlay,

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import axiosInstance from '../utils/axiosConfig';
+import { withRetry } from '../utils/retry';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -17,7 +18,8 @@ export const fetchProducts = createAsyncThunk(
     });
 
     const queryString = queryParams.toString();
-    const response = await axiosInstance.get(`${API_URL}/products${queryString ? `?${queryString}` : ''}`);
+    const url = `${API_URL}/products${queryString ? `?${queryString}` : ''}`;
+    const response = await withRetry(() => axiosInstance.get(url), { retries: 2, delay: 250 });
     
     return response.data;
   }
@@ -46,7 +48,8 @@ export const fetchBestSellers = createAsyncThunk(
     });
 
     const queryString = queryParams.toString();
-    const response = await axiosInstance.get(`${API_URL}/products/bestsellers${queryString ? `?${queryString}` : ''}`);
+    const url = `${API_URL}/products/bestsellers${queryString ? `?${queryString}` : ''}`;
+    const response = await withRetry(() => axiosInstance.get(url), { retries: 2, delay: 250 });
     
     return response.data;
   }
