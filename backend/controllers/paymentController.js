@@ -1339,10 +1339,39 @@ export const listPayments = asyncHandler(async (req, res) => {
     ];
   }
   const skip = (Number(page) - 1) * Number(limit);
-  const [items, total] = await Promise.all([
+  const [payments, total] = await Promise.all([
     Payment.find(filter).sort({ date: -1 }).skip(skip).limit(Number(limit)),
     Payment.countDocuments(filter)
   ]);
+
+  // Enrich payments with order status
+  const items = await Promise.all(payments.map(async (payment) => {
+    const paymentObj = payment.toObject();
+    
+    // Try to find the order by orderNumber
+    if (payment.orderId) {
+      try {
+        const order = await Order.findOne({ orderNumber: payment.orderId })
+          .select('orderStatus orderNumber paymentStatus')
+          .lean();
+        
+        if (order) {
+          paymentObj.data = {
+            order: {
+              orderStatus: order.orderStatus,
+              orderNumber: order.orderNumber,
+              paymentStatus: order.paymentStatus
+            }
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching order for payment:', error);
+      }
+    }
+    
+    return paymentObj;
+  }));
+
   // Avoid stale caching in browsers/proxies
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');

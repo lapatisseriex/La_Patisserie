@@ -101,8 +101,13 @@ const OrderCard = ({ order, onOrderCancelled }) => {
   const statusConfig = getStatusConfig(order.orderStatus);
   const StatusIcon = statusConfig.icon;
 
-  // Check if order can be cancelled (before out_for_delivery)
-  const canCancel = !['out_for_delivery', 'delivered', 'cancelled'].includes(order.orderStatus);
+  // Check if order can be cancelled
+  // Rules:
+  // 1. Order must not be in out_for_delivery, delivered, or cancelled status
+  // 2. ONLY COD orders can be cancelled (offline payment)
+  // 3. Razorpay/online paid orders CANNOT be cancelled
+  const canCancel = !['out_for_delivery', 'delivered', 'cancelled'].includes(order.orderStatus) 
+                    && order.paymentMethod === 'cod';
 
   const handleCancelClick = () => {
     setShowCancelConfirm(true);
@@ -348,6 +353,37 @@ const OrderCard = ({ order, onOrderCancelled }) => {
 
       {/* Action Footer */}
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+        {/* Undo Banner - Show at top of footer if cancelling */}
+        {showUndo && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800">
+                Order cancellation in progress... You have 5 seconds to undo.
+              </span>
+            </div>
+            <button
+              onClick={handleUndo}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-wide transition-all duration-300 shadow-sm hover:shadow-md"
+              style={{ 
+                backgroundColor: '#733857',
+                color: 'white'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#8d4466';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#733857';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>UNDO</span>
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
             {order.orderStatus === 'delivered' && (
@@ -371,7 +407,15 @@ const OrderCard = ({ order, onOrderCancelled }) => {
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Cancel Button - Only show if order can be cancelled */}
+            {/* Info message for online paid orders */}
+            {order.paymentMethod === 'razorpay' && !['out_for_delivery', 'delivered', 'cancelled'].includes(order.orderStatus) && (
+              <div className="flex items-center gap-1 text-xs px-3 py-1.5 bg-blue-50 border border-blue-200 rounded" style={{ color: '#2563eb' }}>
+                <CreditCard className="h-3.5 w-3.5" />
+                <span>Paid orders cannot be cancelled</span>
+              </div>
+            )}
+            
+            {/* Cancel Button - Only show if order can be cancelled (COD only) */}
             {canCancel && !isCancelling && (
               <button
                 onClick={handleCancelClick}
@@ -470,33 +514,6 @@ const OrderCard = ({ order, onOrderCancelled }) => {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Undo Button - Fixed bottom right */}
-      {showUndo && (
-        <div className="fixed bottom-24 right-6 z-[9999]" style={{
-          animation: 'slideUp 0.3s ease-out'
-        }}>
-          <button
-            onClick={handleUndo}
-            className="flex items-center gap-2 px-5 py-3 shadow-2xl text-white text-sm font-bold tracking-wide transition-all duration-300 hover:shadow-3xl"
-            style={{ 
-              backgroundColor: '#733857',
-              zIndex: 9999
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#8d4466';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#733857';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <RotateCcw className="h-4 w-4" />
-            <span>UNDO CANCEL</span>
-          </button>
         </div>
       )}
     </div>

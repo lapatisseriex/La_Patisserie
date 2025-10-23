@@ -8,6 +8,7 @@ import OfferBadge from '../components/common/OfferBadge';
 import { getOrderExperienceInfo } from '../utils/orderExperience';
 import webSocketService from '../services/websocketService';
 import OrderCardComponent from '../components/Orders/OrderCard';
+// Updated: Minor change for commit
 
 // Helper function to get product image URL
 const getProductImageUrl = (item) => {
