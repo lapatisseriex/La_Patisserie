@@ -54,10 +54,23 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   // Use refreshed product data
   const currentProduct = refreshedProduct || product;
-  const imageUrls = Array.isArray(currentProduct?.images) ? currentProduct.images : [];
-  const videoUrls = Array.isArray(currentProduct?.videos) ? currentProduct.videos : [];
+  
+  // Improved image URL validation and filtering
+  const imageUrls = useMemo(() => {
+    if (!Array.isArray(currentProduct?.images)) return [];
+    // Filter out any null, undefined, or empty string values
+    return currentProduct.images.filter(url => !!url);
+  }, [currentProduct?.images]);
+  
+  const videoUrls = useMemo(() => {
+    if (!Array.isArray(currentProduct?.videos)) return [];
+    // Filter out any null, undefined, or empty string values
+    return currentProduct.videos.filter(url => !!url);
+  }, [currentProduct?.videos]);
+  
   const mediaItems = useMemo(() => {
     const items = [];
+    // Combine images and videos into a single media items array
     imageUrls.forEach((url) => {
       if (url) items.push({ type: 'image', src: url });
     });
@@ -70,10 +83,16 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const mediaCount = mediaItems.length;
   const hasVideos = videoUrls.length > 0;
   const activeMedia = mediaCount > 0 ? mediaItems[Math.min(currentMediaIndex, mediaCount - 1)] : null;
+  
+  // More robust fallback chain for images
   const fallbackImage = imageUrls[0] || null;
   const fallbackVideo = videoUrls[0] || null;
+  
+  // Get category image as an additional fallback if available
+  const categoryFallback = currentProduct?.category?.featuredImage || null;
+  
   const primaryMediaType = activeMedia?.type || (fallbackImage ? 'image' : fallbackVideo ? 'video' : 'image');
-  const primaryMediaSrc = activeMedia?.src || fallbackImage || fallbackVideo || null;
+  const primaryMediaSrc = activeMedia?.src || fallbackImage || fallbackVideo || categoryFallback || null;
   const displayMediaSrc = primaryMediaSrc || '/images/cake1.png';
   const displayMediaType = primaryMediaSrc ? primaryMediaType : 'image';
   const isActiveVideo = displayMediaType === 'video';

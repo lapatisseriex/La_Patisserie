@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ChevronDown, ChevronUp, Package, Truck, Shield, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { fetchProductById, fetchProducts, makeSelectListByKey } from '../redux/productsSlice';
 import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../context/FavoritesContext/FavoritesContext';
@@ -480,6 +482,82 @@ const ProductDisplayPageNew = () => {
       setIsImageModalOpen(true);
     }
   };
+  
+  // Function to handle sharing product
+  const handleShare = async (e) => {
+    e.stopPropagation();
+    
+    // Get current URL and product details
+    const shareUrl = window.location.href;
+    const shareTitle = product?.name || 'Check out this product';
+    const shareText = product?.description?.short || 'I found this amazing product at La Patisserie!';
+    
+    // Try using Web Share API (works on mobile and modern desktop browsers)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        console.log('Product shared successfully');
+        // Show a confirmation toast even after successful sharing
+        toast.success('Product shared successfully!');
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // If sharing fails, fall back to clipboard
+        copyToClipboard(shareUrl);
+      }
+    } else {
+      // Fallback for browsers without Web Share API
+      copyToClipboard(shareUrl);
+    }
+  };
+  
+  // Helper function to copy content to clipboard
+  const copyToClipboard = async (text) => {
+    try {
+      // Modern clipboard API
+      await navigator.clipboard.writeText(text);
+      toast.success('Link copied to clipboard!');
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          toast.success('Link copied to clipboard!');
+        } else {
+          toast.error('Failed to copy link');
+        }
+      } catch (err) {
+        console.error('Fallback clipboard copy failed:', err);
+        toast.error('Failed to copy link');
+      }
+      
+      document.body.removeChild(textArea);
+    }
+  };
+  
+  // Show toast notification
+  const showToast = (message) => {
+    toast.success(message, {
+      position: "top-center",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true
+    });
+  };
 
   // Reserve CTA Button Component with Orders page styling
   const ReserveCTA = ({ onClick, disabled, label = 'Reserve Yours', small = false, className = '', dataRole }) => (
@@ -569,7 +647,7 @@ const ProductDisplayPageNew = () => {
                   <h3 className="text-sm font-light tracking-wide truncate leading-tight" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
                     {product.name}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center flex-wrap gap-2 mt-1">
                     <span className="text-base font-light" style={{ color: '#1a1a1a' }}>
                       ₹{Math.round(pricingDetails.finalPrice)}
                     </span>
@@ -578,7 +656,7 @@ const ProductDisplayPageNew = () => {
                         <span className="text-xs line-through" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
                           ₹{pricingDetails.mrp}
                         </span>
-                        <OfferBadge label={`${pricingDetails.discountPercentage}% OFF`} className="text-[10px]" />
+                        <OfferBadge label={`${pricingDetails.discountPercentage}% OFF`} className="text-[9px]" style={{ padding: '0px 4px' }} />
                       </>
                     )}
                   </div>
@@ -678,80 +756,70 @@ const ProductDisplayPageNew = () => {
         <div className="relative w-full">
           <div className="relative w-full overflow-hidden">
             <div 
-              className={`relative w-full aspect-square ${selectedMediaType === 'image' ? 'cursor-pointer group' : 'cursor-default'}`}
+              className={`relative w-full aspect-square ${selectedMediaType === 'image' ? 'cursor-pointer group' : 'cursor-default'} overflow-hidden touch-pan-y`}
               onClick={handleImageZoom}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={selectedMediaIndex}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full h-full"
-                >
-                  <MediaDisplay
-                    src={selectedMediaSrc}
-                    type={selectedMediaType}
-                    alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    videoProps={{
-                      controls: false,
-                      playsInline: true,
-                      autoPlay: true,
-                      muted: true,
-                      loop: false,
-                      onEnded: advanceToNextMedia
-                    }}
-                  />
-                </motion.div>
-              </AnimatePresence>
+              <motion.div
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.1}
+                dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+                dragDirectionLock
+                onDragEnd={(e, info) => {
+                  const threshold = 50; // minimum distance to trigger a swipe
+                  if (info.offset.x > threshold) {
+                    // Swiped right - go to previous
+                    advanceToPrevMedia();
+                  } else if (info.offset.x < -threshold) {
+                    // Swiped left - go to next
+                    advanceToNextMedia();
+                  }
+                }}
+                className="w-full h-full touch-none"
+              >
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedMediaIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full"
+                  >
+                    <MediaDisplay
+                      src={selectedMediaSrc}
+                      type={selectedMediaType}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      videoProps={{
+                        controls: false,
+                        playsInline: true,
+                        autoPlay: true,
+                        muted: true,
+                        loop: false,
+                        onEnded: advanceToNextMedia
+                      }}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </motion.div>
               
               {/* Share button only */}
-              <div className="absolute top-3 right-3 flex gap-2 z-30">
-                <button 
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-gray-100 hover:bg-white transition-all duration-300"
-                >
-                  <Share2 className="w-5 h-5" style={{ color: '#1a1a1a' }} />
-                </button>
-              </div>
+             <div className="absolute md:bottom-3 md:right-3 bottom-2 right-2 flex gap-3 z-30">
+  <button
+    onClick={handleShare}
+    className="relative w-10 h-10 md:w-11 md:h-11 bg-gradient-to-br from-white/60 to-white/30 backdrop-blur-md rounded-xl md:rounded-2xl flex items-center justify-center border border-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)] hover:scale-105 hover:rotate-3 transition-all duration-500 ease-out group"
+  >
+    <Share2
+      className="w-4 h-4 md:w-5 md:h-5 text-gray-900 group-hover:text-pink-600 transition-colors duration-500"
+    />
+    <span className="absolute -bottom-7 text-xs bg-black/70 text-white px-2 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      Share
+    </span>
+  </button>
+</div>
 
-              {/* Innovative Mobile Navigation: Left tap zone + Next Orb with progress */}
-              {mediaCount > 1 && (
-                <>
-                  {/* Invisible left tap zone for Previous */}
-                  <button
-                    aria-label="Previous media"
-                    onClick={(e) => { e.stopPropagation(); advanceToPrevMedia(); }}
-                    className="md:hidden absolute inset-y-0 left-0 w-1/3 opacity-0 z-20"
-                  />
 
-                  {/* Next Orb */}
-                  <div className="md:hidden absolute bottom-3 right-3 z-30 pointer-events-none">
-                    <motion.button
-                      aria-label="Next media"
-                      onClick={(e) => { e.stopPropagation(); advanceToNextMedia(); }}
-                      onPointerDown={() => setIsUserPausing(true)}
-                      onPointerUp={() => setIsUserPausing(false)}
-                      onPointerCancel={() => setIsUserPausing(false)}
-                      className="pointer-events-auto relative w-10 h-10 rounded-full shadow-lg border border-white/40 backdrop-blur-sm flex items-center justify-center"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(115,56,87,0.95) 0%, rgba(141,68,102,0.95) 50%, rgba(65,36,52,0.95) 100%)'
-                      }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {/* Progress ring */}
-                      <svg className="absolute -inset-0.5" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="14" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-                      
-                      </svg>
-
-                      <ChevronRight className="w-4 h-4 text-white drop-shadow" />
-                    </motion.button>
-                  </div>
-                </>
-              )}
             </div>
             
             {/* Media dots indicator */}
@@ -798,13 +866,19 @@ const ProductDisplayPageNew = () => {
                   <h1 className="text-xl font-light tracking-wide leading-tight flex-1" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
                     {product.name}
                   </h1>
-                  <div className="flex-shrink-0">
-                    <FavoriteButton 
-                      productId={productId} 
-                      size="md" 
-                      className="bg-gray-50 rounded-full p-1.5 border border-gray-100" 
-                    />
-                  </div>
+                 <div className="flex-shrink-0">
+  <div className="relative group">
+    <FavoriteButton
+      productId={productId}
+      size="md"
+      className="p-2  hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)] hover:scale-105 hover:-rotate-3 transition-all duration-500 ease-out"
+    />
+    <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-xs bg-black/70 text-white px-2 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      Favorite
+    </span>
+  </div>
+</div>
+
                 </div>
              
               </div>
@@ -1049,12 +1123,12 @@ const ProductDisplayPageNew = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 xs:gap-4">
             {(user && recentlyViewed.length > 0 ? recentlyViewed : sameCategoryProducts).map((item) => {
               const productToShow = item.productId || item;
               if (!productToShow || !productToShow._id) return null;
               return (
-                <ProductCard key={productToShow._id} product={productToShow} />
+                <ProductCard key={productToShow._id} product={productToShow} compact={true} />
               );
             })}
           </div>
@@ -1066,7 +1140,7 @@ const ProductDisplayPageNew = () => {
         className={`fixed bottom-16 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-100 shadow-lg transform transition-transform duration-300 ease-out ${
           showMobileStickyReserve ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
         }`}
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' }}
+        style={{ maxHeight: '80px', overflow: 'hidden', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' }}
       >
         <div className="px-4 py-3">
           <div className="flex items-center justify-between gap-3">
@@ -1083,12 +1157,12 @@ const ProductDisplayPageNew = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-xs font-light tracking-wide truncate leading-tight" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>{product.name}</h3>
-                <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="flex items-center flex-wrap gap-1 mt-0.5">
                   <span className="text-sm font-light" style={{ color: '#1a1a1a' }}>₹{Math.round(pricingDetails.finalPrice)}</span>
                   {pricingDetails.discountPercentage > 0 && (
                     <>
                       <span className="text-[11px]" style={{ color: 'rgba(26, 26, 26, 0.5)', textDecorationLine: 'line-through', textDecorationStyle: 'solid', textDecorationColor: 'rgba(26, 26, 26, 0.5)', textDecorationThickness: '1.5px' }}>₹{pricingDetails.mrp}</span>
-                      <OfferBadge label={`${pricingDetails.discountPercentage}% OFF`} className="text-[10px] leading-none" />
+                      <OfferBadge label={`${pricingDetails.discountPercentage}% OFF`} className="text-[9px] leading-none" style={{ padding: '0px 4px' }} />
                     </>
                   )}
                 </div>
@@ -1263,6 +1337,20 @@ const ProductDisplayPageNew = () => {
                     onMouseEnter={() => setIsHoveringImage(true)}
                     onMouseLeave={() => setIsHoveringImage(false)}
                   >
+                    {/* Desktop Share Button */}
+                    <div className="absolute top-4 right-4 z-30">
+                      <button
+                        onClick={handleShare}
+                        className="relative w-12 h-12 bg-gradient-to-br from-white/70 to-white/40 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/50 shadow-[0_4px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)] hover:scale-105 hover:rotate-3 transition-all duration-500 ease-out group"
+                      >
+                        <Share2
+                          className="w-5 h-5 text-gray-900 group-hover:text-pink-600 transition-colors duration-500"
+                        />
+                        <span className="absolute -bottom-8 text-xs bg-black/70 text-white px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          Share Product
+                        </span>
+                      </button>
+                    </div>
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={selectedMediaIndex}
@@ -1601,7 +1689,7 @@ const ProductDisplayPageNew = () => {
         
         {/* Recently Viewed / Similar Products - Desktop */}
         {(recentlyViewed.length > 0 || sameCategoryProducts.length > 0) && (
-          <section className="mt-16">
+          <section className="hidden md:block mt-16">
             <div className="text-center mb-8 border-b border-gray-100 pb-6">
               <h2 className="text-2xl font-light tracking-wide mb-2" style={{ color: '#1a1a1a', letterSpacing: '0.02em' }}>
                 {user && recentlyViewed.length > 0 ? "Recently Viewed" : "You Might Also Like"}
@@ -1613,12 +1701,12 @@ const ProductDisplayPageNew = () => {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {(user && recentlyViewed.length > 0 ? recentlyViewed : sameCategoryProducts).map((item) => {
                 const productToShow = item.productId || item;
                 if (!productToShow || !productToShow._id) return null;
                 return (
-                  <ProductCard key={productToShow._id} product={productToShow} />
+                  <ProductCard key={productToShow._id} product={productToShow} compact={true} />
                 );
               })}
             </div>
@@ -1640,4 +1728,25 @@ const ProductDisplayPageNew = () => {
   );
 };
 
-export default ProductDisplayPageNew;
+// Add the ToastContainer component at the top level
+const ProductDisplayPageWithToast = () => {
+  return (
+    <>
+      <ProductDisplayPageNew />
+      <ToastContainer 
+        position="top-center"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+    </>
+  );
+};
+
+export default ProductDisplayPageWithToast;

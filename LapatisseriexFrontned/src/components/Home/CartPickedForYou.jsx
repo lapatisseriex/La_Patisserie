@@ -114,7 +114,7 @@ const CartPickedForYou = () => {
             if (categoryRecommendations.length >= 3) {
               recommendations = categoryRecommendations.slice(0, 3);
               const catName = typeof rawCategory === 'object' ? rawCategory.name : (rawCategory || 'similar items');
-              recType = `More ${catName}`;
+              // recType = `More ${catName}`;
             }
           } catch (error) {
             console.error('Error fetching category recommendations:', error);

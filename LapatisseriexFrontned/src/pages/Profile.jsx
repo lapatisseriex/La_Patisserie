@@ -527,8 +527,8 @@ const ProfilePage = () => {
               <h3 className="text-2xl font-medium text-black border-b border-gray-200 pb-2">
                 Recently Viewed
                 {validRecentlyViewed?.length > 0 && (
-                  <span className="ml-2 px-3 py-1 text-white text-sm rounded-full" style={{ background: 'linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)' }}>
-                    {validRecentlyViewed.length} items
+                  <span className="ml-2 text-sm text-gray-500">
+                    ({validRecentlyViewed.length} items)
                   </span>
                 )}
               </h3>
@@ -542,22 +542,22 @@ const ProfilePage = () => {
             </div>
             
             {recentlyViewedLoading ? (
-              <div className="text-center py-6 md:py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#733857] mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading recently viewed items...</p>
+              <div className="text-center py-4 sm:py-5 md:py-8">
+                <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 border-b-2 border-[#733857] mx-auto"></div>
+                <p className="mt-2 sm:mt-3 md:mt-4 text-sm sm:text-base text-gray-600">Loading recently viewed items...</p>
               </div>
             ) : validRecentlyViewed.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center border border-[#733857]/20">
-                  <Eye className="h-10 w-10 text-[#733857]" />
+              <div className="text-center py-6 sm:py-8 md:py-12">
+                <div className="mx-auto mb-4 sm:mb-6 flex h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 items-center justify-center border border-[#733857]/20">
+                  <Eye className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-[#733857]" />
                 </div>
-                <h4 className="text-3xl font-light tracking-wide text-[#1a1a1a] mb-3">No recently viewed items</h4>
-                <p className="text-sm text-gray-500 mb-8 max-w-md mx-auto">
+                <h4 className="text-xl sm:text-2xl md:text-3xl font-light tracking-wide text-[#1a1a1a] mb-2 sm:mb-3">No recently viewed items</h4>
+                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 md:mb-8 max-w-md mx-auto">
                   Browse our collection to see your recently viewed products here.
                 </p>
                 <Link 
                   to="/products" 
-                  className="inline-flex items-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
+                  className="inline-flex items-center gap-2 border border-[#733857] px-4 py-2 sm:px-6 sm:py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
                 >
                   Start Browsing
                 </Link>
@@ -565,24 +565,10 @@ const ProfilePage = () => {
             ) : (
               <div className="space-y-4">
                 {/* Recently Viewed Summary */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-lg font-semibold text-gray-900">Recently Viewed Products</p>
-                      <p className="text-sm text-gray-600">{validRecentlyViewed.length} recently viewed items</p>
-                    </div>
-                    <Link 
-                      to="/products" 
-                      className="px-6 py-2 bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:text-white transition-colors font-medium"
-                      style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}
-                    >
-                      View All
-                    </Link>
-                  </div>
-                </div>
+               
                 
                 {/* Recently Viewed Items - Responsive Product Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-3 xs:gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                   {validRecentlyViewed.slice(0, 8).map((item) => {
                     if (!item.productId || !item.productId._id) {
                       console.warn('No product data found for recently viewed item:', item);
@@ -593,11 +579,6 @@ const ProfilePage = () => {
                     
                     return (
                       <div key={product._id} className="relative">
-                        {/* Recently Viewed Badge */}
-                        <div className="absolute top-2 left-2 z-10 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)' }}>
-                          <Eye className="w-3 h-3" />
-                        </div>
-                        
                         {/* Product Card */}
                         <ProductCard 
                           product={product} 
@@ -1111,21 +1092,7 @@ const ProfilePage = () => {
             ) : (
               <div className="space-y-4">
                 {/* Favorites Summary */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-lg font-semibold text-gray-900">Your Favorites</p>
-                      <p className="text-sm text-gray-600">{favorites.length} favorite items</p>
-                    </div>
-                    <Link 
-                      to="/favorites" 
-                      className="px-6 py-2 bg-white border-2 border-[#733857] hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] hover:text-white transition-colors font-medium"
-                      style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}
-                    >
-                      View All
-                    </Link>
-                  </div>
-                </div>
+              
                 
                 {/* Favorites Items Preview - Full Product Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

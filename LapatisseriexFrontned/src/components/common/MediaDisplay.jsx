@@ -35,11 +35,27 @@ const MediaDisplay = ({
   const MAX_RETRIES = 5;
   const BASE_DELAY_MS = 1500;
   
-  // Function to handle image load errors
+  // Track the original source URL to detect changes
+  const sourceRef = useRef(src);
+  
+  // Function to handle image load errors with improved retry logic
   const handleError = () => {
-    if (isVideo && retryCount < MAX_RETRIES) {
-      // Retry with cache-busting to avoid CDN stale errors (e.g., MIME not ready immediately after upload)
+    // Reset error state if the source has changed since the error occurred
+    if (sourceRef.current !== src) {
+      sourceRef.current = src;
+      setError(false);
+      setLoading(true);
+      setRetryCount(0);
+      setCacheBuster('');
+      return;
+    }
+    
+    // Retry logic for both images and videos with progressive backoff
+    if (retryCount < MAX_RETRIES) {
+      // Use exponential backoff for retries (1.5s, 2.25s, 3.4s, etc.)
       const delay = Math.round(BASE_DELAY_MS * Math.pow(1.5, retryCount));
+      console.log(`Retrying load for ${src} (attempt ${retryCount + 1}/${MAX_RETRIES}) in ${delay}ms`);
+      
       setTimeout(() => {
         setRetryCount((c) => c + 1);
         setCacheBuster(String(Date.now()));
@@ -47,7 +63,8 @@ const MediaDisplay = ({
       }, delay);
       return;
     }
-    console.warn(`Failed to load media from ${src}, using fallback`);
+    
+    console.warn(`Failed to load media from ${src} after ${MAX_RETRIES} attempts, using fallback`);
     setError(true);
     setLoading(false);
   };
@@ -128,13 +145,13 @@ const MediaDisplay = ({
           // Apply explicit booleans for autoPlay/loop only when provided to avoid React warnings
           {...(autoPlay ? { autoPlay: true } : {})}
           {...(loop ? { loop: true } : {})}
-          style={mediaStyles}
+          style={{...mediaStyles, background: '#fff'}}
           className="w-full h-full"
           preload="metadata"
           onLoadedMetadata={handleLoadedMetadata}
-          onWaiting={() => setLoading(true)}
+          onWaiting={() => setLoading(false)} // Don't show loading when waiting to avoid layout jumps
           onPlaying={() => setLoading(false)}
-          onStalled={() => setLoading(true)}
+          onStalled={() => setLoading(false)} // Don't show loading for stalls to avoid layout jumps
           onError={handleError}
           {...restVideoProps}
         >
@@ -142,27 +159,42 @@ const MediaDisplay = ({
           Your browser does not support the video tag.
         </video>
       ) : (
-        <img
-          src={mediaSource}
-          alt={alt}
-          style={mediaStyles}
-          className="w-full h-full"
-          onLoad={() => setLoading(false)}
-          onError={handleError}
-          loading={lazy ? "lazy" : "eager"}
-        />
+        <>
+          {/* Add an image preloader that doesn't affect layout */}
+          <img 
+            src={mediaSource}
+            style={{ display: 'none' }}
+            onLoad={() => {
+              // Pre-cache the image before showing it
+              setLoading(false);
+            }}
+            onError={handleError}
+            alt=""
+          />
+          <img
+            src={loading ? (fallbackSrc || '/images/placeholder-image.jpg') : mediaSource}
+            alt={alt}
+            style={mediaStyles}
+            className="w-full h-full"
+            loading={lazy ? "lazy" : "eager"}
+          />
+        </>
       )}
 
       {/* Loading/Processing overlay */}
-      {loading && (
+      {loading && !isVideo && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/5">
           <div className="flex flex-col items-center gap-2">
             <div className="h-6 w-6 rounded-full border-2 border-[#733857] border-t-transparent animate-spin" aria-label="Loading" />
-            {isVideo && retryCount > 0 && !error && (
-              <div className="text-[11px] px-2 py-0.5 rounded bg-white/70 text-gray-700">
-                Processing video… retry {retryCount}/{MAX_RETRIES}
-              </div>
-            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Only show video loading indicators when not in product view contexts */}
+      {loading && isVideo && retryCount > 0 && !error && (
+        <div className="absolute right-2 bottom-2 z-10">
+          <div className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 text-gray-700 shadow-sm">
+            Processing...
           </div>
         </div>
       )}
