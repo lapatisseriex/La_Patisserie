@@ -167,8 +167,13 @@ const OrderTrackingContent = ({ order }) => {
     return configs[status] || configs['placed'];
   };
 
-  // Check if order can be cancelled (before out_for_delivery)
-  const canCancel = !['out_for_delivery', 'delivered', 'cancelled'].includes(order.orderStatus);
+  // Check if order can be cancelled
+  // Rules:
+  // 1. Order must not be in out_for_delivery, delivered, or cancelled status
+  // 2. ONLY COD orders can be cancelled (offline payment)
+  // 3. Razorpay/online paid orders CANNOT be cancelled
+  const canCancel = !['out_for_delivery', 'delivered', 'cancelled'].includes(order.orderStatus)
+                    && order.paymentMethod === 'cod';
 
   const handleCancelClick = () => {
     setShowCancelConfirm(true);

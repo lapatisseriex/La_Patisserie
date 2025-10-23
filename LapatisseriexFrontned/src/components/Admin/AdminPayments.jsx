@@ -69,7 +69,25 @@ const PaymentsTable = ({ items, onMarkPaid, onView }) => {
               <td className="px-4 py-3 text-sm font-semibold text-gray-900">₹{Number(p.amount).toFixed(2)}</td>
               <td className="px-4 py-3 text-sm capitalize">{p.paymentMethod}</td>
               <td className="px-4 py-3 text-sm">
-                <span className={`px-2 py-1 rounded-md text-xs font-semibold ${p.paymentStatus === 'success' ? 'bg-green-100 text-green-700' : p.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>{p.paymentStatus}</span>
+                <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
+                  p.data?.order?.orderStatus === 'cancelled' 
+                    ? 'bg-red-100 text-red-700' 
+                    : p.paymentStatus === 'success' 
+                    ? 'bg-green-100 text-green-700'
+                    : p.paymentMethod === 'cod' && p.data?.order?.orderStatus && ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'].includes(p.data.order.orderStatus)
+                    ? 'bg-blue-100 text-blue-700'
+                    : p.paymentStatus === 'pending' 
+                    ? 'bg-yellow-100 text-yellow-700' 
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {p.data?.order?.orderStatus === 'cancelled' 
+                    ? 'cancelled' 
+                    : p.paymentStatus === 'success'
+                    ? 'success'
+                    : p.paymentMethod === 'cod' && p.data?.order?.orderStatus && ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'].includes(p.data.order.orderStatus)
+                    ? 'cod-confirmed'
+                    : p.paymentStatus}
+                </span>
               </td>
               <td className="px-4 py-3 text-sm text-right space-x-2">
                 <button
@@ -146,10 +164,33 @@ const AdminPayments = () => {
 
   const metrics = useMemo(() => {
     const totalPayments = items.length;
-    const totalRevenue = items.filter(i => i.paymentStatus === 'success').reduce((a, c) => a + Number(c.amount || 0), 0);
+    
+    // For revenue calculation:
+    // - Include successful payments that are not cancelled
+    // - Include COD orders that are placed/confirmed/delivered (not cancelled)
+    const totalRevenue = items
+      .filter(i => {
+        const isCancelled = i.data?.order?.orderStatus === 'cancelled';
+        if (isCancelled) return false;
+        
+        // Online payments that succeeded
+        if (i.paymentStatus === 'success') return true;
+        
+        // COD orders that are confirmed (not pending payment status)
+        if (i.paymentMethod === 'cod' && i.data?.order?.orderStatus && 
+            ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'].includes(i.data.order.orderStatus)) {
+          return true;
+        }
+        
+        return false;
+      })
+      .reduce((a, c) => a + Number(c.amount || 0), 0);
+    
     const success = items.filter(i => i.paymentStatus === 'success').length;
-    const pending = items.filter(i => i.paymentStatus === 'pending').length;
-    return { totalPayments, totalRevenue, success, pending };
+    const pending = items.filter(i => i.paymentStatus === 'pending' && i.data?.order?.orderStatus !== 'cancelled').length;
+    const cancelled = items.filter(i => i.data?.order?.orderStatus === 'cancelled').length;
+    
+    return { totalPayments, totalRevenue, success, pending, cancelled };
   }, [items]);
 
   const onChange = (patch) => setFilters(prev => ({ ...prev, ...patch, page: 1 }));
