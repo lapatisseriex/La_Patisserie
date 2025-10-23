@@ -19,6 +19,7 @@ import { getLogoData } from '../utils/logoUtils.js';
 import { getActiveAdminEmails } from '../utils/adminUtils.js';
 import { createNotification } from './notificationController.js';
 import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
+import NewCart from '../models/newCartModel.js';
 
 // Initialize Razorpay with validation
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -286,6 +287,30 @@ const updateProductOrderCounts = async (cartItems) => {
   }
 };
 
+// Helper: Remove user's newCart document after successful order placement
+const removeUserCart = async (by) => {
+  try {
+    if (!by) return;
+    if (typeof by === 'string') {
+      await NewCart.deleteOne({ userId: by });
+      return;
+    }
+    if (by?.uid) {
+      await NewCart.deleteOne({ userId: by.uid });
+      return;
+    }
+    if (by?._id) {
+      // Lookup user to obtain uid
+      const user = await User.findById(by._id).select('uid').lean();
+      if (user?.uid) {
+        await NewCart.deleteOne({ userId: user.uid });
+      }
+    }
+  } catch (e) {
+    console.warn('removeUserCart failed:', e?.message || e);
+  }
+};
+
 // Ensure an order placed notification exists and emit a real-time event when needed
 const ensureOrderPlacedNotification = async (order, options = {}) => {
   const { forceEmit = false } = options;
@@ -531,6 +556,11 @@ export const createOrder = asyncHandler(async (req, res) => {
       await decrementProductStock(cartItems);
       // Update product order counts for COD orders as they're confirmed at placement
       await updateProductOrderCounts(cartItems);
+    }
+
+    // After COD order creation, remove the user's cart document immediately
+    if (paymentMethod === 'cod') {
+      await removeUserCart({ uid: req.user?.uid, _id: userId });
     }
 
     // For COD orders, create a pending Payment record so admin can track it
@@ -835,6 +865,16 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         console.error('❌ Error emitting WebSocket event for new order:', wsError);
       }
       
+      // After successful online payment verification, remove the user's cart document
+      try {
+        const userDoc = await User.findById(order.userId).select('uid').lean();
+        if (userDoc?.uid) {
+          await removeUserCart({ uid: userDoc.uid, _id: order.userId });
+        }
+      } catch (clrErr) {
+        console.warn('Cart cleanup after payment verify failed:', clrErr?.message || clrErr);
+      }
+
       res.json({
         success: true,
         message: 'Payment verified successfully',
@@ -967,7 +1007,7 @@ export const handleWebhook = asyncHandler(async (req, res) => {
         const capturedPayment = event.payload.payment.entity;
         console.log('Payment captured:', capturedPayment.id);
         
-        await Order.findOneAndUpdate(
+        const updatedOrder = await Order.findOneAndUpdate(
           { razorpayOrderId: capturedPayment.order_id },
           { 
             paymentStatus: 'paid',
@@ -975,6 +1015,18 @@ export const handleWebhook = asyncHandler(async (req, res) => {
             orderStatus: 'placed' // ✅ Mark as 'placed' when payment is captured
           }
         );
+        // Attempt to clear user's cart as well
+        try {
+          const orderDoc = await Order.findOne({ razorpayOrderId: capturedPayment.order_id }).select('userId');
+          if (orderDoc?.userId) {
+            const userDoc = await User.findById(orderDoc.userId).select('uid').lean();
+            if (userDoc?.uid) {
+              await NewCart.deleteOne({ userId: userDoc.uid });
+            }
+          }
+        } catch (cartErr) {
+          console.warn('Webhook cart cleanup failed:', cartErr?.message || cartErr);
+        }
         // Save payment record as success
         try {
           const linkedOrder = await Order.findOne({ razorpayOrderId: capturedPayment.order_id });

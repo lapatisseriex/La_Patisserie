@@ -63,6 +63,75 @@ npm run dev
 - Role-based access control
 - Protected API endpoints
 
+### Cart API (DB-backed)
+
+The cart is persisted in MongoDB (not in cache) using the `NewCart` model. Each user has exactly one cart identified by their Firebase UID. Cart items embed a `productId` reference to `Product` and include quantity, an `addedAt` timestamp, and a product snapshot for stable display.
+
+Key fields stored:
+- userId: string (Firebase UID) — unique per cart
+- items[].productId: ObjectId ref to Product
+- items[].quantity: number (>= 1)
+- items[].addedAt: Date
+- items[].productDetails: snapshot fields for UI and pricing (name, price, image, category, hasEgg, variantIndex, variants[], selectedVariant)
+- timestamps: createdAt/updatedAt on both cart and items
+
+Endpoints (all require Authorization: Bearer <Firebase ID token>):
+- GET /api/newcart — Get current user's cart with product snapshot
+- GET /api/newcart/count — Get total item count
+- POST /api/newcart — Add/update an item
+	- body: { productId: string, quantity?: number = 1, variantIndex?: number = 0 }
+- PUT /api/newcart/:productId — Set absolute quantity for a product
+	- body: { quantity: number }
+- DELETE /api/newcart/:productId — Remove a product from cart
+- DELETE /api/newcart — Clear entire cart
+
+Notes:
+- Stock is validated (when variant tracks stock) but not decremented on add-to-cart. Stock is decremented during order completion.
+- Product details are refreshed on GET to reflect the latest product state (e.g., price/images), while preserving the selected variant.
+
+Sample add-to-cart request:
+
+```
+POST /api/newcart
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+	"productId": "6741c9d9a3...",
+	"quantity": 2,
+	"variantIndex": 0
+}
+```
+
+Sample response (abridged):
+
+```
+{
+	"_id": "...",
+	"userId": "firebase-uid",
+	"items": [
+		{
+			"productId": "6741c9d9a3...",
+			"quantity": 2,
+			"productDetails": {
+				"name": "Chocolate Cake",
+				"price": 499,
+				"image": "https://...",
+				"category": "Cakes",
+				"hasEgg": false,
+				"variantIndex": 0,
+				"variants": [ ... ],
+				"selectedVariant": { ... }
+			},
+			"addedAt": "2025-10-23T06:11:00.000Z"
+		}
+	],
+	"cartTotal": 998,
+	"cartCount": 2,
+	"lastUpdated": "2025-10-23T06:11:00.000Z"
+}
+```
+
 ### Setup
 
 1. Navigate to the backend directory:

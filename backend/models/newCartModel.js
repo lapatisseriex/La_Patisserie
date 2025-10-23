@@ -73,8 +73,13 @@ const newCartSchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  optimisticConcurrency: true
 });
+
+// Include virtuals in JSON/Object outputs for convenience
+newCartSchema.set('toJSON', { virtuals: true });
+newCartSchema.set('toObject', { virtuals: true });
 
 // Virtual to calculate cart total
 newCartSchema.virtual('cartTotal').get(function() {

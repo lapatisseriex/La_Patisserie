@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
@@ -12,7 +12,7 @@ import {
 } from 'react-icons/fa';
 import { Trash2, ShoppingCart, Plus, Minus, AlertTriangle } from 'lucide-react';
 import { 
-  fetchCart, 
+  fetchCart,
   updateCartQuantity, 
   removeFromCart, 
   clearCart 
@@ -36,11 +36,7 @@ const CartComponent = ({ showHeader = true, showActions = true, isProfileTab = f
 
   const [stockError, setStockError] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      dispatch(fetchCart());
-    }
-  }, [dispatch, user]);
+  // Initial cart fetch is handled globally by useCart (mounted in layout components like Header)
 
   const handleQuantityChange = (productId, newQuantity) => {
     if (newQuantity <= 0) {
@@ -179,6 +175,7 @@ const CartComponent = ({ showHeader = true, showActions = true, isProfileTab = f
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">{item.name}</h3>
                   <p className="text-gray-600">₹{item.price}</p>
+                  {/* countdown removed here; main Cart page handles countdown UI */}
                   
                   {isUnavailable && (
                     <p className="text-red-600 text-sm font-medium">Currently unavailable</p>
