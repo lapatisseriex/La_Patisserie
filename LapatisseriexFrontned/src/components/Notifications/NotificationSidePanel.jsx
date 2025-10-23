@@ -278,6 +278,8 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
         return <img src="/market-capitalization.png" alt="Order Dispatched" className="w-4 h-4" />;
       case 'order_delivered':
         return <img src="/delivery-box.png" alt="Order Delivered" className="w-4 h-4" />;
+      case 'order_cancelled':
+        return <X className="w-4 h-4" style={{ color: '#dc2626' }} strokeWidth={2} />;
       default:
         return <img src="/market-capitalization.png" alt="Order Update" className="w-4 h-4" />;
     }
@@ -287,6 +289,11 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
     // For order_placed, just show "New Order Placed"
     if (notification.type === 'order_placed') {
       return { text: 'New Order Placed', price: extractPrice(notification) };
+    }
+    
+    // For order_cancelled, show "Order Cancelled"
+    if (notification.type === 'order_cancelled') {
+      return { text: 'Order Cancelled', price: null };
     }
     
     // For other types, try to extract product name from message
@@ -559,17 +566,34 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                               {/* Header */}
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1 pr-2">
+                              <div className="flex items-start justify-between mb-2 gap-2">
+                                <div className="flex-1 min-w-0">
                                   <h4 
-                                    className="text-sm font-medium truncate tracking-wide"
+                                    className="text-sm font-medium tracking-wide break-words"
                                     style={{ 
                                       color: !notification.read ? '#281c20' : 'rgba(40, 28, 32, 0.8)',
-                                      letterSpacing: '0.02em'
+                                      letterSpacing: '0.02em',
+                                      wordBreak: 'break-word',
+                                      overflowWrap: 'break-word',
+                                      hyphens: 'auto'
                                     }}
                                   >
-                                    {text}
+                                    {notification.title || text}
                                   </h4>
+                                  {notification.message && (
+                                    <p 
+                                      className="text-xs mt-1 break-words"
+                                      style={{ 
+                                        color: 'rgba(40, 28, 32, 0.7)',
+                                        letterSpacing: '0.01em',
+                                        wordBreak: 'break-word',
+                                        overflowWrap: 'break-word',
+                                        lineHeight: '1.4'
+                                      }}
+                                    >
+                                      {notification.message}
+                                    </p>
+                                  )}
                                   {price && (
                                     <p 
                                       className="text-sm font-bold mt-0.5"
@@ -634,6 +658,8 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                                           return <img src="/market-capitalization.png" alt="Order Dispatched" className="w-3 h-3" />;
                                         case 'order_delivered':
                                           return <img src="/delivery-box.png" alt="Order Delivered" className="w-3 h-3" />;
+                                        case 'order_cancelled':
+                                          return <X className="w-3 h-3" style={{ color: '#dc2626' }} strokeWidth={2} />;
                                         default:
                                           return <img src="/images/status/order-update.png" alt="Order Update" className="w-3 h-3" />;
                                       }
