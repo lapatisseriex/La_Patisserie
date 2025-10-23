@@ -81,6 +81,7 @@ const Orders = () => {
     } finally {
       if (!silent) {
         setLoading(false);
+        console.log("Test");
       }
     }
   }, []);
