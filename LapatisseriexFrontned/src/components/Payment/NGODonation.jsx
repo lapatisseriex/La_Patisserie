@@ -326,7 +326,7 @@ const NGODonation = ({ onClose }) => {
       </div>
 
       {/* CSS Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

@@ -135,13 +135,19 @@ const AdvertisementBanner = () => {
         ))}
       </div>
 
-      <style jsx>{`
+      {/* Smooth animation styles */}
+      <style>{`
         img,
         video {
           -webkit-user-drag: none;
           user-select: none;
           pointer-events: none;
         }
+        
+        .cursor-grab:active {
+          cursor: grabbing;
+        }
+        
         .touch-pan-x {
           touch-action: pan-x;
         }

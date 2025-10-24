@@ -152,7 +152,9 @@ const initialState = {
     data: null,
     timestamp: null,
     etag: null
-  }
+  },
+  lastRemovedByServer: [], // [{ productId, name, addedAt }]
+  lastRemovalEventAt: null
 };
 
 const cartSlice = createSlice({
@@ -296,6 +298,12 @@ const cartSlice = createSlice({
         timestamp: null,
         etag: null
       };
+      state.lastRemovedByServer = [];
+      state.lastRemovalEventAt = null;
+    },
+    ackServerRemovals: (state) => {
+      state.lastRemovedByServer = [];
+      state.lastRemovalEventAt = Date.now();
     }
   },
   extraReducers: (builder) => {
@@ -310,8 +318,7 @@ const cartSlice = createSlice({
         state.dbCartLoaded = true;
         state.error = null;
         state.lastUpdated = Date.now();
-        
-        const { items, cartTotal, cartCount } = action.payload;
+  const { items, cartTotal, cartCount, expiredRemovedItems = [], cartExpirySeconds } = action.payload;
         
         // Convert database format to Redux format
         state.items = items.map(item => ({
@@ -322,11 +329,19 @@ const cartSlice = createSlice({
           image: item.productDetails.image,
           quantity: item.quantity,
           addedAt: item.addedAt,
-          productDetails: item.productDetails
+          productDetails: item.productDetails,
+          expiresAt: item.expiresAt
         }));
         
         state.cartTotal = cartTotal;
         state.cartCount = cartCount;
+        // Capture any server-side removals due to expiry so UI can notify
+        state.lastRemovedByServer = Array.isArray(expiredRemovedItems) ? expiredRemovedItems : [];
+        if (state.lastRemovedByServer.length > 0) {
+          state.lastRemovalEventAt = Date.now();
+        }
+        // Optionally store TTL at cart level (not used yet in UI)
+        state.cartExpirySeconds = cartExpirySeconds;
         
         // Cache the data
         const cacheData = {
@@ -580,6 +595,7 @@ export const selectCartError = (state) => state.cart.error;
 export const selectIsOptimisticLoading = (state) => state.cart.isOptimisticLoading;
 export const selectDbCartLoaded = (state) => state.cart.dbCartLoaded;
 export const selectPendingOperations = (state) => state.cart.pendingOperations;
+export const selectLastRemovedByServer = (state) => state.cart.lastRemovedByServer;
 
 // Helper selectors
 export const selectItemQuantity = (state, productId) => {
@@ -606,6 +622,7 @@ export const {
   clearLocalOptimisticUpdates,
   revertOptimisticUpdate,
   resetCartState
+  , ackServerRemovals
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'react-toastify';
 
 import { useAuth } from './useAuth';
@@ -16,7 +16,6 @@ import {
   addToCartOptimistic,
   updateQuantityOptimistic,
   removeFromCartOptimistic,
-  loadFromCache,
   loadFromLocalStorage,
   clearError,
   resetCartState,
@@ -32,11 +31,9 @@ import {
   selectIsItemInCart,
   selectCartItemByProductId
 } from '../redux/cartSlice';
+import { selectLastRemovedByServer, ackServerRemovals } from '../redux/cartSlice';
 
-const CART_CACHE_KEY = 'lapatisserie_cart_cache';
-const CART_CACHE_TIMESTAMP_KEY = 'lapatisserie_cart_cache_timestamp';
 const LOCAL_CART_KEY = 'lapatisserie_cart';
-const CACHE_DURATION = 30000; // 30 seconds
 
 const interpretEggHint = (value) => {
   if (value === undefined || value === null) {
@@ -159,6 +156,7 @@ const resolveEggFlag = (product, variantIndex) => {
 export const useCart = () => {
   const dispatch = useDispatch();
   const { user } = useAuth();
+  const hasRequestedRef = useRef(false); // Prevent duplicate initial fetches (e.g., React StrictMode)
 
   // Selectors
   const cartItems = useSelector(selectCartItems);
@@ -198,6 +196,7 @@ export const useCart = () => {
   const isOptimisticLoading = useSelector(selectIsOptimisticLoading);
   const dbCartLoaded = useSelector(selectDbCartLoaded);
   const pendingOperations = useSelector(selectPendingOperations);
+  const lastRemovedByServer = useSelector(selectLastRemovedByServer);
 
   // Helper functions
   const getItemQuantity = useCallback((productId) => {
@@ -234,32 +233,7 @@ export const useCart = () => {
     }
   }, [user]);
 
-  const getCachedCart = useCallback(() => {
-    try {
-      const cachedCart = localStorage.getItem(CART_CACHE_KEY);
-      const cachedTimestamp = localStorage.getItem(CART_CACHE_TIMESTAMP_KEY);
-      
-      if (cachedCart && cachedTimestamp) {
-        const isValid = (Date.now() - parseInt(cachedTimestamp, 10)) < CACHE_DURATION;
-        if (isValid) {
-          return JSON.parse(cachedCart);
-        }
-      }
-      return null;
-    } catch (error) {
-      console.error('Error reading cached cart:', error);
-      return null;
-    }
-  }, []);
-
-  const saveToCache = useCallback((data) => {
-    try {
-      localStorage.setItem(CART_CACHE_KEY, JSON.stringify(data));
-      localStorage.setItem(CART_CACHE_TIMESTAMP_KEY, Date.now().toString());
-    } catch (error) {
-      console.error('Error saving to cache:', error);
-    }
-  }, []);
+  // Removed local cache usage to always fetch fresh cart data from backend
 
   // 🛠️ FIX: Handle cart state reset when user logs out
   useEffect(() => {
@@ -270,38 +244,33 @@ export const useCart = () => {
     }
   }, [user, dispatch]);
 
-  // Load cart on mount and user change with improved synchronization
+  // Load cart on mount and user change - always fetch from backend for authenticated users
+  useEffect(() => {
+    // Reset request guard when user identity changes or logs out
+    hasRequestedRef.current = false;
+  }, [user?.uid]);
+
   useEffect(() => {
     const loadCart = async () => {
-      if (user && !dbCartLoaded) {
-        console.log('👤 User logged in - checking for cart data...');
-        
-        // Try cache first for faster loading
-        const cachedCart = getCachedCart();
-        if (cachedCart) {
-          console.log('📦 Loading cart from cache');
-          dispatch(loadFromCache(cachedCart));
-          return;
-        }
-
+      if (user && !dbCartLoaded && !hasRequestedRef.current) {
+        hasRequestedRef.current = true;
+        console.log('👤 User logged in - loading cart from database');
         // Check for guest cart to merge
         const localCart = getLocalCart();
         if (localCart.length > 0) {
           console.log(`🔄 Found guest cart with ${localCart.length} items - merging with user account`);
           try {
-            // Use the new merge functionality
             await dispatch(mergeGuestCart(localCart)).unwrap();
-            // Clear local storage after successful merge
             localStorage.removeItem(LOCAL_CART_KEY);
             console.log('✅ Guest cart merged and localStorage cleared');
+            dispatch(fetchCart());
           } catch (error) {
             console.error('❌ Failed to merge guest cart, falling back to sync:', error);
-            // Fallback to old sync method
             dispatch(syncLocalCart(localCart));
             localStorage.removeItem(LOCAL_CART_KEY);
+            dispatch(fetchCart());
           }
         } else {
-          // No guest cart, fetch from database
           console.log('🌐 Fetching cart from database');
           dispatch(fetchCart());
         }
@@ -319,7 +288,7 @@ export const useCart = () => {
     };
 
     loadCart();
-  }, [user, dbCartLoaded, dispatch, getCachedCart, getLocalCart, cartItems]);
+  }, [user, dbCartLoaded, dispatch, getLocalCart]);
 
   // Save to localStorage for guest users
   useEffect(() => {
@@ -328,17 +297,46 @@ export const useCart = () => {
     }
   }, [cartItems, user, saveToLocalStorage]);
 
-  // Cache cart data for authenticated users
+  // Optional: refetch cart when tab regains focus to stay in sync across devices
   useEffect(() => {
-    if (user && cartItems.length > 0) {
-      const cacheData = {
-        items: cartItems,
-        cartTotal,
-        cartCount
-      };
-  saveToCache(cacheData);
+    if (!user) return;
+    const onFocus = () => {
+      try {
+        dispatch(fetchCart());
+      } catch {}
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') onFocus();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [user, dispatch]);
+
+  // Removed client-side cart caching to avoid stale state across devices
+  // Notify user if server removed expired items
+  useEffect(() => {
+    if (Array.isArray(lastRemovedByServer) && lastRemovedByServer.length > 0) {
+      if (lastRemovedByServer.length === 1) {
+        const it = lastRemovedByServer[0];
+        const url = `/products/${it.productId}`;
+        toast.info(`We removed "${it.name || 'an item'}" from your cart (24h expiry). Click to view.`, {
+          onClick: () => { try { window.location.href = url; } catch {} }
+        });
+      } else {
+        const names = lastRemovedByServer.slice(0, 3).map((it) => it.name || 'item').join(', ');
+        const suffix = lastRemovedByServer.length > 3 ? '…' : '';
+        toast.info(`We removed ${lastRemovedByServer.length} items from your cart (24h expiry): ${names}${suffix}. Click to view products.`, {
+          onClick: () => { try { window.location.href = '/products'; } catch {} }
+        });
+      }
+      // Ack so we don't notify repeatedly on focus refetches
+      dispatch(ackServerRemovals());
     }
-  }, [cartItems, cartTotal, cartCount, user, saveToCache]);
+  }, [lastRemovedByServer, dispatch]);
 
   // Cart operations with optimistic updates
   const addToCart = useCallback(async (product, quantity = 1, variantIndex) => {
@@ -532,8 +530,6 @@ export const useCart = () => {
       } else {
         // Guest user: clear local storage completely
         localStorage.removeItem(LOCAL_CART_KEY);
-        localStorage.removeItem(CART_CACHE_KEY);
-        localStorage.removeItem(CART_CACHE_TIMESTAMP_KEY);
         dispatch(loadFromLocalStorage([]));
         console.log('✅ Guest cart cleared completely');
       }
@@ -606,8 +602,7 @@ export const useCart = () => {
     isOperationPending,
 
     // Utilities (for debugging/advanced use)
-    getLocalCart,
-    getCachedCart
+    getLocalCart
   };
 };
 

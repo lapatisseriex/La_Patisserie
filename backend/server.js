@@ -184,6 +184,35 @@ const startServer = async () => {
       }
     }, 15 * 60 * 1000);
 
+    // Schedule periodic cleanup for expired cart items (configurable)
+    const scheduleCartExpiryCleanup = () => {
+      const HOUR_MS = 60 * 60 * 1000;
+      setInterval(async () => {
+        try {
+          const { default: NewCart } = await import('./models/newCartModel.js');
+          // Prefer seconds env if explicitly provided; else hours; default 24 hours
+          const secondsRaw = process.env.CART_ITEM_EXPIRY_SECONDS;
+          const secondsEnv = secondsRaw !== undefined ? parseFloat(secondsRaw) : NaN;
+          let cutoff;
+          if (!isNaN(secondsEnv) && secondsEnv > 0) {
+            cutoff = new Date(Date.now() - secondsEnv * 1000);
+          } else {
+            const hoursEnv = parseFloat(process.env.CART_ITEM_EXPIRY_HOURS || '24');
+            const ms = (isNaN(hoursEnv) || hoursEnv <= 0 ? 24 : hoursEnv) * 60 * 60 * 1000;
+            cutoff = new Date(Date.now() - ms);
+          }
+          // Remove expired items from all carts
+          await NewCart.updateMany({}, { $pull: { items: { addedAt: { $lt: cutoff } } } });
+          // Delete any carts that are now empty
+          await NewCart.deleteMany({ $or: [ { items: { $exists: true, $size: 0 } }, { items: { $exists: false } } ] });
+        } catch (e) {
+          // Log once; skip noisy stacks
+          console.warn('Cart expiry cleanup failed:', e?.message || e);
+        }
+      }, HOUR_MS);
+    };
+    scheduleCartExpiryCleanup();
+
   // Apply rate limiting and connection pool protection
   app.use(connectionPoolMiddleware);
   app.use('/api', generalRateLimit);

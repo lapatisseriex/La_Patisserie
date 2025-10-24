@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaShoppingCart, FaExclamationTriangle, FaBuilding } from 'react-icons/fa';
 import { motion } from 'framer-motion';
@@ -93,6 +93,57 @@ const Cart = () => {
   } = useLocation();
   
   const [stockError, setStockError] = useState('');
+  // Expiry countdown
+  const [now, setNow] = useState(Date.now());
+  const removedRef = useRef(new Set());
+  const EXPIRY_SECONDS_DEFAULT = Number(import.meta.env.VITE_CART_EXPIRY_SECONDS || 86400); // 24 hours default
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const timeLeftForItem = useCallback((item) => {
+    try {
+      const expiresAt = item?.expiresAt ? new Date(item.expiresAt) : null;
+      let msLeft;
+      if (expiresAt) {
+        msLeft = expiresAt.getTime() - now;
+      } else {
+        const added = item?.addedAt ? new Date(item.addedAt) : new Date();
+        msLeft = added.getTime() + EXPIRY_SECONDS_DEFAULT * 1000 - now;
+      }
+      return Math.max(0, msLeft || 0);
+    } catch {
+      return 0;
+    }
+  }, [now]);
+
+  const formatHMS = (ms) => {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+    const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+    const s = String(totalSec % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
+
+  // Auto-remove when countdown reaches zero
+  useEffect(() => {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) return;
+    cartItems.forEach((item) => {
+      const pid = item?.productId;
+      if (!pid) return;
+      const left = timeLeftForItem(item);
+      if (left <= 0 && !removedRef.current.has(pid)) {
+        removedRef.current.add(pid);
+        removeFromCart(pid).finally(() => {
+          toast.info(`Removed "${item.name || 'item'}" from your cart (expired). Click to view.`, {
+            onClick: () => { try { window.location.href = `/products/${pid}`; } catch {} }
+          });
+        });
+      }
+    });
+  }, [now, cartItems, removeFromCart]);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [jellyAnimations, setJellyAnimations] = useState({});
@@ -416,6 +467,10 @@ const Cart = () => {
                                 className="w-full h-full object-cover"
                               />
                             </button>
+                            {/* Tiny countdown (mobile) */}
+                            <p className="text-[10px] leading-3 text-gray-400 mt-1">
+                              Removes in: {formatHMS(timeLeftForItem(item))}
+                            </p>
                           </div>
                           
                           {/* Product Name & Price */}
@@ -555,6 +610,10 @@ const Cart = () => {
                           </p>
                           <p className="text-xs text-gray-600 mt-1">
                             Egg (or) Eggless: <span className="font-medium text-gray-800">{eggLabel}</span>
+                          </p>
+                          {/* Tiny countdown (desktop) */}
+                          <p className="text-[10px] leading-3 text-gray-400 mt-1">
+                            Removes in: {formatHMS(timeLeftForItem(item))}
                           </p>
                         </div>
                       </div>

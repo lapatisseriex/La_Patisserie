@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchFavorites } from '../redux/favoritesSlice';
-import { fetchCart } from '../redux/cartSlice';
 
 export const useInitializeUserData = () => {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector(state => state.auth);
   const favoritesStatus = useSelector(state => state.favorites.status);
-  const cartLoaded = useSelector(state => state.cart.dbCartLoaded);
+  // Cart initialization is handled by useCart globally
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -25,31 +24,18 @@ export const useInitializeUserData = () => {
         console.log('useInitializeUserData - Fetching favorites with valid token...');
         dispatch(fetchFavorites());
       }
-      
-      // Initialize cart if not already loaded
-      if (!cartLoaded) {
-        console.log('useInitializeUserData - Fetching cart...');
-        dispatch(fetchCart());
-      }
     }
-  }, [isAuthenticated, user, favoritesStatus, cartLoaded, dispatch]);
+  }, [isAuthenticated, user, favoritesStatus, dispatch]);
   
   // Additional effect to handle token availability for initialization
   useEffect(() => {
-    if (isAuthenticated && user && (favoritesStatus === 'idle' || !cartLoaded)) {
+    if (isAuthenticated && user && (favoritesStatus === 'idle')) {
       const checkTokenAndInitialize = () => {
         const token = localStorage.getItem('authToken');
         if (token) {
-          // Initialize favorites if needed
           if (favoritesStatus === 'idle') {
             console.log('useInitializeUserData - Token now available, initializing favorites...');
             dispatch(fetchFavorites());
-          }
-          
-          // Initialize cart if needed
-          if (!cartLoaded) {
-            console.log('useInitializeUserData - Token available, initializing cart...');
-            dispatch(fetchCart());
           }
         }
       };
@@ -66,7 +52,7 @@ export const useInitializeUserData = () => {
         clearTimeout(timeoutId);
       };
     }
-  }, [dispatch, isAuthenticated, user, favoritesStatus, cartLoaded]);
+  }, [dispatch, isAuthenticated, user, favoritesStatus]);
 };
 
 export default useInitializeUserData;

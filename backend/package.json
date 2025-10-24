@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "clear:newcarts": "node scripts/clearNewCarts.js --force"
   },
   "dependencies": {
     "axios": "^1.12.2",
