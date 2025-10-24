@@ -379,24 +379,21 @@ const ProductDisplayPageNew = () => {
     
     const currentQuantity = getItemQuantity(product._id);
     
+    // Navigate immediately for snappy UX; perform add in background if needed
+    const goCart = () => {
+      try { navigate('/cart'); } catch { window.location.href = '/cart'; }
+    };
+
     if (currentQuantity > 0) {
-      try {
-        navigate('/cart');
-      } catch (navError) {
-        window.location.href = '/cart';
-      }
+      goCart();
     } else {
-      try {
-        await addToCart(product, 1, selectedVariantIndex);
-        try {
-          navigate('/cart');
-        } catch (navError) {
-          window.location.href = '/cart';
-        }
-      } catch (error) {
-        console.error('❌ Error reserving product:', error);
-        try { const { toast } = await import('react-toastify'); toast.error(typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart'); } catch {}
-      }
+      // Fire-and-forget: optimistic add then navigate without waiting
+      addToCart(product, 1, selectedVariantIndex)
+        .catch(async (error) => {
+          console.error('❌ Error reserving product:', error);
+          try { const { toast } = await import('react-toastify'); toast.error(typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart'); } catch {}
+        });
+      goCart();
     }
   };
 

@@ -283,25 +283,25 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     
     const currentQuantity = getItemQuantity(currentProduct._id);
     
+    const goCart = () => { try { navigate('/cart'); } catch { window.location.href = '/cart'; } };
+
     if (currentQuantity > 0) {
-      // Product already in cart - just redirect
-      navigate('/cart');
+      // Product already in cart - navigate immediately
+      goCart();
     } else {
-      // Product not in cart - add one and redirect
-      try {
-        const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
-        console.log('[Reserve] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
-        await addToCart(currentProduct, 1, variantIndex);
-        
-  // Immediately refresh stock data after adding to cart
-  setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
-        
-        navigate('/cart');
-      } catch (error) {
-        console.error('❌ Error adding product to cart:', error);
-        const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
-        toast.error(message);
-      }
+      // Product not in cart - fire-and-forget add, then navigate immediately
+      const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
+      console.log('[Reserve] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
+      addToCart(currentProduct, 1, variantIndex)
+        .then(() => {
+          setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
+        })
+        .catch((error) => {
+          console.error('❌ Error adding product to cart:', error);
+          const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
+          toast.error(message);
+        });
+      goCart();
     }
   };
 
