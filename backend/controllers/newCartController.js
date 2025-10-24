@@ -491,8 +491,13 @@ export const updateNewCartItem = async (req, res) => {
         }
 
         if (quantity === 0) {
-          await cart.removeItem(productId);
-          if (!cart.items || cart.items.length === 0) {
+          // Atomic remove to avoid concurrency issues
+          await NewCart.updateOne(
+            { _id: cart._id },
+            { $pull: { items: { productId } }, $set: { lastUpdated: new Date() } }
+          );
+          const refreshed = await NewCart.findById(cart._id);
+          if (!refreshed || !refreshed.items || refreshed.items.length === 0) {
             // Delete empty cart doc
             try { await NewCart.deleteOne({ _id: cart._id }); } catch {}
             return res.json({
@@ -505,12 +510,12 @@ export const updateNewCartItem = async (req, res) => {
             });
           }
           return res.json({
-            _id: cart._id,
-            userId: cart.userId,
-            items: cart.items,
-            cartTotal: cart.cartTotal,
-            cartCount: cart.cartCount,
-            lastUpdated: cart.lastUpdated
+            _id: refreshed._id,
+            userId: refreshed.userId,
+            items: refreshed.items,
+            cartTotal: refreshed.cartTotal,
+            cartCount: refreshed.cartCount,
+            lastUpdated: refreshed.lastUpdated
           });
         }
 
@@ -535,15 +540,26 @@ export const updateNewCartItem = async (req, res) => {
           console.log(`✅ Stock validation passed: quantity ${quantity} <= stock ${currentStock}`);
         }
 
-        await cart.updateItemQuantity(productId, quantity);
+        // Atomic, positional update to avoid optimistic concurrency VersionError
+        const updateResult = await NewCart.updateOne(
+          { _id: cart._id, 'items.productId': productId },
+          { $set: { 'items.$.quantity': quantity, lastUpdated: new Date() } }
+        );
 
+        if (!updateResult?.matchedCount && !updateResult?.modifiedCount) {
+          // Item may have been removed concurrently
+          return res.status(404).json({ error: 'Item not found in cart' });
+        }
+
+        // Re-fetch the updated cart to return fresh values and virtuals (cartTotal/cartCount)
+        const refreshed = await NewCart.findById(cart._id);
         const updatedCartData = {
-          _id: cart._id,
-          userId: cart.userId,
-          items: cart.items,
-          cartTotal: cart.cartTotal,
-          cartCount: cart.cartCount,
-          lastUpdated: cart.lastUpdated
+          _id: refreshed._id,
+          userId: refreshed.userId,
+          items: refreshed.items,
+          cartTotal: refreshed.cartTotal,
+          cartCount: refreshed.cartCount,
+          lastUpdated: refreshed.lastUpdated
         };
 
         console.log(`✅ Cart item updated: quantity=${quantity}`);
