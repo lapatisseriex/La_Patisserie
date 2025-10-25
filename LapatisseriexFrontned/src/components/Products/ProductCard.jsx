@@ -15,6 +15,7 @@ import { calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 import productLiveCache from '../../utils/productLiveCache';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import OfferBadge from '../common/OfferBadge';
+import BlobButton from '../common/BlobButton';
 
 const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -467,19 +468,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
               </AnimatePresence>
             </div>
 
-           {displayMediaType === 'video' && (
-              <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full  px-2 py-1 text-xs text-white">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-3 w-3"
-                >
-                  <path d="M7 4c-1.105 0-2 .895-2 2v12c0 1.105.895 2 2 2h6c1.105 0 2-.895 2-2v-3l4 3V6l-4 3V6c0-1.105-.895-2-2-2H7z" />
-                </svg>
-            
-              </div>
-            )}
+
 
        
 
@@ -541,19 +530,21 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
           {/* Add to Cart Button or Quantity Controls - positioned in bottom right corner of image */}
           {!hideCartButton && (
             currentQuantity === 0 ? (
-              <button
+              <div 
                 ref={addToCartButtonRef}
-                onClick={handleAddToCart}
-                disabled={!isActive || isOutOfStockTracked || !isProductAvailable}
-                className={`absolute bottom-2 right-2 px-4 py-2 text-xs font-light transition-all duration-300 ease-out rounded-lg border ${
-                  !isActive || isOutOfStockTracked || !isProductAvailable
-                    ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
-                    : 'bg-white text-[#733857] border-[#733857] hover:bg-[#733857] hover:text-white hover:shadow-md shadow-sm transform hover:scale-105'
-                }`}
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                className="absolute bottom-2 right-2"
               >
-                {!isProductAvailable ? 'Closed' : isOutOfStockTracked ? 'Unavailable' : 'Add'}
-              </button>
+                <BlobButton
+                  onClick={handleAddToCart}
+                  disabled={!isActive || isOutOfStockTracked || !isProductAvailable}
+                  className="px-4 py-2 text-xs font-light"
+                  style={{
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}
+                >
+                  {!isProductAvailable ? 'Closed' : isOutOfStockTracked ? 'Unavailable' : 'Add'}
+                </BlobButton>
+              </div>
             ) : (
               <div className={`absolute bottom-2 right-2 flex items-center rounded-lg shadow-sm ${
                 !isProductAvailable 

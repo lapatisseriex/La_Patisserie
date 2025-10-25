@@ -16,6 +16,7 @@ import ProductCard from '../components/Products/ProductCard';
 import ProductImageModal from '../components/common/ProductImageModal';
 import ProductDisplaySkeleton from '../components/common/ProductDisplaySkeleton';
 import OfferBadge from '../components/common/OfferBadge';
+import BlobButton from '../components/common/BlobButton';
 import ScrollManager from '../utils/scrollManager';
 import { calculatePricing } from '../utils/pricingUtils';
 import { formatVariantLabel } from '../utils/variantUtils';
@@ -716,20 +717,17 @@ const ProductDisplayPageNew = () => {
                     </button>
                   </div>
                 ) : (
-                  <button
+                  <BlobButton
                     onClick={handleAddToCart}
                     disabled={!product?.isActive || (tracks && totalStock === 0) || isAddingToCart}
-                    className={`px-5 py-2 text-xs font-light tracking-wide border border-gray-200 h-10 uppercase ${
-                      !product?.isActive || (tracks && totalStock === 0)
-                        ? 'opacity-50 cursor-not-allowed bg-gray-50'
-                        : isAddingToCart
-                        ? 'cursor-wait bg-gray-50'
-                        : 'bg-white hover:bg-gray-50'
-                    }`}
-                    style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}
+                    className="px-5 py-2 h-10"
+                    style={{ 
+                      letterSpacing: '0.05em',
+                      fontSize: '12px'
+                    }}
                   >
                     {isAddingToCart ? 'Adding...' : 'Add to Box'}
-                  </button>
+                  </BlobButton>
                 )}
 
                 <ReserveCTA
@@ -998,20 +996,21 @@ const ProductDisplayPageNew = () => {
                     </button>
                   </div>
                 ) : (
-                  <button
+                  <BlobButton
                     onClick={handleAddToCart}
                     disabled={isAddingToCart || (tracks && totalStock === 0)}
-                    className={`w-full font-light tracking-wide flex items-center justify-center gap-2 h-[2.5rem] border border-gray-200 rounded-md uppercase ${
-                      isAddingToCart || (tracks && totalStock === 0) ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'bg-white hover:bg-gray-50'
-                    }`}
-                    style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}
+                    className="w-full flex items-center justify-center gap-2 h-[2.5rem]"
+                    style={{ 
+                      letterSpacing: '0.05em',
+                      fontSize: '12px'
+                    }}
                   >
                     {isAddingToCart ? (
                       <div className="inline-block h-3.5 w-3.5 animate-spin border-2 border-[#733857] border-t-transparent rounded-full"></div>
                     ) : (
-                      <><ShoppingCart className="w-4 h-4" /><span>Add to Box</span></>
+                      <span>Add to Box</span>
                     )}
-                  </button>
+                  </BlobButton>
                 )}
               </div>
 
@@ -1202,20 +1201,17 @@ const ProductDisplayPageNew = () => {
                   </button>
                 </div>
               ) : (
-                <button
+                <BlobButton
                   onClick={handleAddToCart}
                   disabled={!product?.isActive || (tracks && totalStock === 0) || isAddingToCart}
-                  className={`bg-white border border-gray-100 px-3 h-8 text-xs font-light tracking-wide uppercase ${
-                    !product?.isActive || (tracks && totalStock === 0)
-                      ? 'opacity-50 cursor-not-allowed'
-                      : isAddingToCart
-                      ? 'cursor-wait'
-                      : 'hover:bg-gray-50'
-                  }`}
-                  style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}
+                  className="px-3 h-8"
+                  style={{ 
+                    letterSpacing: '0.05em',
+                    fontSize: '11px'
+                  }}
                 >
                   {isAddingToCart ? 'Adding...' : 'Add'}
-                </button>
+                </BlobButton>
               )}
               <button
                 onClick={handleReserve}
@@ -1647,20 +1643,21 @@ const ProductDisplayPageNew = () => {
                         </button>
                       </div>
                     ) : (
-                      <button
+                      <BlobButton
                         onClick={handleAddToCart}
                         disabled={isAddingToCart || totalStock === 0}
-                        className={`w-full font-light tracking-wide py-3 px-5 flex items-center justify-center gap-2 text-sm border border-gray-200 uppercase ${
-                          isAddingToCart || totalStock === 0 ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'bg-white hover:bg-gray-50'
-                        }`}
-                        style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}
+                        className="w-full py-3 px-5 flex items-center justify-center gap-2"
+                        style={{ 
+                          letterSpacing: '0.05em',
+                          fontSize: '14px'
+                        }}
                       >
                         {isAddingToCart ? (
                           <div className="inline-block h-4 w-4 animate-spin border-2 border-[#733857] border-t-transparent rounded-full"></div>
                         ) : (
-                          <><ShoppingCart className="w-5 h-5" /><span>Add to Box</span></>
+                          <span>Add to Box</span>
                         )}
-                      </button>
+                      </BlobButton>
                     )}
                   </div>
                   <div className="flex-1" ref={reserveButtonDesktopRef}>

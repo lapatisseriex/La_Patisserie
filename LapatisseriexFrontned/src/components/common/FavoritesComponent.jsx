@@ -8,6 +8,7 @@ import {
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import { addToCart, updateCartQuantity, removeFromCart } from '../../redux/cartSlice';
 import { useAuth } from '../../hooks/useAuth';
+import BlobButton from './BlobButton';
 
 const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
   const dispatch = useDispatch();
@@ -261,34 +262,17 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
                     </div>
                   ) : (
                     /* Add to Cart button when item is not in cart */
-                    <>
-                      <style>{`
-                        .gradient-btn span {
-                          background: linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%);
-                          -webkit-background-clip: text;
-                          background-clip: text;
-                          color: transparent;
-                          transition: all 0.3s ease;
-                        }
-                        .gradient-btn:hover span {
-                          color: white !important;
-                          background: none !important;
-                          -webkit-background-clip: unset !important;
-                          background-clip: unset !important;
-                        }
-                        .gradient-btn:hover .icon {
-                          color: white !important;
-                        }
-                      `}</style>
-                      <button
-                        onClick={() => handleAddToCart(productData)}
-                        disabled={cartLoading}
-                        className="gradient-btn flex-1 bg-white border-2 border-[#733857] py-2 px-4 rounded-lg hover:bg-gradient-to-r hover:from-[#733857] hover:via-[#8d4466] hover:to-[#412434] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 transform hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        <Plus className="h-4 w-4 icon transition-all duration-300" style={{ color: '#733857' }} />
-                        <span className="transition-all duration-300">Add to Cart</span>
-                      </button>
-                    </>
+                    <BlobButton
+                      onClick={() => handleAddToCart(productData)}
+                      disabled={cartLoading}
+                      className="flex-1 py-2 px-4 flex items-center justify-center gap-2 disabled:opacity-50"
+                      style={{
+                        fontSize: '14px'
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add to Cart</span>
+                    </BlobButton>
                   )}
                   
                   <Link
@@ -322,7 +306,7 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
               Clear All Favorites
             </button>
             
-            <button
+            <BlobButton
               onClick={() => {
                 favorites.forEach(product => {
                   const productData = product.productDetails || product;
@@ -337,10 +321,13 @@ const FavoritesComponent = ({ showHeader = true, isProfileTab = false }) => {
                   }
                 });
               }}
-              className="bg-rose-500 text-white px-6 py-2 rounded-lg hover:bg-rose-600 transition-colors"
+              className="px-6 py-2"
+              style={{
+                fontSize: '14px'
+              }}
             >
               Add All to Cart
-            </button>
+            </BlobButton>
           </div>
         </div>
       )}
