@@ -679,25 +679,44 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                                   {(notification.type === 'order_placed' || 
                                     notification.type === 'order_dispatched' || 
                                     notification.type === 'order_delivered') && (
-                                    <span
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleViewOrderStatus(notification);
-                                      }}
-                                      className="flex items-center gap-1 text-xs font-bold tracking-widest transition-all duration-300 group-hover:scale-105 cursor-pointer"
-                                      style={{
-                                        color: '#733857',
-                                        letterSpacing: '0.05em'
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.color = '#8d4466';
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.color = '#733857';
-                                      }}
-                                    >
-                                      <Eye className="w-3 h-3" strokeWidth={2} />
-                                      VIEW
+                                    <span className="relative inline-block">
+                                      <span
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleViewOrderStatus(notification);
+                                        }}
+                                        className="flex items-center gap-1 text-xs font-bold tracking-widest cursor-pointer relative px-3 py-1 bg-[#733857] text-white rounded"
+                                        style={{
+                                          letterSpacing: '0.05em',
+                                          transform: 'translateY(0)',
+                                          transition: 'transform 0.1s ease, box-shadow 0.1s ease',
+                                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 3px 0 #562943'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.backgroundColor = '#8d4466';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.backgroundColor = '#733857';
+                                        }}
+                                        onMouseDown={(e) => {
+                                          e.currentTarget.style.transform = 'translateY(3px)';
+                                          e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 #562943';
+                                        }}
+                                        onMouseUp={(e) => {
+                                          e.currentTarget.style.transform = 'translateY(0)';
+                                          e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.2), 0 3px 0 #562943';
+                                        }}
+                                      >
+                                        <Eye className="w-3 h-3" strokeWidth={2} />
+                                        VIEW
+                                      </span>
+                                      <span 
+                                        className="absolute -bottom-1 left-0 right-0 h-[3px] bg-[#2B1800] opacity-20 rounded"
+                                        style={{
+                                          zIndex: -1,
+                                          filter: 'blur(1px)'
+                                        }}
+                                      />
                                     </span>
                                   )}
                                   
