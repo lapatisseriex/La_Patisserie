@@ -1025,13 +1025,13 @@ const ProfilePage = () => {
 
       case 'favorites':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-2xl font-medium text-black border-b border-gray-200 pb-2">
                 My Favorites
                 {favorites?.length > 0 && (
-                  <span className="ml-2 px-3 py-1 text-white text-sm rounded-full" style={{ background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)' }}>
-                    {favorites.length} items
+                  <span className="ml-2 text-sm text-gray-500">
+                    ({favorites.length} items)
                   </span>
                 )}
               </h3>
@@ -1045,9 +1045,9 @@ const ProfilePage = () => {
             </div>
             
             {favLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading your favorites...</p>
+              <div className="text-center py-4 sm:py-5 md:py-8">
+                <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 border-b-2 border-[#733857] mx-auto"></div>
+                <p className="mt-2 sm:mt-3 md:mt-4 text-sm sm:text-base text-gray-600">Loading your favorites...</p>
               </div>
             ) : favError ? (
               <div className="bg-gray-50 border border-gray-200 p-4">
@@ -1074,17 +1074,17 @@ const ProfilePage = () => {
                 </div>
               </div>
             ) : !favorites || favorites.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center border border-[#733857]/20">
-                  <Heart className="h-10 w-10 text-[#733857]" />
+              <div className="text-center py-6 sm:py-8 md:py-12">
+                <div className="mx-auto mb-4 sm:mb-6 flex h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 items-center justify-center border border-[#733857]/20">
+                  <Heart className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-[#733857]" />
                 </div>
-                <h4 className="text-3xl font-light tracking-wide text-[#1a1a1a] mb-3">No favorites yet</h4>
-                <p className="text-sm text-gray-500 mb-8 max-w-md mx-auto">
+                <h4 className="text-xl sm:text-2xl md:text-3xl font-light tracking-wide text-[#1a1a1a] mb-2 sm:mb-3">No favorites yet</h4>
+                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 md:mb-8 max-w-md mx-auto">
                   Save the treats you love to revisit them whenever you like.
                 </p>
                 <Link 
                   to="/products" 
-                  className="inline-flex items-center gap-2 border border-[#733857] px-6 py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
+                  className="inline-flex items-center gap-2 border border-[#733857] px-4 py-2 sm:px-6 sm:py-3 text-sm font-medium tracking-wide text-[#733857] transition-colors duration-300 hover:bg-[#733857] hover:text-white"
                 >
                   Browse Products
                 </Link>
@@ -1094,8 +1094,8 @@ const ProfilePage = () => {
                 {/* Favorites Summary */}
               
                 
-                {/* Favorites Items Preview - Full Product Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {/* Favorites Items Preview - Responsive Product Cards */}
+                <div className="grid grid-cols-2 gap-3 xs:gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                   {favorites.slice(0, 8).map((item) => {
                     // Handle different data structures from backend
                     const product = item.productDetails || item.product || item;
