@@ -1,7 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import HoverButton from '../components/common/HoverButton';
 
 const PrivacyPolicy = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
@@ -121,16 +124,14 @@ const PrivacyPolicy = () => {
           </div>
 
           <div className="mt-12 text-center">
-            <Link 
-              to="/contact" 
-              className="inline-block px-10 py-4 text-sm tracking-wider transition-all hover:opacity-80"
-              style={{ 
-                backgroundColor: '#281c20',
-                color: 'white'
-              }}
-            >
-              CONTACT US
-            </Link>
+            <HoverButton
+              onClick={() => navigate('/contact')}
+              text="CONTACT US"
+              hoverText="GET IN TOUCH"
+              variant="primary"
+              size="large"
+              className="px-10 py-4 text-sm tracking-wider"
+            />
           </div>
         </div>
       </div>

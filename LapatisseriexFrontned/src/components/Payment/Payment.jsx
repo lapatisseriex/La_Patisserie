@@ -8,6 +8,9 @@ import ShopClosureOverlay from '../common/ShopClosureOverlay';
 import OfferBadge from '../common/OfferBadge';
 import ServiceAssuranceBanner from './ServiceAssuranceBanner';
 import { WebsiteLiveTimerCompact } from '../WebsiteLiveTimer';
+import FlipButton from '../common/FlipButton';
+import StyleButton from '../common/StyleButton';
+import HoverButton from '../common/HoverButton';
 import { calculateCartTotals, calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
@@ -585,24 +588,30 @@ if (isOrderComplete) {
 
             {/* 4. Updated Button Styles (Sharp Corners) */}
             <div className="mt-8 sm:mt-10 flex w-full flex-col-reverse gap-3 sm:gap-4 sm:flex-row sm:justify-center px-2 sm:px-0">
-              <button
+              <HoverButton
                 onClick={() => handleNavigateWithPanel('/')}
-                className="w-full border-2 border-slate-300 px-4 py-2.5 sm:px-6 sm:py-3 text-center text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 sm:w-auto active:scale-95"
-              >
-                Back to home
-              </button>
-              <button
+                text="Back to Home"
+                hoverText="Go Home"
+                variant="outline"
+                size="medium"
+                className="w-full sm:w-auto"
+              />
+              <HoverButton
                 onClick={() => handleNavigateWithPanel('/products')}
-                className="w-full bg-[#733857] px-4 py-2.5 sm:px-6 sm:py-3 text-center text-sm font-medium text-white transition hover:bg-[#5e2c46] focus:outline-none focus:ring-2 focus:ring-[#733857] focus:ring-offset-2 sm:w-auto active:scale-95"
-              >
-                Browse products
-              </button>
-              <button
+                text="Browse Products"
+                hoverText="View Products"
+                variant="primary"
+                size="medium"
+                className="w-full sm:w-auto"
+              />
+              <HoverButton
                 onClick={() => handleNavigateWithPanel('/orders')}
-                className="w-full bg-[#cf91d9] px-4 py-2.5 sm:px-6 sm:py-3 text-center text-sm font-medium text-white transition hover:bg-[#f2a9ce] focus:outline-none focus:ring-2 focus:ring-[#733857] focus:ring-offset-2 sm:w-auto active:scale-95"
-              >
-                My Orders
-              </button>
+                text="My Orders"
+                hoverText="View Orders"
+                variant="secondary"
+                size="medium"
+                className="w-full sm:w-auto"
+              />
             </div>
             
           </div>
@@ -620,9 +629,16 @@ if (isOrderComplete) {
       <div className="container mx-auto min-h-screen px-3 py-4 pt-4 sm:px-4 sm:py-8 sm:pt-8" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center mb-4 sm:mb-6">
-            <Link to="/checkout" className="hidden sm:flex items-center text-xs font-bold uppercase tracking-[0.22em] text-[#733857] transition-colors hover:text-[#5e2c46]">
-              Back to checkout
-            </Link>
+            <div className="hidden sm:flex">
+              <HoverButton
+                onClick={() => navigate('/checkout')}
+                text="Back"
+                hoverText="Back to Checkout"
+                variant="outline"
+                size="small"
+                className="text-xs uppercase tracking-[0.22em]"
+              />
+            </div>
             <h1 className="flex-grow text-center text-xl font-bold text-[#733857] sm:text-2xl">Payment</h1>
           </div>
 
@@ -636,12 +652,14 @@ if (isOrderComplete) {
             </p>
 
             <div className="space-y-4">
-              <Link
-                to="/checkout"
-                className="block w-full border border-[#733857] px-6 py-3 text-xs font-bold uppercase tracking-[0.22em] text-[#733857] transition-colors hover:bg-[#733857] hover:text-white"
-              >
-                Go back to checkout
-              </Link>
+              <HoverButton
+                onClick={() => navigate('/checkout')}
+                text="Go Back to Checkout"
+                hoverText="Return to Checkout"
+                variant="outline"
+                size="medium"
+                className="w-full"
+              />
               <p className="text-sm text-[#733857]">
                 You can verify your delivery location from the checkout page.
               </p>
@@ -900,91 +918,57 @@ if (isOrderComplete) {
                 <p className="text-xs uppercase tracking-[0.16em] text-[rgba(26,26,26,0.55)]">Choose how you would like to pay</p>
               </div>
 
-              <div className="mt-6 space-y-3">
-                <label
-                  className={`relative flex cursor-pointer items-start gap-4 border px-4 py-4 transition sm:px-5 ${
-                    isRazorpaySelected
-                      ? 'border-[#733857] bg-[#f7eef3] shadow-sm'
-                      : 'border-[#d9c4cd] bg-white hover:border-[#733857]'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    value="razorpay"
-                    checked={isRazorpaySelected}
-                    onChange={() => setSelectedPaymentMethod('razorpay')}
-                    className="sr-only"
+              <div className="mt-6 space-y-4">
+                {/* Razorpay Payment Method */}
+                <div className="relative">
+                  <FlipButton
+                    frontText="Pay Online"
+                    backText="Razorpay Secure"
+                    selected={isRazorpaySelected}
+                    onClick={() => setSelectedPaymentMethod('razorpay')}
+                    className="payment-method-flip w-full"
                   />
-                  <span
-                    className={`mt-1 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${
-                      isRazorpaySelected ? 'border-[#733857]' : 'border-[#d9c4cd]'
-                    }`}
-                  >
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        isRazorpaySelected ? 'bg-[#733857]' : 'bg-transparent'
-                      }`}
-                    />
-                  </span>
-                  <div className="flex flex-1 flex-col gap-2">
-                    <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-                      <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#412434]">
+                  {isRazorpaySelected && (
+                    <div className="mt-3 p-4 bg-[#f7eef3] border border-[#733857] rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
                         <img src="/images/razorpay.svg" alt="Razorpay" className="h-4 w-auto" />
-                        Razorpay secure checkout
-                      </span>
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8d4466] sm:text-xs">
-                        Recommended
-                      </span>
+                        <span className="text-sm font-semibold text-[#733857]">Razorpay Secure Checkout</span>
+                        <span className="text-xs bg-[#733857] text-white px-2 py-1 rounded">Recommended</span>
+                      </div>
+                      <p className="text-xs text-[#6f5260] mb-3">
+                        Pay instantly with UPI, cards, net banking or wallets through Razorpay's protected gateway.
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8d4466]">
+                        <span className="border border-[#d9c4cd] px-2 py-1 rounded">UPI</span>
+                        <span className="border border-[#d9c4cd] px-2 py-1 rounded">Cards</span>
+                        <span className="border border-[#d9c4cd] px-2 py-1 rounded">Net Banking</span>
+                        <span className="border border-[#d9c4cd] px-2 py-1 rounded">Wallets</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-[#6f5260]">
-                      Pay instantly with UPI, cards, net banking or wallets through Razorpay&apos;s protected gateway.
-                    </p>
-                    <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8d4466]">
-                      <span className="border border-[#d9c4cd] px-2 py-1">UPI</span>
-                      <span className="border border-[#d9c4cd] px-2 py-1">Cards</span>
-                      <span className="border border-[#d9c4cd] px-2 py-1">Net banking</span>
-                      <span className="border border-[#d9c4cd] px-2 py-1">Wallets</span>
-                    </div>
-                  </div>
-                </label>
+                  )}
+                </div>
 
-                <label
-                  className={`relative flex cursor-pointer items-start gap-4 border px-4 py-4 transition sm:px-5 ${
-                    isCodSelected
-                      ? 'border-[#412434] bg-[#f1e8ed] shadow-sm'
-                      : 'border-[#d0c6cb] bg-white hover:border-[#412434]'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    value="cod"
-                    checked={isCodSelected}
-                    onChange={() => setSelectedPaymentMethod('cod')}
-                    className="sr-only"
+                {/* Cash on Delivery Method */}
+                <div className="relative">
+                  <FlipButton
+                    frontText="Cash on Delivery"
+                    backText="Pay at Doorstep"
+                    selected={isCodSelected}
+                    onClick={() => setSelectedPaymentMethod('cod')}
+                    className="payment-method-flip w-full"
                   />
-                  <span
-                    className={`mt-1 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${
-                      isCodSelected ? 'border-[#412434]' : 'border-[#d0c6cb]'
-                    }`}
-                  >
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        isCodSelected ? 'bg-[#412434]' : 'bg-transparent'
-                      }`}
-                    />
-                  </span>
-                  <div className="flex flex-1 flex-col gap-2">
-                    <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#412434]">
-                      <img src="/images/cod.svg" alt="Cash on Delivery" className="h-4 w-auto" />
-                      Cash on delivery
-                    </span>
-                    <p className="text-xs text-[#6f5260]">
-                      Pay once your desserts arrive. We will reconfirm the order and bring an invoice along.
-                    </p>
-                  </div>
-                </label>
+                  {isCodSelected && (
+                    <div className="mt-3 p-4 bg-[#f1e8ed] border border-[#412434] rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <img src="/images/cod.svg" alt="Cash on Delivery" className="h-4 w-auto" />
+                        <span className="text-sm font-semibold text-[#412434]">Cash on Delivery</span>
+                      </div>
+                      <p className="text-xs text-[#6f5260]">
+                        Pay once your desserts arrive. We will reconfirm the order and bring an invoice along.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="mt-5 rounded border border-dashed border-[#d9c4cd] bg-[#f9f4f6] px-4 py-4 text-xs leading-relaxed text-[#412434] sm:px-5">
@@ -1037,18 +1021,13 @@ if (isOrderComplete) {
                 </p>
               )}
 
-              <button
-                type="button"
+              <StyleButton
                 onClick={handlePlaceOrder}
                 disabled={isPlaceOrderDisabled}
-                 className={`mt-6 flex w-full items-center justify-center border px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] transition sm:px-5 sm:text-sm ${
-                  isPlaceOrderDisabled
-                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                    : 'border-[#733857] bg-[#733857] text-white hover:bg-[#5e2c46]'
-                }`}
+                className="place-order-btn mt-6"
               >
                 {isProcessing ? 'Processing…' : placeOrderLabel}
-              </button>
+              </StyleButton>
             </div>
 
             {/* --- Sign In Prompt (Unchanged) --- */}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import HoverButton from '../components/common/HoverButton';
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
@@ -242,16 +243,14 @@ const FAQ = () => {
               </a>
             </p>
           </div>
-          <Link 
-            to="/contact" 
-            className="inline-block px-10 py-4 text-sm tracking-wider transition-all hover:opacity-80"
-            style={{ 
-              backgroundColor: '#281c20',
-              color: 'white'
-            }}
-          >
-            CONTACT US
-          </Link>
+          <HoverButton
+            onClick={() => navigate('/contact')}
+            text="CONTACT US"
+            hoverText="GET IN TOUCH"
+            variant="primary"
+            size="large"
+            className="px-10 py-4 text-sm tracking-wider"
+          />
         </div>
       </div>
     </div>
