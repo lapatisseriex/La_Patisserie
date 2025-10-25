@@ -1,6 +1,7 @@
 import { useSelector } from 'react-redux';
 import { makeSelectListByKey, makeSelectLoadingByKey, selectHasBestSellers } from '../../redux/productsSlice';
 import ProductCard from "../Products/ProductCard";
+import RollingGallery from "../common/RollingGallery";
 import './gridResponsive.css';
 import DessertLoader from "../common/DessertLoader";
 
@@ -32,21 +33,29 @@ const BestSellers = () => {
   }
 
   return (
-    <section className="w-full py-0 md:py-6 bg-white">
-      <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
-        <div className="mb-8">
-          <h2 className="text-2xl font-light tracking-wide text-left text-[#733857]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <section className="w-full bg-white">
+      <div className="max-w-screen-2xl mx-auto px-3 sm:px-4">
+        <div className="mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{ 
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}>
             Best Sellers
           </h2>
+          <p className="text-sm sm:text-base text-center text-gray-600 mt-2 font-light">
+            Our most loved creations
+          </p>
         </div>
         
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full min-w-0 grid-3-at-976">
-          {products.slice(0, 3).map(product => (
-            <div key={product._id} className="min-w-0 w-full flex">
-              <ProductCard product={product} className="min-w-0 w-full" />
-            </div>
-          ))}
-        </div>
+      <RollingGallery 
+          items={products.map(product => ({
+            key: product._id,
+            content: (
+              <div className="min-w-0 w-full flex transform transition-all duration-300 ease-out hover:scale-102 focus:scale-102 active:scale-98">
+                <ProductCard product={product} className="min-w-0 w-full  transition-shadow" />
+              </div>
+            )
+          }))}
+        />
       </div>
     </section>
   );
