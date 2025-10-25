@@ -602,7 +602,15 @@ export const removeFromNewCart = async (req, res) => {
       cart = await findCartByUserWithMigration(req.user);
     }
     if (!cart) {
-      return res.status(404).json({ error: 'Cart not found' });
+      console.log('ℹ️ No cart document found; returning empty cart response');
+      return res.json({
+        _id: null,
+        userId,
+        items: [],
+        cartTotal: 0,
+        cartCount: 0,
+        lastUpdated: new Date()
+      });
     }
 
     // Find the item quantity and variant for restock
@@ -663,11 +671,9 @@ export const clearNewCart = async (req, res) => {
   try {
     const userId = req.user.uid;
     console.log(`🧹 Clearing cart for user: ${userId}`);
-    // Determine whether to restock items (default true for manual clears). For checkout, client will pass restock=false
-    const shouldRestock = (req.query?.restock ?? 'true') !== 'false';
 
-  // Purge expired first (mostly no-op but consistent)
-  await purgeExpiredForUserId(userId, getExpiryCutoff(req));
+    // Purge expired first (mostly no-op but consistent)
+    await purgeExpiredForUserId(userId, getExpiryCutoff(req));
 
     // Get cart
     let cart = await NewCart.findOne({ userId });
@@ -675,12 +681,20 @@ export const clearNewCart = async (req, res) => {
       cart = await findCartByUserWithMigration(req.user);
     }
     if (!cart) {
-      return res.status(404).json({ error: 'Cart not found' });
+      console.log('ℹ️ No cart document found; returning empty cart response');
+      return res.json({
+        _id: null,
+        userId,
+        items: [],
+        cartTotal: 0,
+        cartCount: 0,
+        lastUpdated: new Date()
+      });
     }
 
     // NOTE: No stock restoration needed since we don't decrement stock on add to cart
     // Stock is only decremented when orders are actually completed
-    console.log('� Clearing cart - no stock changes needed (stock decrements only on order completion)');
+    console.log('🧹 Clearing cart - no stock changes needed (stock decrements only on order completion)');
 
     // Clear cart then delete document for truly empty state
     await cart.clearCart();

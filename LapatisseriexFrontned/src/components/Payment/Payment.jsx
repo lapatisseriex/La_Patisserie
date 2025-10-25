@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
@@ -16,6 +16,10 @@ import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import api from '../../services/apiService';
 import NGOSidePanel from './NGOSidePanel';
+
+const AUTO_REDIRECT_STORAGE_KEY = 'lapatisserie_payment_redirect';
+const AUTO_REDIRECT_DELAY_MS = 20000;
+const AUTO_REDIRECT_EXPIRY_MS = 2 * 60 * 1000; // expire redirect marker after 2 minutes
                   
 const Payment = () => {
   // --- All original logic, hooks, and state are preserved ---
@@ -27,15 +31,56 @@ const Payment = () => {
   const [showLocationError, setShowLocationError] = useState(false);
   const [useFreeCash, setUseFreeCash] = useState(false);
   const [showNGOPanel, setShowNGOPanel] = useState(false);
+  const redirectTimerRef = useRef(null);
+  const countdownTimerRef = useRef(null);
+  const [redirectCountdown, setRedirectCountdown] = useState(null);
+
+  const clearAutoRedirect = useCallback(() => {
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    setRedirectCountdown(null);
+    try {
+      sessionStorage.removeItem(AUTO_REDIRECT_STORAGE_KEY);
+    } catch {}
+  }, [setRedirectCountdown]);
 
   // Handle navigation with side panel trigger
   const handleNavigateWithPanel = (path) => {
     // Set flag in sessionStorage to show panel after navigation
+    clearAutoRedirect();
     sessionStorage.setItem('showNGOPanel', 'true');
     navigate(path);
   };
 
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(AUTO_REDIRECT_STORAGE_KEY);
+      if (!raw) {
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      const timestamp = Number(parsed?.timestamp);
+      if (!Number.isFinite(timestamp)) {
+        sessionStorage.removeItem(AUTO_REDIRECT_STORAGE_KEY);
+        return;
+      }
+      if (Date.now() - timestamp > AUTO_REDIRECT_EXPIRY_MS) {
+        sessionStorage.removeItem(AUTO_REDIRECT_STORAGE_KEY);
+        return;
+      }
+      navigate('/orders', { replace: true });
+    } catch (error) {
+      sessionStorage.removeItem(AUTO_REDIRECT_STORAGE_KEY);
+    }
+  }, [navigate]);
 
   useEffect(() => {
     refreshCart();
@@ -165,6 +210,13 @@ const Payment = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOrderComplete, setIsOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+  const [completedPaymentMethod, setCompletedPaymentMethod] = useState(null);
+
+  useEffect(() => {
+    if (!isOrderComplete) {
+      setCompletedPaymentMethod(null);
+    }
+  }, [isOrderComplete]);
 
   // Auto-open NGO panel after payment success (with minimal delay)
   useEffect(() => {
@@ -184,6 +236,67 @@ const Payment = () => {
       return () => clearTimeout(timer);
     }
   }, [isOrderComplete]);
+
+  useEffect(() => {
+    if (!isOrderComplete) {
+      clearAutoRedirect();
+      return;
+    }
+
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+
+    const payload = {
+      orderNumber,
+      timestamp: Date.now()
+    };
+
+    try {
+      sessionStorage.setItem(AUTO_REDIRECT_STORAGE_KEY, JSON.stringify(payload));
+    } catch {}
+
+    setRedirectCountdown(Math.ceil(AUTO_REDIRECT_DELAY_MS / 1000));
+
+    redirectTimerRef.current = setTimeout(() => {
+      try {
+        sessionStorage.removeItem(AUTO_REDIRECT_STORAGE_KEY);
+      } catch {}
+      navigate('/orders', { replace: true });
+    }, AUTO_REDIRECT_DELAY_MS);
+
+    countdownTimerRef.current = setInterval(() => {
+      setRedirectCountdown((prev) => {
+        if (prev === null) {
+          return prev;
+        }
+        if (prev <= 1) {
+          if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+            countdownTimerRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+    };
+  }, [isOrderComplete, orderNumber, navigate, clearAutoRedirect]);
 
   // Handle browser back button - redirect to products page (skip checkout)
   useEffect(() => {
@@ -385,6 +498,7 @@ const Payment = () => {
       return;
     }
     setIsProcessing(true);
+    setCompletedPaymentMethod(null);
     try {
       const isScriptLoaded = await loadRazorpayScript();
       if (!isScriptLoaded) {
@@ -429,6 +543,7 @@ const Payment = () => {
             const verifyData = await verifyResponse.json();
             if (verifyData.success) {
               console.log('✅ Payment verified successfully');
+              setCompletedPaymentMethod('razorpay');
               setIsOrderComplete(true);
               setOrderNumber(verifyData.orderNumber);
               try {
@@ -439,6 +554,7 @@ const Payment = () => {
               }
             } else {
               console.error('❌ Payment verification failed:', verifyData.message);
+              setCompletedPaymentMethod(null);
               alert('Payment verification failed. Please contact support with your order details.');
               try {
                 await refreshCart();
@@ -448,6 +564,7 @@ const Payment = () => {
             }
           } catch (error) {
             console.error('❌ Payment verification error:', error);
+            setCompletedPaymentMethod(null);
             alert('Payment verification failed. Please contact support if amount was debited.');
             try {
               await refreshCart();
@@ -509,6 +626,7 @@ const Payment = () => {
       razorpay.open();
     } catch (error) {
       console.error('Payment error:', error);
+      setCompletedPaymentMethod(null);
       alert('Failed to initiate payment. Please try again.');
       setIsProcessing(false);
     }
@@ -524,11 +642,13 @@ const Payment = () => {
       return;
     }
     setIsProcessing(true);
+    setCompletedPaymentMethod('cod');
     setIsOrderComplete(true);
     setOrderNumber('...');
     try {
       const orderData = await createOrder(grandTotal, 'cod');
       setOrderNumber(orderData.orderNumber);
+      setCompletedPaymentMethod('cod');
       try {
         await clearCart();
       } catch (cartError) {
@@ -538,6 +658,7 @@ const Payment = () => {
       console.error('COD order error:', error);
       setIsOrderComplete(false);
       setOrderNumber('');
+      setCompletedPaymentMethod(null);
       alert('Failed to place order. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -557,6 +678,17 @@ const Payment = () => {
   };
 
 if (isOrderComplete) {
+    const isCodSuccess = completedPaymentMethod === 'cod';
+    const isOnlineSuccess = completedPaymentMethod === 'razorpay';
+    const successTitle = isCodSuccess ? 'Order placed — Cash on Delivery' : 'Payment confirmed';
+    const successSubtitle = isCodSuccess
+      ? 'Your COD order is confirmed. Please keep cash ready when your desserts arrive.'
+      : 'Thank you for choosing La Patisserie. A confirmation email with your order details is on the way.';
+    const paymentMethodLabel = isCodSuccess ? 'Cash on Delivery' : 'Online payment';
+    const paymentStatusHint = isCodSuccess
+      ? 'Payment will be collected at delivery.'
+      : 'Payment captured successfully via Razorpay.';
+
     return (
       <div className="min-h-screen  px-4 py-10" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
         {/* Main content card with sharp corners */}
@@ -573,9 +705,9 @@ if (isOrderComplete) {
             </div>
 
             {/* 2. Page Hierarchy */}
-            <h2 className="text-3xl font-semibold text-slate-900">Payment confirmed</h2>
+            <h2 className="text-3xl font-semibold text-slate-900">{successTitle}</h2>
             <p className="mt-3 text-base text-slate-500">
-              Thank you for choosing La Patisserie. A confirmation email with your order details is on the way.
+              {successSubtitle}
             </p>
 
             {/* 3. Integrated Order Details */}
@@ -584,6 +716,22 @@ if (isOrderComplete) {
                 <p className="text-sm font-medium text-slate-500">Order number</p>
                 <p className="text-lg font-semibold text-slate-900">{orderNumber}</p>
               </div>
+            </div>
+
+            <div className="mt-6 w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment method</p>
+              <p className="mt-2 text-base font-semibold text-slate-900">{paymentMethodLabel}</p>
+              <p className="mt-2 text-sm text-slate-600">{paymentStatusHint}</p>
+              {isCodSuccess && (
+                <p className="mt-2 text-sm text-slate-600">
+                  No online charge was processed for this order. Please pay the delivery partner directly.
+                </p>
+              )}
+              {isOnlineSuccess && (
+                <p className="mt-2 text-sm text-slate-600">
+                  You will receive a payment receipt via email shortly.
+                </p>
+              )}
             </div>
 
             {/* 4. Updated Button Styles (Sharp Corners) */}
@@ -613,6 +761,11 @@ if (isOrderComplete) {
                 className="w-full sm:w-auto"
               />
             </div>
+            {redirectCountdown !== null && (
+              <p className="mt-4 text-sm text-slate-500">
+                Redirecting to your orders in {Math.max(redirectCountdown, 0)} second{Math.max(redirectCountdown, 0) === 1 ? '' : 's'}...
+              </p>
+            )}
             
           </div>
         </div>
