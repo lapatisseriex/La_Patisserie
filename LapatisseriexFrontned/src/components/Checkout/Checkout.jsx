@@ -8,6 +8,8 @@ import { calculatePricing, calculateCartTotals, formatCurrency } from '../../uti
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import OfferBadge from '../common/OfferBadge';
 import AnimatedButton from '../common/AnimatedButton';
+import MaskButton from '../common/MaskButton';
+import CubeButton from '../common/CubeButton';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import {
   Mail,
@@ -405,13 +407,11 @@ const Checkout = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-[#733857]">Contact Information</h2>
                   {!isEditMode && (
-                    <button
+                    <CubeButton
                       onClick={() => setIsEditMode(true)}
-                      className="text-sm text-[#733857] hover:text-[#8d4466] font-light transition-all duration-200 hover:underline underline-offset-2"
-                      style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                     >
                       Edit
-                    </button>
+                    </CubeButton>
                   )}
                 </div>
                 
@@ -556,39 +556,45 @@ const Checkout = () => {
 
                 {/* Edit Mode Buttons */}
                 {isEditMode && (
-                  <div className="flex gap-4 pt-4">
-                    <button
+                  <div className="flex gap-4 pt-4 items-center justify-center">
+                    <CubeButton
                       onClick={handleCancelEdit}
                       disabled={saving}
-                      className="flex-1 px-6 py-3 text-[#733857] bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 font-light touch-manipulation"
-                      style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                      variant="cancel-variant"
+                      style={{ 
+                        width: '120px',
+                        height: '40px'
+                      }}
                     >
                       Cancel
-                    </button>
-                    <button
+                    </CubeButton>
+                    <CubeButton
                       onClick={handleSaveChanges}
                       disabled={saving}
-                      className="flex-1 px-6 py-3 text-white bg-[#733857] border-2 border-[#733857] rounded-lg hover:bg-[#8d4466] hover:border-[#8d4466] transition-all duration-200 disabled:opacity-50 font-light shadow-sm hover:shadow-md touch-manipulation"
-                      style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                      variant="save-variant"
+                      style={{ 
+                        width: '140px',
+                        height: '40px'
+                      }}
                     >
-                      {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
+                      {saving ? 'Saving...' : 'Save'}
+                    </CubeButton>
                   </div>
                 )}
               </div>
 
               {/* Proceed Button */}
-              <button
+              <MaskButton
                 onClick={handleProceedToPayment}
                 disabled={isEditMode || saving}
-                className="group relative w-full py-4 px-8 text-white font-light transition-all duration-200 rounded-lg overflow-hidden bg-[#733857] border-2 border-[#733857] hover:bg-[#8d4466] hover:border-[#8d4466] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-sm hover:shadow-md touch-manipulation"
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                maskType="nature"
+                style={{
+                  width: '100%',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}
               >
-                <span className="relative z-10">
-                  {isEditMode ? 'Save changes to proceed' : 'Continue to Payment'}
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-              </button>
+                {isEditMode ? 'Save changes to proceed' : 'Continue to Payment'}
+              </MaskButton>
             </div>
           </div>
         )}

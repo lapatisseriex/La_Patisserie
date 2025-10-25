@@ -1,0 +1,105 @@
+.cube-button {
+  position: relative;
+  width: 120px;
+  height: 40px;
+  transition: 0.8s;
+  transform-style: preserve-3d;
+  transform: perspective(1000px) rotateX(0deg);
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.cube-button:hover {
+  transform: perspective(1000px) rotateX(360deg);
+}
+
+.cube-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.cube-button span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #733857;
+  background: #ffffff;
+  font-family: 'Lato', sans-serif;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: 0.5s;
+  border: 2px solid #733857;
+  box-sizing: border-box;
+  box-shadow: inset 0 2px 8px rgba(115, 56, 87, 0.05);
+  border-radius: 6px;
+}
+
+.cube-button:hover span {
+  color: #fff;
+  background: rgba(115, 56, 87, 0.9);
+  border-color: #8d4466;
+  box-shadow: inset 0 10px 25px rgba(141, 68, 102, 0.2);
+}
+
+.cube-button span:nth-child(1) {
+  transform: rotateX(0deg) translateZ(20px);
+}
+
+.cube-button span:nth-child(2) {
+  transform: rotateX(90deg) translateZ(20px);
+}
+
+.cube-button span:nth-child(3) {
+  transform: rotateX(180deg) translateZ(20px);
+}
+
+.cube-button span:nth-child(4) {
+  transform: rotateX(270deg) translateZ(20px);
+}
+
+/* Save button variant */
+.cube-button.save-variant span {
+  color: #ffffff;
+  background: rgba(115, 56, 87, 0.9);
+  border-color: #733857;
+}
+
+.cube-button.save-variant:hover span {
+  color: #ffffff;
+  background: rgba(141, 68, 102, 0.95);
+  border-color: #8d4466;
+}
+
+/* Cancel button variant */
+.cube-button.cancel-variant span {
+  color: #666666;
+  background: #ffffff;
+  border-color: #cccccc;
+}
+
+.cube-button.cancel-variant:hover span {
+  color: #444444;
+  background: rgba(230, 230, 230, 0.9);
+  border-color: #999999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cube-button {
+    width: 100px;
+    height: 36px;
+  }
+  
+  .cube-button span {
+    font-size: 11px;
+  }
+}
