@@ -227,10 +227,10 @@ const Orders = () => {
       {/* Header */}
       <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-left">
               <h1 
-                className="text-3xl font-light tracking-wide mb-2"
+                className="text-2xl sm:text-3xl font-light tracking-wide mb-2"
                 style={{ 
                   color: '#1a1a1a',
                   letterSpacing: '0.02em'
@@ -238,8 +238,8 @@ const Orders = () => {
               >
                 My Orders
               </h1>
-              <div className="flex items-center gap-3">
-                <p className="text-sm tracking-wide" style={{ 
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <p className="text-xs sm:text-sm tracking-wide" style={{ 
                   color: 'rgba(26, 26, 26, 0.5)',
                   letterSpacing: '0.05em'
                 }}>
@@ -259,44 +259,32 @@ const Orders = () => {
 
       {/* Filter Tabs */}
       <div className="border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8 overflow-x-auto no-scrollbar py-4">
-            {ORDER_FILTERS.map((filter) => (
-              <button
-                key={filter.key}
-                onClick={() => setActiveFilter(filter.key)}
-                className="relative pb-2 text-xs font-semibold whitespace-nowrap transition-colors duration-200 tracking-widest flex items-center gap-2"
-                style={{ 
-                  color: activeFilter === filter.key ? '#733857' : 'rgba(26, 26, 26, 0.4)',
-                  letterSpacing: '0.08em'
-                }}
-              >
-                {filter.label}
-                {filter.key === 'cancelled' && cancelledOrdersCount > 0 && (
-                  <span
-                    className="inline-flex items-center justify-center text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: activeFilter === 'cancelled' ? 'rgba(115, 56, 87, 0.12)' : 'rgba(26, 26, 26, 0.1)',
-                      color: activeFilter === 'cancelled' ? '#733857' : 'rgba(26, 26, 26, 0.6)'
-                    }}
-                  >
-                    {cancelledOrdersCount}
-                  </span>
-                )}
-                {activeFilter === filter.key && (
-                  <div 
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434]"
-                    style={{ animation: 'slideIn 0.3s ease-out' }}
-                  />
-                )}
-              </button>
-            ))}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="order-tabs flex space-x-4 sm:space-x-8 overflow-x-auto no-scrollbar py-3 sm:py-4">
+            {ORDER_FILTERS.map((filter) => {
+              const isActive = activeFilter === filter.key;
+              return (
+                <button
+                  key={filter.key}
+                  onClick={() => setActiveFilter(filter.key)}
+                  className={`order-tab-btn ${isActive ? 'is-active' : ''}`}
+                >
+                  <span className="order-tab-label">{filter.label}</span>
+                  {filter.key === 'cancelled' && cancelledOrdersCount > 0 && (
+                    <span className={`order-tab-badge ${isActive ? 'is-active' : ''}`}>
+                      {cancelledOrdersCount}
+                    </span>
+                  )}
+                  <span className="order-tab-indicator" aria-hidden="true" />
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
         {error && (
           <div 
             className="mb-6 p-4 border-l-2 border-red-500 bg-red-50"
@@ -313,7 +301,7 @@ const Orders = () => {
         )}
 
         {filteredOrders.length === 0 ? (
-          <div className="text-center py-20" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+          <div className="text-center py-16 sm:py-20" style={{ animation: 'fadeIn 0.5s ease-out' }}>
             <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center border border-[#733857]/20">
               <ShoppingBag className="w-10 h-10 text-[#733857]" />
             </div>
@@ -377,6 +365,154 @@ const Orders = () => {
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+
+        .order-tabs {
+          position: relative;
+          display: flex;
+          padding-inline: 0.35rem;
+          border-radius: 32px;
+          background: rgba(50, 22, 34, 0.08);
+          border: 1px solid rgba(115, 56, 87, 0.18);
+          isolation: isolate;
+        }
+
+        .order-tabs::before {
+          content: '';
+          position: absolute;
+          inset: -15px;
+          background: linear-gradient(145deg, rgba(255, 235, 167, 0.22), rgba(115, 56, 87, 0.12));
+          border-radius: inherit;
+          z-index: -2;
+          filter: blur(16px);
+          opacity: 0.9;
+        }
+
+        .order-tabs::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 120px;
+          height: 120px;
+          background: radial-gradient(circle at center, rgba(255, 235, 167, 0.25), transparent 65%);
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          animation: tabGlow 8s linear infinite;
+          z-index: -1;
+        }
+
+        .order-tab-btn {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.65rem 0.95rem 0.45rem;
+          border-radius: 999px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: rgba(26, 26, 26, 0.45);
+          transition: color 180ms ease, transform 180ms ease, background 220ms ease, box-shadow 220ms ease;
+          flex-shrink: 0;
+        }
+
+        .order-tab-btn .order-tab-indicator {
+          position: absolute;
+          inset: auto 18% -0.2rem;
+          height: 3px;
+          border-radius: 999px;
+          background: transparent;
+          transition: background 220ms ease, transform 220ms ease;
+        }
+
+        .order-tab-btn.is-active {
+          color: #ffeba7;
+          transform: translateY(-2px);
+          background: linear-gradient(135deg, rgba(115, 56, 87, 0.92), rgba(65, 36, 52, 0.92));
+          box-shadow: 0 10px 30px rgba(115, 56, 87, 0.22);
+        }
+
+        .order-tab-btn.is-active .order-tab-label {
+          -webkit-text-stroke: 0.5px rgba(255, 235, 167, 0.4);
+        }
+
+        .order-tab-btn.is-active .order-tab-indicator {
+          background: linear-gradient(90deg, #ffeba7 0%, #f8b7d4 50%, #733857 100%);
+        }
+
+        .order-tab-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 0.68rem;
+          padding: 0.18rem 0.5rem;
+          border-radius: 999px;
+          background: rgba(26, 26, 26, 0.08);
+          color: rgba(26, 26, 26, 0.55);
+          transition: background 200ms ease, color 200ms ease;
+        }
+
+        .order-tab-badge.is-active {
+          background: rgba(255, 235, 167, 0.2);
+          color: #ffeba7;
+        }
+
+        @media (max-width: 640px) {
+          .order-tabs {
+            background: rgba(31, 32, 41, 0.92);
+            border: 1px solid rgba(255, 235, 167, 0.25);
+            padding: 0.45rem 0.65rem;
+            box-shadow: 0 18px 40px rgba(17, 6, 12, 0.35);
+          }
+
+          .order-tabs::before {
+            background: linear-gradient(145deg, rgba(255, 235, 167, 0.18), rgba(115, 56, 87, 0.18));
+            filter: blur(24px);
+          }
+
+          .order-tab-btn {
+            padding: 0.55rem 0.8rem 0.35rem;
+            font-size: 0.7rem;
+            color: rgba(236, 236, 238, 0.65);
+          }
+
+          .order-tab-btn:not(.is-active) {
+            background: rgba(53, 55, 70, 0.45);
+            border: 1px solid rgba(236, 236, 238, 0.08);
+          }
+
+          .order-tab-btn.is-active {
+            background: linear-gradient(135deg, rgba(255, 235, 167, 0.9), rgba(115, 56, 87, 0.95));
+            color: #1f2029;
+            box-shadow: 0 12px 30px rgba(255, 235, 167, 0.35);
+          }
+
+          .order-tab-btn.is-active .order-tab-label {
+            -webkit-text-fill-color: #1f2029;
+            -webkit-text-stroke: 0;
+          }
+
+          .order-tab-indicator {
+            display: none;
+          }
+
+          .order-tab-badge {
+            background: rgba(236, 236, 238, 0.18);
+            color: rgba(236, 236, 238, 0.78);
+          }
+
+          .order-tab-badge.is-active {
+            background: rgba(31, 32, 41, 0.18);
+            color: #1f2029;
+          }
+        }
+
+        @keyframes tabGlow {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.45; }
+          50% { transform: translate(-50%, -50%) scale(1.25); opacity: 0.8; }
         }
       `}</style>
     </div>

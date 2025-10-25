@@ -181,3 +181,342 @@
     0 14px 28px rgba(0, 0, 0, 0.12),
     0 10px 10px rgba(0, 0, 0, 0.08);
 }
+
+/* Stylized cancel dialog */
+.order-cancel-dialog {
+  --order-dialog-color: #333;
+  --order-dialog-background: #fefefe;
+  --order-dialog-focus: #ff0078;
+  padding: 20px;
+  border: 0;
+  background: none;
+  color: var(--order-dialog-color);
+  width: min(90vw, 620px);
+  max-width: 620px;
+  animation: order-dialog-exit 0.3s forwards ease, order-dialog-fade-out 0.3s forwards ease;
+}
+
+.order-cancel-dialog[open] {
+  animation: order-dialog-enter 0.3s ease, order-dialog-fade-in 0.3s forwards ease;
+}
+
+.order-cancel-dialog::backdrop {
+  background: rgba(51, 51, 51, 0.45);
+  animation: order-dialog-fade-out 0.3s forwards ease;
+}
+
+.order-cancel-dialog[open]::backdrop {
+  animation: order-dialog-fade-in 0.3s forwards ease;
+}
+
+.order-cancel-dialog:focus-visible {
+  outline: none;
+}
+
+.order-dialog-canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.order-dialog-wrapper {
+  position: relative;
+  background: var(--order-dialog-background);
+  color: var(--order-dialog-color);
+  border: 4px solid var(--order-dialog-color);
+  border-radius: 20px;
+  padding: 2rem;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  box-shadow:
+    1px 1px 0 0 var(--order-dialog-color),
+    2px 2px 0 0 var(--order-dialog-color),
+    3px 3px 0 0 var(--order-dialog-color),
+    4px 4px 0 0 var(--order-dialog-color),
+    5px 5px 0 0 var(--order-dialog-color);
+  scrollbar-width: none;
+}
+
+.order-dialog-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.order-dialog-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  z-index: -1;
+  border-radius: inherit;
+  background-image:
+    repeating-linear-gradient(
+      transparent,
+      transparent 50px,
+      rgba(51, 51, 51, 0.2) 0,
+      rgba(51, 51, 51, 0.2) 51px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 50px,
+      rgba(51, 51, 51, 0.2) 0,
+      rgba(51, 51, 51, 0.2) 51px
+    );
+  mask-image: linear-gradient(-45deg, transparent 50%, black);
+}
+
+.order-dialog-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #733857;
+}
+
+.order-dialog-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(26, 26, 26, 0.7);
+  margin-bottom: 1.5rem;
+}
+
+.order-dialog-textarea {
+  width: 100%;
+  border: 1px solid rgba(26, 26, 26, 0.3);
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.order-dialog-textarea:focus {
+  outline: none;
+  border-color: #733857;
+  box-shadow: 0 0 0 3px rgba(115, 56, 87, 0.15);
+}
+
+.order-dialog-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.order-dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.order-dialog-primary,
+.order-dialog-secondary,
+.order-dialog-close-button {
+  cursor: pointer;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: 999px;
+  border: 4px solid var(--order-dialog-color);
+  background: var(--order-dialog-background);
+  color: var(--order-dialog-color);
+  padding: 0.75em 1.6em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  box-shadow:
+    1px 1px 0 0 var(--order-dialog-color),
+    2px 2px 0 0 var(--order-dialog-color),
+    3px 3px 0 0 var(--order-dialog-color);
+  transition: transform 0.2s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.order-dialog-close-button {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
+.order-dialog-close-button:focus-visible,
+.order-dialog-primary:focus-visible,
+.order-dialog-secondary:focus-visible {
+  outline: 5px dashed var(--order-dialog-focus);
+  outline-offset: 3px;
+}
+
+.order-dialog-close-button:hover {
+  background: var(--order-dialog-color);
+  color: var(--order-dialog-background);
+}
+
+.order-dialog-close-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.order-dialog-primary {
+  background: #733857;
+  color: #fff;
+  border-color: #733857;
+  box-shadow:
+    1px 1px 0 0 #733857,
+    2px 2px 0 0 #733857,
+    3px 3px 0 0 #733857;
+}
+
+.order-dialog-primary:hover {
+  background: #8d4466;
+  border-color: #8d4466;
+  transform: translate(-2px, -2px);
+}
+
+.order-dialog-primary:active {
+  transform: translate(2px, 2px);
+}
+
+.order-dialog-primary:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.order-dialog-secondary:hover {
+  transform: translate(-2px, -2px);
+  background: var(--order-dialog-color);
+  color: var(--order-dialog-background);
+}
+
+.order-dialog-secondary:active {
+  transform: translate(2px, 2px);
+}
+
+.order-dialog-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.order-dialog-close-icon {
+  width: 1em;
+  height: 1em;
+}
+
+@keyframes order-dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes order-dialog-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes order-dialog-enter {
+  from {
+    transform: translateY(-30px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes order-dialog-exit {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(30px);
+  }
+}
+
+@media (max-width: 640px) {
+  .order-cancel-dialog {
+    width: 94vw;
+    padding: 12px;
+  }
+
+  .order-dialog-wrapper {
+    padding: 1.75rem 1.25rem;
+    border-width: 3px;
+    box-shadow:
+      1px 1px 0 0 var(--order-dialog-color),
+      2px 2px 0 0 var(--order-dialog-color),
+      3px 3px 0 0 var(--order-dialog-color);
+  }
+
+  .order-dialog-wrapper::before {
+    display: none;
+  }
+
+  .order-dialog-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .order-dialog-primary,
+  .order-dialog-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .order-dialog-close-button {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-cancel-dialog {
+    width: 92vw;
+    padding: 10px;
+  }
+
+  .order-dialog-wrapper {
+    padding: 1.25rem 1rem;
+    border-width: 3px;
+    border-radius: 16px;
+    max-height: min(65vh, 420px);
+  }
+
+  .order-dialog-title {
+    font-size: 1.25rem;
+  }
+
+  .order-dialog-text {
+    font-size: 0.9rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .order-dialog-textarea {
+    font-size: 0.9rem;
+    min-height: 96px;
+  }
+
+  .order-dialog-actions {
+    gap: 0.5rem;
+  }
+
+  .order-dialog-primary,
+  .order-dialog-secondary,
+  .order-dialog-close-button {
+    padding: 0.65em 1.1em;
+    font-size: 0.72rem;
+    box-shadow:
+      1px 1px 0 0 var(--order-dialog-color),
+      2px 2px 0 0 var(--order-dialog-color);
+  }
+
+  .order-dialog-close-button {
+    align-self: flex-end;
+  }
+}
+
+.order-dialog-trigger {
+  position: relative;
+}
