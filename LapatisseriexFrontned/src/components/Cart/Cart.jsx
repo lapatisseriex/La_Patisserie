@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
+import AnimatedButton from '../common/AnimatedButton';
 import { toast } from 'react-toastify';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 import { formatVariantLabel } from '../../utils/variantUtils';
@@ -749,18 +750,18 @@ const Cart = () => {
               
               {/* Checkout Button */}
               <div className="px-4 md:flex md:justify-center mt-6">
-                <button 
+                <AnimatedButton
                   onClick={handleCheckout}
                   disabled={!canProceedToCheckout()}
-                  className={`w-full md:max-w-xs py-2 px-5 rounded-lg font-medium text-sm text-center transition-all duration-200 ${
-                    canProceedToCheckout()
-                      ? 'bg-[#733857] hover:bg-[#8d4466] text-white shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                  style={{fontFamily: 'Montserrat, Arial, sans-serif'}}
+                  className="w-full md:w-auto"
+                  style={{
+                    width: '100%',
+                    maxWidth: '320px',
+                    margin: '0 auto'
+                  }}
                 >
-                  {canProceedToCheckout() ? "Checkout" : getCheckoutButtonText()}
-                </button>
+                  {canProceedToCheckout() ? "CHECKOUT" : "SELECT HOSTEL"}
+                </AnimatedButton>
               </div>
               
               {!canProceedToCheckout() && (

@@ -7,6 +7,7 @@ import { useHostel } from '../../context/HostelContext/HostelContext';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import OfferBadge from '../common/OfferBadge';
+import AnimatedButton from '../common/AnimatedButton';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import {
   Mail,

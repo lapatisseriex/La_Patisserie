@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:200,900');
+
+.animated-btn {
+  position: relative;
+  padding: 12px 24px;  
+  border: none;
+  background: none;
+  cursor: pointer;
+  
+  font-family: "Source Code Pro", monospace;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 18px;  
+  color: var(--text-color, #ffffff);
+  
+  background-color: var(--btn-color, #733857);
+  box-shadow: var(--shadow-color, rgba(115, 56, 87, 0.4)) 2px 2px 22px;
+  border-radius: 8px; 
+  z-index: 0;  
+  overflow: hidden;
+  min-height: 56px;
+  min-width: 200px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.animated-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #999;
+  color: #ccc;
+}
+
+.animated-btn:not(:disabled):hover {
+  background-color: var(--btn-hover-color, #8d4466);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-color, rgba(115, 56, 87, 0.6)) 4px 8px 30px;
+}
+
+.animated-btn:focus {
+  outline: none;
+  box-shadow: var(--btn-color, #733857) 2px 2px 22px;
+}
+
+.animated-btn .right, 
+.animated-btn .left {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  pointer-events: none;
+}
+
+.animated-btn .right {
+  left: 66%;
+}
+
+.animated-btn .left {
+  right: 66%;
+}
+
+/* bubbles */
+.animated-btn::before {
+  content: '';
+  pointer-events: none;
+  opacity: .6;
+  background:
+    radial-gradient(circle at 20% 35%,  transparent 0,  transparent 2px, var(--text-color, hsla(210, 50%, 85%, 1)) 3px, var(--text-color, hsla(210, 50%, 85%, 1)) 4px, transparent 4px),
+    radial-gradient(circle at 75% 44%, transparent 0,  transparent 2px, var(--text-color, hsla(210, 50%, 85%, 1)) 3px, var(--text-color, hsla(210, 50%, 85%, 1)) 4px, transparent 4px),
+    radial-gradient(circle at 46% 52%, transparent 0, transparent 4px, var(--text-color, hsla(210, 50%, 85%, 1)) 5px, var(--text-color, hsla(210, 50%, 85%, 1)) 6px, transparent 6px);
+
+  width: 100%;
+  height: 300%;
+  top: 0;
+  left: 0;
+  position: absolute;
+  animation: bubbles 5s linear infinite both;
+}
+
+.animated-btn:disabled::before {
+  animation-play-state: paused;
+  opacity: 0.3;
+}
+
+@keyframes bubbles {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(0, -66.666%);
+  }
+}
+
+/* Custom color variants */
+.animated-btn.checkout-variant {
+  --text-color: #ffffff;
+  --shadow-color: rgba(115, 56, 87, 0.4);
+  --btn-color: #733857;
+  --btn-hover-color: #8d4466;
+  --bg-color: #fafafa;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.animated-btn.checkout-variant:hover {
+  --btn-color: #8d4466;
+  --shadow-color: rgba(141, 68, 102, 0.5);
+}
+
+.animated-btn.checkout-variant:focus {
+  box-shadow: #733857 2px 2px 22px;
+}
+
+.animated-btn.checkout-variant:disabled {
+  background-color: #cccccc;
+  color: #888888;
+  --text-color: #888888;
+}
