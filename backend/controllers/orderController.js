@@ -1084,8 +1084,9 @@ export const cancelUserOrder = asyncHandler(async (req, res) => {
     }
 
     // Update order status to cancelled
-    order.orderStatus = 'cancelled';
-    order.cancelReason = cancelReason || 'Cancelled by user';
+  order.orderStatus = 'cancelled';
+  order.cancelReason = cancelReason || 'Cancelled by user';
+  order.cancelledAt = new Date();
     await order.save();
 
     console.log('✅ Order cancelled successfully:', order.orderNumber);

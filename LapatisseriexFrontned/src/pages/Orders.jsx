@@ -30,7 +30,8 @@ const ORDER_FILTERS = [
   { key: 'all', label: 'ALL ORDERS' },
   { key: 'processing', label: 'PROCESSING', statuses: ['placed', 'confirmed', 'preparing', 'ready'] },
   { key: 'out_for_delivery', label: 'IN TRANSIT', statuses: ['out_for_delivery'] },
-  { key: 'delivered', label: 'DELIVERED', statuses: ['delivered'] }
+  { key: 'delivered', label: 'DELIVERED', statuses: ['delivered'] },
+  { key: 'cancelled', label: 'CANCELLED', statuses: ['cancelled'] }
 ];
 
 const Orders = () => {
@@ -67,8 +68,7 @@ const Orders = () => {
       const data = await response.json();
       
       const validOrders = (data.orders || []).filter(order => 
-        order.orderStatus !== 'pending' && 
-        order.orderStatus !== 'cancelled'
+        order.orderStatus !== 'pending'
       );
       
       setOrders(validOrders);
@@ -82,16 +82,25 @@ const Orders = () => {
     } finally {
       if (!silent) {
         setLoading(false);
-        console.log("Test");
       }
     }
   }, []);
 
   // Handle order cancellation
   const handleOrderCancelled = useCallback((orderNumber) => {
-    // Remove the cancelled order from the list
-    setOrders(prevOrders => prevOrders.filter(order => order.orderNumber !== orderNumber));
-  }, []);
+    setOrders(prevOrders => prevOrders.map(order => {
+      if (order.orderNumber === orderNumber) {
+        return {
+          ...order,
+          orderStatus: 'cancelled',
+          cancelledAt: order.cancelledAt || new Date().toISOString()
+        };
+      }
+      return order;
+    }));
+    setActiveFilter('cancelled');
+    fetchUserOrders({ silent: true });
+  }, [fetchUserOrders]);
 
   useEffect(() => {
     if (!user) {
@@ -171,9 +180,19 @@ const Orders = () => {
     return configs[status] || configs['placed'];
   };
 
+  const cancelledOrdersCount = useMemo(
+    () => orders.filter(order => order.orderStatus === 'cancelled').length,
+    [orders]
+  );
+
+  const activeOrdersCount = useMemo(
+    () => orders.filter(order => order.orderStatus !== 'cancelled').length,
+    [orders]
+  );
+
   const filterOrders = (filterKey) => {
     if (filterKey === 'all') {
-      return orders;
+      return orders.filter(order => order.orderStatus !== 'cancelled');
     }
 
     const filterConfig = ORDER_FILTERS.find(filter => filter.key === filterKey);
@@ -224,7 +243,7 @@ const Orders = () => {
                   color: 'rgba(26, 26, 26, 0.5)',
                   letterSpacing: '0.05em'
                 }}>
-                  {orders.length} {orders.length === 1 ? 'ORDER' : 'ORDERS'} PLACED
+                  {activeOrdersCount} {activeOrdersCount === 1 ? 'ORDER' : 'ORDERS'} ACTIVE
                 </p>
                 <span
                   className="text-xs font-semibold tracking-wide"
@@ -246,13 +265,24 @@ const Orders = () => {
               <button
                 key={filter.key}
                 onClick={() => setActiveFilter(filter.key)}
-                className="relative pb-2 text-xs font-semibold whitespace-nowrap transition-colors duration-200 tracking-widest"
+                className="relative pb-2 text-xs font-semibold whitespace-nowrap transition-colors duration-200 tracking-widest flex items-center gap-2"
                 style={{ 
                   color: activeFilter === filter.key ? '#733857' : 'rgba(26, 26, 26, 0.4)',
                   letterSpacing: '0.08em'
                 }}
               >
                 {filter.label}
+                {filter.key === 'cancelled' && cancelledOrdersCount > 0 && (
+                  <span
+                    className="inline-flex items-center justify-center text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: activeFilter === 'cancelled' ? 'rgba(115, 56, 87, 0.12)' : 'rgba(26, 26, 26, 0.1)',
+                      color: activeFilter === 'cancelled' ? '#733857' : 'rgba(26, 26, 26, 0.6)'
+                    }}
+                  >
+                    {cancelledOrdersCount}
+                  </span>
+                )}
                 {activeFilter === filter.key && (
                   <div 
                     className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434]"
@@ -305,8 +335,13 @@ const Orders = () => {
           </div>
         ) : (
           <div className="grid gap-4">
-            {filteredOrders.map((order, index) => (
-              <OrderCardComponent key={order._id} order={order} onOrderCancelled={handleOrderCancelled} />
+            {filteredOrders.map((order) => (
+              <OrderCardComponent 
+                key={order._id}
+                order={order}
+                onOrderCancelled={handleOrderCancelled}
+                isCancelledView={activeFilter === 'cancelled'}
+              />
             ))}
           </div>
         )}

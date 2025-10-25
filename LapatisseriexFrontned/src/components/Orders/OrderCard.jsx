@@ -15,8 +15,7 @@ import {
   ShoppingBag,
   Star,
   Eye,
-  X,
-  RotateCcw
+  X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { calculatePricing } from '../../utils/pricingUtils';
@@ -24,13 +23,11 @@ import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import axios from 'axios';
 import './OrderCard.css';
 
-const OrderCard = ({ order, onOrderCancelled }) => {
+const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
-  const [showUndo, setShowUndo] = useState(false);
-  const [undoTimeout, setUndoTimeout] = useState(null);
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -99,7 +96,10 @@ const OrderCard = ({ order, onOrderCancelled }) => {
   const defaultProductImage = "/placeholder-image.jpg";
   
   const statusConfig = getStatusConfig(order.orderStatus);
-  const StatusIcon = statusConfig.icon;
+  const isCancelled = order.orderStatus === 'cancelled';
+  const showGreyTheme = isCancelled || isCancelledView;
+  const statusColor = showGreyTheme ? '#6b7280' : statusConfig.color;
+  const StatusIcon = showGreyTheme ? XCircle : statusConfig.icon;
 
   // Check if order can be cancelled
   // Rules:
@@ -116,51 +116,39 @@ const OrderCard = ({ order, onOrderCancelled }) => {
   const handleCancelConfirm = async () => {
     setIsCancelling(true);
     setShowCancelConfirm(false);
-    
-    // Show undo option
-    setShowUndo(true);
-    
-    // Set timeout to actually cancel the order
-    const timeout = setTimeout(async () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        await axios.put(
-          `${import.meta.env.VITE_API_URL}/payments/orders/${order.orderNumber}/cancel`,
-          { cancelReason: cancelReason || 'Cancelled by user' },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.put(
+        `${import.meta.env.VITE_API_URL}/payments/orders/${order.orderNumber}/cancel`,
+        { cancelReason: cancelReason || 'Cancelled by user' },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-        );
-        
-        // Notify parent component to remove this order
-        if (onOrderCancelled) {
-          onOrderCancelled(order.orderNumber);
         }
-      } catch (error) {
-        console.error('Error cancelling order:', error);
-        alert('Failed to cancel order. Please try again.');
-        setShowUndo(false);
-        setIsCancelling(false);
+      );
+
+      if (onOrderCancelled) {
+        onOrderCancelled(order.orderNumber);
       }
-    }, 5000); // 5 second window to undo
-
-    setUndoTimeout(timeout);
-  };
-
-  const handleUndo = () => {
-    if (undoTimeout) {
-      clearTimeout(undoTimeout);
-      setUndoTimeout(null);
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert('Failed to cancel order. Please try again.');
+    } finally {
+      setIsCancelling(false);
+      setCancelReason('');
     }
-    setShowUndo(false);
-    setIsCancelling(false);
-    setCancelReason('');
   };
 
   return (
-    <div className="bg-white border border-gray-100 transition-all duration-300 hover:shadow-lg mb-6">
+    <div
+      className={`transition-all duration-300 mb-6 ${showGreyTheme ? 'bg-gray-100 border border-gray-200' : 'bg-white border border-gray-100 hover:shadow-lg'}`}
+      style={{
+        filter: showGreyTheme ? 'grayscale(0.15)' : 'none',
+        opacity: showGreyTheme ? 0.9 : 1
+      }}
+    >
       {/* Header Section */}
       <div className="p-6 pb-4">
         <div className="flex justify-between items-start mb-4">
@@ -175,14 +163,14 @@ const OrderCard = ({ order, onOrderCancelled }) => {
                 <StatusIcon 
                   className="w-3.5 h-3.5" 
                   style={{ 
-                    color: statusConfig.color,
+                    color: statusColor,
                     strokeWidth: 2.5
                   }} 
                 />
                 <span 
                   className="text-xs font-bold tracking-widest"
                   style={{ 
-                    color: statusConfig.color,
+                    color: statusColor,
                     letterSpacing: '0.12em'
                   }}
                 >
@@ -213,7 +201,7 @@ const OrderCard = ({ order, onOrderCancelled }) => {
           </div>
           
           <div className="text-right">
-            <p className="text-2xl font-medium mb-1" style={{ color: '#733857' }}>
+            <p className="text-2xl font-medium mb-1" style={{ color: showGreyTheme ? '#4b5563' : '#733857' }}>
               ₹{order.orderSummary?.grandTotal || order.amount}
             </p>
             <div className="flex items-center gap-1 text-xs" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
@@ -239,7 +227,7 @@ const OrderCard = ({ order, onOrderCancelled }) => {
                       }}
                     />
                   </div>
-                  <div className="absolute -top-1 -right-1 text-white text-[10px] w-4 h-4 flex items-center justify-center font-bold" style={{ backgroundColor: statusConfig.color }}>
+                  <div className="absolute -top-1 -right-1 text-white text-[10px] w-4 h-4 flex items-center justify-center font-bold" style={{ backgroundColor: statusColor }}>
                     {item.quantity}
                   </div>
                 </Link>
@@ -329,14 +317,14 @@ const OrderCard = ({ order, onOrderCancelled }) => {
                             const pricing = calculatePricing(item.variant);
                             const itemTotal = pricing.finalPrice * item.quantity;
                             return (
-                              <p className="font-medium text-sm" style={{ color: '#733857' }}>
+                              <p className="font-medium text-sm" style={{ color: showGreyTheme ? '#4b5563' : '#733857' }}>
                                 ₹{Math.round(itemTotal)}
                               </p>
                             );
                           }
 
                           return (
-                            <p className="font-medium text-sm" style={{ color: '#733857' }}>
+                            <p className="font-medium text-sm" style={{ color: showGreyTheme ? '#4b5563' : '#733857' }}>
                               ₹{Math.round(item.quantity * item.price)}
                             </p>
                           );
@@ -353,37 +341,6 @@ const OrderCard = ({ order, onOrderCancelled }) => {
 
       {/* Action Footer */}
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-        {/* Undo Banner - Show at top of footer if cancelling */}
-        {showUndo && (
-          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-800">
-                Order cancellation in progress... You have 5 seconds to undo.
-              </span>
-            </div>
-            <button
-              onClick={handleUndo}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-wide transition-all duration-300 shadow-sm hover:shadow-md"
-              style={{ 
-                backgroundColor: '#733857',
-                color: 'white'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#8d4466';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#733857';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>UNDO</span>
-            </button>
-          </div>
-        )}
-
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
             {order.orderStatus === 'delivered' && (
@@ -400,8 +357,8 @@ const OrderCard = ({ order, onOrderCancelled }) => {
             )}
             {order.orderStatus === 'cancelled' && (
               <div className="flex items-center gap-1">
-                <XCircle className="h-3.5 w-3.5" style={{ color: '#dc2626' }} />
-                <span>Cancelled</span>
+                <XCircle className="h-3.5 w-3.5" style={{ color: '#6b7280' }} />
+                <span style={{ color: '#6b7280' }}>Cancelled</span>
               </div>
             )}
           </div>
@@ -439,27 +396,44 @@ const OrderCard = ({ order, onOrderCancelled }) => {
               </button>
             )}
 
-            <Link 
-              to={`/orders/${order.orderNumber}`}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest transition-all duration-300 border"
-              style={{ 
-                color: '#733857',
-                borderColor: '#733857',
-                letterSpacing: '0.08em'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#733857';
-                e.currentTarget.style.color = 'white';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#733857';
-              }}
-            >
-              <Eye className="h-3.5 w-3.5" />
-              <span>TRACK ORDER</span>
-              <ExternalLink className="h-3 w-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </Link>
+            {showGreyTheme ? (
+              <button
+                type="button"
+                disabled
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest border cursor-not-allowed"
+                style={{
+                  color: '#6b7280',
+                  borderColor: 'rgba(156, 163, 175, 0.6)',
+                  backgroundColor: 'rgba(243, 244, 246, 0.8)',
+                  letterSpacing: '0.08em'
+                }}
+              >
+                <Eye className="h-3.5 w-3.5" />
+                <span>TRACK UNAVAILABLE</span>
+              </button>
+            ) : (
+              <Link 
+                to={`/orders/${order.orderNumber}`}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest transition-all duration-300 border"
+                style={{ 
+                  color: '#733857',
+                  borderColor: '#733857',
+                  letterSpacing: '0.08em'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#733857';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = '#733857';
+                }}
+              >
+                <Eye className="h-3.5 w-3.5" />
+                <span>TRACK ORDER</span>
+                <ExternalLink className="h-3 w-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -472,7 +446,7 @@ const OrderCard = ({ order, onOrderCancelled }) => {
               Cancel Order #{order.orderNumber}?
             </h3>
             <p className="text-sm mb-4" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
-              Are you sure you want to cancel this order? This action will be processed after 5 seconds unless you undo it.
+              Are you sure you want to cancel this order? This action cannot be undone.
             </p>
             <textarea
               placeholder="Reason for cancellation (optional)"

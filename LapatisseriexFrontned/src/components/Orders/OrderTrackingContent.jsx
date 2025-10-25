@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, X, RotateCcw } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, X, RotateCcw, BadgeCheck, ChefHat, Home } from 'lucide-react';
 import { calculatePricing } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import OfferBadge from '../common/OfferBadge';
@@ -223,123 +223,395 @@ const OrderTrackingContent = ({ order }) => {
     setCancelReason('');
   };
 
-  const StatusTimeline = ({ orderStatus }) => {
-    const steps = [
-      { key: 'placed', label: 'Order Placed', pngSrc: '/checkout.png', description: 'We have received your order' },
-      { key: 'out_for_delivery', label: 'Out for Delivery', pngSrc: '/market-capitalization.png', description: 'Your order is on the way' },
-      { key: 'delivered', label: 'Delivered', pngSrc: '/delivery-box.png', description: 'Order delivered successfully' }
-    ];
+  const StatusTimeline = ({ order }) => {
+    const orderStatus = order?.orderStatus || 'placed';
+    const baseSequence = ['placed', 'out_for_delivery', 'delivered'];
 
-    const normalizedStatus = steps.some(step => step.key === orderStatus) ? orderStatus : steps[0].key;
-    const currentStepIndex = steps.findIndex(step => step.key === normalizedStatus);
-    const stepsCount = Math.max(steps.length - 1, 1);
-    const progressPercentValue = currentStepIndex >= 0 ? (currentStepIndex / stepsCount) * 100 : 0;
-    const clampedProgress = Math.min(100, Math.max(0, progressPercentValue));
-    const progressPercent = `${clampedProgress.toFixed(2)}%`;
-    const verticalProgress = currentStepIndex <= 0 ? '0%' : progressPercent;
-    const horizontalProgress = currentStepIndex <= 0 ? '0%' : `calc(${progressPercent} - 3rem)`;
-    
-    return (
-      <div className="relative py-4 sm:py-8 px-2 sm:px-4">
-        {/* Mobile: Vertical Layout, Desktop: Horizontal Layout */}
-        <div className="block sm:hidden">
-          {/* Mobile Vertical Progress Line */}
-          <div className="absolute left-7 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-          <div 
-            className="absolute left-7 top-0 w-0.5 transition-all duration-700 ease-out"
-            style={{ 
-              height: verticalProgress,
-              background: 'linear-gradient(180deg, #733857 0%, #8d4466 50%, #412434 100%)'
-            }}
-          ></div>
-        </div>
-        
-        <div className="hidden sm:block">
-          {/* Desktop Horizontal Progress Line */}
-          <div className="absolute left-0 right-0 top-10 h-0.5 bg-gray-200" style={{ margin: '0 3rem' }}></div>
-          <div 
-            className="absolute left-0 top-10 h-0.5 transition-all duration-700 ease-out"
-            style={{ 
-              width: horizontalProgress,
-              marginLeft: '3rem',
-              background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)'
-            }}
-          ></div>
-        </div>
+    let sequence = [...baseSequence];
+    if (orderStatus === 'cancelled') {
+      sequence = ['placed', 'cancelled'];
+    }
 
-        {/* Steps Container - Responsive */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between relative gap-6 sm:gap-0">
-          {steps.map((step, index) => {
-            const isCompleted = index <= currentStepIndex;
-            const isActive = index === currentStepIndex;
-            
-            return (
-              <div 
-                key={step.key} 
-                className="flex items-center sm:flex-col sm:items-center relative flex-1 w-full sm:w-auto"
-                style={{ animation: `fadeIn 0.4s ease-out ${index * 0.15}s both` }}
+    const timelineGradient = 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)';
+    const successGradient = 'linear-gradient(135deg, #059669 0%, #10b981 100%)';
+    const dangerGradient = 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)';
+
+    const timelineConfig = {
+      pending: {
+        label: 'Awaiting payment confirmation',
+        description: 'We are waiting for the payment gateway to confirm your order.',
+        icon: Clock,
+        accent: '#6b7280'
+      },
+      placed: {
+        label: 'Order placed',
+        description: 'We’ve received your order and shared the details with our kitchen.',
+        icon: CreditCard,
+        accent: '#733857'
+      },
+      confirmed: {
+        label: 'Order confirmed',
+        description: 'Our pastry team has confirmed your order and locked the schedule.',
+        icon: BadgeCheck,
+        accent: '#8d4466'
+      },
+      preparing: {
+        label: 'Preparing your desserts',
+        description: 'Your desserts are being handcrafted by our chefs.',
+        icon: ChefHat,
+        accent: '#f59e0b'
+      },
+      ready: {
+        label: 'Packed & ready',
+        description: 'Your order is packed and ready for dispatch.',
+        icon: Package,
+        accent: '#6366f1'
+      },
+      out_for_delivery: {
+        label: 'Out for delivery',
+        description: 'Our delivery partner is on the way to your location.',
+        icon: Truck,
+        accent: '#8d4466'
+      },
+      delivered: {
+        label: 'Delivered',
+        description: 'Order successfully delivered. Enjoy your treats!',
+        icon: Home,
+        accent: '#059669'
+      },
+      cancelled: {
+        label: 'Cancelled',
+        description: 'This order was cancelled. Contact support if you need assistance.',
+        icon: X,
+        accent: '#dc2626'
+      }
+    };
+
+    const statusTimestamps = (() => {
+      const map = {};
+      if (!order) return map;
+
+      const candidateCollections = [
+        order.statusHistory,
+        order.statusTimeline,
+        order.statusLogs,
+        order.statusUpdates,
+        order.timeline
+      ];
+
+      candidateCollections.forEach((collection) => {
+        if (Array.isArray(collection)) {
+          collection.forEach((entry) => {
+            if (!entry) return;
+            const key = entry.status || entry.state || entry.key;
+            const value = entry.timestamp || entry.time || entry.date || entry.updatedAt || entry.createdAt;
+            if (key && value && !map[key]) {
+              map[key] = value;
+            }
+          });
+        } else if (collection && typeof collection === 'object') {
+          Object.entries(collection).forEach(([key, value]) => {
+            if (!key || value === undefined || value === null || map[key]) return;
+            if (typeof value === 'object') {
+              map[key] = value.timestamp || value.time || value.date || value.updatedAt || value.createdAt;
+            } else {
+              map[key] = value;
+            }
+          });
+        }
+      });
+
+      if (order.createdAt && !map.placed) {
+        map.placed = order.createdAt;
+      }
+      if (order.paymentStatus === 'pending' && order.createdAt && !map.pending) {
+        map.pending = order.createdAt;
+      }
+      if (order.estimatedDeliveryTime) {
+        map.ready = map.ready || order.estimatedDeliveryTime;
+        map.out_for_delivery = map.out_for_delivery || order.estimatedDeliveryTime;
+      }
+      if (order.actualDeliveryTime) {
+        map.delivered = map.delivered || order.actualDeliveryTime;
+      } else if (order.orderStatus === 'delivered' && order.updatedAt) {
+        map.delivered = map.delivered || order.updatedAt;
+      }
+      if (order.cancelledAt) {
+        map.cancelled = map.cancelled || order.cancelledAt;
+      } else if (order.orderStatus === 'cancelled' && order.updatedAt) {
+        map.cancelled = map.cancelled || order.updatedAt;
+      }
+
+      if (!map.out_for_delivery && map.ready) {
+        map.out_for_delivery = map.ready;
+      }
+      if (!map.placed && (order.createdAt || orderStatus === 'placed')) {
+        map.placed = order.createdAt || order.updatedAt;
+      }
+
+      return map;
+    })();
+
+    const formatTimestamp = (statusKey) => {
+      const raw = statusTimestamps?.[statusKey];
+      if (!raw) return null;
+      const date = new Date(raw);
+      if (Number.isNaN(date.getTime())) return null;
+      return {
+        dateLabel: date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+        timeLabel: date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+      };
+    };
+
+    const statusAliasMap = {
+      pending: 'placed',
+      confirmed: 'placed',
+      preparing: 'placed',
+      ready: 'out_for_delivery'
+    };
+
+    const normalizedStatus = (() => {
+      if (sequence.includes(orderStatus)) return orderStatus;
+      if (orderStatus === 'cancelled') return 'cancelled';
+      const alias = statusAliasMap[orderStatus];
+      return alias && sequence.includes(alias) ? alias : sequence[0];
+    })();
+
+    const currentIndex = Math.max(0, sequence.indexOf(normalizedStatus));
+
+    const buildVisuals = (statusKey, state) => {
+      const config = timelineConfig[statusKey] || timelineConfig.placed;
+      const accent = config.accent || '#733857';
+
+      const baseCircle = {
+        backgroundColor: '#ffffff',
+        color: accent,
+        border: `2px solid ${statusKey === 'pending' ? 'rgba(107, 114, 128, 0.35)' : 'rgba(115, 56, 87, 0.2)'}`,
+        boxShadow: 'none',
+        transform: 'scale(1)'
+      };
+
+      if (state === 'complete') {
+        return {
+          config,
+          circleStyles: {
+            backgroundColor: statusKey === 'delivered' ? '#059669' : statusKey === 'cancelled' ? '#dc2626' : accent,
+            color: '#ffffff',
+            border: 'none',
+            boxShadow: statusKey === 'delivered'
+              ? '0 6px 18px rgba(5, 150, 105, 0.25)'
+              : statusKey === 'cancelled'
+                ? '0 6px 18px rgba(220, 38, 38, 0.25)'
+                : '0 6px 18px rgba(115, 56, 87, 0.22)',
+            transform: 'scale(1)'
+          },
+          iconColor: '#ffffff',
+          labelColor: statusKey === 'cancelled' ? '#b91c1c' : '#733857',
+          descriptionColor: 'rgba(26, 26, 26, 0.6)',
+          timestampColor: 'rgba(26, 26, 26, 0.6)'
+        };
+      }
+
+      if (state === 'current') {
+        return {
+          config,
+          circleStyles: {
+            background: statusKey === 'delivered'
+              ? successGradient
+              : statusKey === 'cancelled'
+                ? dangerGradient
+                : timelineGradient,
+            color: '#ffffff',
+            border: 'none',
+            boxShadow: statusKey === 'delivered'
+              ? '0 10px 24px rgba(5, 150, 105, 0.30)'
+              : statusKey === 'cancelled'
+                ? '0 10px 24px rgba(220, 38, 38, 0.30)'
+                : '0 10px 24px rgba(115, 56, 87, 0.28)',
+            transform: 'scale(1.05)'
+          },
+          iconColor: '#ffffff',
+          labelColor: statusKey === 'cancelled' ? '#b91c1c' : '#733857',
+          descriptionColor: 'rgba(26, 26, 26, 0.65)',
+          timestampColor: 'rgba(26, 26, 26, 0.6)'
+        };
+      }
+
+      return {
+        config,
+        circleStyles: baseCircle,
+        iconColor: accent,
+        labelColor: 'rgba(26, 26, 26, 0.45)',
+        descriptionColor: 'rgba(26, 26, 26, 0.4)',
+        timestampColor: 'rgba(26, 26, 26, 0.35)'
+      };
+    };
+
+    const getConnectorGradient = (currentStatus, nextStatus) => {
+      if (nextStatus === 'cancelled') {
+        return dangerGradient;
+      }
+      if (nextStatus === 'delivered' || currentStatus === 'delivered') {
+        return successGradient;
+      }
+      return timelineGradient;
+    };
+
+    const renderDesktopStep = (statusKey, index) => {
+      const state = index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'upcoming';
+      const { config, circleStyles, iconColor, labelColor, descriptionColor, timestampColor } = buildVisuals(statusKey, state);
+      const timestamp = formatTimestamp(statusKey);
+      const IconComponent = config.icon || Package;
+
+      return (
+        <div
+          key={statusKey}
+          className="flex flex-col items-center text-center gap-3"
+          style={{ minWidth: '8.5rem' }}
+        >
+          <div
+            className={`flex items-center justify-center rounded-full transition-all duration-300 ${state === 'current' ? 'w-14 h-14' : 'w-12 h-12'}`}
+            style={circleStyles}
+          >
+            <IconComponent className="w-5 h-5" style={{ color: iconColor }} />
+          </div>
+          <div className="space-y-2">
+            <p
+              className="text-sm font-semibold uppercase tracking-[0.18em]"
+              style={{ color: labelColor }}
+            >
+              {config.label}
+            </p>
+            {timestamp ? (
+              <p className="text-xs font-medium" style={{ color: timestampColor }}>
+                {timestamp.dateLabel} • {timestamp.timeLabel}
+              </p>
+            ) : (
+              <p className="text-xs font-medium italic" style={{ color: 'rgba(26, 26, 26, 0.35)' }}>
+                Awaiting update
+              </p>
+            )}
+            <p
+              className="text-xs leading-relaxed max-w-[180px] mx-auto"
+              style={{ color: descriptionColor }}
+            >
+              {config.description}
+            </p>
+            {state === 'current' && (
+              <div
+                className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full"
+                style={{
+                  backgroundColor: statusKey === 'cancelled' ? 'rgba(220, 38, 38, 0.12)' : 'rgba(115, 56, 87, 0.12)',
+                  color: statusKey === 'cancelled' ? '#b91c1c' : '#733857'
+                }}
               >
-                {/* Icon Circle - Responsive */}
-                <div 
-                  className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 relative z-10 transition-all duration-300 mb-0 sm:mb-4 mr-4 sm:mr-0 rounded-full"
-                  style={{
-                    backgroundColor: isCompleted ? (isActive ? '#733857' : '#10b981') : 'white',
-                    border: `2px solid ${isCompleted ? (isActive ? '#733857' : '#10b981') : '#e5e7eb'}`,
-                    transform: isActive ? 'scale(1.1)' : 'scale(1)',
-                    boxShadow: isActive ? '0 4px 12px rgba(115, 56, 87, 0.25)' : isCompleted ? '0 2px 8px rgba(16, 185, 129, 0.15)' : 'none'
-                  }}
-                >
-                  <img 
-                    src={step.pngSrc} 
-                    alt={step.label}
-                    className="w-4 h-4 sm:w-5 sm:h-5" 
-                    style={{ 
-                      filter: isCompleted ? 'brightness(0) invert(1)' : 'brightness(0.4)',
-                      transition: 'filter 0.3s ease'
-                    }}
-                  />
-                </div>
-
-                {/* Content - Responsive */}
-                <div className="text-left sm:text-center flex-1 sm:flex-initial">
-                  <p 
-                    className="font-medium mb-1 sm:mb-2 text-sm sm:text-sm"
-                    style={{ color: isCompleted ? '#733857' : 'rgba(26, 26, 26, 0.5)' }}
-                  >
-                    {step.label}
-                  </p>
-                  <p 
-                    className="text-xs leading-relaxed max-w-none sm:max-w-[140px]"
-                    style={{ color: 'rgba(26, 26, 26, 0.5)' }}
-                  >
-                    {step.description}
-                  </p>
-                  {isActive && (
-                    <div 
-                      className="inline-flex items-center mt-2 sm:mt-3 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-medium rounded-lg"
-                      style={{
-                        backgroundColor: 'rgba(115, 56, 87, 0.08)',
-                        color: '#733857'
-                      }}
-                    >
-                      Current Status
-                    </div>
-                  )}
-                  {isCompleted && !isActive && (
-                    <div className="flex items-center sm:justify-center mt-2 sm:mt-3 text-xs" style={{ color: '#10b981' }}>
-                      <img 
-                        src="/delivery-box.png" 
-                        alt="Completed"
-                        className="w-3.5 h-3.5 mr-1" 
-                        style={{ filter: 'hue-rotate(90deg) saturate(2) brightness(0.8)' }}
-                      />
-                      Completed
-                    </div>
-                  )}
-                </div>
+                {statusKey === 'cancelled' ? 'Order cancelled' : 'Current status'}
               </div>
-            );
-          })}
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const renderConnector = (index) => {
+      if (index >= sequence.length - 1) return null;
+      const connectorFilled = index < currentIndex;
+      const currentStatus = sequence[index];
+      const nextStatus = sequence[index + 1];
+      const connectorGradient = getConnectorGradient(currentStatus, nextStatus);
+
+      return (
+        <div key={`connector-${currentStatus}`} className="flex-1 h-0.5 relative top-8 mx-3">
+          <div className="w-full h-0.5 bg-gray-200 rounded-full"></div>
+          <div
+            className="absolute top-0 left-0 h-0.5 rounded-full transition-all duration-500 ease-out"
+            style={{
+              width: connectorFilled ? '100%' : '0%',
+              background: connectorGradient
+            }}
+          ></div>
+        </div>
+      );
+    };
+
+    const renderMobileStep = (statusKey, index) => {
+      const state = index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'upcoming';
+      const { config, circleStyles, iconColor, labelColor, descriptionColor, timestampColor } = buildVisuals(statusKey, state);
+      const timestamp = formatTimestamp(statusKey);
+      const IconComponent = config.icon || Package;
+
+      return (
+        <div key={`mobile-${statusKey}`} className="relative pl-14">
+          <div className="absolute left-0 top-1 flex flex-col items-center">
+            <div
+              className={`flex items-center justify-center rounded-full transition-all duration-300 ${state === 'current' ? 'w-12 h-12' : 'w-10 h-10'}`}
+              style={circleStyles}
+            >
+              <IconComponent className="w-5 h-5" style={{ color: iconColor }} />
+            </div>
+            {index < sequence.length - 1 && (
+              <div className="w-px h-14 mt-3 bg-gray-200">
+                <div
+                  className="w-px rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    height: index < currentIndex ? '100%' : '0%',
+                    background: getConnectorGradient(statusKey, sequence[index + 1])
+                  }}
+                ></div>
+              </div>
+            )}
+          </div>
+          <div className="pb-8">
+            <p
+              className="text-sm font-semibold uppercase tracking-[0.14em]"
+              style={{ color: labelColor }}
+            >
+              {config.label}
+            </p>
+            {timestamp ? (
+              <p className="text-xs font-medium mt-1" style={{ color: timestampColor }}>
+                {timestamp.dateLabel} • {timestamp.timeLabel}
+              </p>
+            ) : (
+              <p className="text-xs font-medium italic mt-1" style={{ color: 'rgba(26, 26, 26, 0.35)' }}>
+                Awaiting update
+              </p>
+            )}
+            <p
+              className="text-xs leading-relaxed mt-2"
+              style={{ color: descriptionColor }}
+            >
+              {config.description}
+            </p>
+            {state === 'current' && (
+              <div
+                className="inline-flex items-center mt-3 px-3 py-1 text-xs font-semibold rounded-full"
+                style={{
+                  backgroundColor: statusKey === 'cancelled' ? 'rgba(220, 38, 38, 0.12)' : 'rgba(115, 56, 87, 0.12)',
+                  color: statusKey === 'cancelled' ? '#b91c1c' : '#733857'
+                }}
+              >
+                {statusKey === 'cancelled' ? 'Order cancelled' : 'Current status'}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="w-full">
+        <div className="hidden sm:flex items-start">
+          {sequence.map((statusKey, index) => (
+            <React.Fragment key={`desktop-${statusKey}`}>
+              {renderDesktopStep(statusKey, index)}
+              {renderConnector(index)}
+            </React.Fragment>
+          ))}
+        </div>
+
+        <div className="sm:hidden flex flex-col gap-6 mt-2">
+          {sequence.map((statusKey, index) => renderMobileStep(statusKey, index))}
         </div>
       </div>
     );
@@ -469,7 +741,7 @@ const OrderTrackingContent = ({ order }) => {
         <h3 className="text-base sm:text-lg font-medium mb-4 sm:mb-6" style={{ color: '#1a1a1a' }}>
           Order Progress
         </h3>
-        <StatusTimeline orderStatus={order.orderStatus} />
+  <StatusTimeline order={order} />
       </div>
 
       {/* Order Items - Responsive */}

@@ -149,6 +149,10 @@ const orderSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  cancelledAt: {
+    type: Date,
+    default: null
+  },
   refundDetails: {
     refundId: String,
     refundAmount: Number,
@@ -165,6 +169,7 @@ const orderSchema = new mongoose.Schema({
 // Indexes for better query performance (some already defined as unique)
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ orderStatus: 1 });
+orderSchema.index({ cancelledAt: 1 }, { partialFilterExpression: { cancelledAt: { $type: 'date' } } });
 orderSchema.index({ createdAt: -1 });
 
 // Virtual for formatted order number display
@@ -253,5 +258,16 @@ orderSchema.statics.generateOrderNumber = function() {
   const random = Math.floor(Math.random() * 1000);
   return `ORD${timestamp}${random}`;
 };
+
+orderSchema.pre('save', function(next) {
+  if (this.isModified('orderStatus')) {
+    if (this.orderStatus === 'cancelled') {
+      this.cancelledAt = this.cancelledAt || new Date();
+    } else {
+      this.cancelledAt = null;
+    }
+  }
+  next();
+});
 
 export default mongoose.model('Order', orderSchema);

@@ -945,8 +945,9 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     }
 
     // Update order status to cancelled, keep payment as pending
-    order.orderStatus = 'cancelled';
-    order.paymentStatus = 'pending'; // ✅ Show as PENDING when user cancels
+  order.orderStatus = 'cancelled';
+  order.paymentStatus = 'pending'; // ✅ Show as PENDING when user cancels
+  order.cancelledAt = new Date();
     await order.save();
 
     console.log('✅ Order cancelled successfully:', order.orderNumber);
@@ -1057,7 +1058,8 @@ export const handleWebhook = asyncHandler(async (req, res) => {
           { razorpayOrderId: failedPayment.order_id },
           { 
             paymentStatus: 'failed',
-            orderStatus: 'cancelled' // Mark order as cancelled when payment fails
+            orderStatus: 'cancelled', // Mark order as cancelled when payment fails
+            cancelledAt: new Date()
           },
           { new: true }
         );
@@ -1291,15 +1293,11 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 
     const skip = (page - 1) * limit;
     
-    // ✅ ONLY SHOW VALID ORDERS for users
-    // Exclude orders where:
-    // - orderStatus is 'pending' (payment not completed yet)
-    // - orderStatus is 'cancelled' (user cancelled or payment failed)
-    // - paymentStatus is 'cancelled' (payment was cancelled)
+    // ✅ Return all non-pending orders so users can review cancellations as well
     const orders = await Order.find({ 
       userId,
-      orderStatus: { $nin: ['pending', 'cancelled'] }, // Exclude pending and cancelled orders
-      paymentStatus: { $nin: ['cancelled', 'created'] } // Exclude cancelled and just-created payments
+      orderStatus: { $ne: 'pending' },
+      paymentStatus: { $ne: 'created' }
     })
       .populate({
         path: 'hostelId',
@@ -1349,8 +1347,8 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 
     const total = await Order.countDocuments({ 
       userId,
-      orderStatus: { $in: ['placed', 'confirmed', 'ready', 'out_for_delivery', 'delivered'] },
-      paymentStatus: { $ne: 'cancelled' }
+      orderStatus: { $ne: 'pending' },
+      paymentStatus: { $ne: 'created' }
     });
 
     res.json({

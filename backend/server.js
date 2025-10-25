@@ -213,6 +213,93 @@ const startServer = async () => {
     };
     scheduleCartExpiryCleanup();
 
+    const scheduleCancelledOrderCleanup = () => {
+      const MINUTE_MS = 60 * 1000;
+      const retentionHoursRaw = parseFloat(process.env.CANCELLED_ORDER_RETENTION_HOURS || '24');
+      const retentionHours = Number.isFinite(retentionHoursRaw) && retentionHoursRaw > 0 ? retentionHoursRaw : 24;
+      const retentionMs = retentionHours * 60 * 60 * 1000;
+
+      const intervalMinutesRaw = parseFloat(process.env.CANCELLED_ORDER_CLEANUP_INTERVAL_MINUTES || '60');
+      const intervalMinutes = Number.isFinite(intervalMinutesRaw) && intervalMinutesRaw >= 15 ? intervalMinutesRaw : 60;
+      const intervalMs = intervalMinutes * MINUTE_MS;
+
+      const batchSizeRaw = parseInt(process.env.CANCELLED_ORDER_CLEANUP_BATCH_SIZE || '25', 10);
+      const batchSize = Number.isInteger(batchSizeRaw) && batchSizeRaw > 0 ? batchSizeRaw : 25;
+
+      const runCleanup = async () => {
+        try {
+          const [orderModule, emailModule, logoModule] = await Promise.all([
+            import('./models/orderModel.js'),
+            import('./utils/orderEmailService.js'),
+            import('./utils/logoUtils.js')
+          ]);
+
+          const Order = orderModule.default;
+          const { sendOrderStatusNotification } = emailModule;
+          const { getLogoData } = logoModule;
+
+          const cutoff = new Date(Date.now() - retentionMs);
+          const staleOrders = await Order.find({
+            orderStatus: 'cancelled',
+            cancelledAt: { $type: 'date', $lte: cutoff }
+          })
+            .sort({ cancelledAt: 1 })
+            .limit(batchSize)
+            .populate('userId', 'name email phone')
+            .lean();
+
+          if (!staleOrders.length) {
+            return;
+          }
+
+          const logoData = getLogoData();
+
+          for (const order of staleOrders) {
+            const userDetails = {
+              ...(order.userDetails || {}),
+              name: order.userDetails?.name || order.userId?.name || 'Guest',
+              email: order.userDetails?.email || order.userId?.email || null,
+              phone: order.userDetails?.phone || order.userId?.phone || null
+            };
+
+            const recipientEmail = userDetails.email;
+
+            if (recipientEmail && typeof sendOrderStatusNotification === 'function') {
+              try {
+                await sendOrderStatusNotification(
+                  {
+                    ...order,
+                    userDetails
+                  },
+                  'cleanup_cancelled',
+                  recipientEmail,
+                  logoData
+                );
+              } catch (emailError) {
+                console.error(`Failed to send cleanup email for order ${order.orderNumber}:`, emailError.message);
+              }
+            } else {
+              console.warn(`Skipping cleanup email for order ${order.orderNumber}: missing recipient email.`);
+            }
+
+            try {
+              await Order.deleteOne({ _id: order._id });
+              console.log(`🧹 Removed cancelled order ${order.orderNumber} after retention window`);
+            } catch (deleteError) {
+              console.error(`Failed to delete cancelled order ${order.orderNumber}:`, deleteError.message);
+            }
+          }
+        } catch (cleanupError) {
+          console.error('Cancelled order cleanup task failed:', cleanupError.message);
+        }
+      };
+
+      setInterval(runCleanup, intervalMs);
+      setTimeout(runCleanup, 5 * MINUTE_MS);
+      console.log(`🗓️  Cancelled order cleanup scheduled (retention: ${retentionHours}h, every ${intervalMinutes}m, batch size: ${batchSize})`);
+    };
+    scheduleCancelledOrderCleanup();
+
   // Apply rate limiting and connection pool protection
   app.use(connectionPoolMiddleware);
   app.use('/api', generalRateLimit);

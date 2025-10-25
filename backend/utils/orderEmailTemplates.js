@@ -58,6 +58,13 @@ export const getOrderStatusEmailTemplate = async (orderDetails, newStatus, logoA
       message: 'Your order has been delivered! We hope you enjoy every bite. Thank you for choosing La Patisserie!',
       icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,11 12,14 22,4"></polyline><path d="m21,3-6.5,18a.55.55,0,0,1-1,0L10,14Z"></path></svg>`,
       color: '#059669'
+    },
+    cleanup_cancelled: {
+      subject: `Order Record Removed - ${orderNumber}`,
+      title: 'Order Record Closed',
+  message: 'This is a quick note to confirm that your cancelled order has been automatically removed from your La Patisserie order history after the 24-hour retention window. If you need a copy of the details, feel free to reach out to our support team within the next 7 days.',
+      icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>`,
+      color: '#6B7280'
     }
   };
 
