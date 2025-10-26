@@ -30,7 +30,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
   const { addToCart, getItemQuantity, updateQuantity, cartItems } = useCart();
 
-  const { user } = useAuth();
+  const { user, toggleAuthPanel, changeAuthType } = useAuth();
   const { trackProductView } = useRecentlyViewed();
   const { buttonRef: addToCartButtonRef } = useSparkToCart();
   const navigate = useNavigate();
@@ -244,28 +244,28 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
+    // If user is not logged in, open auth modal/sidebar and return
+    if (!user) {
+      if (typeof toggleAuthPanel === 'function') toggleAuthPanel();
+      if (typeof changeAuthType === 'function') changeAuthType('login');
+      return;
+    }
     if (!isProductAvailable) return;
-    
     try {
       // Check shop status in real-time before adding to cart
       const currentStatus = await checkShopStatusNow();
-      
       if (!currentStatus.isOpen) {
         // Shop is now closed, UI will update automatically
         return;
       }
-
       // Find the correct variant index
       const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
-      
       // Debug: log variant tracking behavior
       console.log('[AddToCart from Card] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
-
       // Add to cart with correct variant index
       await addToCart(currentProduct, 1, variantIndex);
-      
       // Trigger a targeted refresh soon after add to cart to reflect stock
-    setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
+      setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
     } catch (error) {
       console.error('Error adding to cart:', error);
       const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
@@ -275,22 +275,21 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
   const handleReserve = async (e) => {
     e.stopPropagation();
-    
+    // If user is not logged in, open auth modal/sidebar and return
+    if (!user) {
+      if (typeof toggleAuthPanel === 'function') toggleAuthPanel();
+      if (typeof changeAuthType === 'function') changeAuthType('login');
+      return;
+    }
     if (!isProductAvailable) {
       return;
     }
-    
     console.log('🎯 Reserve button clicked on Home page');
-    
     const currentQuantity = getItemQuantity(currentProduct._id);
-    
     const goCart = () => { try { navigate('/cart'); } catch { window.location.href = '/cart'; } };
-
     if (currentQuantity > 0) {
-      // Product already in cart - navigate immediately
       goCart();
     } else {
-      // Product not in cart - fire-and-forget add, then navigate immediately
       const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
       console.log('[Reserve] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
       addToCart(currentProduct, 1, variantIndex)

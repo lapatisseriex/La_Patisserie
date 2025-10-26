@@ -37,7 +37,7 @@ const ProductDisplayPageNew = () => {
   
   const { addToCart, getItemQuantity, updateQuantity, cartItems, isLoading } = useCart();
   const { fetchRecentlyViewed, trackProductView } = useRecentlyViewed();
-  const { user } = useAuth();
+  const { user, toggleAuthPanel, changeAuthType } = useAuth();
   const { isFavorite } = useFavorites();
 
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
@@ -361,6 +361,12 @@ const ProductDisplayPageNew = () => {
 
   const handleAddToCart = async () => {
     if (!product || totalStock === 0 || isAddingToCart) return;
+    // If user is not logged in, open auth modal/sidebar and return
+    if (!user) {
+      if (typeof toggleAuthPanel === 'function') toggleAuthPanel();
+      if (typeof changeAuthType === 'function') changeAuthType('login');
+      return;
+    }
     setIsAddingToCart(true);
     try {
       await addToCart(product, 1, selectedVariantIndex);
@@ -375,20 +381,20 @@ const ProductDisplayPageNew = () => {
   const handleReserve = async (event) => {
     event.preventDefault();
     event.stopPropagation();
-    
     if (!product) return;
-    
+    // If user is not logged in, open auth modal/sidebar and return
+    if (!user) {
+      if (typeof toggleAuthPanel === 'function') toggleAuthPanel();
+      if (typeof changeAuthType === 'function') changeAuthType('login');
+      return;
+    }
     const currentQuantity = getItemQuantity(product._id);
-    
-    // Navigate immediately for snappy UX; perform add in background if needed
     const goCart = () => {
       try { navigate('/cart'); } catch { window.location.href = '/cart'; }
     };
-
     if (currentQuantity > 0) {
       goCart();
     } else {
-      // Fire-and-forget: optimistic add then navigate without waiting
       addToCart(product, 1, selectedVariantIndex)
         .catch(async (error) => {
           console.error('❌ Error reserving product:', error);
