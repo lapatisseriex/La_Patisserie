@@ -1036,9 +1036,7 @@ const OrderTrackingContent = ({ order }) => {
 
           <div className="order-dialog-wrapper">
             <h2 className="order-dialog-title">Cancel Order #{order.orderNumber}?</h2>
-            <p className="order-dialog-text">
-              Are you sure you want to cancel this order? You will have 5 seconds to undo this action after confirming.
-            </p>
+            
             <textarea
               placeholder="Reason for cancellation (optional)"
               value={cancelReason}
