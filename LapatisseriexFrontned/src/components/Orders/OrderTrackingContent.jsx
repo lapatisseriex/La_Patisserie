@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, X, RotateCcw, BadgeCheck, ChefHat, Home } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, X, BadgeCheck, ChefHat, Home } from 'lucide-react';
 import { calculatePricing } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import OfferBadge from '../common/OfferBadge';
 import { useAuth } from '../../hooks/useAuth';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import axios from 'axios';
+import './OrderCard.css';
 
 const OrderTrackingContent = ({ order }) => {
   const navigate = useNavigate();
@@ -15,8 +16,7 @@ const OrderTrackingContent = ({ order }) => {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
-  const [showUndo, setShowUndo] = useState(false);
-  const [undoTimeout, setUndoTimeout] = useState(null);
+  const dialogRef = useRef(null);
   const formatAmount = (value) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? Math.round(parsed) : 0;
@@ -176,51 +176,65 @@ const OrderTrackingContent = ({ order }) => {
                     && order.paymentMethod === 'cod';
 
   const handleCancelClick = () => {
-    setShowCancelConfirm(true);
+    if (dialogRef.current) {
+      if (dialogRef.current.open) {
+        return;
+      }
+      setCancelReason('');
+      setIsCancelling(false);
+      setShowCancelConfirm(true);
+      dialogRef.current.showModal();
+    }
+  };
+
+  const handleDialogClose = () => {
+    setShowCancelConfirm(false);
+  };
+
+  const handleDialogCancel = (event) => {
+    if (isCancelling) {
+      event.preventDefault();
+    }
+  };
+
+  const closeCancelDialog = () => {
+    if (dialogRef.current?.open) {
+      dialogRef.current.close();
+    }
+  };
+
+  const handleKeepOrder = () => {
+    setIsCancelling(false);
+    closeCancelDialog();
+    setCancelReason('');
   };
 
   const handleCancelConfirm = async () => {
+    const reasonToSend = cancelReason || 'Cancelled by user';
     setIsCancelling(true);
     setShowCancelConfirm(false);
-    
-    // Show undo option
-    setShowUndo(true);
-    
-    // Set timeout to actually cancel the order
-    const timeout = setTimeout(async () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        await axios.put(
-          `${import.meta.env.VITE_API_URL}/payments/orders/${order.orderNumber}/cancel`,
-          { cancelReason: cancelReason || 'Cancelled by user' },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+    closeCancelDialog();
+
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.put(
+        `${import.meta.env.VITE_API_URL}/payments/orders/${order.orderNumber}/cancel`,
+        { cancelReason: reasonToSend },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-        );
-        
-        // Redirect to orders page after successful cancellation
-        navigate('/orders');
-      } catch (error) {
-        console.error('Error cancelling order:', error);
-        alert('Failed to cancel order. Please try again.');
-        setShowUndo(false);
-        setIsCancelling(false);
-      }
-    }, 5000); // 5 second window to undo
+        }
+      );
 
-    setUndoTimeout(timeout);
-  };
-
-  const handleUndo = () => {
-    if (undoTimeout) {
-      clearTimeout(undoTimeout);
-      setUndoTimeout(null);
+      navigate('/orders');
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert('Failed to cancel order. Please try again.');
+    } finally {
+      setIsCancelling(false);
+      setCancelReason('');
     }
-    setShowUndo(false);
-    setIsCancelling(false);
-    setCancelReason('');
   };
 
   const StatusTimeline = ({ order }) => {
@@ -467,7 +481,7 @@ const OrderTrackingContent = ({ order }) => {
         <div
           key={statusKey}
           className="flex flex-col items-center text-center gap-3"
-          style={{ minWidth: '8.5rem' }}
+          style={{ minWidth: '8.5rem', flex: '0 0 8.5rem' }}
         >
           <div
             className={`flex items-center justify-center rounded-full transition-all duration-300 ${state === 'current' ? 'w-14 h-14' : 'w-12 h-12'}`}
@@ -521,7 +535,11 @@ const OrderTrackingContent = ({ order }) => {
       const connectorGradient = getConnectorGradient(currentStatus, nextStatus);
 
       return (
-        <div key={`connector-${currentStatus}`} className="flex-1 h-0.5 relative top-8 mx-3">
+        <div
+          key={`connector-${currentStatus}`}
+          className="h-0.5 relative top-8 mx-3"
+          style={{ flex: '0 0 110px', minWidth: '110px' }}
+        >
           <div className="w-full h-0.5 bg-gray-200 rounded-full"></div>
           <div
             className="absolute top-0 left-0 h-0.5 rounded-full transition-all duration-500 ease-out"
@@ -601,13 +619,17 @@ const OrderTrackingContent = ({ order }) => {
 
     return (
       <div className="w-full">
-        <div className="hidden sm:flex items-start">
-          {sequence.map((statusKey, index) => (
-            <React.Fragment key={`desktop-${statusKey}`}>
-              {renderDesktopStep(statusKey, index)}
-              {renderConnector(index)}
-            </React.Fragment>
-          ))}
+        <div className="hidden sm:block">
+          <div className="overflow-x-auto pb-6 -mx-4 sm:-mx-6">
+            <div className="flex items-start gap-0 min-w-max px-4 sm:px-6">
+              {sequence.map((statusKey, index) => (
+                <React.Fragment key={`desktop-${statusKey}`}>
+                  {renderDesktopStep(statusKey, index)}
+                  {renderConnector(index)}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="sm:hidden flex flex-col gap-6 mt-2">
@@ -645,7 +667,7 @@ const OrderTrackingContent = ({ order }) => {
           boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
         }}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3 sm:gap-0">
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4 sm:gap-0">
           <div className="flex-1">
             <h2 className="text-xl sm:text-2xl font-light mb-1" style={{ color: '#1a1a1a' }}>
               Order #{order.orderNumber}
@@ -665,8 +687,10 @@ const OrderTrackingContent = ({ order }) => {
           </div>
           
           {/* Status Badge - Responsive */}
-          <div className="flex items-center gap-2 sm:gap-2.5 px-3 py-2 rounded-lg sm:rounded-none sm:px-3 sm:py-1.5" 
-               style={{ backgroundColor: 'rgba(115, 56, 87, 0.05)' }}>
+          <div
+            className="flex items-center gap-2 sm:gap-2.5 px-3 py-2 rounded-lg sm:rounded-none sm:px-3 sm:py-1.5 self-start sm:self-auto"
+            style={{ backgroundColor: 'rgba(115, 56, 87, 0.05)' }}
+          >
             {(() => {
               // Get appropriate PNG based on status
               const statusToPng = {
@@ -692,10 +716,7 @@ const OrderTrackingContent = ({ order }) => {
             })()}
             <span 
               className="text-xs sm:text-sm font-bold tracking-wide sm:tracking-widest"
-              style={{ 
-                color: statusConfig.color,
-                letterSpacing: '0.08em sm:0.12em'
-              }}
+              style={{ color: statusConfig.color }}
             >
               {statusConfig.label}
             </span>
@@ -704,13 +725,13 @@ const OrderTrackingContent = ({ order }) => {
 
         {/* Total Amount - Responsive */}
         <div className="pt-3 sm:pt-4 border-t border-gray-100">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>Total Amount</span>
             <span className="text-xl sm:text-2xl font-medium" style={{ color: '#733857' }}>
               ₹{formatAmount(summary?.grandTotal ?? order.amount ?? 0)}
             </span>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center mt-2 text-sm gap-1 sm:gap-0" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
+          <div className="flex flex-col sm:flex-row sm:items-center mt-2 text-sm gap-2 sm:gap-0" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
             <div className="flex items-center">
               {order.paymentMethod === 'cod' ? (
                 <>
@@ -773,7 +794,7 @@ const OrderTrackingContent = ({ order }) => {
             return (
               <div 
                 key={index} 
-                className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-b-0 last:pb-0"
+                className="flex flex-col sm:flex-row sm:items-center gap-4 pb-4 border-b border-gray-100 last:border-b-0 last:pb-0"
               >
                 {/* Clickable Product Image */}
                 <div 
@@ -802,7 +823,7 @@ const OrderTrackingContent = ({ order }) => {
                 </div>
 
                 {/* Product Details */}
-                <div className="flex-1">
+                <div className="flex-1 w-full">
                   <div className="flex items-center gap-2 mb-1">
                     <p 
                       className="font-medium cursor-pointer hover:text-[#733857] transition-colors duration-300" 
@@ -844,7 +865,7 @@ const OrderTrackingContent = ({ order }) => {
                 </div>
 
                 {/* Price */}
-                <div className="text-right flex-shrink-0">
+                <div className="w-full sm:w-auto text-left sm:text-right sm:flex-shrink-0">
                   {hasDiscount && (
                     <div className="text-xs line-through" style={{ color: 'rgba(26, 26, 26, 0.45)' }}>
                       ₹{formatAmount(originalLineTotal)}
@@ -857,7 +878,7 @@ const OrderTrackingContent = ({ order }) => {
                     ₹{formatAmount(safeUnitPrice)} each
                   </p>
                   {hasDiscount && (
-                    <div className="mt-1 flex justify-end">
+                    <div className="mt-1 flex justify-start sm:justify-end">
                       <OfferBadge label={`${discountPercentage}% OFF`} className="text-[10px]" />
                     </div>
                   )}
@@ -871,13 +892,13 @@ const OrderTrackingContent = ({ order }) => {
       {/* Order Summary */}
       {summary && (
         <div 
-          className="bg-white border border-gray-100 p-6"
+          className="bg-white border border-gray-100 p-4 sm:p-6"
           style={{ 
             animation: 'fadeIn 0.4s ease-out 0.3s both',
             boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
           }}
         >
-          <h3 className="text-lg font-medium mb-4" style={{ color: '#1a1a1a' }}>
+          <h3 className="text-base sm:text-lg font-medium mb-4" style={{ color: '#1a1a1a' }}>
             Order Summary
           </h3>
           <div className="space-y-3">
@@ -914,13 +935,13 @@ const OrderTrackingContent = ({ order }) => {
       {/* Delivery Information */}
       {(order.deliveryLocation || order.deliveryAddress) && (
         <div 
-          className="bg-white border border-gray-100 p-6"
+          className="bg-white border border-gray-100 p-4 sm:p-6"
           style={{ 
             animation: 'fadeIn 0.4s ease-out 0.4s both',
             boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
           }}
         >
-          <h3 className="text-lg font-medium mb-4" style={{ color: '#1a1a1a' }}>
+          <h3 className="text-base sm:text-lg font-medium mb-4" style={{ color: '#1a1a1a' }}>
             Delivery Information
           </h3>
           <div className="space-y-3">
@@ -965,7 +986,7 @@ const OrderTrackingContent = ({ order }) => {
       {/* Cancel Order Button - Only show if order can be cancelled */}
       {canCancel && !isCancelling && (
         <div 
-          className="bg-white border border-gray-100 p-6 flex justify-end"
+          className="bg-white border border-gray-100 p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-end gap-3"
           style={{ 
             animation: 'fadeIn 0.4s ease-out 0.5s both',
             boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
@@ -973,7 +994,7 @@ const OrderTrackingContent = ({ order }) => {
         >
           <button
             onClick={handleCancelClick}
-            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold tracking-widest transition-all duration-300 border"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-6 py-3 text-sm font-bold tracking-widest transition-all duration-300 border"
             style={{ 
               color: '#733857',
               borderColor: '#733857',
@@ -994,102 +1015,65 @@ const OrderTrackingContent = ({ order }) => {
         </div>
       )}
 
-      {/* Cancel Confirmation Modal */}
-      {showCancelConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-xl font-bold mb-4" style={{ color: '#733857' }}>
-              Cancel Order #{order.orderNumber}?
-            </h3>
-            <p className="text-sm mb-4" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
-              Are you sure you want to cancel this order? You'll have 5 seconds to undo this action.
+      <dialog
+        ref={dialogRef}
+        className="order-cancel-dialog"
+        data-open={showCancelConfirm ? 'true' : 'false'}
+        onCancel={handleDialogCancel}
+        onClose={handleDialogClose}
+        aria-label={`Cancel order ${order.orderNumber}`}
+      >
+        <div className="order-dialog-canvas">
+          <button
+            type="button"
+            className="order-dialog-close-button"
+            onClick={handleKeepOrder}
+            disabled={isCancelling}
+          >
+            <span>Close</span>
+            <X className="order-dialog-close-icon" />
+          </button>
+
+          <div className="order-dialog-wrapper">
+            <h2 className="order-dialog-title">Cancel Order #{order.orderNumber}?</h2>
+            <p className="order-dialog-text">
+              Are you sure you want to cancel this order? You will have 5 seconds to undo this action after confirming.
             </p>
             <textarea
               placeholder="Reason for cancellation (optional)"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              className="w-full border border-gray-300 p-3 mb-4 text-sm"
-              rows="3"
-              style={{ color: '#1a1a1a' }}
+              className="order-dialog-textarea"
+              rows={3}
+              disabled={isCancelling}
             />
-            <div className="flex gap-3 justify-end">
+            <div className="order-dialog-actions">
               <button
-                onClick={() => {
-                  setShowCancelConfirm(false);
-                  setCancelReason('');
-                }}
-                className="px-5 py-2.5 text-sm font-bold border transition-all duration-300"
-                style={{ 
-                  color: 'rgba(26, 26, 26, 0.6)',
-                  borderColor: 'rgba(26, 26, 26, 0.3)'
-                }}
+                type="button"
+                className="order-dialog-secondary"
+                onClick={handleKeepOrder}
+                disabled={isCancelling}
               >
-                KEEP ORDER
+                Keep Order
               </button>
               <button
+                type="button"
+                className="order-dialog-primary"
                 onClick={handleCancelConfirm}
-                className="px-5 py-2.5 text-sm font-bold transition-all duration-300"
-                style={{ 
-                  backgroundColor: '#733857',
-                  color: 'white'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#8d4466';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#733857';
-                }}
+                disabled={isCancelling}
               >
-                YES, CANCEL ORDER
+                {isCancelling ? 'Cancelling...' : 'Yes, cancel order'}
               </button>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Undo Button - Fixed bottom right */}
-      {showUndo && (
-        <div className="fixed bottom-24 right-6 z-[9999]" style={{
-          animation: 'slideUp 0.3s ease-out'
-        }}>
-          <button
-            onClick={handleUndo}
-            className="flex items-center gap-3 px-6 py-4 shadow-2xl text-white text-base font-bold tracking-wide transition-all duration-300 hover:shadow-3xl"
-            style={{ 
-              backgroundColor: '#733857',
-              zIndex: 9999
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#8d4466';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#733857';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <RotateCcw className="h-5 w-5" />
-            <span>UNDO CANCEL</span>
-          </button>
-        </div>
-      )}
+      </dialog>
 
       <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
             transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
           }
           to {
             opacity: 1;

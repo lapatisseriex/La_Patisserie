@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle, XCircle, Eye, Calendar, MapPin, ShoppingBag, ChevronRight, CreditCard, Banknote } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, XCircle, Eye, Calendar, MapPin, ShoppingBag, ChevronRight, CreditCard, Banknote, Menu, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { calculatePricing } from '../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../utils/variantUtils';
@@ -38,9 +38,33 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Log mobile device model info on mount
+  useEffect(() => {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      console.log('Mobile device detected:', navigator.userAgent);
+    }
+  }, []);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const previousOverflowRef = useRef('');
   const { user } = useAuth();
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
+  const activeFilterConfig = useMemo(
+    () => ORDER_FILTERS.find(filter => filter.key === activeFilter) || ORDER_FILTERS[0],
+    [activeFilter]
+  );
+  const handleFilterChange = useCallback((filterKey) => {
+    setActiveFilter(filterKey);
+    setIsMobileFiltersOpen(false);
+  }, []);
+  const handleToggleMobileFilters = useCallback(() => {
+    setIsMobileFiltersOpen(prev => !prev);
+  }, []);
+  const closeMobileFilters = useCallback(() => {
+    setIsMobileFiltersOpen(false);
+  }, []);
 
   const fetchUserOrders = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -133,6 +157,51 @@ const Orders = () => {
       webSocketService.offOrderStatusUpdate(handleOrderStatusUpdate);
     };
   }, [user, fetchUserOrders]);
+
+  useEffect(() => {
+    if (!isMobileFiltersOpen || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsMobileFiltersOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileFiltersOpen]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const body = document.body;
+    if (!body) {
+      return undefined;
+    }
+
+    if (isMobileFiltersOpen) {
+      previousOverflowRef.current = body.style.overflow;
+      body.style.overflow = 'hidden';
+    } else {
+      body.style.overflow = previousOverflowRef.current || '';
+    }
+
+    return () => {
+      body.style.overflow = previousOverflowRef.current || '';
+    };
+  }, [isMobileFiltersOpen]);
+
+  // ...existing code...
+
+  // Main container style for mobile: prevent unwanted horizontal scroll/space
+  const mainContainerStyle = {
+    width: '100vw',
+    overflowX: 'hidden',
+  };
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -260,28 +329,73 @@ const Orders = () => {
       {/* Filter Tabs */}
       <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="order-tabs flex space-x-4 sm:space-x-8 overflow-x-auto no-scrollbar py-3 sm:py-4">
-            {ORDER_FILTERS.map((filter) => {
-              const isActive = activeFilter === filter.key;
-              return (
-                <button
-                  key={filter.key}
-                  onClick={() => setActiveFilter(filter.key)}
-                  className={`order-tab-btn ${isActive ? 'is-active' : ''}`}
-                >
-                  <span className="order-tab-label">{filter.label}</span>
-                  {filter.key === 'cancelled' && cancelledOrdersCount > 0 && (
-                    <span className={`order-tab-badge ${isActive ? 'is-active' : ''}`}>
-                      {cancelledOrdersCount}
-                    </span>
-                  )}
-                  <span className="order-tab-indicator" aria-hidden="true" />
-                </button>
-              );
-            })}
+          <div className="py-3 sm:py-4">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleToggleMobileFilters}
+                className="inline-flex items-center gap-2 rounded-full border border-[#733857] px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#733857] transition hover:bg-[#733857] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#733857]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                aria-expanded={isMobileFiltersOpen}
+                aria-controls="mobile-order-filter-menu"
+              >
+                {isMobileFiltersOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+             
+              </button>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.32em] text-[#1a1a1a]/70">
+                {activeFilterConfig.label}
+              </span>
+            </div>
           </div>
         </div>
       </div>
+
+      {isMobileFiltersOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-[#1f2029]/95 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Order filters"
+          onClick={closeMobileFilters}
+        >
+          <div className="flex h-full flex-col" onClick={(event) => event.stopPropagation()}>
+            <div className="flex justify-end p-6">
+              <button
+                type="button"
+                onClick={closeMobileFilters}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white/70 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f2029]"
+                aria-label="Close filter menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <nav id="mobile-order-filter-menu" className="flex flex-1 items-center justify-center px-8 pb-12">
+              <ul className="w-full max-w-xs space-y-5 text-center">
+                {ORDER_FILTERS.map((filter) => {
+                  const isActive = activeFilter === filter.key;
+                  return (
+                    <li key={filter.key}>
+                      <button
+                        type="button"
+                        onClick={() => handleFilterChange(filter.key)}
+                        className={`flex w-full items-center justify-center gap-3 rounded-full border px-6 py-3 text-sm font-semibold uppercase transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ffeba7]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f2029] ${isActive ? 'border-white bg-white text-[#733857] shadow-[0_18px_45px_rgba(255,235,167,0.28)]' : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'}`}
+                      >
+                        <span className="tracking-[0.32em]">{filter.label}</span>
+                        {filter.key === 'cancelled' && cancelledOrdersCount > 0 && (
+                          <span
+                            className={`inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full border px-2 text-[0.68rem] font-bold tracking-normal ${isActive ? 'border-[#733857] text-[#733857]' : 'border-white/40 text-white/80'}`}
+                          >
+                            {cancelledOrdersCount}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -292,7 +406,7 @@ const Orders = () => {
           >
             <div className="flex items-start">
               <XCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-              <div>
+            <div style={mainContainerStyle}>
                 <p className="text-sm font-medium text-red-800">Unable to load orders</p>
                 <p className="text-xs text-red-600 mt-1">{error}</p>
               </div>
@@ -367,153 +481,6 @@ const Orders = () => {
           scrollbar-width: none;
         }
 
-        .order-tabs {
-          position: relative;
-          display: flex;
-          padding-inline: 0.35rem;
-          border-radius: 32px;
-          background: rgba(50, 22, 34, 0.08);
-          border: 1px solid rgba(115, 56, 87, 0.18);
-          isolation: isolate;
-        }
-
-        .order-tabs::before {
-          content: '';
-          position: absolute;
-          inset: -15px;
-          background: linear-gradient(145deg, rgba(255, 235, 167, 0.22), rgba(115, 56, 87, 0.12));
-          border-radius: inherit;
-          z-index: -2;
-          filter: blur(16px);
-          opacity: 0.9;
-        }
-
-        .order-tabs::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 120px;
-          height: 120px;
-          background: radial-gradient(circle at center, rgba(255, 235, 167, 0.25), transparent 65%);
-          transform: translate(-50%, -50%);
-          border-radius: 50%;
-          animation: tabGlow 8s linear infinite;
-          z-index: -1;
-        }
-
-        .order-tab-btn {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.65rem 0.95rem 0.45rem;
-          border-radius: 999px;
-          font-size: 0.72rem;
-          font-weight: 600;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(26, 26, 26, 0.45);
-          transition: color 180ms ease, transform 180ms ease, background 220ms ease, box-shadow 220ms ease;
-          flex-shrink: 0;
-        }
-
-        .order-tab-btn .order-tab-indicator {
-          position: absolute;
-          inset: auto 18% -0.2rem;
-          height: 3px;
-          border-radius: 999px;
-          background: transparent;
-          transition: background 220ms ease, transform 220ms ease;
-        }
-
-        .order-tab-btn.is-active {
-          color: #ffeba7;
-          transform: translateY(-2px);
-          background: linear-gradient(135deg, rgba(115, 56, 87, 0.92), rgba(65, 36, 52, 0.92));
-          box-shadow: 0 10px 30px rgba(115, 56, 87, 0.22);
-        }
-
-        .order-tab-btn.is-active .order-tab-label {
-          -webkit-text-stroke: 0.5px rgba(255, 235, 167, 0.4);
-        }
-
-        .order-tab-btn.is-active .order-tab-indicator {
-          background: linear-gradient(90deg, #ffeba7 0%, #f8b7d4 50%, #733857 100%);
-        }
-
-        .order-tab-badge {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 0.68rem;
-          padding: 0.18rem 0.5rem;
-          border-radius: 999px;
-          background: rgba(26, 26, 26, 0.08);
-          color: rgba(26, 26, 26, 0.55);
-          transition: background 200ms ease, color 200ms ease;
-        }
-
-        .order-tab-badge.is-active {
-          background: rgba(255, 235, 167, 0.2);
-          color: #ffeba7;
-        }
-
-        @media (max-width: 640px) {
-          .order-tabs {
-            background: rgba(31, 32, 41, 0.92);
-            border: 1px solid rgba(255, 235, 167, 0.25);
-            padding: 0.45rem 0.65rem;
-            box-shadow: 0 18px 40px rgba(17, 6, 12, 0.35);
-          }
-
-          .order-tabs::before {
-            background: linear-gradient(145deg, rgba(255, 235, 167, 0.18), rgba(115, 56, 87, 0.18));
-            filter: blur(24px);
-          }
-
-          .order-tab-btn {
-            padding: 0.55rem 0.8rem 0.35rem;
-            font-size: 0.7rem;
-            color: rgba(236, 236, 238, 0.65);
-          }
-
-          .order-tab-btn:not(.is-active) {
-            background: rgba(53, 55, 70, 0.45);
-            border: 1px solid rgba(236, 236, 238, 0.08);
-          }
-
-          .order-tab-btn.is-active {
-            background: linear-gradient(135deg, rgba(255, 235, 167, 0.9), rgba(115, 56, 87, 0.95));
-            color: #1f2029;
-            box-shadow: 0 12px 30px rgba(255, 235, 167, 0.35);
-          }
-
-          .order-tab-btn.is-active .order-tab-label {
-            -webkit-text-fill-color: #1f2029;
-            -webkit-text-stroke: 0;
-          }
-
-          .order-tab-indicator {
-            display: none;
-          }
-
-          .order-tab-badge {
-            background: rgba(236, 236, 238, 0.18);
-            color: rgba(236, 236, 238, 0.78);
-          }
-
-          .order-tab-badge.is-active {
-            background: rgba(31, 32, 41, 0.18);
-            color: #1f2029;
-          }
-        }
-
-        @keyframes tabGlow {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.45; }
-          50% { transform: translate(-50%, -50%) scale(1.25); opacity: 0.8; }
-        }
       `}</style>
     </div>
   );

@@ -711,13 +711,7 @@ const Profile = () => {
         setTimeout(() => {
           setSuccessMessage('Profile updated successfully!');
         }, 400);
-        
-        // Scroll to top smoothly to show success message
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 450);
-        
-        // Wait a moment to show success, then exit edit mode
+        // Wait a moment to show success, then exit edit mode and scroll to bottom
         setTimeout(() => {
           setIsEditMode(false);
           localStorage.removeItem('profileEditMode');
@@ -923,11 +917,7 @@ const Profile = () => {
               <div className="relative">
                 <ProfileImageUpload isEditMode={isEditMode} />
               </div>
-              {user?.phoneVerified && (
-                <div className="absolute -bottom-1 -right-1 bg-black p-1.5 shadow-lg">
-                  <Shield className="h-4 w-4 text-white" />
-                </div>
-              )}
+             
             </div>
             
             {/* User Info & Actions */}
@@ -936,12 +926,7 @@ const Profile = () => {
                 <h1 className="text-3xl font-bold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
                   {formData.name || 'Welcome Back'}
                 </h1>
-                {user?.phoneVerified && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-black text-xs font-semibold" style={{color: '#281c20'}}>
-                    <Shield className="h-3 w-3" />
-                    Verified
-                  </span>
-                )}
+              
               </div>
               <p className="text-gray-600 mb-4" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Manage your sweet preferences & delivery details</p>
               
@@ -1442,4 +1427,5 @@ const Profile = () => {
 };
 
 export default Profile;
+
 
