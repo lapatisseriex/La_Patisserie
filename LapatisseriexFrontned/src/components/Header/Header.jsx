@@ -648,9 +648,9 @@ const Header = ({ isAdminView = false }) => {
                 onMouseEnter={handleMegaMenuEnter}
                 onMouseLeave={handleMegaMenuLeave}
               >
-                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}>
-                  <img src="/food.png" alt="Menu" className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
-                  <span className="relative z-10">Menu</span>
+                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base rounded-lg transition-all duration-300 relative group text-center md:text-center align-middle" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}>
+                  <img src="/food.png" alt="Menu" className="h-5 w-5 transition-all duration-300 group-hover:scale-110 align-middle" />
+                  <span className="relative z-10 font-light" style={{color: '#733857', fontWeight: 400, verticalAlign: 'middle'}}>Menu</span>
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </Link>
                 
@@ -789,13 +789,13 @@ const Header = ({ isAdminView = false }) => {
                 onMouseLeave={handleLocationHoverLeave}
               >
                 <button 
-                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base transition-all duration-300 relative group"
+                  className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base transition-all duration-300 relative group text-center md:text-center align-middle"
                   onClick={toggleLocationDropdown}
                   style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
                 >
-                  <img src="/compass.png" alt="Location" className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
-                  <span className="truncate max-w-[120px] sm:max-w-[140px] font-light relative z-10">{memoizedUserLocationDisplay}</span>
-                  <ChevronDown className="h-4 w-4 transition-all duration-300 group-hover:rotate-180" style={{color: '#281c20'}} />
+                  <img src="/compass.png" alt="Location" className="h-5 w-5 transition-all duration-300 group-hover:scale-110 align-middle" />
+                  <span className="truncate max-w-[120px] sm:max-w-[140px] font-light relative z-10" style={{color: '#733857', fontWeight: 400, verticalAlign: 'middle'}}>{memoizedUserLocationDisplay}</span>
+                  <ChevronDown className="h-4 w-4 transition-all duration-300 group-hover:rotate-180 align-middle" style={{color: '#281c20'}} />
                   {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                     <div className="absolute -top-1 -right-1">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />

@@ -46,7 +46,7 @@ const HandpickedForYou = () => {
     <section className="w-full py-0 md:py-6 bg-white">
       <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
         <div className="mb-8">
-          <h2 className="text-2xl font-light tracking-wide text-left text-[#733857]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <h2 className="text-2xl font-light tracking-wide text-center md:text-center text-[#733857]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Handpicked for You
           </h2>
         </div>

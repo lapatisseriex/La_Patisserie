@@ -74,10 +74,10 @@ const NGOSidePanel = ({ isOpen, onClose }) => {
               <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-[#cf91d9] rounded-full animate-ping" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-[#281c20]">
+              <h2 className="text-xl sm:text-2xl font-light tracking-wide" style={{ color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 கற்பிப்போம் (Karpippom)
               </h2>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-sm sm:text-base font-normal tracking-wide" style={{ color: '#555', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 To Teach. To Empower. To Transform Lives.
               </p>
             </div>

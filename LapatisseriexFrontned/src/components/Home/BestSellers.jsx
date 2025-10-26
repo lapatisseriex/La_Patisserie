@@ -35,13 +35,11 @@ const BestSellers = () => {
   return (
     <section className="w-full bg-white">
       <div className="max-w-screen-2xl mx-auto px-3 sm:px-4">
-        <div className="mb-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{ 
-            fontFamily: 'system-ui, -apple-system, sans-serif'
-          }}>
+        <div className="mb-8">
+          <h2 className="text-2xl font-light tracking-wide text-center md:text-center text-[#733857]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             Best Sellers
           </h2>
-          <p className="text-sm sm:text-base text-center text-gray-600 mt-2 font-light">
+          <p className="text-sm sm:text-base text-center md:text-center text-gray-600 mt-2 font-light">
             Our most loved creations
           </p>
         </div>

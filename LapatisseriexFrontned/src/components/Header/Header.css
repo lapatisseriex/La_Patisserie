@@ -1,6 +1,8 @@
 /* Header Styles */
 
 /* Apply modern system font to all text elements */
+
+/* Unify font style for header, menu, location text */
 .category-swiper,
 .breadcrumb,
 .header-container,
@@ -9,7 +11,10 @@
 .nav-link,
 .auth-panel-closing,
 .mobile-menu {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.03em;
+  color: #281c20;
 }
 
 /* Special styling for the logo text */

@@ -37,10 +37,10 @@ const NGODonationPage = () => {
               <Heart className="w-6 h-6 text-white fill-white" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-light tracking-wide">
+              <h1 className="text-3xl sm:text-4xl font-light tracking-wide" style={{ color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 கற்பிப்போம் (Karpippom)
               </h1>
-              <p className="text-white/90 text-sm mt-1 tracking-wide">
+              <p className="text-sm mt-1 font-normal tracking-wide" style={{ color: '#555', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 To Teach. To Empower. To Transform Lives.
               </p>
             </div>
