@@ -612,48 +612,62 @@ export const createOrder = asyncHandler(async (req, res) => {
         console.error('❌ Error emitting WebSocket event for new order:', wsError);
       }
 
-      // Send email asynchronously
-      setImmediate(async () => {
+      // Send emails asynchronously in parallel (customer and admin simultaneously) - Execute immediately
+      (async () => {
         try {
           const user = await User.findById(userId).select('email name phone');
           const orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
 
           const userEmailTarget = user?.email || orderDetailsForEmail?.userDetails?.email;
+          
+          // Send both customer and admin emails in parallel
+          const emailPromises = [];
+          
+          // Customer email
           if (userEmailTarget) {
             console.log('Sending COD order confirmation email to:', userEmailTarget);
-            
-            // Get logo data for email attachment
             const logoData = getLogoData();
-            
-            const emailResult = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData);
-            if (emailResult.success) {
-              console.log('Order confirmation email sent successfully:', emailResult.messageId);
-            } else {
-              console.error('Failed to send order confirmation email:', emailResult.error);
-            }
+            emailPromises.push(
+              sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData)
+                .then(result => {
+                  if (result.success) {
+                    console.log('✅ Order confirmation email sent successfully:', result.messageId);
+                  } else {
+                    console.error('❌ Failed to send order confirmation email:', result.error);
+                  }
+                  return result;
+                })
+            );
           } else {
-            console.log('User email not found, skipping confirmation email');
+            console.log('⚠️ User email not found, skipping confirmation email');
           }
 
-          try {
-            const adminEmails = await getActiveAdminEmails();
-            if (Array.isArray(adminEmails) && adminEmails.length > 0) {
-              const adminResult = await sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails);
-              if (adminResult.success) {
-                console.log('Admin new-order email sent:', adminResult.messageId);
-              } else if (!adminResult.skipped) {
-                console.error('Failed to send admin new-order email:', adminResult.error);
-              }
-            } else {
-              console.log('No admin recipients configured; skipping admin order email');
-            }
-          } catch (adminError) {
-            console.error('Error sending admin new-order email:', adminError.message);
+          // Admin email
+          const adminEmails = await getActiveAdminEmails();
+          if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+            console.log('📧 Sending admin notification email...');
+            emailPromises.push(
+              sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails)
+                .then(result => {
+                  if (result.success) {
+                    console.log('✅ Admin new-order email sent:', result.messageId);
+                  } else if (!result.skipped) {
+                    console.error('❌ Failed to send admin new-order email:', result.error);
+                  }
+                  return result;
+                })
+            );
+          } else {
+            console.log('⚠️ No admin recipients configured; skipping admin order email');
           }
+          
+          // Wait for all emails to complete
+          await Promise.all(emailPromises);
+          
         } catch (emailError) {
-          console.error('Error sending order placement emails (async):', emailError.message);
+          console.error('❌ Error sending order placement emails (async):', emailError.message);
         }
-      });
+      })().catch(err => console.error('❌ Email sending error:', err));
     }
 
     // Return response
@@ -796,48 +810,62 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         await updateProductOrderCounts(order.cartItems);
       }
 
-      // Send order confirmation email asynchronously for online payments and notify admins
-      setImmediate(async () => {
+      // Send order confirmation email asynchronously in parallel for online payments (customer and admin simultaneously) - Execute immediately
+      (async () => {
         try {
           const user = await User.findById(order.userId).select('email name phone');
           const orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
 
           const userEmailTarget = user?.email || orderDetailsForEmail?.userDetails?.email;
+          
+          // Send both customer and admin emails in parallel
+          const emailPromises = [];
+          
+          // Customer email
           if (userEmailTarget) {
             console.log('Sending online payment order confirmation email to:', userEmailTarget);
-            
-            // Get logo data for email attachment
             const logoData = getLogoData();
-            
-            const emailResult = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData);
-            if (emailResult.success) {
-              console.log('Order confirmation email sent successfully:', emailResult.messageId);
-            } else {
-              console.error('Failed to send order confirmation email:', emailResult.error);
-            }
+            emailPromises.push(
+              sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData)
+                .then(result => {
+                  if (result.success) {
+                    console.log('✅ Order confirmation email sent successfully:', result.messageId);
+                  } else {
+                    console.error('❌ Failed to send order confirmation email:', result.error);
+                  }
+                  return result;
+                })
+            );
           } else {
-            console.log('User email not found, skipping confirmation email');
+            console.log('⚠️ User email not found, skipping confirmation email');
           }
 
-          try {
-            const adminEmails = await getActiveAdminEmails();
-            if (Array.isArray(adminEmails) && adminEmails.length > 0) {
-              const adminResult = await sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails);
-              if (adminResult.success) {
-                console.log('Admin new-order email sent:', adminResult.messageId);
-              } else if (!adminResult.skipped) {
-                console.error('Failed to send admin new-order email:', adminResult.error);
-              }
-            } else {
-              console.log('No admin recipients configured; skipping admin order email');
-            }
-          } catch (adminError) {
-            console.error('Error sending admin new-order email:', adminError.message);
+          // Admin email
+          const adminEmails = await getActiveAdminEmails();
+          if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+            console.log('📧 Sending admin notification email...');
+            emailPromises.push(
+              sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails)
+                .then(result => {
+                  if (result.success) {
+                    console.log('✅ Admin new-order email sent:', result.messageId);
+                  } else if (!result.skipped) {
+                    console.error('❌ Failed to send admin new-order email:', result.error);
+                  }
+                  return result;
+                })
+            );
+          } else {
+            console.log('⚠️ No admin recipients configured; skipping admin order email');
           }
+          
+          // Wait for all emails to complete
+          await Promise.all(emailPromises);
+          
         } catch (emailError) {
-          console.error('Error sending order placement emails (async):', emailError.message);
+          console.error('❌ Error sending order placement emails (async):', emailError.message);
         }
-      });
+      })().catch(err => console.error('❌ Email sending error:', err));
 
       // Emit WebSocket event to notify admin of new online order
       try {

@@ -61,8 +61,8 @@ const createTransporter = () => {
   });
 };
 
-// Simple minimal email template with brand and yellow track button
-const buildMinimalEmailHTML = (brandName, orderNumber, trackUrl, logoCid) => {
+// Simple minimal email template
+const buildMinimalEmailHTML = (brandName, orderNumber, trackUrl) => {
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -70,156 +70,22 @@ const buildMinimalEmailHTML = (brandName, orderNumber, trackUrl, logoCid) => {
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>${brandName} – Order #${orderNumber}</title>
-      <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        body { 
-          margin: 0; 
-          padding: 0; 
-          background: linear-gradient(135deg, #fef3c7 0%, #ffffff 50%, #fce7f3 100%); 
-          font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-          color: #111827; 
-        }
-        .container { 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 40px 24px; 
-        }
-        .brandRow { 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          gap: 16px; 
-          margin-bottom: 32px; 
-          padding: 24px; 
-          background: #ffffff; 
-          border-radius: 16px; 
-          box-shadow: 0 4px 12px rgba(115, 56, 87, 0.12); 
-        }
-        .brandLogo { 
-          width: 50px; 
-          height: 50px; 
-          object-fit: contain; 
-        }
-        .brand { 
-          font-size: 28px; 
-          font-weight: 700; 
-          letter-spacing: 0.02em; 
-          background: linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .card { 
-          border: 2px solid #733857; 
-          border-radius: 16px; 
-          padding: 40px 32px; 
-          background: #ffffff; 
-          box-shadow: 0 10px 30px rgba(115, 56, 87, 0.15);
-          text-align: center;
-        }
-        .order-badge {
-          display: inline-block;
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-          color: #92400e;
-          padding: 10px 24px;
-          border-radius: 24px;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          margin-bottom: 16px;
-          border: 1px solid #fbbf24;
-          box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
-        }
-        .title { 
-          font-size: 26px; 
-          font-weight: 700; 
-          text-align: center; 
-          margin: 0 0 12px 0; 
-          color: #733857; 
-          letter-spacing: 0.01em;
-        }
-        .muted { 
-          text-align: center; 
-          color: #6b7280; 
-          font-size: 15px; 
-          margin: 0 0 28px 0; 
-          line-height: 1.7;
-        }
-        .cta-wrap { 
-          text-align: center; 
-          margin-top: 16px; 
-        }
-        .cta { 
-          display: inline-block; 
-          background: linear-gradient(135deg, #facc15 0%, #fbbf24 100%); 
-          color: #000000; 
-          text-decoration: none; 
-          font-weight: 700; 
-          padding: 16px 40px; 
-          border-radius: 12px; 
-          border: 2px solid #f59e0b;
-          font-size: 16px;
-          letter-spacing: 0.05em;
-          box-shadow: 0 4px 14px rgba(251, 191, 36, 0.4);
-          text-transform: uppercase;
-        }
-        .cta:hover {
-          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-        }
-        .footer { 
-          text-align: center; 
-          color: #9ca3af; 
-          font-size: 13px; 
-          margin-top: 32px; 
-          padding: 20px;
-          background: rgba(255, 255, 255, 0.7);
-          border-radius: 12px;
-          line-height: 1.7;
-        }
-        .footer a {
-          color: #733857;
-          text-decoration: none;
-          word-break: break-all;
-          font-weight: 500;
-        }
-        .divider {
-          height: 2px;
-          background: linear-gradient(90deg, transparent 0%, #733857 50%, transparent 100%);
-          margin: 24px 0;
-          opacity: 0.3;
-        }
-      </style>
     </head>
-    <body>
-      <div class="container">
-        <div class="brandRow">
-          ${logoCid ? `<img class="brandLogo" src="cid:${logoCid}" alt="${brandName} logo" />` : ''}
-          <div class="brand">${brandName}</div>
+    <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
+      <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd;">
+        
+        <h1 style="text-align: center; color: #333; margin-bottom: 10px;">${brandName}</h1>
+        <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 30px;">Order #${orderNumber}</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${trackUrl}" style="display: inline-block; padding: 12px 30px; background: #333; color: #fff; text-decoration: none; border-radius: 4px; font-weight: bold;">Track Your Order</a>
         </div>
-        <div class="card">
-          <div>
-            <span class="order-badge">✓ Order Confirmed</span>
-          </div>
-          <h1 class="title">Order #${orderNumber}</h1>
-          <div class="divider"></div>
-          <p class="muted">
-            Thank you for your order! Your detailed invoice is attached to this email.<br>
-            Click the button below to track your order status and delivery.
-          </p>
-          <div class="cta-wrap">
-            <a class="cta" href="${trackUrl}">Track Your Order</a>
-          </div>
-        </div>
-        <div class="footer">
-          <strong>Need help?</strong><br>
-          If the button doesn't work, copy and paste this link:<br>
-          <a href="${trackUrl}">${trackUrl}</a>
-        </div>
+        
+        <p style="text-align: center; color: #666; font-size: 13px; margin-top: 30px;">
+          Thank you for your order!<br>
+          PDF invoice is attached to this email.
+        </p>
+        
       </div>
     </body>
     </html>
@@ -235,13 +101,8 @@ export const sendOrderStatusNotification = async (orderDetails, newStatus, userE
     const brandName = 'La Pâtisserie';
     const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
     
-    // Create logo attachment from provided data
-    const logoAttachment = createLogoAttachment(logoData);
-    const logoCid = logoAttachment ? logoAttachment.cid : null;
-    
     // Generate invoice PDF
     const attachments = [];
-    if (logoAttachment) attachments.push(logoAttachment);
     
     try {
       const { filename, buffer } = await generateInvoicePdf(orderDetails);
@@ -257,7 +118,7 @@ export const sendOrderStatusNotification = async (orderDetails, newStatus, userE
       },
       to: userEmail,
       subject: `Order #${orderNumber} — Update`,
-      html: buildMinimalEmailHTML(brandName, orderNumber, trackUrl, logoCid),
+      html: buildMinimalEmailHTML(brandName, orderNumber, trackUrl),
       attachments,
       headers: {
         'X-Order-Number': orderNumber,
@@ -312,13 +173,8 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoDa
     const brandName = 'La Pâtisserie';
     const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
     
-    // Create logo attachment from provided data
-    const logoAttachment = createLogoAttachment(logoData);
-    const logoCid = logoAttachment ? logoAttachment.cid : null;
-    
     // Generate invoice PDF
     const attachments = [];
-    if (logoAttachment) attachments.push(logoAttachment);
     
     try {
       const { filename, buffer } = await generateInvoicePdf(orderDetails);
@@ -334,7 +190,7 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoDa
       },
       to: userEmail,
       subject: `Order Confirmation — #${orderNumber}`,
-      html: buildMinimalEmailHTML(brandName, orderNumber, trackUrl, logoCid),
+      html: buildMinimalEmailHTML(brandName, orderNumber, trackUrl),
       attachments
     };
 
@@ -477,26 +333,6 @@ const formatStatusLabel = (status) => {
     .join(' ');
 };
 
-const buildAdminItemsTable = (cartItems = []) => {
-  if (!Array.isArray(cartItems) || cartItems.length === 0) {
-    return "<tr><td colspan='3' style='padding: 8px; text-align: center; color: #6B7280;'>No items recorded</td></tr>";
-  }
-
-  return cartItems.map(item => `
-    <tr>
-      <td style='padding: 8px; border-bottom: 1px solid #f3f4f6;'>
-        ${item.productName || 'Item'}
-      </td>
-      <td style='padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: center;'>
-        ${item.quantity || 0}
-      </td>
-      <td style='padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: right;'>
-        ₹${(((item.price || 0) * (item.quantity || 0)) || 0).toFixed(2)}
-      </td>
-    </tr>
-  `).join('');
-};
-
 const buildAdminOrderHeader = (orderDetails = {}) => {
   const customerName = orderDetails?.userDetails?.name || orderDetails?.userId?.name || 'Customer';
   const customerPhone = orderDetails?.userDetails?.phone || orderDetails?.userId?.phone || 'Not provided';
@@ -538,153 +374,44 @@ export const sendOrderPlacedAdminNotification = async (orderDetails, adminEmails
         address: process.env.EMAIL_USER
       },
       to: adminEmails,
-      subject: `🔔 New Order #${orderNumber}`,
+      subject: `New Order #${orderNumber}`,
       html: `
         <!DOCTYPE html>
         <html lang="en">
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>La Pâtisserie – Order #${orderNumber}</title>
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body { 
-              margin: 0; 
-              padding: 0; 
-              background: linear-gradient(135deg, #fef3c7 0%, #ffffff 50%, #fce7f3 100%); 
-              font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-              color: #111827; 
-            }
-            .container { 
-              max-width: 600px; 
-              margin: 0 auto; 
-              padding: 40px 24px; 
-            }
-            .brandRow { 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              gap: 16px; 
-              margin-bottom: 32px; 
-              padding: 24px; 
-              background: #ffffff; 
-              border-radius: 16px; 
-              box-shadow: 0 4px 12px rgba(115, 56, 87, 0.12); 
-            }
-            .brand { 
-              font-size: 28px; 
-              font-weight: 700; 
-              letter-spacing: 0.02em; 
-              background: linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%);
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
-              background-clip: text;
-            }
-            .card { 
-              border: 2px solid #733857; 
-              border-radius: 16px; 
-              padding: 40px 32px; 
-              background: #ffffff; 
-              box-shadow: 0 10px 30px rgba(115, 56, 87, 0.15);
-              text-align: center;
-            }
-            .admin-badge {
-              display: inline-block;
-              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-              color: #ffffff;
-              padding: 10px 24px;
-              border-radius: 24px;
-              font-size: 13px;
-              font-weight: 700;
-              letter-spacing: 0.08em;
-              text-transform: uppercase;
-              margin-bottom: 16px;
-              border: 1px solid #b91c1c;
-              box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-            }
-            .title { 
-              font-size: 26px; 
-              font-weight: 700; 
-              text-align: center; 
-              margin: 0 0 12px 0; 
-              color: #733857; 
-              letter-spacing: 0.01em;
-            }
-            .muted { 
-              text-align: center; 
-              color: #6b7280; 
-              font-size: 15px; 
-              margin: 0 0 28px 0; 
-              line-height: 1.7;
-            }
-            .cta-wrap { 
-              text-align: center; 
-              margin-top: 16px; 
-            }
-            .cta { 
-              display: inline-block; 
-              background: linear-gradient(135deg, #facc15 0%, #fbbf24 100%); 
-              color: #000000; 
-              text-decoration: none; 
-              font-weight: 700; 
-              padding: 16px 40px; 
-              border-radius: 12px; 
-              border: 2px solid #f59e0b;
-              font-size: 16px;
-              letter-spacing: 0.05em;
-              box-shadow: 0 4px 14px rgba(251, 191, 36, 0.4);
-              text-transform: uppercase;
-            }
-            .cta:hover {
-              background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            }
-            .footer { 
-              text-align: center; 
-              color: #9ca3af; 
-              font-size: 13px; 
-              margin-top: 32px; 
-              padding: 20px;
-              background: rgba(255, 255, 255, 0.7);
-              border-radius: 12px;
-              line-height: 1.7;
-            }
-            .divider {
-              height: 2px;
-              background: linear-gradient(90deg, transparent 0%, #733857 50%, transparent 100%);
-              margin: 24px 0;
-              opacity: 0.3;
-            }
-          </style>
+          <title>New Order #${orderNumber}</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="brandRow">
-              <div class="brand">La Pâtisserie</div>
+        <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd;">
+            
+            <div style="background: #333; color: #fff; padding: 15px; text-align: center; margin-bottom: 20px;">
+              <strong>NEW ORDER ALERT</strong>
             </div>
-            <div class="card">
-              <div>
-                <span class="admin-badge">🔔 New Order Alert</span>
-              </div>
-              <h1 class="title">Order #${orderNumber}</h1>
-              <div class="divider"></div>
-              <p class="muted">
-                A new order has been placed. The detailed invoice is attached to this email.<br>
-                Customer: ${orderDetails?.userDetails?.name || 'N/A'} | Total: ₹${(orderSummary?.grandTotal ?? 0).toFixed(2)}<br>
-                Placed at: ${new Date(createdAt || Date.now()).toLocaleString()}
-              </p>
-              <div class="cta-wrap">
-                <a class="cta" href="https://www.lapatisserie.shop/admin/orders">View Orders Dashboard</a>
-              </div>
+            
+            <h2 style="color: #333; margin-bottom: 20px;">Order #${orderNumber}</h2>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px;">
+              <strong>Customer Email:</strong> ${customerEmail}
+            </p>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px;">
+              <strong>Payment Method:</strong> ${paymentMethod || 'N/A'}
+            </p>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px;">
+              <strong>Order Total:</strong> ₹${orderSummary?.finalAmount || 0}
+            </p>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
+              <strong>Order Date:</strong> ${createdAt ? new Date(createdAt).toLocaleString() : 'N/A'}
+            </p>
+            
+            <div style="margin-top: 30px; padding: 15px; background: #f5f5f5; text-align: center;">
+              <p style="margin: 0; color: #666; font-size: 13px;">Complete order details are attached in the PDF invoice.</p>
             </div>
-            <div class="footer">
-              <strong>Admin Notification</strong><br>
-              Payment: ${(paymentMethod || 'N/A').toUpperCase()} | Status: ${formatStatusLabel(orderStatus)}<br>
-              Email: ${customerEmail}
-            </div>
+            
           </div>
         </body>
         </html>
@@ -747,152 +474,37 @@ export const sendAdminOrderStatusNotification = async (orderDetails, newStatus, 
         address: process.env.EMAIL_USER
       },
       to: adminEmails,
-      subject: `📦 Order #${orderNumber} - ${statusLabel}`,
+      subject: `Order #${orderNumber} - ${statusLabel}`,
       html: `
         <!DOCTYPE html>
         <html lang="en">
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>La Pâtisserie – Order #${orderNumber}</title>
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body { 
-              margin: 0; 
-              padding: 0; 
-              background: linear-gradient(135deg, #fef3c7 0%, #ffffff 50%, #fce7f3 100%); 
-              font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-              color: #111827; 
-            }
-            .container { 
-              max-width: 600px; 
-              margin: 0 auto; 
-              padding: 40px 24px; 
-            }
-            .brandRow { 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              gap: 16px; 
-              margin-bottom: 32px; 
-              padding: 24px; 
-              background: #ffffff; 
-              border-radius: 16px; 
-              box-shadow: 0 4px 12px rgba(115, 56, 87, 0.12); 
-            }
-            .brand { 
-              font-size: 28px; 
-              font-weight: 700; 
-              letter-spacing: 0.02em; 
-              background: linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%);
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
-              background-clip: text;
-            }
-            .card { 
-              border: 2px solid #733857; 
-              border-radius: 16px; 
-              padding: 40px 32px; 
-              background: #ffffff; 
-              box-shadow: 0 10px 30px rgba(115, 56, 87, 0.15);
-              text-align: center;
-            }
-            .status-badge {
-              display: inline-block;
-              background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-              color: #ffffff;
-              padding: 10px 24px;
-              border-radius: 24px;
-              font-size: 13px;
-              font-weight: 700;
-              letter-spacing: 0.08em;
-              text-transform: uppercase;
-              margin-bottom: 16px;
-              border: 1px solid #1d4ed8;
-              box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-            }
-            .title { 
-              font-size: 26px; 
-              font-weight: 700; 
-              text-align: center; 
-              margin: 0 0 12px 0; 
-              color: #733857; 
-              letter-spacing: 0.01em;
-            }
-            .muted { 
-              text-align: center; 
-              color: #6b7280; 
-              font-size: 15px; 
-              margin: 0 0 28px 0; 
-              line-height: 1.7;
-            }
-            .cta-wrap { 
-              text-align: center; 
-              margin-top: 16px; 
-            }
-            .cta { 
-              display: inline-block; 
-              background: linear-gradient(135deg, #facc15 0%, #fbbf24 100%); 
-              color: #000000; 
-              text-decoration: none; 
-              font-weight: 700; 
-              padding: 16px 40px; 
-              border-radius: 12px; 
-              border: 2px solid #f59e0b;
-              font-size: 16px;
-              letter-spacing: 0.05em;
-              box-shadow: 0 4px 14px rgba(251, 191, 36, 0.4);
-              text-transform: uppercase;
-            }
-            .cta:hover {
-              background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            }
-            .footer { 
-              text-align: center; 
-              color: #9ca3af; 
-              font-size: 13px; 
-              margin-top: 32px; 
-              padding: 20px;
-              background: rgba(255, 255, 255, 0.7);
-              border-radius: 12px;
-              line-height: 1.7;
-            }
-            .divider {
-              height: 2px;
-              background: linear-gradient(90deg, transparent 0%, #733857 50%, transparent 100%);
-              margin: 24px 0;
-              opacity: 0.3;
-            }
-          </style>
+          <title>Order Status Update #${orderNumber}</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="brandRow">
-              <div class="brand">La Pâtisserie</div>
+        <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd;">
+            
+            <div style="background: #333; color: #fff; padding: 15px; text-align: center; margin-bottom: 20px;">
+              <strong>ORDER STATUS UPDATE</strong>
             </div>
-            <div class="card">
-              <div>
-                <span class="status-badge">📦 Status Update</span>
-              </div>
-              <h1 class="title">Order #${orderNumber}</h1>
-              <div class="divider"></div>
-              <p class="muted">
-                Order status changed to: <strong>${statusLabel}</strong><br>
-                ${statusMessages[newStatus] || 'Order status has been updated.'}<br>
-                The detailed invoice is attached to this email.
-              </p>
-              <div class="cta-wrap">
-                <a class="cta" href="https://www.lapatisserie.shop/admin/orders">View Orders Dashboard</a>
-              </div>
+            
+            <h2 style="color: #333; margin-bottom: 10px;">Order #${orderNumber}</h2>
+            <p style="color: #666; font-size: 16px; margin-bottom: 20px;"><strong>New Status:</strong> ${statusLabel}</p>
+            
+            <div style="padding: 15px; background: #f5f5f5; border-left: 4px solid #333; margin-bottom: 20px;">
+              <p style="margin: 0; color: #555;">${statusMessages[newStatus] || 'Order status has been updated.'}</p>
             </div>
-            <div class="footer">
-              <strong>Admin Notification</strong><br>
-              Customer: ${orderDetails?.userDetails?.name || 'N/A'} | Total: ₹${(orderSummary?.grandTotal ?? 0).toFixed(2)}
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
+              <strong>Order Total:</strong> ₹${orderSummary?.finalAmount || 0}
+            </p>
+            
+            <div style="margin-top: 30px; padding: 15px; background: #f5f5f5; text-align: center;">
+              <p style="margin: 0; color: #666; font-size: 13px;">Complete order details are attached in the PDF invoice.</p>
             </div>
+            
           </div>
         </body>
         </html>

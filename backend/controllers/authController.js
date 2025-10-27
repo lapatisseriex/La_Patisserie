@@ -168,26 +168,21 @@ export const verifyToken = asyncHandler(async (req, res) => {
         
         console.log(`New user created successfully: ${user._id} (${email})`);
         
-        // Send welcome email to new user (don't await - send asynchronously)
-        if (email_verified) {
-          // Send welcome email immediately if email is already verified (e.g., Google sign-in)
-          sendWelcomeEmail({ 
-            name: name || user.name || 'Valued Customer', 
-            email: email 
+        // Send welcome email to all new users (don't await - send asynchronously)
+        sendWelcomeEmail({ 
+          name: name || user.name || 'Valued Customer', 
+          email: email 
+        })
+          .then(result => {
+            if (result.success) {
+              console.log(`✅ Welcome email sent successfully to ${email}`);
+            } else {
+              console.error(`❌ Failed to send welcome email to ${email}:`, result.error);
+            }
           })
-            .then(result => {
-              if (result.success) {
-                console.log(`✅ Welcome email queued for ${email}`);
-              } else {
-                console.error(`❌ Failed to send welcome email to ${email}:`, result.error);
-              }
-            })
-            .catch(err => {
-              console.error(`❌ Error queueing welcome email for ${email}:`, err);
-            });
-        } else {
-          console.log(`📧 Welcome email will be sent after email verification for ${email}`);
-        }
+          .catch(err => {
+            console.error(`❌ Error sending welcome email to ${email}:`, err);
+          });
         
         // Emit WebSocket event to notify admin of new user signup
         try {

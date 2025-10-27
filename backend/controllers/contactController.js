@@ -32,8 +32,8 @@ export const submitContact = asyncHandler(async (req, res) => {
 
     console.log(`📧 New contact message received from ${email}: ${subject}`);
 
-    // Send email notification to admin asynchronously
-    setImmediate(async () => {
+    // Send email notification to admin asynchronously - Execute immediately
+    (async () => {
       try {
         const adminUsers = await User.find({ role: 'admin', isActive: true }).select('email name');
         
@@ -59,7 +59,7 @@ export const submitContact = asyncHandler(async (req, res) => {
       } catch (emailError) {
         console.error('❌ Error sending contact notification email:', emailError.message);
       }
-    });
+    })().catch(err => console.error('❌ Contact email error:', err));
 
     res.status(201).json({
       success: true,
@@ -246,8 +246,8 @@ export const replyToContact = asyncHandler(async (req, res) => {
 
     await contact.save();
 
-    // Send reply email to user
-    setImmediate(async () => {
+    // Send reply email to user - Execute immediately
+    (async () => {
       try {
         const admin = await User.findById(req.user._id).select('name email');
         
@@ -263,7 +263,7 @@ export const replyToContact = asyncHandler(async (req, res) => {
       } catch (emailError) {
         console.error('❌ Error sending reply email:', emailError.message);
       }
-    });
+    })().catch(err => console.error('❌ Reply email error:', err));
 
     // Populate the updated contact
     const updatedContact = await Contact.findById(contact._id)

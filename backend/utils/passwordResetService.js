@@ -38,122 +38,36 @@ const getPasswordResetEmailTemplate = (otp, userEmail) => {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Password Reset OTP</title>
-        <style>
-          body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            background-color: #f8f9fa;
-            margin: 0;
-            padding: 0;
-          }
-          .container { 
-            max-width: 600px; 
-            margin: 20px auto; 
-            background: white; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            overflow: hidden;
-          }
-          .header { 
-            background: linear-gradient(135deg, #e91e63, #f06292); 
-            color: white; 
-            padding: 30px 20px; 
-            text-align: center; 
-          }
-          .header h1 { 
-            margin: 0; 
-            font-size: 24px; 
-            font-weight: 600;
-          }
-          .content { 
-            padding: 30px 20px; 
-          }
-          .otp-box { 
-            background: #f8f9fa; 
-            border: 2px dashed #e91e63; 
-            border-radius: 8px; 
-            padding: 20px; 
-            text-align: center; 
-            margin: 20px 0; 
-          }
-          .otp-code { 
-            font-size: 32px; 
-            font-weight: bold; 
-            color: #e91e63; 
-            letter-spacing: 4px; 
-            margin: 10px 0;
-            font-family: 'Courier New', monospace;
-          }
-          .warning { 
-            background: #fff3cd; 
-            border: 1px solid #ffeaa7; 
-            border-radius: 5px; 
-            padding: 15px; 
-            margin: 20px 0; 
-            color: #856404;
-          }
-          .footer { 
-            background: #f8f9fa; 
-            padding: 20px; 
-            text-align: center; 
-            color: #666; 
-            font-size: 14px; 
-            border-top: 1px solid #eee;
-          }
-          .logo { 
-            font-size: 18px; 
-            font-weight: bold; 
-            color: #e91e63; 
-            margin-bottom: 10px; 
-          }
-          @media (max-width: 600px) {
-            .container { margin: 10px; }
-            .content { padding: 20px 15px; }
-            .otp-code { font-size: 28px; }
-          }
-        </style>
       </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="logo">🧁 La Pâtisserie</div>
-            <h1>Password Reset Request</h1>
+      <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd;">
+          
+          <h1 style="color: #333; margin-bottom: 20px;">Password Reset Request</h1>
+          
+          <p style="margin-bottom: 15px;">Hello,</p>
+          
+          <p style="margin-bottom: 15px;">You requested to reset your password for your La Pâtisserie account. Use the OTP code below:</p>
+          
+          <div style="background: #f5f5f5; border: 2px dashed #333; padding: 20px; text-align: center; margin: 20px 0;">
+            <div style="font-size: 32px; font-weight: bold; letter-spacing: 4px; font-family: 'Courier New', monospace;">${otp}</div>
           </div>
           
-          <div class="content">
-            <p>Hello,</p>
-            <p>We received a request to reset your password for your La Pâtisserie account associated with <strong>${userEmail}</strong>.</p>
-            
-            <div class="otp-box">
-              <p style="margin: 0; font-size: 16px; color: #666;">Your verification code is:</p>
-              <div class="otp-code">${otp}</div>
-              <p style="margin: 0; font-size: 14px; color: #999;">Enter this code to reset your password</p>
-            </div>
-            
-            <div class="warning">
-              <strong>⚠️ Important Security Information:</strong>
-              <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>This code is valid for <strong>10 minutes only</strong></li>
-                <li>Never share this code with anyone</li>
-                <li>If you didn't request this reset, please ignore this email</li>
-                <li>For security, your account will be temporarily locked after multiple failed attempts</li>
-              </ul>
-            </div>
-            
-            <p>If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
-            
-            <p>Need help? Contact our support team at <a href="mailto:support@lapatisserie.com" style="color: #e91e63;">support@lapatisserie.com</a></p>
+          <p style="margin-bottom: 15px;">This code will expire in <strong>10 minutes</strong>.</p>
+          
+          <div style="background: #f5f5f5; border: 1px solid #ddd; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #333;"><strong>Security Notice:</strong> If you didn't request this password reset, please ignore this email or contact support if you have concerns.</p>
           </div>
           
-          <div class="footer">
-            <p><strong>La Pâtisserie</strong><br>
-            Sweet moments, delivered fresh<br>
-            <a href="mailto:support@lapatisserie.com" style="color: #e91e63;">support@lapatisserie.com</a></p>
-            <p style="font-size: 12px; color: #999; margin-top: 15px;">
-              This is an automated message. Please do not reply to this email.
-            </p>
-          </div>
+          <p style="margin-bottom: 5px;">Best regards,</p>
+          <p style="margin-bottom: 20px;"><strong>La Pâtisserie Team</strong></p>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          
+          <p style="font-size: 12px; color: #666; margin: 0; text-align: center;">
+            This is an automated email. Please do not reply to this message.<br>
+            La Pâtisserie | lapatisserielapatisserie@gmail.com
+          </p>
+          
         </div>
       </body>
       </html>
