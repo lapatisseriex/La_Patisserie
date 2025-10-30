@@ -77,9 +77,9 @@ const buildMinimalEmailHTML = (brandName, orderNumber, trackUrl) => {
         <h1 style="text-align: center; color: #333; margin-bottom: 10px;">${brandName}</h1>
         <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 30px;">Order #${orderNumber}</p>
         
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${trackUrl}" style="display: inline-block; padding: 12px 30px; background: #333; color: #fff; text-decoration: none; border-radius: 4px; font-weight: bold;">Track Your Order</a>
-        </div>
+        <p style="text-align: center; color: #555; font-size: 15px; margin: 30px 0;">
+          Track your order: <a href="${trackUrl}" style="color: #333; text-decoration: underline;">${trackUrl}</a>
+        </p>
         
         <p style="text-align: center; color: #666; font-size: 13px; margin-top: 30px;">
           Thank you for your order!<br>
@@ -401,7 +401,7 @@ export const sendOrderPlacedAdminNotification = async (orderDetails, adminEmails
             </p>
             
             <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px;">
-              <strong>Order Total:</strong> ₹${orderSummary?.finalAmount || 0}
+              <strong>Order Total:</strong> ₹${orderSummary?.grandTotal || 0}
             </p>
             
             <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">

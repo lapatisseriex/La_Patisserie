@@ -109,11 +109,11 @@ const newProductTemplate = (product) => `
         </p>
         ` : ''}
 
-        <!-- CTA Button -->
+        <!-- Link -->
         <div style="text-align: center; margin: 35px 0 20px 0;">
-          <a href="${product.link || 'https://lapatisserie.com/products'}" style="display: inline-block; background: linear-gradient(90deg, #A855F7 0%, #733857 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 14px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; transition: all 0.3s;">
-            ORDER NOW
-          </a>
+          <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
+            Order now: <a href="${product.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline;">${product.link || 'https://lapatisserie.com/products'}</a>
+          </p>
         </div>
 
         <p style="color: rgba(255, 255, 255, 0.6); font-size: 14px; line-height: 1.6; text-align: center; margin: 30px 0 0 0;">
@@ -170,11 +170,11 @@ const newCategoryTemplate = (category) => `
           </div>
         </div>
 
-        <!-- CTA Button -->
+        <!-- Link -->
         <div style="text-align: center; margin: 35px 0 20px 0;">
-          <a href="${category.link || 'https://lapatisserie.com/products'}" style="display: inline-block; background: transparent; color: #A855F7; text-decoration: none; padding: 16px 40px; border-radius: 6px; border: 2px solid #A855F7; font-size: 14px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase;">
-            EXPLORE COLLECTION
-          </a>
+          <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
+            Explore collection: <a href="${category.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline;">${category.link || 'https://lapatisserie.com/products'}</a>
+          </p>
         </div>
 
         <p style="color: rgba(255, 255, 255, 0.5); font-size: 13px; line-height: 1.6; text-align: center; margin: 30px 0 0 0; font-style: italic;">
@@ -265,11 +265,11 @@ const discountTemplate = (discount) => `
         </p>
         ` : ''}
 
-        <!-- CTA Button -->
+        <!-- Link -->
         <div style="text-align: center; margin: 35px 0 20px 0;">
-          <a href="${discount.link || 'https://lapatisserie.com/products'}" style="display: inline-block; background: linear-gradient(90deg, #A855F7 0%, #ff6b6b 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 14px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4);">
-            CLAIM DISCOUNT NOW
-          </a>
+          <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
+            Claim discount: <a href="${discount.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline;">${discount.link || 'https://lapatisserie.com/products'}</a>
+          </p>
         </div>
 
         <p style="color: rgba(255, 255, 255, 0.6); font-size: 14px; line-height: 1.6; text-align: center; margin: 30px 0 0 0;">
@@ -314,9 +314,9 @@ const customNewsletterTemplate = (content) => `
 
         ${content.ctaText && content.ctaLink ? `
         <div style="text-align: center; margin: 35px 0 20px 0;">
-          <a href="${content.ctaLink}" style="display: inline-block; background: linear-gradient(90deg, #A855F7 0%, #733857 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 14px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase;">
-            ${content.ctaText}
-          </a>
+          <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
+            ${content.ctaText}: <a href="${content.ctaLink}" style="color: #A855F7; text-decoration: underline;">${content.ctaLink}</a>
+          </p>
         </div>
         ` : ''}
       </div>
