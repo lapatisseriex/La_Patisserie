@@ -208,9 +208,14 @@ const Payment = () => {
   const isCodSelected = selectedPaymentMethod === 'cod';
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastOrderAttempt, setLastOrderAttempt] = useState(null); // Prevent rapid clicks
+  const [processingOrderId, setProcessingOrderId] = useState(null); // Track current processing order
   const [isOrderComplete, setIsOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [completedPaymentMethod, setCompletedPaymentMethod] = useState(null);
+  // COD-specific loading UX (2-second detailed loading)
+  const [codCountdown, setCodCountdown] = useState(null);
+  const codCountdownTimerRef = useRef(null);
 
   useEffect(() => {
     if (!isOrderComplete) {
@@ -407,6 +412,17 @@ const Payment = () => {
     return 'Leave us a message and we will get back soon.';
   }, [isOpen, closingTime, nextOpeningTime, timezone, formatNextOpening, timezoneAbbreviation]);
 
+  // Cleanup effect to reset rapid click prevention after timeout
+  useEffect(() => {
+    if (lastOrderAttempt) {
+      const timer = setTimeout(() => {
+        setLastOrderAttempt(null);
+      }, 5000); // Clear after 5 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [lastOrderAttempt]);
+
   // --- All payment handlers (loadRazorpayScript, createOrder, handleRazorpayPayment, handleCODOrder) are preserved exactly as they were ---
   
   const loadRazorpayScript = () => {
@@ -481,6 +497,12 @@ const Payment = () => {
       };
 
       const { data } = await api.post('/payments/create-order', orderData);
+      
+      // Handle duplicate order response
+      if (data.isDuplicate) {
+        console.log('⚠️ Duplicate order detected, using existing order:', data.orderNumber);
+      }
+      
       return data;
     } catch (error) {
       console.error('Error creating order:', error);
@@ -641,40 +663,101 @@ const Payment = () => {
       alert('Please login to place an order');
       return;
     }
+    // Begin 2-second detailed loading and prevent double click
     setIsProcessing(true);
-    setCompletedPaymentMethod('cod');
-    setIsOrderComplete(true);
-    setOrderNumber('...');
+    setCompletedPaymentMethod(null);
+    setIsOrderComplete(false);
+    setOrderNumber('');
+    // Start a visible 2-second countdown overlay for COD
+    setCodCountdown(2);
+    if (codCountdownTimerRef.current) {
+      clearInterval(codCountdownTimerRef.current);
+    }
+    codCountdownTimerRef.current = setInterval(() => {
+      setCodCountdown((prev) => {
+        if (prev === null) return prev;
+        if (prev <= 1) {
+          if (codCountdownTimerRef.current) {
+            clearInterval(codCountdownTimerRef.current);
+            codCountdownTimerRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     try {
-      const orderData = await createOrder(grandTotal, 'cod');
+      console.log('🛒 Placing COD order for amount:', grandTotal);
+  // Ensure at least 2 seconds of loading before showing success
+  const minDelay = new Promise((resolve) => setTimeout(resolve, 2000));
+      const orderPromise = createOrder(grandTotal, 'cod');
+      const [orderData] = await Promise.all([orderPromise, minDelay]);
+      
+      if (orderData.isDuplicate) {
+        console.log('✅ Using existing order (duplicate detected):', orderData.orderNumber);
+      } else {
+        console.log('✅ New COD order created:', orderData.orderNumber);
+      }
+      
       setOrderNumber(orderData.orderNumber);
       setCompletedPaymentMethod('cod');
+      setIsOrderComplete(true);
+      
       try {
         await clearCart();
       } catch (cartError) {
         console.error('❌ Failed to clear cart after COD order:', cartError);
+        // Don't fail the order if cart clear fails
       }
     } catch (error) {
       console.error('COD order error:', error);
       setIsOrderComplete(false);
       setOrderNumber('');
       setCompletedPaymentMethod(null);
-      alert('Failed to place order. Please try again.');
+      
+      // More informative error message
+      const errorMessage = error.response?.data?.message || 'Failed to place order. Please try again.';
+      alert(errorMessage);
     } finally {
+      // Cleanup countdown overlay
+      if (codCountdownTimerRef.current) {
+        clearInterval(codCountdownTimerRef.current);
+        codCountdownTimerRef.current = null;
+      }
+      setCodCountdown(null);
       setIsProcessing(false);
     }
   };
 
   const handlePlaceOrder = async () => {
+    // Enhanced duplicate order prevention
     if (isProcessing || !hasAcceptedTerms) {
+      console.log('Order blocked - already processing or terms not accepted');
       return;
     }
+
+    // Prevent rapid clicks within 2 seconds
+    const now = Date.now();
+    if (lastOrderAttempt && (now - lastOrderAttempt) < 2000) {
+      console.log('Order blocked - too rapid clicking');
+      return;
+    }
+
+    // Generate unique order attempt ID to track this specific request
+    const attemptId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    setLastOrderAttempt(now);
+    setProcessingOrderId(attemptId);
+    
+    console.log(`Starting order attempt: ${attemptId}`);
 
     if (selectedPaymentMethod === 'razorpay') {
       await handleRazorpayPayment();
     } else {
       await handleCODOrder();
     }
+    
+    // Clear the processing order ID after completion
+    setProcessingOrderId(null);
   };
 
 if (isOrderComplete) {
@@ -827,7 +910,9 @@ if (isOrderComplete) {
     ? `Place order • Pay ${formatCurrency(grandTotal)} securely`
     : `Place order • Pay ${formatCurrency(grandTotal)} on delivery`;
 
-  const isPlaceOrderDisabled = isProcessing || !hasAcceptedTerms || cartItems.length === 0;
+  // Enhanced button disabled state with rapid click prevention
+  const isPlaceOrderDisabled = isProcessing || !hasAcceptedTerms || cartItems.length === 0 || 
+    (lastOrderAttempt && (Date.now() - lastOrderAttempt) < 2000);
 
   // --- Main Payment Page (Redesigned Split-Screen Layout) ---
   return (
@@ -1179,8 +1264,28 @@ if (isOrderComplete) {
                 disabled={isPlaceOrderDisabled}
                 className="place-order-btn mt-6"
               >
-                {isProcessing ? 'Processing…' : placeOrderLabel}
+                {(() => {
+                  if (isProcessing) return isCodSelected ? 'Placing your order…' : 'Processing…';
+                  if (lastOrderAttempt && (Date.now() - lastOrderAttempt) < 2000) return 'Please wait…';
+                  if (!hasAcceptedTerms) return 'Accept terms to continue';
+                  return placeOrderLabel;
+                })()}
               </StyleButton>
+              {/* COD detailed loading overlay */}
+              {isProcessing && isCodSelected && !isOrderComplete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                  <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-xl">
+                    <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[#f5e3ea] border-t-[#733857]"></div>
+                    <h3 className="text-lg font-semibold text-slate-900">Placing your COD order…</h3>
+                    <p className="mt-2 text-sm text-slate-600">This takes about 2 seconds. Please don’t refresh or press back.</p>
+                    {typeof codCountdown === 'number' && (
+                      <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#733857]">
+                        About {Math.max(codCountdown, 0)} second{Math.max(codCountdown, 0) === 1 ? '' : 's'} remaining…
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* --- Sign In Prompt (Unchanged) --- */}
