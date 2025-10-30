@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, Suspense, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
@@ -6,6 +6,12 @@ import ScrollToTop from "./ScrollToTop.jsx";
 import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './styles/toast-custom.css';
+
+// Network Status Components
+import NetworkStatusBanner from './components/common/NetworkStatusBanner';
+import OfflinePage from './components/common/OfflinePage';
+import useNetworkStatus from './hooks/useNetworkStatus';
+import { initializeServiceWorker } from './utils/serviceWorker';
 
 // Layout
 import Layout from './components/Layout/Layout';
@@ -27,6 +33,7 @@ import ShippingPolicy from './pages/ShippingPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import FAQ from './pages/FAQ';
 import NGODonationPage from './pages/NGODonationPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 // Error Boundary for Product Pages
 import ProductErrorBoundary from './components/common/ProductErrorBoundary';
@@ -132,6 +139,13 @@ const PrivateRoute = ({ children }) => {
 };
 
 function App() {
+  const { isOnline } = useNetworkStatus();
+
+  // Initialize service worker on app load
+  useEffect(() => {
+    initializeServiceWorker();
+  }, []);
+
   return (
     <ReduxProvider>
       <AuthInitializer />
@@ -145,6 +159,10 @@ function App() {
                     <SparkAnimationProvider>
                       <Router>
                         <ScrollToTop />
+                        
+                        {/* Network Status Banner - Shows connection status */}
+                        <NetworkStatusBanner />
+                        
                         {/* Global toast notifications - styled to match site palette */}
                         <ToastContainer
                           containerId="app-toasts"
@@ -245,7 +263,7 @@ function App() {
                             </Route>
                           </Route>
                           {/* Catch-all route for any undefined paths */}
-                          <Route path="*" element={<Navigate to="/" replace />} />
+                          <Route path="*" element={<NotFoundPage />} />
                         </Routes>
                         
                         {/* Global WhatsApp Float Button */}

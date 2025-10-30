@@ -21,9 +21,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <meta name="color-scheme" content="light only">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="msapplication-navbutton-color" content="#ffffff">
-    <meta name="apple-mobile-web-app-status-bar-style" content="light-content">
+    <meta name="theme-color" content="#281c20">
+    <meta name="msapplication-navbutton-color" content="#281c20">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="La Patisserie">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="La Patisserie">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    <meta name="msapplication-TileColor" content="#281c20">
+    <meta name="msapplication-tap-highlight" content="no">
     
   <title> La Patisserie - Exclusive for Hostel Students</title>
   <meta name="description" content="Order desserts online in Coimbatore exclusively for hostel students. La Patisserie offers cakes, pastries, and sweets for hostel students only. Fast delivery, best prices, and quality guaranteed!" />
@@ -398,6 +411,52 @@
           loader.style.width = window.innerWidth + 'px';
         }
       });
+    </script>
+
+    <!-- Service Worker Registration for Offline Support -->
+    <script>
+      // Register Service Worker for offline functionality
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // New version available
+                      console.log('New version available');
+                    }
+                  });
+                }
+              });
+            }, function(err) {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+
+      // Network status detection
+      function updateNetworkStatus() {
+        if (navigator.onLine) {
+          document.body.classList.remove('offline');
+          document.body.classList.add('online');
+        } else {
+          document.body.classList.remove('online');
+          document.body.classList.add('offline');
+        }
+      }
+
+      // Initial network status check
+      updateNetworkStatus();
+
+      // Listen for network status changes
+      window.addEventListener('online', updateNetworkStatus);
+      window.addEventListener('offline', updateNetworkStatus);
     </script>
   </body>
 </html>

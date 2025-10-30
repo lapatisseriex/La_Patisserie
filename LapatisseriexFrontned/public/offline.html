@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - La Patisserie</title>
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: sans-serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            margin: 0;
+        }
+        
+        .offline-container {
+            background: white;
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .offline-illustration {
+            width: 400px;
+            height: 300px;
+            margin: 0 auto 3rem;
+            background-image: url('/images/offline-illustration.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .offline-fallback {
+            width: 400px;
+            height: 300px;
+            margin: 0 auto 3rem;
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: #64748b;
+        }
+        
+        .offline-title {
+            font-size: 2rem;
+            font-weight: normal;
+            color: #281c20;
+            margin-bottom: 3rem;
+            font-family: sans-serif;
+        }
+        
+        .offline-description {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        
+        .offline-tips {
+            background: #f9fafb;
+            border: 1px solid #f3f4f6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        
+        .offline-tips h3 {
+            color: #281c20;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .offline-tips ul {
+            color: #6b7280;
+            font-size: 0.875rem;
+            list-style: none;
+        }
+        
+        .offline-tips li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .offline-tips li::before {
+            content: '• ';
+            margin-right: 0.25rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: normal;
+            font-family: sans-serif;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: #281c20;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .connection-status {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #dc2626;
+            animation: pulse 2s infinite;
+        }
+        
+        .brand-footer {
+            margin-top: 1.5rem;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            }
+            
+            .offline-container {
+                background: #1f2937;
+                color: white;
+            }
+            
+            .offline-title {
+                color: white;
+            }
+            
+            .offline-description {
+                color: #d1d5db;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <!-- Offline Illustration -->
+        <div class="offline-illustration" id="offlineIllustration"></div>
+        
+        <!-- Fallback if image doesn't load -->
+        <div class="offline-fallback" id="offlineFallback">📡</div>
+        
+        <!-- Title -->
+        <h1 class="offline-title">No Internet Connection</h1>
+        
+        <!-- Action Button -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="window.location.reload()">
+                Try Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Listen for online/offline events
+        window.addEventListener('online', function() {
+            // Automatically reload when connection is restored
+            setTimeout(function() {
+                window.location.reload();
+            }, 1000);
+        });
+
+        // Update status indicator based on connection
+        function updateConnectionStatus() {
+            const indicator = document.querySelector('.status-indicator');
+            const statusText = document.querySelector('.connection-status span');
+            
+            if (navigator.onLine) {
+                indicator.style.background = '#16a34a';
+                statusText.textContent = 'Online - Reloading...';
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                indicator.style.background = '#dc2626';
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        // Check connection status periodically
+        setInterval(updateConnectionStatus, 2000);
+        
+        // Initial check
+        updateConnectionStatus();
+
+        // Check if offline illustration loads properly
+        function checkOfflineImage() {
+            const testImg = new Image();
+            testImg.onload = function() {
+                // Image loaded successfully, keep showing background image
+                console.log('Offline illustration loaded successfully');
+            };
+            testImg.onerror = function() {
+                // Image failed to load, show fallback
+                document.getElementById('offlineIllustration').style.display = 'none';
+                document.getElementById('offlineFallback').style.display = 'flex';
+            };
+            testImg.src = '/images/offline-illustration.png';
+        }
+
+        // Check image on load
+        window.addEventListener('load', checkOfflineImage);
+    </script>
+</body>
+</html>
