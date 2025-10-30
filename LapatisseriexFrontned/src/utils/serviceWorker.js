@@ -14,11 +14,16 @@ export const registerServiceWorker = async () => {
   }
 
   try {
+    console.log('Registering Service Worker...');
+    console.log('Environment:', import.meta.env.MODE);
+    console.log('Production:', import.meta.env.PROD);
+    
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/'
     });
 
     console.log('Service Worker registered successfully:', registration.scope);
+    console.log('Registration:', registration);
 
     // Handle service worker updates
     registration.addEventListener('updatefound', () => {
@@ -110,11 +115,30 @@ export const sendMessageToServiceWorker = (message) => {
   }
 };
 
+// Test if offline resources are cached
+export const testOfflineCache = async () => {
+  try {
+    const cache = await caches.open('la-patisserie-v3');
+    const offlineResponse = await cache.match('/offline.html');
+    console.log('Offline page cached:', !!offlineResponse);
+    return !!offlineResponse;
+  } catch (error) {
+    console.log('Cache test failed:', error);
+    return false;
+  }
+};
+
 // Initialize service worker when app loads
 export const initializeServiceWorker = () => {
-  if (process.env.NODE_ENV === 'production') {
-    registerServiceWorker();
-  } else {
-    console.log('Service Worker registration skipped in development mode');
-  }
+  // Register service worker in both production and development for testing
+  // Use import.meta.env for Vite instead of process.env
+  console.log('Initializing Service Worker...');
+  console.log('Environment Mode:', import.meta.env.MODE);
+  console.log('Is Production:', import.meta.env.PROD);
+  console.log('Base URL:', import.meta.env.BASE_URL);
+  
+  registerServiceWorker().then(() => {
+    // Test cache after a short delay
+    setTimeout(testOfflineCache, 2000);
+  });
 };

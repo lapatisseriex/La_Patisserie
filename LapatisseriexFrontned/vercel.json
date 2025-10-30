@@ -13,5 +13,13 @@
       "destination": "/index.html"  
     }
   ],
-  "errorDocument": "404.html"
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
+  ]
 }

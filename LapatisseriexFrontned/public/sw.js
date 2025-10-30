@@ -1,8 +1,8 @@
-// Service Worker for La Patisserie - Network Status Management
-const CACHE_NAME = 'la-patisserie-v2';
+// Service Worker for La Patisserie - Network Status Management  
+const CACHE_NAME = 'la-patisserie-v3';
 const OFFLINE_URL = '/offline.html';
-const HEADER_CACHE = 'header-components-v1';
-const UI_CACHE = 'ui-components-v1';
+const HEADER_CACHE = 'header-components-v2';
+const UI_CACHE = 'ui-components-v2';
 
 // Essential files to cache for offline functionality
 const urlsToCache = [
@@ -18,48 +18,47 @@ const urlsToCache = [
   '/manifest.json'
 ];
 
-// Header and UI components to cache
-const headerUICache = [
-  // Main app files
-  '/src/main.jsx',
-  '/src/App.jsx',
-  '/src/index.css',
-  '/src/styles/network-status.css',
-  
-  // Header component files
-  '/src/components/Header/Header.jsx',
-  '/src/components/Header/Header.css',
-  '/src/components/Header/UserMenu/UserMenu.jsx',
-  
-  // Common components used in header
-  '/src/components/common/NetworkStatusBanner.jsx',
-  '/src/components/common/OfflinePage.jsx',
-  
-  // Context providers needed for header
-  '/src/context/LocationContext/LocationContext.jsx',
-  '/src/context/HostelContext/HostelContext.jsx',
-  '/src/hooks/useAuth.js',
-  '/src/hooks/useNetworkStatus.js',
-  
-  // Essential fonts and styles
-  'https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap'
+// Production assets to cache dynamically
+const dynamicCachePatterns = [
+  '/assets/', // All Vite bundled assets
+  '/images/', // All images
+  '/fonts/'   // All fonts
 ];
+
+// External resources to cache
+const externalResources = [
+  'https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap',
+  'https://fonts.gstatic.com/' // Font files
+];
+
+// Message event - handle skip waiting
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('Service Worker: Skipping waiting...');
+    self.skipWaiting();
+  }
+});
 
 // Install event - cache essential files
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Install');
+  // Skip waiting to activate immediately
+  self.skipWaiting();
+  
   event.waitUntil(
     Promise.all([
-      // Cache main assets
+      // Cache main static assets
       caches.open(CACHE_NAME).then((cache) => {
-        console.log('Service Worker: Caching Main Files');
-        return cache.addAll(urlsToCache);
+        console.log('Service Worker: Caching Static Files');
+        return cache.addAll(urlsToCache.filter(url => !url.startsWith('/src')));
       }),
       
-      // Cache header and UI components
-      caches.open(HEADER_CACHE).then((cache) => {
-        console.log('Service Worker: Caching Header Components');
-        return cache.addAll(headerUICache.filter(url => !url.startsWith('http')));
+      // Cache external resources
+      caches.open(UI_CACHE).then((cache) => {
+        console.log('Service Worker: Caching External Resources');
+        return Promise.allSettled(
+          externalResources.map(url => cache.add(url).catch(err => console.warn('Failed to cache:', url)))
+        );
       }),
       
       // Cache external resources separately
@@ -88,6 +87,9 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activate');
+  // Take control of all clients immediately
+  event.waitUntil(self.clients.claim());
+  
   const validCaches = [CACHE_NAME, HEADER_CACHE, UI_CACHE];
   
   event.waitUntil(
@@ -125,14 +127,14 @@ self.addEventListener('fetch', (event) => {
     );
   }
   
-  // Handle component files (header, CSS, JS)
-  else if (isHeaderComponent(url.pathname)) {
+  // Handle assets and dynamic content (CSS, JS, images, fonts)
+  else if (shouldCacheDynamically(url.pathname)) {
     event.respondWith(
-      // Try cache first for header components
+      // Try cache first for static assets
       caches.match(event.request)
         .then((cachedResponse) => {
           if (cachedResponse) {
-            console.log('Service Worker: Serving cached header component:', url.pathname);
+            console.log('Service Worker: Serving cached asset:', url.pathname);
             return cachedResponse;
           }
           
@@ -141,18 +143,25 @@ self.addEventListener('fetch', (event) => {
             .then((response) => {
               if (response.status === 200) {
                 const responseClone = response.clone();
-                const cacheToUse = isHeaderRelated(url.pathname) ? HEADER_CACHE : CACHE_NAME;
+                const cacheToUse = getCacheName(url.pathname);
                 
                 caches.open(cacheToUse)
                   .then((cache) => {
                     cache.put(event.request, responseClone);
+                    console.log('Service Worker: Cached new asset:', url.pathname);
                   });
               }
               return response;
             })
             .catch(() => {
-              console.log('Service Worker: Network failed, header component not in cache:', url.pathname);
-              return new Response('Component not available offline', { status: 503 });
+              console.log('Service Worker: Network failed, asset not in cache:', url.pathname);
+              // For essential assets, return a placeholder response
+              if (url.pathname.includes('.css')) {
+                return new Response('/* Offline fallback styles */', { 
+                  headers: { 'Content-Type': 'text/css' }
+                });
+              }
+              return new Response('Asset not available offline', { status: 503 });
             });
         })
     );
@@ -181,29 +190,24 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Helper function to check if URL is a header component
-function isHeaderComponent(pathname) {
-  const headerPaths = [
-    '/src/components/Header/',
-    '/src/components/common/NetworkStatusBanner.jsx',
-    '/src/components/common/OfflinePage.jsx',
-    '/src/context/',
-    '/src/hooks/',
-    '/src/styles/',
-    '/src/main.jsx',
-    '/src/App.jsx',
-    '/src/index.css'
-  ];
-  
-  return headerPaths.some(path => pathname.includes(path));
+// Helper function to check if URL should be cached dynamically
+function shouldCacheDynamically(pathname) {
+  return dynamicCachePatterns.some(pattern => pathname.startsWith(pattern)) ||
+         pathname.includes('/assets/') ||
+         pathname.includes('.js') ||
+         pathname.includes('.css') ||
+         pathname.includes('.png') ||
+         pathname.includes('.jpg') ||
+         pathname.includes('.svg') ||
+         pathname.includes('.woff') ||
+         pathname.includes('.woff2');
 }
 
-// Helper function to check if component is header-related
-function isHeaderRelated(pathname) {
-  return pathname.includes('/Header/') || 
-         pathname.includes('/UserMenu/') || 
-         pathname.includes('Header.jsx') ||
-         pathname.includes('Header.css');
+// Helper function to get appropriate cache name
+function getCacheName(pathname) {
+  if (pathname.includes('/assets/')) return HEADER_CACHE;
+  if (pathname.includes('/images/')) return CACHE_NAME;
+  return UI_CACHE;
 }
 
 // Listen for messages from main thread
