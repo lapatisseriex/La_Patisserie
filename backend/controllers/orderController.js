@@ -88,19 +88,24 @@ const sendStatusEmails = async (orderDoc, previousStatus, newStatus) => {
       }
     }
 
-    let adminEmails = [];
-    try {
-      adminEmails = await getActiveAdminEmails();
-    } catch (adminLookupError) {
-      console.error('Failed to fetch admin recipients:', adminLookupError.message);
-    }
-
-    if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+    // Don't send admin email for "out_for_delivery" status - only notify the customer
+    if (newStatus !== 'out_for_delivery') {
+      let adminEmails = [];
       try {
-        await sendAdminOrderStatusNotification(normalizedOrder, newStatus, adminEmails);
-      } catch (adminEmailError) {
-        console.error('Failed to send admin status email:', adminEmailError.message);
+        adminEmails = await getActiveAdminEmails();
+      } catch (adminLookupError) {
+        console.error('Failed to fetch admin recipients:', adminLookupError.message);
       }
+
+      if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+        try {
+          await sendAdminOrderStatusNotification(normalizedOrder, newStatus, adminEmails);
+        } catch (adminEmailError) {
+          console.error('Failed to send admin status email:', adminEmailError.message);
+        }
+      }
+    } else {
+      console.log(`Skipping admin email notification for order #${normalizedOrder.orderNumber} - Status: out_for_delivery (customer-only notification)`);
     }
   } catch (error) {
     console.error('Status email workflow failed:', error.message);
@@ -676,7 +681,10 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
 
     await order.save();
 
+    // Send status emails immediately (blocking operation to ensure instant delivery)
+    console.log(`🚀 Sending dispatch email for order #${order.orderNumber} at ${new Date().toISOString()}`);
     await sendStatusEmails(order, previousStatus, newOrderStatus);
+    console.log(`✅ Dispatch email sent for order #${order.orderNumber} at ${new Date().toISOString()}`);
 
     // Send notification to user
     try {

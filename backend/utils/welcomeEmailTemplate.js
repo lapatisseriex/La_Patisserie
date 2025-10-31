@@ -31,7 +31,11 @@ export const getWelcomeEmailTemplate = (userDetails) => {
           </ul>
           
           <p style="margin-bottom: 15px;">
+
             Visit our website: <a href="https://www.lapatisserie.shop" style="color: #333; text-decoration: underline;">www.lapatisserie.shop</a>
+
+            <a href="https://www.lapatisserie.shop" style="color: #333; text-decoration: underline; font-weight: bold;">Start Shopping</a>
+
           </p>
           
           <p style="margin-bottom: 15px;">If you have any questions, feel free to reach out to us anytime.</p>

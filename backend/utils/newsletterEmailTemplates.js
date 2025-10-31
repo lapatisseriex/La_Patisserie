@@ -109,6 +109,7 @@ const newProductTemplate = (product) => `
         </p>
         ` : ''}
 
+
         <!-- Link -->
         <div style="text-align: center; margin: 35px 0 20px 0;">
           <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
@@ -116,8 +117,10 @@ const newProductTemplate = (product) => `
           </p>
         </div>
 
+
+
         <p style="color: rgba(255, 255, 255, 0.6); font-size: 14px; line-height: 1.6; text-align: center; margin: 30px 0 0 0;">
-          Indulge in our latest creation, crafted with love and the finest ingredients. Order now and treat yourself to something extraordinary!
+          Indulge in our latest creation, crafted with love and the finest ingredients. <a href="${product.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline; font-weight: 500;">Order now</a> and treat yourself to something extraordinary!
         </p>
       </div>
     </div>
@@ -170,6 +173,7 @@ const newCategoryTemplate = (category) => `
           </div>
         </div>
 
+<<<<<<< HEAD
         <!-- Link -->
         <div style="text-align: center; margin: 35px 0 20px 0;">
           <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
@@ -177,8 +181,10 @@ const newCategoryTemplate = (category) => `
           </p>
         </div>
 
+=======
+>>>>>>> 98602f4c1246afa2b779bcec4a4da072cb2c946f
         <p style="color: rgba(255, 255, 255, 0.5); font-size: 13px; line-height: 1.6; text-align: center; margin: 30px 0 0 0; font-style: italic;">
-          "Life is short, eat dessert first." - Explore our new ${category.name} collection today!
+          "Life is short, eat dessert first." - <a href="${category.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline; font-weight: 500;">Explore our new ${category.name} collection</a> today!
         </p>
       </div>
     </div>
@@ -265,6 +271,7 @@ const discountTemplate = (discount) => `
         </p>
         ` : ''}
 
+<<<<<<< HEAD
         <!-- Link -->
         <div style="text-align: center; margin: 35px 0 20px 0;">
           <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
@@ -272,8 +279,10 @@ const discountTemplate = (discount) => `
           </p>
         </div>
 
+=======
+>>>>>>> 98602f4c1246afa2b779bcec4a4da072cb2c946f
         <p style="color: rgba(255, 255, 255, 0.6); font-size: 14px; line-height: 1.6; text-align: center; margin: 30px 0 0 0;">
-          Don't miss out on this exclusive offer! Treat yourself or someone special to our delicious desserts at an amazing price.
+          Don't miss out on this exclusive offer! <a href="${discount.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline; font-weight: 500;">Claim your discount now</a> and treat yourself or someone special to our delicious desserts at an amazing price.
         </p>
       </div>
     </div>
@@ -313,11 +322,17 @@ const customNewsletterTemplate = (content) => `
         </div>
 
         ${content.ctaText && content.ctaLink ? `
+<<<<<<< HEAD
         <div style="text-align: center; margin: 35px 0 20px 0;">
           <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
             ${content.ctaText}: <a href="${content.ctaLink}" style="color: #A855F7; text-decoration: underline;">${content.ctaLink}</a>
           </p>
         </div>
+=======
+        <p style="text-align: center; margin: 35px 0 20px 0;">
+          <a href="${content.ctaLink}" style="color: #A855F7; text-decoration: underline; font-weight: 500; letter-spacing: 0.05em;">${content.ctaText}</a>
+        </p>
+>>>>>>> 98602f4c1246afa2b779bcec4a4da072cb2c946f
         ` : ''}
       </div>
     </div>

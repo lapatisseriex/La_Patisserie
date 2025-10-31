@@ -113,7 +113,11 @@ export const sendContactNotificationEmail = async (contact, adminEmails) => {
             </div>
             
             <div style="text-align: center; margin: 20px 0;">
+
               <p>View in dashboard: <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/contacts/${contact._id}" style="color: #007bff; text-decoration: underline;">${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/contacts/${contact._id}</a></p>
+
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/contacts/${contact._id}" style="color: #007bff; text-decoration: underline;">View in Dashboard</a>
+
             </div>
             
             <div class="footer">

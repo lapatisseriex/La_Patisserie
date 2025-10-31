@@ -4,8 +4,10 @@ import User from '../models/userModel.js';
 import Order from '../models/orderModel.js';
 import { 
   generateOTP, 
-  generateOTPExpiry, 
-  sendPasswordResetOTP as sendOTPEmail, 
+  generateOTPExpiry,
+  generateSignupOTPExpiry, 
+  sendPasswordResetOTP, 
+  sendSignupVerificationOTP,
   PASSWORD_RESET_LIMITS 
 } from '../utils/passwordResetService.js';
 import { sendWelcomeEmail } from '../utils/welcomeEmailService.js';
@@ -302,434 +304,6 @@ export const verifyToken = asyncHandler(async (req, res) => {
             console.error(`❌ Error queueing welcome email for ${user.email}:`, err);
           });
       }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
       // Prepare the update object for the user
       const updateData = {
         lastLogin: new Date(),
@@ -863,7 +437,7 @@ export const verifyToken = asyncHandler(async (req, res) => {
 // @desc    Send password reset OTP
 // @route   POST /api/auth/forgot-password
 // @access  Public
-export const sendPasswordResetOTP = asyncHandler(async (req, res) => {
+export const requestPasswordResetOTP = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
@@ -912,7 +486,7 @@ export const sendPasswordResetOTP = asyncHandler(async (req, res) => {
     await user.save();
 
     // Send OTP via email
-    await sendOTPEmail(user.email, otp);
+    await sendPasswordResetOTP(user.email, otp);
 
     console.log(`Password reset OTP sent to user: ${user.email}`);
 
@@ -923,7 +497,7 @@ export const sendPasswordResetOTP = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error in sendPasswordResetOTP:', error);
+    console.error('Error in requestPasswordResetOTP:', error);
     
     if (error.message.includes('Failed to send password reset email')) {
       res.status(500);
@@ -1084,4 +658,287 @@ export const resetPassword = asyncHandler(async (req, res) => {
     console.error('Error in resetPassword:', error);
     throw error;
   }
+});
+
+// Send OTP for email signup
+export const sendSignupOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email is required',
+      error: 'Email is required'
+    });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Check if user already exists in MongoDB as a permanent (non-temp) user
+  const existingUser = await User.findOne({ 
+    email: normalizedEmail,
+    isActive: true,
+    isTemp: { $ne: true } // Exclude temporary OTP verification records
+  });
+
+  if (existingUser) {
+    console.log(`Signup attempt with existing email: ${normalizedEmail}`);
+    const response = {
+      success: false,
+      message: 'User email already exists',
+      error: 'An account with this email already exists. Please sign in instead.'
+    };
+    console.log('Sending response:', JSON.stringify(response));
+    return res.status(400).json(response);
+  }
+
+  // Check Firebase, but allow signup even if Firebase user exists from incomplete previous signup
+  // We only block if BOTH Firebase AND MongoDB have the user
+  let orphanedFirebaseUser = null;
+  try {
+    const firebaseUser = await firebaseAdmin.auth().getUserByEmail(normalizedEmail);
+    orphanedFirebaseUser = firebaseUser;
+    console.log(`Firebase user exists for ${normalizedEmail}, but MongoDB record doesn't - will clean up during signup completion`);
+  } catch (firebaseError) {
+    // If error code is 'auth/user-not-found', that's good - user doesn't exist
+    if (firebaseError.code !== 'auth/user-not-found') {
+      // Some other Firebase error occurred (network, permission, etc.)
+      console.error('Firebase check error:', firebaseError);
+      // Don't block signup for Firebase connection issues
+      console.log('Firebase check failed, but allowing signup to continue');
+    }
+    // User not found in Firebase - good to proceed
+  }
+
+  // Clean up any orphaned Firebase user (from incomplete previous signup)
+  if (orphanedFirebaseUser) {
+    try {
+      await firebaseAdmin.auth().deleteUser(orphanedFirebaseUser.uid);
+      console.log(`Cleaned up orphaned Firebase user for ${normalizedEmail}`);
+    } catch (deleteError) {
+      console.error(`Failed to delete orphaned Firebase user for ${normalizedEmail}:`, deleteError);
+      // Don't block signup if cleanup fails - we'll handle it during verification
+    }
+  }
+
+  // Generate OTP
+  const otp = generateOTP();
+  const otpExpires = generateSignupOTPExpiry(); // 2 minutes for signup
+
+  // Create or update temporary user record for OTP verification
+  let tempUser = await User.findOne({ 
+    email: normalizedEmail,
+    isTemp: true 
+  });
+
+  if (tempUser) {
+    // Update existing temp record
+    tempUser.signupOTP = otp;
+    tempUser.signupOTPExpires = otpExpires;
+    await tempUser.save();
+  } else {
+    // Create new temp record
+    tempUser = await User.create({
+      email: normalizedEmail,
+      signupOTP: otp,
+      signupOTPExpires: otpExpires,
+      isTemp: true,
+      isActive: false
+    });
+  }
+
+  // Send OTP email
+  await sendSignupVerificationOTP(normalizedEmail, otp);
+
+  console.log(`Signup OTP sent to ${normalizedEmail}`);
+
+  res.status(200).json({
+    success: true,
+    message: 'Verification code sent to your email',
+    email: normalizedEmail
+  });
+});
+
+// Verify OTP and create user account
+export const verifySignupOTP = asyncHandler(async (req, res) => {
+  const { email, otp, password, name, locationId } = req.body;
+
+  if (!email || !otp || !password || !name) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email, OTP, password, and name are required',
+      error: 'Email, OTP, password, and name are required'
+    });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 6 characters long',
+      error: 'Password must be at least 6 characters long'
+    });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Find temporary user with OTP
+  const tempUser = await User.findOne({
+    email: normalizedEmail,
+    isTemp: true,
+    signupOTP: otp
+  });
+
+  if (!tempUser) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid or expired verification code',
+      error: 'Invalid or expired verification code'
+    });
+  }
+
+  // Check if OTP is expired
+  if (new Date() > tempUser.signupOTPExpires) {
+    return res.status(400).json({
+      success: false,
+      message: 'Verification code has expired. Please request a new one',
+      error: 'Verification code has expired. Please request a new one'
+    });
+  }
+
+    // Check if permanent user already exists in MongoDB
+    const existingMongoUser = await User.findOne({
+      email: normalizedEmail,
+      isTemp: { $ne: true },
+      isActive: true
+    });
+
+    if (existingMongoUser) {
+      // User already fully registered
+      await User.deleteOne({ _id: tempUser._id }); // Clean up temp user
+      return res.status(400).json({
+        success: false,
+        message: 'User email already exists',
+        error: 'Account already created. Please sign in instead.'
+      });
+    }
+
+    // Create or get Firebase user
+    let firebaseUser;
+    let firebaseUserWasCreated = false;
+    try {
+      // Try to create new Firebase user
+      firebaseUser = await firebaseAdmin.auth().createUser({
+        email: normalizedEmail,
+        password: password,
+        displayName: name,
+        emailVerified: true // Mark email as verified immediately
+      });
+      firebaseUserWasCreated = true;
+      console.log(`Created new Firebase user for ${normalizedEmail}`);
+    } catch (firebaseError) {
+      console.error('Firebase user creation error:', firebaseError);
+      
+      if (firebaseError.code === 'auth/email-already-exists') {
+        // Firebase user exists (from incomplete previous signup) - recover it
+        try {
+          firebaseUser = await firebaseAdmin.auth().getUserByEmail(normalizedEmail);
+          console.log(`Recovered existing Firebase user for ${normalizedEmail}, updating credentials`);
+          
+          // Update the Firebase user's password and displayName to match current signup
+          await firebaseAdmin.auth().updateUser(firebaseUser.uid, {
+            password: password,
+            displayName: name,
+            emailVerified: true
+          });
+          console.log(`Updated Firebase user credentials for ${normalizedEmail}`);
+        } catch (getError) {
+          console.error('Error recovering Firebase user:', getError);
+          res.status(500);
+          throw new Error('Failed to create account. Please contact support.');
+        }
+      } else {
+        // Other Firebase errors (network, invalid data, etc.)
+        console.error('Unexpected Firebase error:', firebaseError);
+        res.status(500);
+        throw new Error('Failed to create account. Please try again');
+      }
+    }
+
+    // Create permanent user record in MongoDB
+    let newUser;
+    try {
+      newUser = await User.create({
+        uid: firebaseUser.uid,
+        email: normalizedEmail,
+        name: name,
+        location: locationId || null,
+        emailVerified: true,
+        authMethod: 'email',
+        isActive: true,
+        isTemp: false
+      });
+      console.log(`Created MongoDB user record for ${normalizedEmail}`);
+    } catch (mongoError) {
+      console.error('MongoDB user creation error:', mongoError);
+      
+      // If MongoDB creation fails and we just created a Firebase user, try to clean up
+      if (firebaseUserWasCreated) {
+        try {
+          await firebaseAdmin.auth().deleteUser(firebaseUser.uid);
+          console.log(`Cleaned up Firebase user after MongoDB failure for ${normalizedEmail}`);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup Firebase user:', cleanupError);
+        }
+      }
+      
+      if (mongoError.code === 11000) {
+        // Duplicate key error - user already exists
+        await User.deleteOne({ _id: tempUser._id }); // Clean up temp user
+        res.status(400);
+        throw new Error('Account already exists. Please sign in instead.');
+      }
+      
+      res.status(500);
+      throw new Error('Failed to create account. Please try again.');
+    }
+
+    // Delete temporary user record
+    await User.deleteOne({ _id: tempUser._id });
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(newUser).catch(err => {
+      console.error('Error sending welcome email:', err);
+    });
+
+    // Emit WebSocket event for admin notifications if socket is available
+    if (req.app.get('io')) {
+      req.app.get('io').emit('newUserSignup', {
+        userId: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        timestamp: new Date()
+      });
+    }
+
+    // Generate custom token for immediate sign-in
+    const customToken = await firebaseAdmin.auth().createCustomToken(firebaseUser.uid);
+
+    console.log(`User account created successfully for ${normalizedEmail}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      user: {
+        _id: newUser._id,
+        uid: newUser.uid,
+        email: newUser.email,
+        name: newUser.name,
+        location: newUser.location,
+        role: newUser.role,
+        emailVerified: true,
+        authMethod: 'email'
+      },
+      customToken: customToken,
+      isNewUser: true
+    });
 });

@@ -212,7 +212,103 @@ export const signInWithGoogle = createAsyncThunk(
   }
 );
 
-// Email Sign Up
+// Send OTP for email signup
+export const sendSignupOTP = createAsyncThunk(
+  'auth/sendSignupOTP',
+  async ({ email }, { rejectWithValue }) => {
+    try {
+      console.log('🔄 Sending signup OTP to:', email);
+      
+      const response = await axios.post(`${API_URL}/auth/signup/send-otp`, { email });
+      
+      console.log('✅ Signup OTP sent successfully');
+      
+      return {
+        email: response.data.email,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('❌ Error sending signup OTP:', error);
+      
+      let errorMessage = 'Failed to send verification code';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// Verify OTP and create account
+export const verifySignupOTP = createAsyncThunk(
+  'auth/verifySignupOTP',
+  async ({ email, otp, password, name, locationId = null }, { rejectWithValue }) => {
+    try {
+      console.log('🔄 Verifying signup OTP and creating account for:', email);
+      
+      // Verify OTP and create user account
+      const response = await axios.post(`${API_URL}/auth/signup/verify-otp`, {
+        email,
+        otp,
+        password,
+        name,
+        locationId
+      });
+      
+      console.log('✅ Account created successfully');
+      
+      // Sign in to Firebase with the custom token
+      const { signInWithCustomToken } = await import('firebase/auth');
+      const userCredential = await signInWithCustomToken(auth, response.data.customToken);
+      const firebaseUser = userCredential.user;
+      
+      // Get ID token
+      const idToken = await firebaseUser.getIdToken(true);
+      
+      // Store token in localStorage
+      localStorage.setItem('authToken', idToken);
+      
+      // Create user object from backend response
+      const userData = {
+        ...response.data.user,
+        // Ensure all required fields are present with defaults
+        phone: response.data.user.phone || '',
+        phoneVerified: response.data.user.phoneVerified || false,
+        phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
+        city: response.data.user.city || '',
+        pincode: response.data.user.pincode || '',
+        country: response.data.user.country || 'India',
+        gender: response.data.user.gender || '',
+        dob: response.data.user.dob || null,
+        anniversary: response.data.user.anniversary || null,
+      };
+      
+      return {
+        user: userData,
+        token: idToken,
+        isNewUser: response.data.isNewUser
+      };
+    } catch (error) {
+      console.error('❌ Error verifying signup OTP:', error);
+      
+      let errorMessage = 'Failed to verify code and create account';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// Email Sign Up (Legacy - kept for backward compatibility)
 export const signUpWithEmail = createAsyncThunk(
   'auth/signUpWithEmail',
   async ({ email, password, locationId = null }, { rejectWithValue }) => {
@@ -548,6 +644,14 @@ const initialState = {
     message: '',
     otpVerified: false
   },
+  // Signup OTP state
+  signupOtp: {
+    email: '',
+    otpSent: false,
+    loading: false,
+    error: null,
+    message: ''
+  },
   // Temporary storage for login form email
   loginFormEmail: ''
 };
@@ -636,6 +740,16 @@ const authSlice = createSlice({
     },
     setLoginFormEmail: (state, action) => {
       state.loginFormEmail = action.payload;
+    },
+    // Signup OTP actions
+    resetSignupOtpState: (state) => {
+      state.signupOtp = {
+        email: '',
+        otpSent: false,
+        loading: false,
+        error: null,
+        message: ''
+      };
     },
   },
   extraReducers: (builder) => {
@@ -824,6 +938,56 @@ const authSlice = createSlice({
       .addCase(resetPassword.rejected, (state, action) => {
         state.passwordReset.loading = false;
         state.passwordReset.error = action.payload;
+      })
+      
+      // Signup OTP Send
+      .addCase(sendSignupOTP.pending, (state) => {
+        state.signupOtp.loading = true;
+        state.signupOtp.error = null;
+        state.signupOtp.message = '';
+      })
+      .addCase(sendSignupOTP.fulfilled, (state, action) => {
+        state.signupOtp.loading = false;
+        state.signupOtp.email = action.payload.email;
+        state.signupOtp.message = action.payload.message;
+        state.signupOtp.otpSent = true;
+      })
+      .addCase(sendSignupOTP.rejected, (state, action) => {
+        state.signupOtp.loading = false;
+        state.signupOtp.error = action.payload;
+        state.signupOtp.otpSent = false;
+      })
+      
+      // Signup OTP Verify
+      .addCase(verifySignupOTP.pending, (state) => {
+        state.signupOtp.loading = true;
+        state.signupOtp.error = null;
+      })
+      .addCase(verifySignupOTP.fulfilled, (state, action) => {
+        state.signupOtp.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.isNewUser = action.payload.isNewUser;
+        
+        // Reset signup OTP state
+        state.signupOtp = {
+          email: '',
+          otpSent: false,
+          loading: false,
+          error: null,
+          message: ''
+        };
+        
+        if (action.payload.isNewUser) {
+          state.authType = 'profile';
+        } else {
+          state.isAuthPanelOpen = false;
+        }
+      })
+      .addCase(verifySignupOTP.rejected, (state, action) => {
+        state.signupOtp.loading = false;
+        state.signupOtp.error = action.payload;
       });
   },
 });
@@ -841,7 +1005,8 @@ export const {
   resetPasswordState,
   setPasswordResetStep,
   setPasswordResetEmail,
-  setLoginFormEmail
+  setLoginFormEmail,
+  resetSignupOtpState
 } = authSlice.actions;
 
 export default authSlice.reducer;
