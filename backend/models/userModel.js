@@ -4,8 +4,12 @@ const userSchema = new mongoose.Schema(
   {
     uid: {
       type: String,
-      required: true,
+      required: function() {
+        // uid is not required for temporary OTP verification records
+        return !this.isTemp;
+      },
       unique: true,
+      sparse: true, // Allow multiple null values for temp users
     },
     email: {
       type: String,
@@ -105,6 +109,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Temporary user flag for OTP verification
+    isTemp: {
+      type: Boolean,
+      default: false,
+    },
     // Password reset OTP fields
     passwordResetOTP: {
       type: String,
@@ -117,6 +126,13 @@ const userSchema = new mongoose.Schema(
       default: 0,
     },
     passwordResetBlockedUntil: {
+      type: Date,
+    },
+    // Signup OTP fields
+    signupOTP: {
+      type: String,
+    },
+    signupOTPExpires: {
       type: Date,
     },
   },

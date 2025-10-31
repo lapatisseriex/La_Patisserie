@@ -4,6 +4,8 @@ import {
   signInWithGoogle,
   signUpWithEmail,
   signInWithEmail,
+  sendSignupOTP,
+  verifySignupOTP,
   getCurrentUser, 
   updateUserProfile, 
   logoutUser,
@@ -21,7 +23,8 @@ import {
   resetPasswordState,
   setPasswordResetStep,
   setPasswordResetEmail,
-  setLoginFormEmail
+  setLoginFormEmail,
+  resetSignupOtpState
 } from '../redux/authSlice';
 
 // Custom hook for authentication - Compatible with existing modal interface
@@ -58,6 +61,28 @@ export const useAuth = () => {
       return signInWithEmail.fulfilled.match(resultAction);
     } catch (error) {
       console.error('Error in signInWithEmail:', error);
+      return false;
+    }
+  }, [dispatch]);
+
+  // Send Signup OTP function
+  const sendSignupOTPAction = useCallback(async (data) => {
+    try {
+      const resultAction = await dispatch(sendSignupOTP(data));
+      return sendSignupOTP.fulfilled.match(resultAction);
+    } catch (error) {
+      console.error('Error in sendSignupOTP:', error);
+      return false;
+    }
+  }, [dispatch]);
+
+  // Verify Signup OTP function
+  const verifySignupOTPAction = useCallback(async (data) => {
+    try {
+      const resultAction = await dispatch(verifySignupOTP(data));
+      return verifySignupOTP.fulfilled.match(resultAction);
+    } catch (error) {
+      console.error('Error in verifySignupOTP:', error);
       return false;
     }
   }, [dispatch]);
@@ -112,10 +137,21 @@ export const useAuth = () => {
       otpVerified: false
     },
 
+    // Signup OTP state
+    signupOtp: auth.signupOtp || {
+      email: '',
+      otpSent: false,
+      loading: false,
+      error: null,
+      message: ''
+    },
+
     // New authentication actions
     signInWithGoogle: signInWithGoogleAction,
     signUpWithEmail: signUpWithEmailAction,
     signInWithEmail: signInWithEmailAction,
+    sendSignupOTP: sendSignupOTPAction,
+    verifySignupOTP: verifySignupOTPAction,
     updateProfile: updateProfileAction,
     updateUser: updateUserAction,
     logout: () => dispatch(logoutUser()),
@@ -131,6 +167,9 @@ export const useAuth = () => {
     setPasswordResetStep: (step) => dispatch(setPasswordResetStep(step)),
     setPasswordResetEmail: (email) => dispatch(setPasswordResetEmail(email)),
     setLoginFormEmail: (email) => dispatch(setLoginFormEmail(email)),
+    
+    // Signup OTP actions
+    resetSignupOtpState: () => dispatch(resetSignupOtpState()),
     
     // Additional Redux actions (for advanced usage)
     getCurrentUser: () => dispatch(getCurrentUser()),
