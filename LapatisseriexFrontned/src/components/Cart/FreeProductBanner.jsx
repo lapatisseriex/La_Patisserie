@@ -57,6 +57,55 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
     return null;
   }
 
+  // STRICT: Show "already claimed" message if user used their free product this month
+  if (eligibility?.freeProductUsed && progress?.currentDays >= 10) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="relative bg-gradient-to-br from-[#f9f4f6] to-[#f8f5f6] border border-[#d9c4cd] rounded-lg p-5 mb-6 shadow-sm overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#733857]/3 rounded-full -mr-12 -mt-12"></div>
+          
+          <button
+            onClick={() => setDismissed(true)}
+            className="absolute top-3 right-3 text-[#733857]/50 hover:text-[#733857] transition-colors z-10"
+            aria-label="Dismiss"
+          >
+            <FaTimes size={16} />
+          </button>
+
+          <div className="flex items-start gap-4 relative z-10">
+            <div className="flex-shrink-0 bg-gradient-to-br from-[#8d4466] to-[#733857] rounded-full p-3 shadow-sm opacity-50">
+              <FaGift className="text-white text-xl" />
+            </div>
+            
+            <div className="flex-1">
+              <h3 className="text-base font-semibold text-[#412434] mb-2">
+                ✓ Free Product Already Claimed This Month
+              </h3>
+              
+              <p className="text-sm text-[#733857]/80 leading-relaxed mb-2">
+                You've already received your free product reward for this month. 
+              </p>
+              
+              <p className="text-xs text-[#733857]/60 leading-relaxed">
+                Your progress will reset next month. Keep ordering on different days to unlock your next free product! 🎉
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  // Don't show progress banner if user already used their free product (only show "claimed" message above)
+  if (eligibility?.freeProductUsed) {
+    return null;
+  }
+
   // Don't show eligibility banner if free product is already in cart
   // Show eligibility banner if user is eligible and no free product in cart
   if (eligibility?.eligible && !hasFreeProductInCart) {
@@ -91,6 +140,10 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
               </h3>
               <p className="text-sm text-[#733857] mb-4 leading-relaxed">
                 You've ordered on 10 different days this month. Pick any item from our catalog as your reward!
+                <br />
+                <span className="text-xs font-medium text-[#8d4466] mt-1 inline-block">
+                  ⚠️ Note: Only ONE free product per month
+                </span>
               </p>
               
               <button

@@ -616,10 +616,15 @@ export const createOrder = asyncHandler(async (req, res) => {
         console.log('📅 Order day tracked:', trackingResult);
         
         // Check if order has free product and mark it as used
-        const hasFreeProduct = cartItems.some(item => item.isFreeProduct);
-        if (hasFreeProduct) {
-          await markFreeProductUsed(userId);
-          console.log('🎁 Free product reward used');
+        const freeProductItem = cartItems.find(item => item.isFreeProduct);
+        if (freeProductItem) {
+          await markFreeProductUsed(
+            userId,
+            freeProductItem.productId,
+            freeProductItem.productName || freeProductItem.name,
+            orderNumber
+          );
+          console.log('🎁 Free product reward used - NO MORE this month');
         }
       } catch (trackError) {
         console.error('Error tracking order day:', trackError);
@@ -884,10 +889,15 @@ export const verifyPayment = asyncHandler(async (req, res) => {
           console.log('📅 Order day tracked:', trackingResult);
           
           // Check if order has free product and mark it as used
-          const hasFreeProduct = order.cartItems.some(item => item.isFreeProduct);
-          if (hasFreeProduct) {
-            await markFreeProductUsed(order.userId);
-            console.log('🎁 Free product reward used');
+          const freeProductItem = order.cartItems.find(item => item.isFreeProduct);
+          if (freeProductItem) {
+            await markFreeProductUsed(
+              order.userId,
+              freeProductItem.productId,
+              freeProductItem.productName || freeProductItem.name,
+              order.orderNumber
+            );
+            console.log('🎁 Free product reward used - NO MORE this month');
           }
         } catch (trackError) {
           console.error('Error tracking order day:', trackError);

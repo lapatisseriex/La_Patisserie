@@ -66,6 +66,10 @@ const FreeProductModal = ({ isOpen, onClose }) => {
                 You've unlocked a <span className="font-semibold text-[#733857] bg-[#f7eef3] px-2 py-0.5 rounded">FREE product</span>! 
                 <br />
                 Pick any item from our catalog as your reward.
+                <br />
+                <span className="text-xs font-medium text-[#8d4466] mt-2 inline-block">
+                  ⚠️ Only ONE free product allowed per month
+                </span>
               </p>
 
               {/* Description */}

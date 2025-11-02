@@ -15,6 +15,11 @@ import {
   markAsDelivered,
   getOrderStats
 } from '../controllers/orderController.js';
+import {
+  getFreeProductClaims,
+  getFreeProductClaimsStats,
+  getUserClaimHistory
+} from '../controllers/freeProductAdminController.js';
 import { migrateOrderHostelIds } from '../utils/migrateOrderHostelIds.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -36,6 +41,11 @@ router.get('/orders/stats', protect, admin, getOrderStats);
 router.post('/dispatch', protect, admin, dispatchOrders);
 router.post('/dispatch-item', protect, admin, dispatchIndividualItem);
 router.post('/deliver-item', protect, admin, markAsDelivered);
+
+// Admin free product claims routes
+router.get('/free-product-claims', protect, admin, getFreeProductClaims);
+router.get('/free-product-claims/stats', protect, admin, getFreeProductClaimsStats);
+router.get('/free-product-claims/user/:userId', protect, admin, getUserClaimHistory);
 
 // Migration route for hostel IDs
 router.post('/orders/migrate-hostel-ids', protect, admin, async (req, res) => {
@@ -90,5 +100,10 @@ router.get('/orders/analyze-hostel-data', protect, admin, async (req, res) => {
     });
   }
 });
+
+// Free Product Claims Admin Routes
+router.get('/free-product-claims', protect, admin, getFreeProductClaims);
+router.get('/free-product-claims/stats', protect, admin, getFreeProductClaimsStats);
+router.get('/free-product-claims/user/:userId', protect, admin, getUserClaimHistory);
 
 export default router;

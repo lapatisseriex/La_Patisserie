@@ -93,12 +93,14 @@ export const trackOrderDay = async (userId) => {
       }
     } else {
       // Same month - check if user has reached 10 unique order days
-      // Allow eligibility EVEN if they already used their free product (for next cycle)
-      if (uniqueDaysCount >= 10 && !user.freeProductEligible) {
+      // STRICT: Only allow ONE free product per month
+      if (uniqueDaysCount >= 10 && !user.freeProductEligible && !user.freeProductUsed) {
         user.freeProductEligible = true;
         user.lastRewardMonth = currentMonthKey;
-        user.freeProductUsed = false; // Reset used flag when becoming eligible again
         console.log(`🎉 User ${userId} is now eligible for a free product! (${uniqueDaysCount} days)`);
+      } else if (user.freeProductUsed) {
+        // User already used their free product this month - not eligible again
+        console.log(`❌ User ${userId} already claimed free product this month. Wait for next month.`);
       }
     }
 
@@ -116,10 +118,10 @@ export const trackOrderDay = async (userId) => {
 
 /**
  * Middleware to check and reset free product status after it's used
- * This marks the free product as used and resets eligibility for next cycle
- * BUT keeps the order days so user can continue accumulating toward next reward
+ * This marks the free product as used and resets eligibility
+ * STRICT: Only ONE free product per month - user must wait until next month
  */
-export const markFreeProductUsed = async (userId) => {
+export const markFreeProductUsed = async (userId, productId, productName, orderNumber) => {
   try {
     if (!userId) {
       return;
@@ -131,14 +133,32 @@ export const markFreeProductUsed = async (userId) => {
     }
 
     if (user.freeProductEligible || user.selectedFreeProductId) {
-      // Reset eligibility flags but KEEP monthlyOrderDays so progress continues
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+      const currentMonthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+      
+      // Reset eligibility flags and mark as used for THIS MONTH
       user.freeProductEligible = false;
-      user.freeProductUsed = true;
+      user.freeProductUsed = true; // This prevents getting another free product this month
       user.selectedFreeProductId = null;
-      // DO NOT clear monthlyOrderDays - let them continue accumulating
+      
+      // Record claim history for admin tracking
+      if (!user.freeProductClaimHistory) {
+        user.freeProductClaimHistory = [];
+      }
+      user.freeProductClaimHistory.push({
+        productId: productId,
+        productName: productName,
+        claimedAt: now,
+        month: currentMonthKey,
+        orderNumber: orderNumber
+      });
+      
+      // Keep monthlyOrderDays intact - user can't use them this month, but they roll over
       
       await user.save();
-      console.log(`✅ Free product used by user ${userId} - Eligibility reset, days preserved for next cycle`);
+      console.log(`✅ Free product claimed by user ${userId} - NO MORE free products until next month`);
     }
   } catch (error) {
     console.error('Error in markFreeProductUsed:', error);

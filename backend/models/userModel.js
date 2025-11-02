@@ -166,7 +166,20 @@ const userSchema = new mongoose.Schema(
     freeProductUsed: {
       type: Boolean,
       default: false
-    }
+    },
+    freeProductClaimHistory: [{
+      productId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+      },
+      productName: String,
+      claimedAt: {
+        type: Date,
+        default: Date.now
+      },
+      month: String, // Format: "YYYY-MM"
+      orderNumber: String
+    }]
   },
   {
     timestamps: true,
