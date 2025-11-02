@@ -57,6 +57,11 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
     return null;
   }
 
+  // CRITICAL: Hide ALL banners if free product is already in cart
+  if (hasFreeProductInCart) {
+    return null;
+  }
+
   // STRICT: Show "already claimed" message if user used their free product this month
   if (eligibility?.freeProductUsed && progress?.currentDays >= 10) {
     return (
