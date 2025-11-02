@@ -17,7 +17,8 @@ import {
   FaChartBar,
   FaEnvelope,
   FaTruck,
-  FaBell
+  FaBell,
+  FaGift
 } from 'react-icons/fa';
 import { MdPayment } from 'react-icons/md';
 
@@ -300,6 +301,16 @@ const AdminDashboardLayout = () => {
                 >
                   <FaEnvelope className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>NGO Media</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/rewards"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/rewards' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaGift className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Free Product Rewards</span>
                 </Link>
               </li>
             </ul>

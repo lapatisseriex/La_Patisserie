@@ -42,6 +42,7 @@ import ngoMediaRoutes from './routes/ngoMediaRoutes.js';
 import sitemapRoutes from './routes/sitemapRoutes.js';
 import freeProductRoutes from './routes/freeProductRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
+import { startMonthlyCleanupJob } from './utils/monthlyCleanupJob.js';
 
 // Initialize Express app
 const app = express();
@@ -213,6 +214,9 @@ const startServer = async () => {
       }, HOUR_MS);
     };
     scheduleCartExpiryCleanup();
+
+    // Start monthly claim history cleanup job
+    startMonthlyCleanupJob();
 
     const scheduleCancelledOrderCleanup = () => {
       const MINUTE_MS = 60 * 1000;

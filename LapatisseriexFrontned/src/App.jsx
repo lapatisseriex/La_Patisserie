@@ -61,6 +61,7 @@ import AdminAnalyticsDashboard from './pages/Admin/AdminAnalyticsDashboard';
 import AdminNewsletter from './components/Admin/AdminNewsletter';
 import AdminNGOMedia from './components/Admin/AdminNGOMedia';
 import AdminNotifications from './components/Admin/AdminNotifications';
+import AdminFreeProductRewards from './components/Admin/AdminFreeProductRewards';
 
 // Contact Components
 import Contact from './pages/Contact';
@@ -260,6 +261,7 @@ function App() {
                               <Route path="contacts" element={<React.Suspense fallback={<div>Loading...</div>}><ContactManagement /></React.Suspense>} />
                               <Route path="newsletter" element={<React.Suspense fallback={<div>Loading...</div>}><AdminNewsletter /></React.Suspense>} />
                               <Route path="ngo-media" element={<React.Suspense fallback={<div>Loading...</div>}><AdminNGOMedia /></React.Suspense>} />
+                              <Route path="rewards" element={<React.Suspense fallback={<div>Loading...</div>}><AdminFreeProductRewards /></React.Suspense>} />
                             </Route>
                           </Route>
                           {/* Catch-all route for any undefined paths */}

@@ -47,6 +47,44 @@ router.get('/free-product-claims', protect, admin, getFreeProductClaims);
 router.get('/free-product-claims/stats', protect, admin, getFreeProductClaimsStats);
 router.get('/free-product-claims/user/:userId', protect, admin, getUserClaimHistory);
 
+// Admin monthly cleanup routes
+router.post('/cleanup/run-manual', protect, admin, async (req, res) => {
+  try {
+    const { runManualCleanup } = await import('../utils/monthlyCleanupJob.js');
+    const result = await runManualCleanup();
+    res.json({
+      success: true,
+      message: 'Manual cleanup completed successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error running manual cleanup:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to run manual cleanup',
+      error: error.message
+    });
+  }
+});
+
+router.get('/cleanup/status', protect, admin, async (req, res) => {
+  try {
+    const { getCleanupStatus } = await import('../utils/monthlyCleanupJob.js');
+    const status = getCleanupStatus();
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    console.error('Error getting cleanup status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get cleanup status',
+      error: error.message
+    });
+  }
+});
+
 // Migration route for hostel IDs
 router.post('/orders/migrate-hostel-ids', protect, admin, async (req, res) => {
   try {
