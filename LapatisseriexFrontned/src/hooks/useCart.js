@@ -544,6 +544,8 @@ export const useCart = () => {
       if (user) {
         console.log('🔄 Refreshing cart from database');
         const result = await dispatch(fetchCart()).unwrap();
+        console.log('✅ Cart refreshed, items:', result?.items?.length);
+        console.log('✅ Cart items:', result?.items);
         return result;
       }
     } catch (error) {

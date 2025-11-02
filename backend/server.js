@@ -40,6 +40,7 @@ import newsletterRoutes from './routes/newsletterRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import ngoMediaRoutes from './routes/ngoMediaRoutes.js';
 import sitemapRoutes from './routes/sitemapRoutes.js';
+import freeProductRoutes from './routes/freeProductRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
 
 // Initialize Express app
@@ -338,6 +339,7 @@ const startServer = async () => {
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/newsletter', newsletterRoutes);
     app.use('/api/ngo-media', ngoMediaRoutes);
+    app.use('/api/free-product', freeProductRoutes);
 
     // WebSocket setup
     const io = new Server(server, {

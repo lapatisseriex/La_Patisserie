@@ -1,9 +1,11 @@
 import express from 'express';
 import { 
   verifyToken, 
-  sendPasswordResetOTP, 
+  requestPasswordResetOTP, 
   verifyPasswordResetOTP, 
-  resetPassword 
+  resetPassword,
+  sendSignupOTP,
+  verifySignupOTP
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -12,8 +14,12 @@ const router = express.Router();
 router.post('/verify', verifyToken);
 
 // Password reset routes
-router.post('/forgot-password', sendPasswordResetOTP);
+router.post('/forgot-password', requestPasswordResetOTP);
 router.post('/verify-reset-otp', verifyPasswordResetOTP);
 router.post('/reset-password', resetPassword);
+
+// Signup with OTP routes
+router.post('/signup/send-otp', sendSignupOTP);
+router.post('/signup/verify-otp', verifySignupOTP);
 
 export default router;

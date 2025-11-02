@@ -8,8 +8,23 @@ const Footer = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Only show footer on profile and payment pages
-  if (location.pathname !== '/profile' && location.pathname !== '/payment') {
+  // Show footer on specific pages: profile, payment, and all info/legal pages
+  const footerPages = [
+    '/profile',
+    '/payment',
+    '/orders',
+    '/about',
+    '/contact',
+    '/faq',
+    '/privacy-policy',
+    '/shipping-policy',
+    '/refund-policy',
+    '/terms',
+    '/our-services',
+    '/support-education'
+  ];
+  
+  if (!footerPages.includes(location.pathname)) {
     return null;
   }
 

@@ -170,6 +170,12 @@ export const calculateCartTotals = (cartItems) => {
         return;
       }
       
+      // Skip free products from total calculation
+      if (normalizedItem.isFreeProduct === true) {
+        console.log('Cart - Skipping free product from total:', normalizedItem);
+        return;
+      }
+      
       // Get variant data from normalized productDetails
       const prod = normalizedItem.productDetails;
       if (!prod) {

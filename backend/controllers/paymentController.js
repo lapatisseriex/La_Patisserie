@@ -20,6 +20,7 @@ import { getActiveAdminEmails } from '../utils/adminUtils.js';
 import { createNotification } from './notificationController.js';
 import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
 import NewCart from '../models/newCartModel.js';
+import { trackOrderDay, markFreeProductUsed } from '../middleware/freeProductMiddleware.js';
 
 // Initialize Razorpay with validation
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -490,23 +491,34 @@ export const createOrder = asyncHandler(async (req, res) => {
         const product = await Product.findById(item.productId).select('variants name');
         const { variant, variantLabel, variantIndex } = resolveVariantInfoForItem(item, product);
 
+        // Free products should have 0 price
+        const itemPrice = item.isFreeProduct ? 0 : (Number(item.price) || 0);
+        const itemOriginalPrice = item.isFreeProduct ? 0 : (Number(item.originalPrice) || Number(item.price) || 0);
+
         return {
           ...item,
           variantIndex,
           variant: item.variant || variant || null,
           variantLabel: item.variantLabel || variantLabel || '',
-          price: Number(item.price) || 0,
-          originalPrice: Number(item.originalPrice) || Number(item.price) || 0
+          price: itemPrice,
+          originalPrice: itemOriginalPrice,
+          isFreeProduct: item.isFreeProduct || false
         };
       } catch (variantError) {
         console.error(`Error resolving variant for product ${item.productId}:`, variantError.message);
+        
+        // Free products should have 0 price
+        const itemPrice = item.isFreeProduct ? 0 : (Number(item.price) || 0);
+        const itemOriginalPrice = item.isFreeProduct ? 0 : (Number(item.originalPrice) || Number(item.price) || 0);
+        
         return {
           ...item,
           variantIndex: Number.isInteger(item?.variantIndex) ? item.variantIndex : 0,
           variant: item.variant || null,
           variantLabel: item.variantLabel || '',
-          price: Number(item.price) || 0,
-          originalPrice: Number(item.originalPrice) || Number(item.price) || 0
+          price: itemPrice,
+          originalPrice: itemOriginalPrice,
+          isFreeProduct: item.isFreeProduct || false
         };
       }
     }));
@@ -597,6 +609,22 @@ export const createOrder = asyncHandler(async (req, res) => {
       await decrementProductStock(cartItems);
       // Update product order counts for COD orders as they're confirmed at placement
       await updateProductOrderCounts(cartItems);
+      
+      // Track order day for monthly reward system
+      try {
+        const trackingResult = await trackOrderDay(userId);
+        console.log('📅 Order day tracked:', trackingResult);
+        
+        // Check if order has free product and mark it as used
+        const hasFreeProduct = cartItems.some(item => item.isFreeProduct);
+        if (hasFreeProduct) {
+          await markFreeProductUsed(userId);
+          console.log('🎁 Free product reward used');
+        }
+      } catch (trackError) {
+        console.error('Error tracking order day:', trackError);
+        // Don't fail the order if tracking fails
+      }
     }
 
     // After COD order creation, remove the user's cart document immediately
@@ -849,6 +877,22 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       // Update product order counts after successful payment
       if (order.cartItems && order.cartItems.length > 0) {
         await updateProductOrderCounts(order.cartItems);
+        
+        // Track order day for monthly reward system
+        try {
+          const trackingResult = await trackOrderDay(order.userId);
+          console.log('📅 Order day tracked:', trackingResult);
+          
+          // Check if order has free product and mark it as used
+          const hasFreeProduct = order.cartItems.some(item => item.isFreeProduct);
+          if (hasFreeProduct) {
+            await markFreeProductUsed(order.userId);
+            console.log('🎁 Free product reward used');
+          }
+        } catch (trackError) {
+          console.error('Error tracking order day:', trackError);
+          // Don't fail the order if tracking fails
+        }
       }
 
       // Send order confirmation email asynchronously in parallel for online payments (customer and admin simultaneously) - Execute immediately

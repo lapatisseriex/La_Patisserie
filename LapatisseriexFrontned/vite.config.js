@@ -27,5 +27,8 @@ export default defineConfig({
         manualChunks: undefined,
       },
     },
+    // Ensure service worker and offline page are copied to dist
+    copyPublicDir: true,
   },
+  publicDir: 'public',
 })

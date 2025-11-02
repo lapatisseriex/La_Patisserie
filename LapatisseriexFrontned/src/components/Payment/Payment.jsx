@@ -466,15 +466,20 @@ const Payment = () => {
           const pricing = pricingSource ? calculatePricing(pricingSource) : { finalPrice: Number(item.price) || 0, mrp: Number(item.originalPrice) || Number(item.price) || 0 };
           const variantSnapshot = pricingSource ? { ...pricingSource } : null;
 
+          // Free products should have 0 price
+          const finalPrice = item.isFreeProduct ? 0 : pricing.finalPrice;
+          const finalOriginalPrice = item.isFreeProduct ? 0 : pricing.mrp;
+
           return {
             productId: item.productId || item._id,
             productName: item.name || prod?.name || 'Product',
             quantity: item.quantity,
-            price: pricing.finalPrice,
-            originalPrice: pricing.mrp,
+            price: finalPrice,
+            originalPrice: finalOriginalPrice,
             variantIndex,
             variantLabel: variantLabel || '',
-            variant: variantSnapshot
+            variant: variantSnapshot,
+            isFreeProduct: item.isFreeProduct || false
           };
         }),
         userDetails: {
@@ -973,12 +978,14 @@ if (isOrderComplete) {
 
                     const displayLabel = variantLabel || fallbackLabel || 'Standard';
                     const pricing = variant ? calculatePricing(variant) : null;
-                    const rawUnitPrice = pricing ? pricing.finalPrice : Number(item?.price) || 0;
+                    
+                    // Free products should have 0 price
+                    const rawUnitPrice = item.isFreeProduct ? 0 : (pricing ? pricing.finalPrice : Number(item?.price) || 0);
                     const safeUnitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
-                    const mrpValue = pricing ? pricing.mrp : rawUnitPrice;
+                    const mrpValue = item.isFreeProduct ? 0 : (pricing ? pricing.mrp : rawUnitPrice);
                     const safeMrp = Number.isFinite(mrpValue) ? mrpValue : safeUnitPrice;
                     const discountPercentage = Number.isFinite(pricing?.discountPercentage) ? pricing.discountPercentage : 0;
-                    const hasDiscount = discountPercentage > 0;
+                    const hasDiscount = discountPercentage > 0 && !item.isFreeProduct;
                     const lineTotal = safeUnitPrice * (item.quantity || 1);
                     const originalTotal = hasDiscount ? safeMrp * (item.quantity || 1) : lineTotal;
 
@@ -998,7 +1005,14 @@ if (isOrderComplete) {
                           />
                         </div>
                         <div className="flex flex-1 flex-col gap-1">
-                          <p className="text-sm font-medium text-slate-900">{item.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-slate-900">{item.name}</p>
+                            {item.isFreeProduct && (
+                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                FREE
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-500">{displayLabel}</p>
                           {hasDiscount && (
                             <OfferBadge label={`${discountPercentage}% OFF`} className="text-[10px]" />

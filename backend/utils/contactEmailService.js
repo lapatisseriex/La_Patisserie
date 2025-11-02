@@ -67,7 +67,6 @@ export const sendContactNotificationEmail = async (contact, adminEmails) => {
             .value { margin-top: 5px; }
             .message-box { background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; }
             .footer { margin-top: 20px; padding: 15px; background-color: #f8f9fa; font-size: 12px; color: #6c757d; }
-            .btn { display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; }
           </style>
         </head>
         <body>
@@ -114,9 +113,11 @@ export const sendContactNotificationEmail = async (contact, adminEmails) => {
             </div>
             
             <div style="text-align: center; margin: 20px 0;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/contacts/${contact._id}" class="btn">
-                View in Dashboard
-              </a>
+
+              <p>View in dashboard: <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/contacts/${contact._id}" style="color: #007bff; text-decoration: underline;">${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/contacts/${contact._id}</a></p>
+
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/contacts/${contact._id}" style="color: #007bff; text-decoration: underline;">View in Dashboard</a>
+
             </div>
             
             <div class="footer">

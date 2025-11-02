@@ -4,8 +4,12 @@ const userSchema = new mongoose.Schema(
   {
     uid: {
       type: String,
-      required: true,
+      required: function() {
+        // uid is not required for temporary OTP verification records
+        return !this.isTemp;
+      },
       unique: true,
+      sparse: true, // Allow multiple null values for temp users
     },
     email: {
       type: String,
@@ -105,6 +109,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Temporary user flag for OTP verification
+    isTemp: {
+      type: Boolean,
+      default: false,
+    },
     // Password reset OTP fields
     passwordResetOTP: {
       type: String,
@@ -119,6 +128,45 @@ const userSchema = new mongoose.Schema(
     passwordResetBlockedUntil: {
       type: Date,
     },
+    // Signup OTP fields
+    signupOTP: {
+      type: String,
+    },
+    signupOTPExpires: {
+      type: Date,
+    },
+    // Monthly reward system fields
+    monthlyOrderDays: [{
+      date: {
+        type: Date,
+        required: true
+      },
+      month: {
+        type: Number, // 1-12
+        required: true
+      },
+      year: {
+        type: Number,
+        required: true
+      }
+    }],
+    freeProductEligible: {
+      type: Boolean,
+      default: false
+    },
+    selectedFreeProductId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      default: null
+    },
+    lastRewardMonth: {
+      type: String, // Format: "YYYY-MM"
+      default: null
+    },
+    freeProductUsed: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     timestamps: true,

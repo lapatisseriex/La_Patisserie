@@ -22,9 +22,14 @@ export const generateOTP = () => {
   return crypto.randomInt(100000, 999999).toString();
 };
 
-// Generate OTP expiry time (10 minutes from now)
+// Generate OTP expiry time (10 minutes from now) - for password reset
 export const generateOTPExpiry = () => {
   return new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+};
+
+// Generate OTP expiry time (2 minutes from now) - for signup verification
+export const generateSignupOTPExpiry = () => {
+  return new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 };
 
 // Email template for password reset OTP
@@ -75,6 +80,54 @@ const getPasswordResetEmailTemplate = (otp, userEmail) => {
   };
 };
 
+// Email template for signup verification OTP
+const getSignupVerificationEmailTemplate = (otp, userEmail) => {
+  return {
+    subject: 'Verify Your Email - La Pâtisserie',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Email Verification</title>
+      </head>
+      <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd;">
+          
+          <h1 style="color: #333; margin-bottom: 20px;">Verify Your Email</h1>
+          
+          <p style="margin-bottom: 15px;">Welcome to La Pâtisserie!</p>
+          
+          <p style="margin-bottom: 15px;">Thank you for signing up. To complete your registration, please use the verification code below:</p>
+          
+          <div style="background: #f5f5f5; border: 2px dashed #333; padding: 20px; text-align: center; margin: 20px 0;">
+            <div style="font-size: 32px; font-weight: bold; letter-spacing: 4px; font-family: 'Courier New', monospace;">${otp}</div>
+          </div>
+          
+          <p style="margin-bottom: 15px;">This code will expire in <strong>2 minutes</strong>.</p>
+          
+          <div style="background: #f5f5f5; border: 1px solid #ddd; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #333;"><strong>Security Notice:</strong> If you didn't create an account with La Pâtisserie, please ignore this email.</p>
+          </div>
+          
+          <p style="margin-bottom: 5px;">We're excited to have you!</p>
+          <p style="margin-bottom: 20px;"><strong>La Pâtisserie Team</strong></p>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          
+          <p style="font-size: 12px; color: #666; margin: 0; text-align: center;">
+            This is an automated email. Please do not reply to this message.<br>
+            La Pâtisserie | lapatisserielapatisserie@gmail.com
+          </p>
+          
+        </div>
+      </body>
+      </html>
+    `
+  };
+};
+
 // Send password reset OTP email
 export const sendPasswordResetOTP = async (userEmail, otp) => {
   try {
@@ -108,6 +161,42 @@ export const sendPasswordResetOTP = async (userEmail, otp) => {
   } catch (error) {
     console.error('Error sending password reset OTP:', error);
     throw new Error('Failed to send password reset email. Please try again later.');
+  }
+};
+
+// Send signup verification OTP email
+export const sendSignupVerificationOTP = async (userEmail, otp) => {
+  try {
+    const transporter = createTransporter();
+    const emailTemplate = getSignupVerificationEmailTemplate(otp, userEmail);
+    
+    const mailOptions = {
+      from: {
+        name: 'La Pâtisserie',
+        address: process.env.EMAIL_USER
+      },
+      to: userEmail,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html,
+      headers: {
+        'X-Email-Verification': 'true',
+        'X-Priority': 'high',
+        'X-Mailer': 'La-Patisserie-Auth-System'
+      }
+    };
+
+    console.log(`Sending signup verification OTP to ${userEmail}`);
+    const result = await transporter.sendMail(mailOptions);
+    
+    console.log(`Signup verification OTP sent successfully to ${userEmail}:`, result.messageId);
+    return {
+      success: true,
+      messageId: result.messageId
+    };
+    
+  } catch (error) {
+    console.error('Error sending signup verification OTP:', error);
+    throw new Error('Failed to send verification email. Please try again later.');
   }
 };
 

@@ -56,6 +56,10 @@ const newCartItemSchema = new mongoose.Schema({
   addedAt: {
     type: Date,
     default: Date.now
+  },
+  isFreeProduct: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -81,9 +85,13 @@ const newCartSchema = new mongoose.Schema({
 newCartSchema.set('toJSON', { virtuals: true });
 newCartSchema.set('toObject', { virtuals: true });
 
-// Virtual to calculate cart total
+// Virtual to calculate cart total (excluding free products)
 newCartSchema.virtual('cartTotal').get(function() {
   return this.items.reduce((total, item) => {
+    // Skip free products in total calculation
+    if (item.isFreeProduct) {
+      return total;
+    }
     const price = parseFloat(item.productDetails?.price) || 0;
     const quantity = parseInt(item.quantity) || 0;
     return total + (price * quantity);
@@ -101,7 +109,7 @@ newCartSchema.index({ 'items.productId': 1 });
 newCartSchema.index({ lastUpdated: -1 });
 
 // Instance method to add or update item
-newCartSchema.methods.addOrUpdateItem = async function(productId, quantity, productDetails, { absolute = false } = {}) {
+newCartSchema.methods.addOrUpdateItem = async function(productId, quantity, productDetails, { absolute = false, isFreeProduct = false } = {}) {
   const existingItemIndex = this.items.findIndex(
     item => item.productId.toString() === productId.toString()
   );
@@ -114,13 +122,15 @@ newCartSchema.methods.addOrUpdateItem = async function(productId, quantity, prod
       this.items[existingItemIndex].quantity += quantity;
     }
     this.items[existingItemIndex].productDetails = productDetails; // Update product details
+    this.items[existingItemIndex].isFreeProduct = isFreeProduct;
   } else {
     // Add new item
     this.items.push({
       productId,
       quantity,
       productDetails,
-      addedAt: new Date()
+      addedAt: new Date(),
+      isFreeProduct
     });
   }
 

@@ -77,13 +77,135 @@ const buildMinimalEmailHTML = (brandName, orderNumber, trackUrl) => {
         <h1 style="text-align: center; color: #333; margin-bottom: 10px;">${brandName}</h1>
         <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 30px;">Order #${orderNumber}</p>
         
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${trackUrl}" style="display: inline-block; padding: 12px 30px; background: #333; color: #fff; text-decoration: none; border-radius: 4px; font-weight: bold;">Track Your Order</a>
-        </div>
+
+        <p style="text-align: center; color: #555; font-size: 15px; margin: 30px 0;">
+          Track your order: <a href="${trackUrl}" style="color: #333; text-decoration: underline;">${trackUrl}</a>
+        </p>
         
+
+
         <p style="text-align: center; color: #666; font-size: 13px; margin-top: 30px;">
           Thank you for your order!<br>
           PDF invoice is attached to this email.
+        </p>
+
+        <p style="text-align: center; margin: 30px 0;">
+          <a href="${trackUrl}" style="color: #333; text-decoration: underline; font-weight: bold;">Track Your Order</a>
+        </p>
+        
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Dispatch email template with delivery information
+const buildDispatchEmailHTML = (brandName, orderNumber, trackUrl, orderDetails) => {
+  const deliveryLocation = orderDetails?.deliveryLocation || 'your specified location';
+  const hostelName = orderDetails?.hostelName || '';
+  const deliveryAddress = hostelName ? `${deliveryLocation}, ${hostelName}` : deliveryLocation;
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>${brandName} – Order Dispatched!</title>
+    </head>
+    <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
+      <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 8px;">
+        
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #333; margin-bottom: 10px; font-size: 28px;">${brandName}</h1>
+          <p style="color: #666; font-size: 14px; margin: 5px 0;">Order #${orderNumber}</p>
+        </div>
+        
+        <!-- Delivery Information -->
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+          <h3 style="color: #333; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Delivery Details</h3>
+          <p style="margin: 8px 0; color: #555; font-size: 15px; line-height: 1.6;">
+            <strong>Delivering to:</strong><br>
+            ${deliveryAddress}
+          </p>
+        </div>
+        
+        <!-- Message -->
+        <div style="text-align: center; margin: 30px 0;">
+          <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 10px 0;">
+            Your delicious treats are on their way!
+          </p>
+          <p style="color: #777; font-size: 14px; line-height: 1.6; margin: 0;">
+            Our delivery team will reach you shortly.
+          </p>
+        </div>
+        
+        <!-- Track Order Button -->
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${trackUrl}" style="display: inline-block; background: #333; color: #fff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+            Track Your Order
+          </a>
+        </div>
+        
+        <!-- Footer Message -->
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+          <p style="color: #999; font-size: 13px; margin: 5px 0;">
+            Thank you for choosing ${brandName}!
+          </p>
+          <p style="color: #999; font-size: 12px; margin: 5px 0;">
+            Questions? Contact us anytime.
+          </p>
+        </div>
+        
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Simple dispatch email template (no logo, no attachments, default styling)
+const buildSimpleDispatchEmail = (orderNumber, deliveryAddress, trackUrl) => {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Order Dispatched</title>
+    </head>
+    <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 5px;">
+        
+        <h2 style="color: #333333; margin-top: 0;">Order Dispatched</h2>
+        
+        <p style="color: #555555; line-height: 1.6;">
+          Your order <strong>#${orderNumber}</strong> has been dispatched and is on its way to you!
+        </p>
+        
+        <div style="background-color: #f9f9f9; padding: 15px; border-left: 3px solid #4CAF50; margin: 20px 0;">
+          <p style="margin: 0; color: #333333; font-size: 14px;">
+            <strong>Delivery Address:</strong><br>
+            ${deliveryAddress}
+          </p>
+        </div>
+        
+        <p style="color: #555555; line-height: 1.6;">
+          Our delivery team will reach you shortly. You can track your order status using the link below:
+        </p>
+        
+        <p style="margin: 20px 0;">
+          <a href="${trackUrl}" style="color: #1a73e8; text-decoration: none;">${trackUrl}</a>
+        </p>
+        
+        <p style="color: #555555; line-height: 1.6;">
+          Thank you for choosing La Patisserie!
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+        
+        <p style="color: #999999; font-size: 12px; text-align: center; margin: 0;">
+          If you have any questions, feel free to contact us.
         </p>
         
       </div>
@@ -96,157 +218,66 @@ const buildMinimalEmailHTML = (brandName, orderNumber, trackUrl) => {
 export const sendOrderStatusNotification = async (orderDetails, newStatus, userEmail, logoData = null, productImagesData = []) => {
   try {
     const transporter = createTransporter();
-    
     const orderNumber = orderDetails?.orderNumber || '';
-    const brandName = 'La Pâtisserie';
-    const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
     
-    // Generate invoice PDF
-    const attachments = [];
-    
-    try {
-      const { filename, buffer } = await generateInvoicePdf(orderDetails);
-      attachments.push({ filename, content: buffer, contentType: 'application/pdf' });
-    } catch (e) {
-      console.error('Failed to generate invoice PDF:', e.message);
-    }
-
-    const mailOptions = {
-      from: {
-        name: 'La Patisserie',
-        address: process.env.EMAIL_USER
-      },
-      to: userEmail,
-      subject: `Order #${orderNumber} — Update`,
-      html: buildMinimalEmailHTML(brandName, orderNumber, trackUrl),
-      attachments,
-      headers: {
-        'X-Order-Number': orderNumber,
-        'X-Status-Update': newStatus,
-        'X-Priority': 'high'
-      }
-    };
-
-    console.log(`Sending order status email to ${userEmail} for order ${orderNumber}`);
-    
-    const result = await transporter.sendMail(mailOptions);
-    
-    console.log('Order status email sent successfully:', {
-      messageId: result.messageId,
-      orderNumber,
-      newStatus,
-      recipient: userEmail
-    });
-
-    return {
-      success: true,
-      messageId: result.messageId,
-      orderNumber,
-      status: newStatus,
-      recipient: userEmail
-    };
-
-  } catch (error) {
-    console.error('Error sending order status email:', {
-      error: error.message,
-      orderNumber: orderDetails.orderNumber,
-      newStatus,
-      recipient: userEmail
-    });
-
-    return {
-      success: false,
-      error: error.message,
-      orderNumber: orderDetails.orderNumber,
-      status: newStatus,
-      recipient: userEmail
-    };
-  }
-};
-
-// Send order confirmation email (when order is first created) - UPDATED
-export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoData = null, productImagesData = []) => {
-  try {
-    const transporter = createTransporter();
-    
-    const orderNumber = orderDetails?.orderNumber || '';
-    const brandName = 'La Pâtisserie';
-    const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
-    
-    // Generate invoice PDF
-    const attachments = [];
-    
-    try {
-      const { filename, buffer } = await generateInvoicePdf(orderDetails);
-      attachments.push({ filename, content: buffer, contentType: 'application/pdf' });
-    } catch (e) {
-      console.error('Failed to generate invoice PDF:', e.message);
-    }
-
-    const mailOptions = {
-      from: {
-        name: 'La Patisserie',
-        address: process.env.EMAIL_USER
-      },
-      to: userEmail,
-      subject: `Order Confirmation — #${orderNumber}`,
-      html: buildMinimalEmailHTML(brandName, orderNumber, trackUrl),
-      attachments
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    
-    console.log('Order confirmation email sent successfully:', {
-      messageId: result.messageId,
-      orderNumber,
-      recipient: userEmail
-    });
-
-    return {
-      success: true,
-      messageId: result.messageId,
-      orderNumber,
-      recipient: userEmail
-    };
-
-  } catch (error) {
-    console.error('Error sending order confirmation email:', {
-      error: error.message,
-      orderNumber: orderDetails.orderNumber,
-      recipient: userEmail
-    });
-
-    return {
-      success: false,
-      error: error.message,
-      orderNumber: orderDetails.orderNumber,
-      recipient: userEmail
-    };
-  }
-};
-
-// OLD IMPLEMENTATION BELOW - Will be replaced
-const OLD_sendOrderConfirmationEmail = async (orderDetails, userEmail, logoData = null, productImagesData = []) => {
-  try {
-    const transporter = createTransporter();
-    
-    // Create logo attachment from provided data
-    const logoAttachment = createLogoAttachment(logoData);
-    const logoCid = logoAttachment ? logoAttachment.cid : null;
-    
-    // Create product image attachments from provided data
-    const productAttachments = [];
-    if (Array.isArray(productImagesData) && productImagesData.length > 0) {
-      productImagesData.forEach((imageData, index) => {
-        if (imageData && imageData.content) {
-          productAttachments.push({
-            filename: imageData.filename || `product-${index}.jpg`,
-            content: imageData.content,
-            cid: imageData.cid || `product-${index}@lapatisserie`
-          });
+    // Special handling for dispatch emails - simple template, no attachments
+    if (newStatus === 'out_for_delivery') {
+      const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
+      const deliveryAddress = orderDetails?.deliveryLocation || 'Your delivery location';
+      
+      const mailOptions = {
+        from: {
+          name: 'La Patisserie',
+          address: process.env.EMAIL_USER
+        },
+        to: userEmail,
+        subject: `Order #${orderNumber} - Dispatched`,
+        html: buildSimpleDispatchEmail(orderNumber, deliveryAddress, trackUrl),
+        headers: {
+          'X-Order-Number': orderNumber,
+          'X-Status-Update': newStatus,
+          'X-Priority': 'high'
         }
+      };
+
+      console.log(`Sending simple dispatch email to ${userEmail} for order ${orderNumber}`);
+      
+      const result = await transporter.sendMail(mailOptions);
+      
+      console.log('Dispatch email sent successfully:', {
+        messageId: result.messageId,
+        orderNumber,
+        recipient: userEmail
       });
+
+      return {
+        success: true,
+        messageId: result.messageId,
+        orderNumber,
+        status: newStatus,
+        recipient: userEmail
+      };
     }
+    
+    // For other status updates, use the template-based system with attachments
+    const logoCid = 'logo@lapatisserie';
+    
+    // Create logo attachment
+    const logoAttachment = createLogoAttachment(logoData);
+    
+    // Create product image attachments with unique CIDs
+    const productAttachments = productImagesData
+      .map((imgData, index) => {
+        if (!imgData || !imgData.buffer) return null;
+        
+        const cid = `product${index}@lapatisserie`;
+        return {
+          filename: imgData.filename || `product-${index}.jpg`,
+          content: imgData.buffer,
+          cid: cid
+        };
+      })
+      .filter(Boolean);
     
     // Get email template for the new status with logo CID
     const emailTemplate = await getOrderStatusEmailTemplate(orderDetails, newStatus, logoCid);
@@ -324,6 +355,66 @@ const OLD_sendOrderConfirmationEmail = async (orderDetails, userEmail, logoData 
   }
 };
 
+// Send order confirmation email (when order is first created) - UPDATED
+export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoData = null, productImagesData = []) => {
+  try {
+    const transporter = createTransporter();
+    
+    const orderNumber = orderDetails?.orderNumber || '';
+    const brandName = 'La Pâtisserie';
+    const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
+    
+    // Generate invoice PDF
+    const attachments = [];
+    
+    try {
+      const { filename, buffer } = await generateInvoicePdf(orderDetails);
+      attachments.push({ filename, content: buffer, contentType: 'application/pdf' });
+    } catch (e) {
+      console.error('Failed to generate invoice PDF:', e.message);
+    }
+
+    const mailOptions = {
+      from: {
+        name: 'La Patisserie',
+        address: process.env.EMAIL_USER
+      },
+      to: userEmail,
+      subject: `Order Confirmation — #${orderNumber}`,
+      html: buildMinimalEmailHTML(brandName, orderNumber, trackUrl),
+      attachments
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    
+    console.log('Order confirmation email sent successfully:', {
+      messageId: result.messageId,
+      orderNumber,
+      recipient: userEmail
+    });
+
+    return {
+      success: true,
+      messageId: result.messageId,
+      orderNumber,
+      recipient: userEmail
+    };
+
+  } catch (error) {
+    console.error('Error sending order confirmation email:', {
+      error: error.message,
+      orderNumber: orderDetails.orderNumber,
+      recipient: userEmail
+    });
+
+    return {
+      success: false,
+      error: error.message,
+      orderNumber: orderDetails.orderNumber,
+      recipient: userEmail
+    };
+  }
+};
 
 const formatStatusLabel = (status) => {
   if (!status) return 'Status';
@@ -401,7 +492,7 @@ export const sendOrderPlacedAdminNotification = async (orderDetails, adminEmails
             </p>
             
             <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px;">
-              <strong>Order Total:</strong> ₹${orderSummary?.finalAmount || 0}
+              <strong>Order Total:</strong> ₹${orderSummary?.grandTotal || 0}
             </p>
             
             <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
@@ -498,7 +589,7 @@ export const sendAdminOrderStatusNotification = async (orderDetails, newStatus, 
             </div>
             
             <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
-              <strong>Order Total:</strong> ₹${orderSummary?.finalAmount || 0}
+              <strong>Order Total:</strong> ₹${orderSummary?.grandTotal || 0}
             </p>
             
             <div style="margin-top: 30px; padding: 15px; background: #f5f5f5; text-align: center;">

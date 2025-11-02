@@ -20,6 +20,7 @@ const Products = () => {
   
   // Initialize with category from URL if present
   const initialCategory = new URLSearchParams(location.search).get('category');
+  const isSelectingFreeProduct = new URLSearchParams(location.search).get('selectFreeProduct') === 'true';
 
   // Products state organized by categories
   const [productsByCategory, setProductsByCategory] = useState({});
@@ -582,7 +583,7 @@ const Products = () => {
                   transition={{ duration: 0.3 }}
                   className="w-full h-full"
                 >
-                  <ProductCard product={product} className="w-full h-full transition-shadow duration-300 flex flex-col" compact={true} />
+                  <ProductCard product={product} className="w-full h-full transition-shadow duration-300 flex flex-col" compact={true} isSelectingFreeProduct={isSelectingFreeProduct} />
                 </motion.div>
               ))
             )}
@@ -611,7 +612,7 @@ const Products = () => {
                     transition={{ duration: 0.3 }}
                     className="flex-shrink-0 w-64 md:w-80 snap-start"
                   >
-                    <ProductCard product={product} className="w-full transition-shadow duration-300" />
+                    <ProductCard product={product} className="w-full transition-shadow duration-300" isSelectingFreeProduct={isSelectingFreeProduct} />
                   </motion.div>
                 ))
               )}
@@ -626,6 +627,19 @@ const Products = () => {
 
   return (
     <section ref={productsSectionRef} className="bg-white min-h-screen pt-0">{/* Removed any default top padding */}      
+      {/* Free Product Selection Banner */}
+      {isSelectingFreeProduct && (
+        <div className="bg-gradient-to-r from-[#733857] to-[#8d4466] text-white py-4 px-4 md:px-6 text-center shadow-md relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mt-16"></div>
+          <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
+          
+          <p className="text-sm md:text-base font-semibold relative z-10 tracking-wide">
+            🎁 Select Your Free Product! Choose any item below to add it FREE to your cart.
+          </p>
+        </div>
+      )}
+      
       {/* ======================================================================================== */}
       {/* DESKTOP LEFT PADDING CONTROL: Modify the padding values in the className below */}
       {/* Current: md:pl-8 lg:pl-16 xl:pl-24 (increases from 2rem to 3rem to 6rem on larger screens) */}

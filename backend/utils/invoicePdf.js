@@ -83,7 +83,11 @@ export async function generateInvoicePdf(order) {
           doc.font('Helvetica').fontSize(10).fillColor('#111827');
           doc.text(`  ${value || '—'}`, x + 90, localY, { width: maxWidth - 90, align: 'left' });
           
-          localY += 18;
+
+          localY += 22; // Increased from 18 to 22 for better vertical spacing
+
+          localY += 22;
+
         });
         return localY;
       };

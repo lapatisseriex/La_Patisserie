@@ -13,6 +13,9 @@ import { calculatePricing, calculateCartTotals, formatCurrency } from '../../uti
 import { formatVariantLabel } from '../../utils/variantUtils';
 import OfferBadge from '../common/OfferBadge';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
+import FreeProductBanner from './FreeProductBanner';
+import FreeProductModal from './FreeProductModal';
+import { removeFreeProductFromCart } from '../../services/freeProductService';
 
 const deriveEggStatus = (productLike) => {
   if (!productLike) return null;
@@ -81,7 +84,7 @@ const deriveEggStatus = (productLike) => {
 
 const Cart = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
-  const { cartItems, updateQuantity, removeFromCart, pendingOperations, getCartItem } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, pendingOperations, getCartItem, refreshCart } = useCart();
   
   // Use our hooks
   const { user } = useAuth();
@@ -94,10 +97,19 @@ const Cart = () => {
   } = useLocation();
   
   const [stockError, setStockError] = useState('');
+  const [showFreeProductModal, setShowFreeProductModal] = useState(false);
   // Expiry countdown
   const [now, setNow] = useState(Date.now());
   const removedRef = useRef(new Set());
   const EXPIRY_SECONDS_DEFAULT = Number(import.meta.env.VITE_CART_EXPIRY_SECONDS || 86400); // 24 hours default
+
+  // Fetch fresh cart data when component mounts
+  useEffect(() => {
+    if (user) {
+      console.log('🛒 Cart component mounted, fetching fresh cart data...');
+      refreshCart();
+    }
+  }, [user, refreshCart]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -145,6 +157,7 @@ const Cart = () => {
       }
     });
   }, [now, cartItems, removeFromCart]);
+  
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [jellyAnimations, setJellyAnimations] = useState({});
@@ -154,6 +167,22 @@ const Cart = () => {
   const lastQuantityChangeTimes = useRef({});
   
   const navigate = useNavigate();
+
+  // Handle removing items - check if it's a free product
+  const handleRemoveItem = async (item) => {
+    try {
+      if (item.isFreeProduct) {
+        // Call free product API to remove and reset selectedFreeProductId
+        await removeFreeProductFromCart();
+        toast.success('Free product removed from cart');
+      }
+      // Always call the regular removeFromCart to update the local cart
+      await removeFromCart(item.productId);
+    } catch (error) {
+      console.error('Error removing item:', error);
+      toast.error('Failed to remove item');
+    }
+  };
 
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
 
@@ -382,6 +411,9 @@ const Cart = () => {
             </div>
           </div>
           
+          {/* Free Product Banner */}
+          <FreeProductBanner onSelectFreeProduct={() => setShowFreeProductModal(true)} />
+          
           <div className="w-full">
             {/* Cart Items */}
             <div className="w-full">
@@ -443,8 +475,9 @@ const Cart = () => {
                   if (!variant) return null;
 
                   const pricing = calculatePricing(variant);
-                  const unitFinalPrice = Number.isFinite(pricing.finalPrice) ? pricing.finalPrice : 0;
-                  const unitMrp = Number.isFinite(pricing.mrp) ? pricing.mrp : unitFinalPrice;
+                  // Free products should have 0 price
+                  const unitFinalPrice = item.isFreeProduct ? 0 : (Number.isFinite(pricing.finalPrice) ? pricing.finalPrice : 0);
+                  const unitMrp = item.isFreeProduct ? 0 : (Number.isFinite(pricing.mrp) ? pricing.mrp : unitFinalPrice);
                   const discountPercentage = Number.isFinite(pricing.discountPercentage) ? pricing.discountPercentage : 0;
                   const hasDiscount = discountPercentage > 0;
                   const lineTotal = unitFinalPrice * Number(item.quantity || 0);
@@ -476,9 +509,16 @@ const Cart = () => {
                           
                           {/* Product Name & Price */}
                           <div className="flex-1">
-                            <h3 className="font-medium text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                              {item.name || 'Product'}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                                {item.name || 'Product'}
+                              </h3>
+                              {item.isFreeProduct && (
+                                <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                  FREE
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
                               <span>₹{unitFinalPrice.toFixed(0)} each</span>
                               {hasDiscount && (
@@ -500,7 +540,7 @@ const Cart = () => {
                           
                           {/* Remove Button */}
                           <button 
-                            onClick={() => removeFromCart(item.productId)}
+                            onClick={() => handleRemoveItem(item)}
                             className="text-gray-600 hover:text-red-500 transition-colors"
                             aria-label="Remove item"
                           >
@@ -603,9 +643,16 @@ const Cart = () => {
                           </button>
                         </div>
                         <div>
-                          <h3 className="font-medium text-[#733857] mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                            {item.name || 'Product'}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                              {item.name || 'Product'}
+                            </h3>
+                            {item.isFreeProduct && (
+                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                FREE
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500">
                             {variantLabel || variant.size || variant.weight || 'Standard'}
                           </p>
@@ -715,7 +762,7 @@ const Cart = () => {
                           </span>
                         </div>
                         <button 
-                          onClick={() => removeFromCart(item.productId)}
+                          onClick={() => handleRemoveItem(item)}
                           className="text-gray-300 hover:text-red-500 transition-colors absolute top-0 right-4"
                           aria-label="Remove item"
                         >
@@ -780,6 +827,11 @@ const Cart = () => {
         </div>
       </div>
 
+      {/* Free Product Modal */}
+      <FreeProductModal 
+        isOpen={showFreeProductModal} 
+        onClose={() => setShowFreeProductModal(false)} 
+      />
 
     </ShopClosureOverlay>
   );

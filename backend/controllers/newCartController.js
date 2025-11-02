@@ -250,7 +250,8 @@ export const getNewCart = async (req, res) => {
           refreshedItems.push({
             ...obj,
             productDetails: updatedProductDetails,
-            expiresAt
+            expiresAt,
+            isFreeProduct: obj.isFreeProduct || false  // Explicitly preserve free product flag
           });
         } else {
           // Keep inactive/deleted products but mark as inactive
@@ -263,7 +264,8 @@ export const getNewCart = async (req, res) => {
               ...item.productDetails,
               isActive: false
             },
-            expiresAt
+            expiresAt,
+            isFreeProduct: obj.isFreeProduct || false  // Explicitly preserve free product flag
           });
         }
       } catch (error) {
@@ -272,7 +274,11 @@ export const getNewCart = async (req, res) => {
         const obj = item.toObject();
         const added = new Date(obj.addedAt);
         const expiresAt = new Date(added.getTime() + expiryWindowMs);
-        refreshedItems.push({ ...obj, expiresAt });
+        refreshedItems.push({ 
+          ...obj, 
+          expiresAt,
+          isFreeProduct: obj.isFreeProduct || false  // Explicitly preserve free product flag
+        });
       }
     }
 
@@ -293,6 +299,11 @@ export const getNewCart = async (req, res) => {
     };
 
     console.log(`✅ Cart retrieved: ${cart.items.length} items, total: ₹${cart.cartTotal}`);
+    console.log('🎁 Items being sent to frontend:', JSON.stringify(refreshedItems.map(i => ({ 
+      _id: i._id, 
+      name: i.productDetails?.name, 
+      isFreeProduct: i.isFreeProduct 
+    })), null, 2));
 
     // Always fetch from DB: disable HTTP caching for cart responses
     res.setHeader('Cache-Control', 'no-store');

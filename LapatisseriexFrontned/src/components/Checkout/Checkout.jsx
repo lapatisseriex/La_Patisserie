@@ -300,9 +300,11 @@ const Checkout = () => {
                     const displayLabel = variantLabel || fallbackLabel || 'Standard';
                     const pricing = variant ? calculatePricing(variant) : null;
                     const itemQuantity = Number(item.quantity || 0);
-                    const rawUnitPrice = pricing ? pricing.finalPrice : Number(item?.price) || 0;
+                    
+                    // Free products should have 0 price
+                    const rawUnitPrice = item.isFreeProduct ? 0 : (pricing ? pricing.finalPrice : Number(item?.price) || 0);
                     const safeUnitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
-                    const mrpValue = pricing ? pricing.mrp : rawUnitPrice;
+                    const mrpValue = item.isFreeProduct ? 0 : (pricing ? pricing.mrp : rawUnitPrice);
                     const safeMrp = Number.isFinite(mrpValue) ? mrpValue : safeUnitPrice;
                     const discountPercentage = Number.isFinite(pricing?.discountPercentage) ? pricing.discountPercentage : 0;
                     const hasDiscount = discountPercentage > 0;
@@ -322,13 +324,20 @@ const Checkout = () => {
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-normal text-gray-900 mb-1">
-                            {item.name}
-                          </p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-normal text-gray-900">
+                              {item.name}
+                            </p>
+                            {item.isFreeProduct && (
+                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                FREE
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500">
                             {displayLabel}
                           </p>
-                          {hasDiscount && (
+                          {hasDiscount && !item.isFreeProduct && (
                             <div className="mt-1">
                               <OfferBadge label={`${discountPercentage}% OFF`} className="text-[10px]" />
                             </div>

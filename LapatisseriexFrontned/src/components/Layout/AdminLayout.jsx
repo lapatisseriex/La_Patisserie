@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import OfflineAwareOutlet from '../common/OfflineAwareOutlet';
 // Admin layout intentionally omits the global site Header/Footer
 
 const AdminLayout = () => {
@@ -63,7 +64,7 @@ const AdminLayout = () => {
     <div className="h-screen overflow-hidden flex flex-col bg-white">
       {/* Admin routes intentionally have no global Header/Footer */}
       <main className={`flex-1 bg-white ${getResponsiveClasses()}`}>
-        <Outlet />
+        <OfflineAwareOutlet />
       </main>
     </div>
   );

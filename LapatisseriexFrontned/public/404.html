@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - La Patisserie</title>
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: sans-serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .not-found-container {
+            background: white;
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .not-found-illustration {
+            width: 400px;
+            height: 300px;
+            margin: 0 auto 3rem;
+            background-image: url('/images/404-illustration.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .not-found-fallback {
+            width: 400px;
+            height: 300px;
+            margin: 0 auto 3rem;
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: #64748b;
+            font-weight: bold;
+        }
+        
+        .not-found-title {
+            font-size: 2rem;
+            font-weight: normal;
+            color: #281c20;
+            margin-bottom: 1rem;
+            font-family: sans-serif;
+        }
+        
+        .not-found-description {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+            font-family: sans-serif;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: normal;
+            font-family: sans-serif;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: #281c20;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .brand-footer {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            font-family: sans-serif;
+        }
+        
+        @media (max-width: 640px) {
+            .not-found-illustration,
+            .not-found-fallback {
+                width: 300px;
+                height: 200px;
+                font-size: 3rem;
+            }
+            
+            .not-found-title {
+                font-size: 1.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="not-found-container">
+        <!-- 404 Illustration -->
+        <div class="not-found-illustration" id="notFoundIllustration"></div>
+        
+        <!-- Fallback if image doesn't load -->
+        <div class="not-found-fallback" id="notFoundFallback">404</div>
+        
+        <!-- Title -->
+        <h1 class="not-found-title">Page Not Found</h1>
+        
+        <!-- Description -->
+        <p class="not-found-description">
+            The page you're looking for doesn't exist or has been moved.
+        </p>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="/" class="btn btn-primary">
+                🏠 Go to Homepage
+            </a>
+            <a href="/products" class="btn btn-secondary">
+                🔍 Browse Products
+            </a>
+            <button class="btn btn-secondary" onclick="history.back()">
+                ← Go Back
+            </button>
+        </div>
+        
+        <!-- Brand Footer -->
+        <div class="brand-footer">
+            La Patisserie - Exclusive for Hostel Students
+        </div>
+    </div>
+
+    <script>
+        // Check if 404 illustration loads properly
+        function check404Image() {
+            const testImg = new Image();
+            testImg.onload = function() {
+                // Image loaded successfully, keep showing background image
+                console.log('404 illustration loaded successfully');
+            };
+            testImg.onerror = function() {
+                // Image failed to load, show fallback
+                document.getElementById('notFoundIllustration').style.display = 'none';
+                document.getElementById('notFoundFallback').style.display = 'flex';
+            };
+            testImg.src = '/images/404-illustration.png';
+        }
+
+        // Check image on load
+        window.addEventListener('load', check404Image);
+
+        // Redirect to home after 10 seconds if user doesn't interact
+        setTimeout(function() {
+            window.location.href = '/';
+        }, 10000);
+    </script>
+</body>
+</html>

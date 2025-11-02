@@ -16,8 +16,9 @@ import productLiveCache from '../../utils/productLiveCache';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import OfferBadge from '../common/OfferBadge';
 import BlobButton from '../common/BlobButton';
+import { addFreeProductToCart } from '../../services/freeProductService';
 
-const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false }) => {
+const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false, isSelectingFreeProduct = false }) => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const [videoHasEnded, setVideoHasEnded] = useState(false);
@@ -28,7 +29,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const [animationDirection, setAnimationDirection] = useState('none'); // 'up', 'down', 'none'
 
   const { isOpen: isShopOpen, getClosureMessage, checkShopStatusNow } = useShopStatus();
-  const { addToCart, getItemQuantity, updateQuantity, cartItems } = useCart();
+  const { addToCart, getItemQuantity, updateQuantity, cartItems, refreshCart } = useCart();
 
   const { user, toggleAuthPanel, changeAuthType } = useAuth();
   const { trackProductView } = useRecentlyViewed();
@@ -251,7 +252,46 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       return;
     }
     if (!isProductAvailable) return;
+    
     try {
+      // If selecting free product, use the free product API
+      if (isSelectingFreeProduct) {
+        const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
+        
+        try {
+          const result = await addFreeProductToCart(currentProduct._id, variantIndex);
+          
+          if (result.success) {
+            console.log('🎁 Free product API success, refreshing cart...');
+            
+            // Wait for cart to refresh from backend
+            await refreshCart();
+            console.log('✅ Cart refreshed');
+            
+            // Give Redux a moment to update
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            toast.success('🎁 Free product added to cart!', {
+              position: 'top-center',
+              autoClose: 2000,
+            });
+            
+            // Dispatch event for other components
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('cartUpdated'));
+            }
+            
+            // Navigate to cart immediately
+            navigate('/cart');
+          }
+        } catch (error) {
+          console.error('Error adding free product:', error);
+          // Error handling is done in the outer catch block
+          throw error;
+        }
+        return;
+      }
+      
       // Check shop status in real-time before adding to cart
       const currentStatus = await checkShopStatusNow();
       if (!currentStatus.isOpen) {
@@ -268,7 +308,10 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
     } catch (error) {
       console.error('Error adding to cart:', error);
-      const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
+      console.error('Error response:', error.response?.data);
+      const message = error.response?.data?.message || 
+                      (typeof error?.error === 'string' ? error.error : error?.message) || 
+                      'Failed to add to cart';
       toast.error(message);
     }
   };
@@ -538,10 +581,14 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   disabled={!isActive || isOutOfStockTracked || !isProductAvailable}
                   className="px-4 py-2 text-xs font-light"
                   style={{
-                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    ...(isSelectingFreeProduct ? { backgroundColor: '#10b981', borderColor: '#10b981' } : {})
                   }}
                 >
-                  {!isProductAvailable ? 'Closed' : isOutOfStockTracked ? 'Unavailable' : 'Add'}
+                  {isSelectingFreeProduct 
+                    ? '🎁 Select FREE' 
+                    : (!isProductAvailable ? 'Closed' : isOutOfStockTracked ? 'Unavailable' : 'Add')
+                  }
                 </BlobButton>
               </div>
             ) : (

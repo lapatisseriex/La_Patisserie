@@ -40,6 +40,10 @@ const orderItemSchema = new mongoose.Schema({
   dispatchedAt: {
     type: Date,
     default: null
+  },
+  isFreeProduct: {
+    type: Boolean,
+    default: false
   }
 });
 

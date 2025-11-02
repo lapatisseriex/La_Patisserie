@@ -320,18 +320,25 @@ const cartSlice = createSlice({
         state.lastUpdated = Date.now();
   const { items, cartTotal, cartCount, expiredRemovedItems = [], cartExpirySeconds } = action.payload;
         
+        // Debug: Log what we received from backend
+        console.log('🛒 fetchCart.fulfilled - Raw items from backend:', items);
+        
         // Convert database format to Redux format
-        state.items = items.map(item => ({
-          id: item._id,
-          productId: item.productId,
-          name: item.productDetails.name,
-          price: item.productDetails.price,
-          image: item.productDetails.image,
-          quantity: item.quantity,
-          addedAt: item.addedAt,
-          productDetails: item.productDetails,
-          expiresAt: item.expiresAt
-        }));
+        state.items = items.map(item => {
+          console.log('🛒 Mapping item:', item._id, 'isFreeProduct:', item.isFreeProduct);
+          return {
+            id: item._id,
+            productId: item.productId,
+            name: item.productDetails.name,
+            price: item.productDetails.price,
+            image: item.productDetails.image,
+            quantity: item.quantity,
+            addedAt: item.addedAt,
+            productDetails: item.productDetails,
+            expiresAt: item.expiresAt,
+            isFreeProduct: item.isFreeProduct || false  // Preserve free product flag
+          };
+        });
         
         state.cartTotal = cartTotal;
         state.cartCount = cartCount;
@@ -400,7 +407,8 @@ const cartSlice = createSlice({
             image: srvItem.productDetails.image,
             quantity: srvItem.quantity,
             addedAt: srvItem.addedAt,
-            productDetails: srvItem.productDetails
+            productDetails: srvItem.productDetails,
+            isFreeProduct: srvItem.isFreeProduct || false
           }));
           state.cartTotal = cartTotal;
           state.cartCount = cartCount;
@@ -420,7 +428,8 @@ const cartSlice = createSlice({
             image: item.productDetails.image,
             quantity: item.quantity,
             addedAt: item.addedAt,
-            productDetails: item.productDetails
+            productDetails: item.productDetails,
+            isFreeProduct: item.isFreeProduct || false
           };
 
           if (existingIndex >= 0) {
@@ -575,7 +584,8 @@ const cartSlice = createSlice({
           image: item.productDetails.image,
           quantity: item.quantity,
           addedAt: item.addedAt,
-          productDetails: item.productDetails
+          productDetails: item.productDetails,
+          isFreeProduct: item.isFreeProduct || false
         }));
         
         state.cartTotal = cartTotal;
