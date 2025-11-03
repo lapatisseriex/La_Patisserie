@@ -154,7 +154,15 @@ export const useAuth = () => {
     verifySignupOTP: verifySignupOTPAction,
     updateProfile: updateProfileAction,
     updateUser: updateUserAction,
-    logout: () => dispatch(logoutUser()),
+    logout: async () => {
+      try {
+        const result = await dispatch(logoutUser());
+        return logoutUser.fulfilled.match(result);
+      } catch (error) {
+        console.error('Logout error in useAuth:', error);
+        return false;
+      }
+    },
     toggleAuthPanel,
     changeAuthType,
     clearError: () => dispatch(clearError()),
