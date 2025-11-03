@@ -598,20 +598,6 @@ export const getOrderStatusEmailTemplate = async (orderDetails, newStatus, logoA
                 ${userDetails.phone}
               </div>
             </div>
-
-            <!-- Track Order CTA -->
-            <div class="cta-section">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/orders/${orderNumber}" class="cta-button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <p style="color: #000000ff;">Track Your Order</p>
-              </a>
-              <p style="margin: 16px 0 0 0; font-size: 13px; color: #6B7280;">
-                Click the button above to view real-time updates
-              </p>
-            </div>
           </div>
 
           <!-- Footer -->
