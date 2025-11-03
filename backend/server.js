@@ -37,6 +37,7 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
+import emailDispatchRoutes from './routes/emailDispatchRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import ngoMediaRoutes from './routes/ngoMediaRoutes.js';
 import sitemapRoutes from './routes/sitemapRoutes.js';
@@ -323,7 +324,8 @@ const startServer = async () => {
   app.use('/api', dbReadyGate);
     app.use('/api/auth', authRateLimit, authRoutes);
     app.use('/api/users', userRoutes);
-    app.use('/api/email', emailRoutes);
+  app.use('/api/email', emailRoutes);
+  app.use('/api/email-dispatch', emailDispatchRoutes);
     app.use('/api/locations', locationRoutes);
     app.use('/api/admin', adminRoutes);
     app.use('/api/categories', categoryRoutes);

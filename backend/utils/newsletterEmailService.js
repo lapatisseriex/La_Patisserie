@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { getEmailDelegateApiBase, isDelegationEnabled, delegateEmailPost } from './emailDelegator.js';
 import Newsletter from '../models/newsletterModel.js';
 import {
   newProductTemplate,
@@ -58,6 +59,12 @@ const sendEmailToSubscriber = async (email, subject, htmlContent) => {
  */
 const sendNewsletterToAll = async (subject, htmlContent, type = 'custom') => {
   try {
+    // If delegation is enabled, forward the request to remote server and return its result
+    const base = getEmailDelegateApiBase();
+    if (isDelegationEnabled() && base) {
+      const result = await delegateEmailPost('/email-dispatch/newsletter/send', { subject, title: undefined, body: htmlContent, ctaText: undefined, ctaLink: undefined });
+      return result;
+    }
     // Get all active subscribers
     const subscribers = await Newsletter.getActiveSubscribers();
     

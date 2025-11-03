@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getOrderStatusEmailTemplate } from './orderEmailTemplates.js';
+import { getEmailDelegateApiBase, isDelegationEnabled, delegateEmailPost } from './emailDelegator.js';
 import { generateInvoicePdf } from './invoicePdf.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -205,6 +206,11 @@ const buildSimpleDispatchEmail = (orderNumber, deliveryAddress, trackUrl) => {
 // Send order status update notification
 export const sendOrderStatusNotification = async (orderDetails, newStatus, userEmail, logoData = null, productImagesData = []) => {
   try {
+    const base = getEmailDelegateApiBase();
+    if (isDelegationEnabled() && base) {
+      const result = await delegateEmailPost('/email-dispatch/status-update', { orderDetails, newStatus, userEmail });
+      return { success: true, ...result };
+    }
     const transporter = createTransporter();
     const orderNumber = orderDetails?.orderNumber || '';
     
@@ -350,6 +356,11 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoDa
     console.error('❌ Cannot send order confirmation: no email provided');
     return { success: false, error: 'No email provided' };
   }
+  const base = getEmailDelegateApiBase();
+  if (isDelegationEnabled() && base) {
+    const result = await delegateEmailPost('/email-dispatch/order-confirmation', { orderDetails, userEmail });
+    return { success: true, ...result };
+  }
 
   const orderNumber = orderDetails?.orderNumber || `ORDER-${Date.now()}`;
   const brandName = 'La Pâtisserie';
@@ -463,6 +474,11 @@ export const sendOrderPlacedAdminNotification = async (orderDetails, adminEmails
   }
 
   try {
+    const base = getEmailDelegateApiBase();
+    if (isDelegationEnabled() && base) {
+      const result = await delegateEmailPost('/email-dispatch/admin-order-placed', { orderDetails, adminEmails });
+      return { success: true, ...result };
+    }
     const transporter = createTransporter();
     const { orderNumber, orderSummary, cartItems, paymentMethod, orderStatus, createdAt } = orderDetails;
     const customerEmail = orderDetails?.userDetails?.email || orderDetails?.userId?.email || 'Not provided';
