@@ -1,3 +1,95 @@
+/* Professional Font Styling for Auth Components */
+.auth-modal,
+.auth-modal *,
+.email-auth,
+.email-auth *,
+.google-signin-btn,
+.google-signin-btn *,
+.forgot-password,
+.forgot-password *,
+.user-menu,
+.user-menu * {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Professional Typography Scale */
+.auth-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+  color: #1f2937;
+}
+
+.auth-subtitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.auth-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #374151;
+  letter-spacing: 0.025em;
+}
+
+.auth-input {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #1f2937;
+}
+
+.auth-button {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.025em;
+}
+
+.auth-button-secondary {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.025em;
+}
+
+.auth-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.025em;
+}
+
+.auth-error {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #dc2626;
+}
+
+.auth-toast {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Hide scrollbars globally for auth components */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* WebKit browsers */
+}
+
 /* Google Sign In Button Styles */
 .google-signin-container {
   width: 100%;
@@ -73,30 +165,14 @@
   transition: opacity 0.3s ease;
 }
 
-/* Sharp Square Blue Scroller */
+/* Hide Blue Scroller - No Scrollbar */
 .blue-scroller {
-  scrollbar-width: thin;
-  scrollbar-color: #2563eb #f3f4f6;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
 
 .blue-scroller::-webkit-scrollbar {
-  width: 6px;
-}
-
-.blue-scroller::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 0;
-  border: 1px solid #ddd6fe;
-}
-
-.blue-scroller::-webkit-scrollbar-thumb {
-  background: #2563eb;
-  border-radius: 0;
-  border: 1px solid #1d4ed8;
-}
-
-.blue-scroller::-webkit-scrollbar-thumb:hover {
-  background: #1d4ed8;
+  display: none; /* WebKit browsers */
 }
 
 .auth-sidepanel-content {
@@ -988,4 +1064,20 @@
   max-width: 400px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* Inline Toast Animation */
+.animate-slide-down {
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-15px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

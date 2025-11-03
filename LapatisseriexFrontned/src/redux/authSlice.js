@@ -451,7 +451,9 @@ export const signInWithEmail = createAsyncThunk(
       let errorMessage = 'Failed to sign in with email';
       
       if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email address. Please check your email or sign up for a new account.';
+        errorMessage = 'Email not found! This email address is not registered. Please sign up to create a new account.';
+        // Store the email to pre-fill signup form
+        localStorage.setItem('pendingSignupEmail', email);
       } else if (error.code === 'auth/wrong-password') {
         errorMessage = 'Password is wrong. Please enter the correct password or reset your password.';
       } else if (error.code === 'auth/invalid-email') {
@@ -463,7 +465,9 @@ export const signInWithEmail = createAsyncThunk(
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = 'Network error. Please check your internet connection and try again.';
       } else if (error.code === 'auth/invalid-credential') {
-        errorMessage = 'Password is wrong or email does not exist. Please check your credentials and try again.';
+        errorMessage = 'Invalid credentials! Either the email is not registered or the password is incorrect. Please check your credentials or sign up if you don\'t have an account.';
+        // Also store email for potential signup
+        localStorage.setItem('pendingSignupEmail', email);
       } else if (error.message) {
         errorMessage = error.message;
       }
