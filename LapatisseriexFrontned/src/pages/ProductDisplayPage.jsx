@@ -395,12 +395,15 @@ const ProductDisplayPageNew = () => {
     if (currentQuantity > 0) {
       goCart();
     } else {
-      addToCart(product, 1, selectedVariantIndex)
-        .catch(async (error) => {
-          console.error('❌ Error reserving product:', error);
-          try { const { toast } = await import('react-toastify'); toast.error(typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart'); } catch {}
-        });
-      goCart();
+      try {
+        // Wait for addToCart operation to complete before navigating
+        await addToCart(product, 1, selectedVariantIndex);
+        console.log('✅ Product added successfully, navigating to cart');
+        goCart();
+      } catch (error) {
+        console.error('❌ Error reserving product:', error);
+        try { const { toast } = await import('react-toastify'); toast.error(typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart'); } catch {}
+      }
     }
   };
 
@@ -1210,32 +1213,15 @@ const ProductDisplayPageNew = () => {
                 <BlobButton
                   onClick={handleAddToCart}
                   disabled={!product?.isActive || (tracks && totalStock === 0) || isAddingToCart}
-                  className="px-3 h-8"
+                  className="px-4 h-8"
                   style={{ 
                     letterSpacing: '0.05em',
-                    fontSize: '11px'
+                    fontSize: '12px'
                   }}
                 >
-                  {isAddingToCart ? 'Adding...' : 'Add'}
+                  {isAddingToCart ? 'Adding...' : 'Add to Cart'}
                 </BlobButton>
               )}
-              <button
-                onClick={handleReserve}
-                disabled={!product?.isActive || (tracks && totalStock === 0)}
-                className={`px-3 h-8 text-xs font-light tracking-wide uppercase ${
-                  !product?.isActive || totalStock === 0
-                    ? 'bg-gray-50 border border-gray-200 cursor-not-allowed'
-                    : 'text-white hover:opacity-90'
-                }`}
-                style={{ 
-                  letterSpacing: '0.05em',
-                  background: (!product?.isActive || totalStock === 0) 
-                    ? undefined 
-                    : 'linear-gradient(135deg, #733857 0%, #8d4466 50%, #412434 100%)'
-                }}
-              >
-                Reserve
-              </button>
             </div>
           </div>
         </div>

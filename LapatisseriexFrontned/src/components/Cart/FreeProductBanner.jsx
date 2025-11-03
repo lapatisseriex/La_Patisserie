@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaGift, FaTimes } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { checkFreeProductEligibility, getFreeProductProgress } from '../../services/freeProductService';
 import { useCart } from '../../hooks/useCart';
 
@@ -9,6 +9,7 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
   const { cartItems } = useCart();
 
   // Check if cart has a free product
@@ -67,37 +68,54 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
     return (
       <AnimatePresence>
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="relative bg-gradient-to-br from-[#f9f4f6] to-[#f8f5f6] border border-[#d9c4cd] rounded-lg p-5 mb-6 shadow-sm overflow-hidden"
+          exit={{ opacity: 0, y: -10 }}
+          className="relative border-l-2 border-green-400 pl-4 py-3 mb-4"
         >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#733857]/3 rounded-full -mr-12 -mt-12"></div>
-          
           <button
             onClick={() => setDismissed(true)}
-            className="absolute top-3 right-3 text-[#733857]/50 hover:text-[#733857] transition-colors z-10"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Dismiss"
           >
-            <FaTimes size={16} />
+            <FaTimes size={14} />
           </button>
 
-          <div className="flex items-start gap-4 relative z-10">
-            <div className="flex-shrink-0 bg-gradient-to-br from-[#8d4466] to-[#733857] rounded-full p-3 shadow-sm opacity-50">
-              <FaGift className="text-white text-xl" />
-            </div>
+          <div className="flex items-start gap-3 pr-8">
+            <motion.div 
+              className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden border border-green-400 bg-white"
+              animate={{ rotate: 360 }}
+              transition={{
+                duration: 0.8,
+                ease: "easeOut"
+              }}
+            >
+              <img 
+                src="/images/logo.png" 
+                alt="La Patisserie Logo" 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  // Fallback if logo doesn't load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="w-full h-full bg-green-500 flex items-center justify-center" style={{ display: 'none' }}>
+                <div className="w-2 h-2 bg-white"></div>
+              </div>
+            </motion.div>
             
             <div className="flex-1">
-              <h3 className="text-base font-semibold text-[#412434] mb-2">
-                ✓ Free Product Already Claimed This Month
+              <h3 className="text-sm font-semibold text-green-800 mb-1">
+                Free Product Claimed This Month
               </h3>
               
-              <p className="text-sm text-[#733857]/80 leading-relaxed mb-2">
-                You've already received your free product reward for this month. 
+              <p className="text-xs text-green-700 leading-relaxed mb-1">
+                You've already received your monthly free product reward.
               </p>
               
-              <p className="text-xs text-[#733857]/60 leading-relaxed">
-                Your progress will reset next month. Keep ordering on different days to unlock your next free product! 🎉
+              <p className="text-xs text-green-600 leading-relaxed">
+                Progress resets next month. Keep ordering to unlock your next reward.
               </p>
             </div>
           </div>
@@ -117,43 +135,57 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
     return (
       <AnimatePresence>
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="relative bg-gradient-to-br from-[#f7eef3] to-[#f9f4f6] border-2 border-[#733857] rounded-lg p-5 mb-6 shadow-lg overflow-hidden"
+          exit={{ opacity: 0, y: -10 }}
+          className="relative border-l-4 border-blue-500 pl-4 py-3 mb-4"
         >
-          {/* Decorative background pattern */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#733857]/5 rounded-full -mr-16 -mt-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#8d4466]/5 rounded-full -ml-12 -mb-12"></div>
-          
           <button
             onClick={() => setDismissed(true)}
-            className="absolute top-3 right-3 text-[#733857]/60 hover:text-[#733857] transition-colors z-10"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Dismiss"
           >
-            <FaTimes size={16} />
+            <FaTimes size={14} />
           </button>
 
-          <div className="flex items-start gap-4 relative z-10">
-            <div className="flex-shrink-0 bg-gradient-to-br from-[#733857] to-[#8d4466] rounded-full p-3.5 shadow-md">
-              <FaGift className="text-white text-2xl" />
-            </div>
+          <div className="flex items-start gap-3 sm:gap-4 pr-8">
+            <motion.div 
+              className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden border-2 border-blue-500 bg-white"
+              animate={{ rotate: 360 }}
+              transition={{
+                duration: 1,
+                ease: "easeOut"
+              }}
+            >
+              <img 
+                src="/images/logo.png" 
+                alt="La Patisserie Logo" 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  // Fallback if logo doesn't load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="w-full h-full bg-blue-500 flex items-center justify-center" style={{ display: 'none' }}>
+                <div className="w-3 h-3 bg-white"></div>
+              </div>
+            </motion.div>
             
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-[#412434] mb-1.5 flex items-center gap-2">
-                🎉 Congratulations! You've Unlocked a Free Product!
+              <h3 className="text-sm sm:text-base font-semibold text-blue-900 mb-2">
+                Congratulations! You've Unlocked a Free Product
               </h3>
-              <p className="text-sm text-[#733857] mb-4 leading-relaxed">
-                You've ordered on 10 different days this month. Pick any item from our catalog as your reward!
-                <br />
-                <span className="text-xs font-medium text-[#8d4466] mt-1 inline-block">
-                  ⚠️ Note: Only ONE free product per month
-                </span>
+              <p className="text-xs sm:text-sm text-blue-800 mb-3 leading-relaxed">
+                You've ordered on 10 different days this month. Pick any item from our catalog as your reward.
+              </p>
+              <p className="text-xs text-blue-700 mb-4">
+                Note: Only one free product per month
               </p>
               
               <button
                 onClick={onSelectFreeProduct}
-                className="bg-gradient-to-r from-[#733857] to-[#8d4466] hover:from-[#8d4466] hover:to-[#733857] text-white font-medium px-6 py-2.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                className="border border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 font-medium text-xs sm:text-sm px-4 py-2 transition-colors duration-200"
               >
                 Select Your Free Product
               </button>
@@ -169,50 +201,181 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
     return (
       <AnimatePresence>
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="relative bg-gradient-to-br from-[#f9f4f6] to-[#f8f5f6] border border-[#d9c4cd] rounded-lg p-5 mb-6 shadow-sm overflow-hidden"
+          exit={{ opacity: 0, y: -10 }}
+          className="relative border-l-2 border-purple-400 pl-4 py-3 mb-4"
         >
-          {/* Subtle decorative elements */}
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#733857]/3 rounded-full -mr-12 -mt-12"></div>
-          
           <button
             onClick={() => setDismissed(true)}
-            className="absolute top-3 right-3 text-[#733857]/50 hover:text-[#733857] transition-colors z-10"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Dismiss"
           >
-            <FaTimes size={16} />
+            <FaTimes size={14} />
           </button>
 
-          <div className="flex items-start gap-4 relative z-10">
-            <div className="flex-shrink-0 bg-gradient-to-br from-[#8d4466] to-[#733857] rounded-full p-3 shadow-sm">
-              <FaGift className="text-white text-xl" />
+          <div className="flex items-start gap-3 pr-8">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden border border-purple-400 bg-white">
+              <img 
+                src="/images/logo.png" 
+                alt="La Patisserie Logo" 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  // Fallback if logo doesn't load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="w-full h-full bg-purple-500 flex items-center justify-center" style={{ display: 'none' }}>
+                <div className="w-2 h-2 bg-white"></div>
+              </div>
             </div>
             
             <div className="flex-1">
-              <h3 className="text-base font-semibold text-[#412434] mb-2.5">
+              <h3 className="text-sm font-semibold text-purple-900 mb-2">
                 Free Product Reward Progress
               </h3>
               
               <div className="mb-2">
-                <div className="flex justify-between text-sm text-[#733857] mb-2">
+                <div className="flex justify-between text-xs text-purple-800 mb-2">
                   <span>Order on {progress.daysRemaining} more {progress.daysRemaining === 1 ? 'day' : 'days'} to unlock</span>
-                  <span className="font-semibold text-[#412434]">{progress.currentDays}/10 days</span>
+                  <span className="font-semibold">{progress.currentDays}/10 days</span>
                 </div>
                 
-                <div className="w-full bg-[#e8dce3] rounded-full h-2.5 overflow-hidden shadow-inner">
+                {/* Innovative dotted progress */}
+                <div className="flex items-center gap-1 mb-1">
+                  {Array.from({ length: 10 }, (_, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ scale: 0 }}
+                      animate={{ 
+                        scale: index < progress.currentDays ? 1 : 0.3,
+                        backgroundColor: index < progress.currentDays ? '#8b5cf6' : '#e5e7eb'
+                      }}
+                      transition={{ 
+                        duration: 0.3, 
+                        delay: index * 0.05,
+                        type: "spring",
+                        stiffness: 300
+                      }}
+                      className={`w-2 h-2 transition-all duration-300 ${
+                        index < progress.currentDays 
+                          ? 'bg-purple-500 shadow-sm' 
+                          : 'bg-gray-200'
+                      }`}
+                      style={{
+                        borderRadius: index < progress.currentDays ? '2px' : '50%',
+                      }}
+                    />
+                  ))}
+                </div>
+                
+                {/* Progress percentage line with moving cube */}
+                <div className="relative mb-2">
+                  <div className="w-full h-px bg-gray-200"></div>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progress.percentage}%` }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="bg-gradient-to-r from-[#733857] to-[#8d4466] h-2.5 rounded-full shadow-sm"
+                    transition={{ duration: 0.8, ease: 'easeOut', delay: 0.5 }}
+                    className="absolute top-0 left-0 h-px bg-gradient-to-r from-purple-400 to-purple-600"
                   />
+                  
+                  {/* Moving cube on progress line */}
+                  <motion.div
+                    initial={{ left: 0 }}
+                    animate={{ left: `${progress.percentage}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut', delay: 0.5 }}
+                    className="absolute -top-1.5 transform -translate-x-1/2"
+                  >
+                    <motion.div
+                      animate={{ rotate: (progress.percentage / 100) * 360 }}
+                      transition={{ duration: 0.8, ease: "easeOut", delay: 0.5 }}
+                      className="w-3 h-3 border border-purple-500 bg-purple-500 flex items-center justify-center"
+                    >
+                      <div className="w-1 h-1 bg-white"></div>
+                    </motion.div>
+                  </motion.div>
                 </div>
+
+                {/* Compact Timeline - Always visible, smart display */}
+                {progress.orderDates && progress.orderDates.length > 0 && (
+                  <div className="mt-2 bg-purple-50/50 rounded px-2 py-1.5">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[10px] text-purple-700 font-medium mr-1">Ordered:</span>
+                      {progress.orderDates.slice(0, 5).map((date, index) => {
+                        const day = new Date(date).getDate();
+                        const month = new Date(date).toLocaleDateString('en-US', { month: 'short' });
+                        return (
+                          <motion.span
+                            key={index}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="inline-flex items-center gap-0.5 bg-white text-purple-800 px-1.5 py-0.5 rounded text-[10px] font-medium border border-purple-200"
+                          >
+                            {month} {day}
+                          </motion.span>
+                        );
+                      })}
+                      {progress.orderDates.length > 5 && (
+                        <span className="text-[10px] text-purple-600 font-medium">
+                          +{progress.orderDates.length - 5}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Timeline View */}
+              <AnimatePresence>
+                {showTimeline && progress.orderDates && progress.orderDates.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mb-3 bg-purple-50 rounded-lg p-3 border border-purple-200"
+                  >
+                    <p className="text-xs font-semibold text-purple-900 mb-2">
+                      Your Order Timeline:
+                    </p>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {progress.orderDates.map((date, index) => {
+                        const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        });
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="flex items-center gap-2"
+                          >
+                            <div className="flex-shrink-0 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-[10px]">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 bg-white rounded px-2 py-1 border border-purple-100">
+                              <p className="text-xs font-medium text-purple-900">{formattedDate}</p>
+                            </div>
+                            <div className="flex-shrink-0 text-green-500 text-xs">✓</div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                    {progress.daysRemaining > 0 && (
+                      <p className="text-[10px] text-center text-purple-700 mt-2 pt-2 border-t border-purple-200">
+                        {progress.daysRemaining} more {progress.daysRemaining === 1 ? 'day' : 'days'} to unlock your reward!
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
               
-              <p className="text-xs text-[#733857]/80 leading-relaxed">
-                Order on different days this month to earn a free product of your choice!
+              <p className="text-xs text-purple-700 leading-relaxed">
+                Order on different days this month to earn a free product of your choice
               </p>
             </div>
           </div>

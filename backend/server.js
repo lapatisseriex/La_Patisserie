@@ -43,6 +43,7 @@ import sitemapRoutes from './routes/sitemapRoutes.js';
 import freeProductRoutes from './routes/freeProductRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
 import { startMonthlyCleanupJob } from './utils/monthlyCleanupJob.js';
+import { scheduleMonthlyRewardCleanup } from './utils/cronJobs.js';
 
 // Initialize Express app
 const app = express();
@@ -494,6 +495,10 @@ const startServer = async () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Health check available at http://localhost:${PORT}/health`);
       console.log(`WebSocket server running on port ${PORT}`);
+      
+      // Start monthly reward cleanup cron job
+      scheduleMonthlyRewardCleanup();
+      console.log('✓ Monthly reward cleanup cron job scheduled (runs at 00:01 on 1st of every month)');
     });
 
   } catch (error) {

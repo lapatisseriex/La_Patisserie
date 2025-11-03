@@ -18,7 +18,9 @@ import {
 import {
   getFreeProductClaims,
   getFreeProductClaimsStats,
-  getUserClaimHistory
+  getUserClaimHistory,
+  resetMonthlyRewards,
+  getAllUsersRewardStatus
 } from '../controllers/freeProductAdminController.js';
 import { migrateOrderHostelIds } from '../utils/migrateOrderHostelIds.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
@@ -44,10 +46,12 @@ router.post('/deliver-item', protect, admin, markAsDelivered);
 
 // Admin free product claims routes
 router.get('/free-product-claims', protect, admin, getFreeProductClaims);
+router.get('/free-product-claims/all-users', protect, admin, getAllUsersRewardStatus);
 router.get('/free-product-claims/stats', protect, admin, getFreeProductClaimsStats);
 router.get('/free-product-claims/user/:userId', protect, admin, getUserClaimHistory);
 
 // Admin monthly cleanup routes
+router.post('/free-product-claims/reset-monthly', protect, admin, resetMonthlyRewards);
 router.post('/cleanup/run-manual', protect, admin, async (req, res) => {
   try {
     const { runManualCleanup } = await import('../utils/monthlyCleanupJob.js');
@@ -138,10 +142,5 @@ router.get('/orders/analyze-hostel-data', protect, admin, async (req, res) => {
     });
   }
 });
-
-// Free Product Claims Admin Routes
-router.get('/free-product-claims', protect, admin, getFreeProductClaims);
-router.get('/free-product-claims/stats', protect, admin, getFreeProductClaimsStats);
-router.get('/free-product-claims/user/:userId', protect, admin, getUserClaimHistory);
 
 export default router;
