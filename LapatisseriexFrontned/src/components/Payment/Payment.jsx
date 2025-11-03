@@ -14,7 +14,7 @@ import HoverButton from '../common/HoverButton';
 import { calculateCartTotals, calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
-import api from '../../services/apiService';
+import api, { createOrderWithEmail, verifyPaymentWithEmail } from '../../services/apiService';
 
 const AUTO_REDIRECT_STORAGE_KEY = 'lapatisserie_payment_redirect';
 const AUTO_REDIRECT_DELAY_MS = 20000;
@@ -414,6 +414,9 @@ const Payment = () => {
 
   const createOrder = async (amount, paymentMethod = 'razorpay') => {
     try {
+      // Log which API base will be used for order creation (email will be handled server-side)
+      const orderApiBase = import.meta.env.VITE_VERCEL_API_URL;
+      console.log(`🧭 [Order] Creating order via API: ${orderApiBase || 'N/A'} (method: ${paymentMethod})`);
       const orderData = {
         amount: Math.round(amount * 100), // Convert to paise
         currency: 'INR',
@@ -478,7 +481,18 @@ const Payment = () => {
         }
       };
 
-      const { data } = await api.post('/payments/create-order', orderData);
+  // Route order creation to Vercel API (ensures email sending on create)
+  const data = await createOrderWithEmail(orderData);
+
+      // Log the outcome and expected email behavior
+      if (data?.success !== false) {
+        const emailNote = paymentMethod === 'cod'
+          ? 'emailTrigger=queued on server (async)'
+          : 'emailTrigger=will occur after payment verification';
+        console.log(`✅ [Order] create-order success via ${orderApiBase || 'N/A'} (${emailNote})`);
+      } else {
+        console.warn(`⚠️ [Order] create-order response indicated failure via ${orderApiBase || 'N/A'}`);
+      }
       
       // Handle duplicate order response
       if (data.isDuplicate) {
@@ -533,20 +547,16 @@ const Payment = () => {
           window.__paymentVerifying = true;
           try {
             console.log('✅ Payment successful, verifying...');
-            const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/payments/verify`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
+            const verifyData = await verifyPaymentWithEmail({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
             });
-            const verifyData = await verifyResponse.json();
             if (verifyData.success) {
               console.log('✅ Payment verified successfully');
+              // Log which API verified and that email dispatch is handled server-side
+              const verifyApiBase = import.meta.env.VITE_VERCEL_API_URL;
+              console.log(`📬 [Order] Online payment verified via ${verifyApiBase || 'N/A'} (emailTrigger=queued on server, async)`);
               setCompletedPaymentMethod('razorpay');
               setIsOrderComplete(true);
               setOrderNumber(verifyData.orderNumber);
@@ -558,6 +568,8 @@ const Payment = () => {
               }
             } else {
               console.error('❌ Payment verification failed:', verifyData.message);
+              const verifyApiBase = import.meta.env.VITE_VERCEL_API_URL;
+              console.log(`🚫 [Order] Payment verification failed via ${verifyApiBase || 'N/A'} (email not triggered)`);
               setCompletedPaymentMethod(null);
               alert('Payment verification failed. Please contact support with your order details.');
               try {
@@ -598,7 +610,8 @@ const Payment = () => {
             console.log('🚫 Razorpay popup dismissed/cancelled by user');
             setIsProcessing(false);
             try {
-              const cancelResponse = await fetch(`${import.meta.env.VITE_API_URL}/payments/cancel-order`, {
+              // Cancel the order on the same backend used for creation (Vercel)
+              const cancelResponse = await fetch(`${import.meta.env.VITE_VERCEL_API_URL}/payments/cancel-order`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -677,8 +690,14 @@ const Payment = () => {
       
       if (orderData.isDuplicate) {
         console.log('✅ Using existing order (duplicate detected):', orderData.orderNumber);
+        // For duplicates, backend will not re-send emails; log explicitly
+        const orderApiBase = import.meta.env.VITE_VERCEL_API_URL;
+        console.log(`ℹ️ [Order] Duplicate COD order via ${orderApiBase || 'N/A'} (email not re-sent)`);
       } else {
         console.log('✅ New COD order created:', orderData.orderNumber);
+        // Log which API created the order and that email was queued server-side
+        const orderApiBase = import.meta.env.VITE_VERCEL_API_URL;
+        console.log(`📬 [Order] COD order placed via ${orderApiBase || 'N/A'} (emailTrigger=queued on server, async)`);
       }
       
       setOrderNumber(orderData.orderNumber);
