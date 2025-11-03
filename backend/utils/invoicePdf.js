@@ -47,16 +47,16 @@ export async function generateInvoicePdf(order) {
         .fillColor('#111827')
         .text(brand, pageLeft + logoSize + 12, currentY + (logoSize / 2) - 12, { align: 'left' });
       
-      currentY += logoSize + 20;
+      currentY += logoSize + 12;
 
       // Order number and date
       doc.font('Helvetica')
         .fontSize(10)
         .fillColor('#6b7280')
         .text(`Invoice #${orderNumber}`, pageLeft, currentY);
-      doc.text(`Date: ${createdAt.toLocaleDateString('en-IN')} ${createdAt.toLocaleTimeString('en-IN')}`, pageLeft, currentY + 14);
+      doc.text(`Date: ${createdAt.toLocaleDateString('en-IN')} ${createdAt.toLocaleTimeString('en-IN')}`, pageLeft, currentY + 12);
       
-      currentY += 40;
+      currentY += 28;
 
       // Horizontal divider
       doc.moveTo(pageLeft, currentY)
@@ -65,7 +65,7 @@ export async function generateInvoicePdf(order) {
         .lineWidth(1)
         .stroke();
       
-      currentY += 20;
+      currentY += 12;
 
       // ========== TWO-COLUMN SECTION: CUSTOMER & DELIVERY ==========
       const colWidth = (pageWidth - 20) / 2;
@@ -81,13 +81,11 @@ export async function generateInvoicePdf(order) {
           doc.text(`${key}:`, x, localY, { continued: false });
           
           doc.font('Helvetica').fontSize(10).fillColor('#111827');
-          doc.text(`  ${value || '—'}`, x + 90, localY, { width: maxWidth - 90, align: 'left' });
+          const valueText = `  ${value || '—'}`;
+          const valueHeight = doc.heightOfString(valueText, { width: maxWidth - 90 });
+          doc.text(valueText, x + 90, localY, { width: maxWidth - 90, align: 'left' });
           
-
-          localY += 22; // Increased from 18 to 22 for better vertical spacing
-
-          localY += 22;
-
+          localY += Math.max(valueHeight + 8, 18);
         });
         return localY;
       };
@@ -95,7 +93,7 @@ export async function generateInvoicePdf(order) {
       // Column 1: Customer Details
       doc.font('Helvetica-Bold').fontSize(12).fillColor('#111827');
       doc.text('Customer Details', col1X, currentY);
-      currentY += 20;
+      currentY += 14;
       
       const col1EndY = drawKeyValuePairs(col1X, currentY, [
         ['Name', user.name || 'Customer'],
@@ -107,13 +105,13 @@ export async function generateInvoicePdf(order) {
       doc.font('Helvetica-Bold').fontSize(12).fillColor('#111827');
       doc.text('Delivery Details', col2X, sectionStartY);
       
-      const col2EndY = drawKeyValuePairs(col2X, sectionStartY + 20, [
+      const col2EndY = drawKeyValuePairs(col2X, sectionStartY + 14, [
         ['Location', order?.deliveryLocation || '—'],
         ['Hostel', order?.hostelName || '—'],
         ['Payment', paymentMethod || '—']
       ], colWidth);
 
-      currentY = Math.max(col1EndY, col2EndY) + 15;
+      currentY = Math.max(col1EndY, col2EndY) + 10;
 
       // Horizontal divider
       doc.moveTo(pageLeft, currentY)
@@ -122,12 +120,12 @@ export async function generateInvoicePdf(order) {
         .lineWidth(1)
         .stroke();
       
-      currentY += 20;
+      currentY += 12;
 
       // ========== ORDER DETAILS SECTION ==========
       doc.font('Helvetica-Bold').fontSize(12).fillColor('#111827');
       doc.text('Order Details', pageLeft, currentY);
-      currentY += 20;
+      currentY += 14;
 
       currentY = drawKeyValuePairs(pageLeft, currentY, [
         ['Order Number', orderNumber || '—'],
@@ -135,7 +133,7 @@ export async function generateInvoicePdf(order) {
         ['Items Count', String(items.length || 0)]
       ], pageWidth);
 
-      currentY += 15;
+      currentY += 8;
 
       // Horizontal divider
       doc.moveTo(pageLeft, currentY)
@@ -144,7 +142,7 @@ export async function generateInvoicePdf(order) {
         .lineWidth(1)
         .stroke();
       
-      currentY += 20;
+      currentY += 12;
 
       // ========== ITEMS TABLE ==========
       const tableWidths = {
@@ -163,10 +161,10 @@ export async function generateInvoicePdf(order) {
         doc.text('Price', pageLeft + tableWidths.item + tableWidths.qty, y, { width: tableWidths.price, align: 'right' });
         doc.text('Total', pageLeft + tableWidths.item + tableWidths.qty + tableWidths.price, y, { width: tableWidths.total, align: 'right' });
         
-        const lineY = y + 16;
+        const lineY = y + 12;
         doc.moveTo(pageLeft, lineY).lineTo(pageRight, lineY).strokeColor('#9ca3af').lineWidth(1).stroke();
         
-        return lineY + 8;
+        return lineY + 6;
       };
 
       currentY = drawTableHeader(currentY);
@@ -184,7 +182,7 @@ export async function generateInvoicePdf(order) {
         doc.text(formatCurrency(price), pageLeft + tableWidths.item + tableWidths.qty, y, { width: tableWidths.price, align: 'right' });
         doc.text(formatCurrency(total), pageLeft + tableWidths.item + tableWidths.qty + tableWidths.price, y, { width: tableWidths.total, align: 'right' });
         
-        return y + rowHeight + 8;
+        return y + rowHeight + 5;
       };
 
       // Draw all items
@@ -205,7 +203,7 @@ export async function generateInvoicePdf(order) {
 
       // Bottom line after items
       doc.moveTo(pageLeft, currentY).lineTo(pageRight, currentY).strokeColor('#e5e7eb').lineWidth(1).stroke();
-      currentY += 20;
+      currentY += 12;
 
       // ========== TOTALS SECTION ==========
       const totalsLabelX = pageLeft;
@@ -218,7 +216,7 @@ export async function generateInvoicePdf(order) {
         doc.font(isBold ? 'Helvetica-Bold' : 'Helvetica').fontSize(11).fillColor('#111827');
         doc.text(formatCurrency(value), totalsValueX, currentY, { width: 100, align: 'right' });
         
-        currentY += 18;
+        currentY += 14;
       };
 
       const discount = Number(summary.couponDiscount ?? 0);
@@ -230,14 +228,14 @@ export async function generateInvoicePdf(order) {
       if (tax > 0) drawTotalRow('Tax', tax);
       if (delivery > 0) drawTotalRow('Delivery Charge', delivery);
       
-      currentY += 5;
+      currentY += 3;
       doc.moveTo(totalsLabelX, currentY).lineTo(pageRight, currentY).strokeColor('#9ca3af').lineWidth(1).stroke();
-      currentY += 10;
+      currentY += 8;
       
       drawTotalRow('Grand Total', grandTotal, true);
 
       // Footer
-      currentY += 30;
+      currentY += 18;
       doc.font('Helvetica').fontSize(9).fillColor('#6b7280');
       doc.text('Thank you for your order!', pageLeft, currentY, { align: 'center', width: pageWidth });
 

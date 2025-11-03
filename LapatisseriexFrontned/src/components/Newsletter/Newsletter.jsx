@@ -28,7 +28,7 @@ const Newsletter = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/newsletter/subscribe`, {
+      const response = await axios.post(`${import.meta.env.VITE_VERCEL_API_URL}/newsletter/subscribe`, {
         email,
         source: 'homepage',
       });

@@ -45,19 +45,14 @@ const createLogoAttachment = (logoData) => {
   }
 };
 
-// Create transporter with enhanced configuration
+// Create transporter with simple configuration
 const createTransporter = () => {
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
-    },
-    pool: true, // Use connection pooling
-    maxConnections: 5,
-    maxMessages: 100,
-    rateDelta: 20000, // 20 seconds
-    rateLimit: 5 // max 5 messages per rateDelta
+    }
   });
 };
 
@@ -77,20 +72,13 @@ const buildMinimalEmailHTML = (brandName, orderNumber, trackUrl) => {
         <h1 style="text-align: center; color: #333; margin-bottom: 10px;">${brandName}</h1>
         <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 30px;">Order #${orderNumber}</p>
         
-
         <p style="text-align: center; color: #555; font-size: 15px; margin: 30px 0;">
           Track your order: <a href="${trackUrl}" style="color: #333; text-decoration: underline;">${trackUrl}</a>
         </p>
         
-
-
         <p style="text-align: center; color: #666; font-size: 13px; margin-top: 30px;">
           Thank you for your order!<br>
           PDF invoice is attached to this email.
-        </p>
-
-        <p style="text-align: center; margin: 30px 0;">
-          <a href="${trackUrl}" style="color: #333; text-decoration: underline; font-weight: bold;">Track Your Order</a>
         </p>
         
       </div>
@@ -355,25 +343,52 @@ export const sendOrderStatusNotification = async (orderDetails, newStatus, userE
   }
 };
 
-// Send order confirmation email (when order is first created) - UPDATED
+// Send order confirmation email (when order is first created) - SIMPLE & ROBUST
 export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoData = null, productImagesData = []) => {
+  // Validate essential data first
+  if (!userEmail) {
+    console.error('❌ Cannot send order confirmation: no email provided');
+    return { success: false, error: 'No email provided' };
+  }
+
+  const orderNumber = orderDetails?.orderNumber || `ORDER-${Date.now()}`;
+  const brandName = 'La Pâtisserie';
+  const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
+  
+  console.log(`📧 Attempting to send order confirmation email to ${userEmail} for order #${orderNumber}`);
+  
+  let transporter;
   try {
-    const transporter = createTransporter();
-    
-    const orderNumber = orderDetails?.orderNumber || '';
-    const brandName = 'La Pâtisserie';
-    const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
-    
-    // Generate invoice PDF
-    const attachments = [];
-    
+    // Create transporter first - if this fails, email can't be sent
+    transporter = createTransporter();
+    console.log('✅ Email transporter created');
+  } catch (transportError) {
+    console.error('❌ Failed to create email transporter:', transportError.message);
+    return {
+      success: false,
+      error: `Transporter creation failed: ${transportError.message}`,
+      orderNumber,
+      recipient: userEmail
+    };
+  }
+  
+  // Generate invoice PDF (non-blocking - continue if fails)
+  const attachments = [];
+  if (orderDetails) {
     try {
       const { filename, buffer } = await generateInvoicePdf(orderDetails);
       attachments.push({ filename, content: buffer, contentType: 'application/pdf' });
+      console.log(`✅ Invoice PDF generated: ${filename}`);
     } catch (e) {
-      console.error('Failed to generate invoice PDF:', e.message);
+      console.error('⚠️ Failed to generate invoice PDF (continuing without it):', e.message);
+      // Continue without PDF - email is more important
     }
+  } else {
+    console.warn('⚠️ No order details provided - skipping PDF generation');
+  }
 
+  // Send email
+  try {
     const mailOptions = {
       from: {
         name: 'La Patisserie',
@@ -385,9 +400,10 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoDa
       attachments
     };
 
+    console.log('📤 Sending email now...');
     const result = await transporter.sendMail(mailOptions);
     
-    console.log('Order confirmation email sent successfully:', {
+    console.log('✅ Order confirmation email sent successfully!', {
       messageId: result.messageId,
       orderNumber,
       recipient: userEmail
@@ -401,16 +417,17 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoDa
     };
 
   } catch (error) {
-    console.error('Error sending order confirmation email:', {
+    console.error('❌ Error sending order confirmation email:', {
       error: error.message,
-      orderNumber: orderDetails.orderNumber,
+      stack: error.stack,
+      orderNumber,
       recipient: userEmail
     });
 
     return {
       success: false,
       error: error.message,
-      orderNumber: orderDetails.orderNumber,
+      orderNumber,
       recipient: userEmail
     };
   }

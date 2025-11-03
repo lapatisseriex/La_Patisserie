@@ -689,54 +689,92 @@ export const createOrder = asyncHandler(async (req, res) => {
       // Send emails asynchronously in parallel (customer and admin simultaneously) - Execute immediately
       (async () => {
         try {
-          const user = await User.findById(userId).select('email name phone');
-          const orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
+          let user = null;
+          let userEmailTarget = null;
+          let orderDetailsForEmail = null;
 
-          const userEmailTarget = user?.email || orderDetailsForEmail?.userDetails?.email;
+          // Attempt to fetch user data, but continue even if it fails
+          try {
+            user = await User.findById(userId).select('email name phone');
+            userEmailTarget = user?.email;
+          } catch (userFetchError) {
+            console.error('⚠️ Error fetching user data for email, using fallback:', userFetchError.message);
+            // Use fallback data from order
+            userEmailTarget = order?.userId?.email;
+          }
+
+          // Build order details for email, with fallback
+          try {
+            orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
+            if (!userEmailTarget) {
+              userEmailTarget = orderDetailsForEmail?.userDetails?.email;
+            }
+          } catch (buildError) {
+            console.error('⚠️ Error building order details, using minimal data:', buildError.message);
+            // Use minimal order data
+            orderDetailsForEmail = order;
+          }
           
           // Send both customer and admin emails in parallel
           const emailPromises = [];
           
-          // Customer email
+          // Customer email - Send even with minimal data
           if (userEmailTarget) {
             console.log('Sending COD order confirmation email to:', userEmailTarget);
-            const logoData = getLogoData();
-            emailPromises.push(
-              sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData)
-                .then(result => {
-                  if (result.success) {
-                    console.log('✅ Order confirmation email sent successfully:', result.messageId);
-                  } else {
-                    console.error('❌ Failed to send order confirmation email:', result.error);
-                  }
-                  return result;
-                })
-            );
+            try {
+              const logoData = getLogoData();
+              emailPromises.push(
+                sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData)
+                  .then(result => {
+                    if (result.success) {
+                      console.log('✅ Order confirmation email sent successfully:', result.messageId);
+                    } else {
+                      console.error('❌ Failed to send order confirmation email:', result.error);
+                    }
+                    return result;
+                  })
+                  .catch(err => {
+                    console.error('❌ Exception sending confirmation email:', err.message);
+                    return { success: false, error: err.message };
+                  })
+              );
+            } catch (emailSetupError) {
+              console.error('❌ Error setting up confirmation email:', emailSetupError.message);
+            }
           } else {
             console.log('⚠️ User email not found, skipping confirmation email');
           }
 
           // Admin email
-          const adminEmails = await getActiveAdminEmails();
-          if (Array.isArray(adminEmails) && adminEmails.length > 0) {
-            console.log('📧 Sending admin notification email...');
-            emailPromises.push(
-              sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails)
-                .then(result => {
-                  if (result.success) {
-                    console.log('✅ Admin new-order email sent:', result.messageId);
-                  } else if (!result.skipped) {
-                    console.error('❌ Failed to send admin new-order email:', result.error);
-                  }
-                  return result;
-                })
-            );
-          } else {
-            console.log('⚠️ No admin recipients configured; skipping admin order email');
+          try {
+            const adminEmails = await getActiveAdminEmails();
+            if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+              console.log('📧 [COD] Sending admin notification email to:', adminEmails.join(', '));
+              emailPromises.push(
+                sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails)
+                  .then(result => {
+                    if (result.success) {
+                      console.log('✅ [COD] Admin new-order email sent:', result.messageId);
+                    } else if (!result.skipped) {
+                      console.error('❌ [COD] Failed to send admin new-order email:', result.error);
+                    }
+                    return result;
+                  })
+                  .catch(err => {
+                    console.error('❌ [COD] Exception sending admin notification:', err.message);
+                    return { success: false, error: err.message };
+                  })
+              );
+            } else {
+              console.log('⚠️ [COD] No admin recipients configured; skipping admin order email');
+            }
+          } catch (adminEmailError) {
+            console.error('❌ [COD] Error fetching admin emails:', adminEmailError.message);
           }
           
           // Wait for all emails to complete
           await Promise.all(emailPromises);
+          console.log(`📧 [COD] Email sending complete for order ${orderNumber}`);
           
         } catch (emailError) {
           console.error('❌ Error sending order placement emails (async):', emailError.message);
@@ -908,54 +946,92 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       // Send order confirmation email asynchronously in parallel for online payments (customer and admin simultaneously) - Execute immediately
       (async () => {
         try {
-          const user = await User.findById(order.userId).select('email name phone');
-          const orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
+          let user = null;
+          let userEmailTarget = null;
+          let orderDetailsForEmail = null;
 
-          const userEmailTarget = user?.email || orderDetailsForEmail?.userDetails?.email;
+          // Attempt to fetch user data, but continue even if it fails
+          try {
+            user = await User.findById(order.userId).select('email name phone');
+            userEmailTarget = user?.email;
+          } catch (userFetchError) {
+            console.error('⚠️ Error fetching user data for email, using fallback:', userFetchError.message);
+            // Use fallback data from order
+            userEmailTarget = order?.userId?.email;
+          }
+
+          // Build order details for email, with fallback
+          try {
+            orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
+            if (!userEmailTarget) {
+              userEmailTarget = orderDetailsForEmail?.userDetails?.email;
+            }
+          } catch (buildError) {
+            console.error('⚠️ Error building order details, using minimal data:', buildError.message);
+            // Use minimal order data
+            orderDetailsForEmail = order;
+          }
           
           // Send both customer and admin emails in parallel
           const emailPromises = [];
           
-          // Customer email
+          // Customer email - Send even with minimal data
           if (userEmailTarget) {
             console.log('Sending online payment order confirmation email to:', userEmailTarget);
-            const logoData = getLogoData();
-            emailPromises.push(
-              sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData)
-                .then(result => {
-                  if (result.success) {
-                    console.log('✅ Order confirmation email sent successfully:', result.messageId);
-                  } else {
-                    console.error('❌ Failed to send order confirmation email:', result.error);
-                  }
-                  return result;
-                })
-            );
+            try {
+              const logoData = getLogoData();
+              emailPromises.push(
+                sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData)
+                  .then(result => {
+                    if (result.success) {
+                      console.log('✅ Order confirmation email sent successfully:', result.messageId);
+                    } else {
+                      console.error('❌ Failed to send order confirmation email:', result.error);
+                    }
+                    return result;
+                  })
+                  .catch(err => {
+                    console.error('❌ Exception sending confirmation email:', err.message);
+                    return { success: false, error: err.message };
+                  })
+              );
+            } catch (emailSetupError) {
+              console.error('❌ Error setting up confirmation email:', emailSetupError.message);
+            }
           } else {
             console.log('⚠️ User email not found, skipping confirmation email');
           }
 
           // Admin email
-          const adminEmails = await getActiveAdminEmails();
-          if (Array.isArray(adminEmails) && adminEmails.length > 0) {
-            console.log('📧 Sending admin notification email...');
-            emailPromises.push(
-              sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails)
-                .then(result => {
-                  if (result.success) {
-                    console.log('✅ Admin new-order email sent:', result.messageId);
-                  } else if (!result.skipped) {
-                    console.error('❌ Failed to send admin new-order email:', result.error);
-                  }
-                  return result;
-                })
-            );
-          } else {
-            console.log('⚠️ No admin recipients configured; skipping admin order email');
+          try {
+            const adminEmails = await getActiveAdminEmails();
+            if (Array.isArray(adminEmails) && adminEmails.length > 0) {
+              console.log('📧 [ONLINE] Sending admin notification email to:', adminEmails.join(', '));
+              emailPromises.push(
+                sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails)
+                  .then(result => {
+                    if (result.success) {
+                      console.log('✅ [ONLINE] Admin new-order email sent:', result.messageId);
+                    } else if (!result.skipped) {
+                      console.error('❌ [ONLINE] Failed to send admin new-order email:', result.error);
+                    }
+                    return result;
+                  })
+                  .catch(err => {
+                    console.error('❌ [ONLINE] Exception sending admin notification:', err.message);
+                    return { success: false, error: err.message };
+                  })
+              );
+            } else {
+              console.log('⚠️ [ONLINE] No admin recipients configured; skipping admin order email');
+            }
+          } catch (adminEmailError) {
+            console.error('❌ [ONLINE] Error fetching admin emails:', adminEmailError.message);
           }
           
           // Wait for all emails to complete
           await Promise.all(emailPromises);
+          console.log(`📧 [ONLINE] Email sending complete for order ${order.orderNumber}`);
           
         } catch (emailError) {
           console.error('❌ Error sending order placement emails (async):', emailError.message);

@@ -29,6 +29,7 @@ const auth = getAuth(app);
 
 // Backend API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL;
+const VERCEL_URL = import.meta.env.VITE_VERCEL_API_URL;
 
 // Initialize Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
@@ -219,7 +220,7 @@ export const sendSignupOTP = createAsyncThunk(
     try {
       console.log('🔄 Sending signup OTP to:', email);
       
-      const response = await axios.post(`${API_URL}/auth/signup/send-otp`, { email });
+      const response = await axios.post(`${VERCEL_URL}/auth/signup/send-otp`, { email });
       
       console.log('✅ Signup OTP sent successfully');
       
@@ -251,7 +252,7 @@ export const verifySignupOTP = createAsyncThunk(
       console.log('🔄 Verifying signup OTP and creating account for:', email);
       
       // Verify OTP and create user account
-      const response = await axios.post(`${API_URL}/auth/signup/verify-otp`, {
+      const response = await axios.post(`${VERCEL_URL}/auth/signup/verify-otp`, {
         email,
         otp,
         password,
@@ -567,7 +568,7 @@ export const sendPasswordResetOTP = createAsyncThunk(
   'auth/sendPasswordResetOTP',
   async ({ email }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+      const response = await axios.post(`${VERCEL_URL}/auth/forgot-password`, {
         email: email.toLowerCase().trim()
       });
       
@@ -587,7 +588,7 @@ export const verifyPasswordResetOTP = createAsyncThunk(
   'auth/verifyPasswordResetOTP',
   async ({ email, otp }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/verify-reset-otp`, {
+      const response = await axios.post(`${VERCEL_URL}/auth/verify-reset-otp`, {
         email: email.toLowerCase().trim(),
         otp: otp.trim()
       });
@@ -607,7 +608,7 @@ export const resetPassword = createAsyncThunk(
   'auth/resetPassword',
   async ({ email, newPassword }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/reset-password`, {
+      const response = await axios.post(`${VERCEL_URL}/auth/reset-password`, {
         email: email.toLowerCase().trim(),
         newPassword
       });

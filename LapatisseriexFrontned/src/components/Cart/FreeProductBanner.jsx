@@ -7,33 +7,20 @@ import { useCart } from '../../hooks/useCart';
 const FreeProductBanner = ({ onSelectFreeProduct }) => {
   const [eligibility, setEligibility] = useState(null);
   const [progress, setProgress] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
   const { cartItems } = useCart();
 
   // Check if cart has a free product
   const hasFreeProductInCart = cartItems?.some(item => item.isFreeProduct);
 
-  useEffect(() => {
-    fetchEligibilityData();
-    
-    // Listen for cart updates
-    const handleCartUpdate = () => {
-      fetchEligibilityData();
-    };
-    
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
-  }, []);
-
-  // Refresh when cart changes (when free product is added or removed)
-  useEffect(() => {
-    fetchEligibilityData();
-  }, [cartItems.length, hasFreeProductInCart]);
-
-  const fetchEligibilityData = async () => {
+  const fetchEligibilityData = async (isInitial = false) => {
     try {
-      setLoading(true);
+      // Only show loading state on initial fetch to prevent flickering
+      if (isInitial) {
+        setInitialLoading(true);
+      }
+      
       const [eligibilityRes, progressRes] = await Promise.all([
         checkFreeProductEligibility(),
         getFreeProductProgress()
@@ -49,11 +36,33 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
     } catch (error) {
       console.error('Error fetching free product data:', error);
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        setInitialLoading(false);
+      }
     }
   };
 
-  if (loading || dismissed) {
+  useEffect(() => {
+    fetchEligibilityData(true);
+    
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      fetchEligibilityData(false);
+    };
+    
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+  }, []);
+
+  // Refresh when cart changes (when free product is added or removed)
+  // But don't show loading state to prevent flickering
+  useEffect(() => {
+    if (!initialLoading) {
+      fetchEligibilityData(false);
+    }
+  }, [hasFreeProductInCart]);
+
+  if (initialLoading || dismissed) {
     return null;
   }
 
