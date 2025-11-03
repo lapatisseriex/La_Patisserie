@@ -216,7 +216,8 @@ const cartSlice = createSlice({
         state.cartCount = totals.cartCount;
         state.cartTotal = totals.cartTotal;
       }
-      state.isOptimisticLoading = true;
+      // Don't set loading state for quantity updates - they should be instant
+      // state.isOptimisticLoading = true;
     },
 
     removeFromCartOptimistic: (state, action) => {

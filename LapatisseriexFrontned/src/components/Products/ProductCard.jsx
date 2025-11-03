@@ -333,18 +333,21 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
     if (currentQuantity > 0) {
       goCart();
     } else {
-      const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
-      console.log('[Reserve] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
-      addToCart(currentProduct, 1, variantIndex)
-        .then(() => {
-          setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
-        })
-        .catch((error) => {
-          console.error('❌ Error adding product to cart:', error);
-          const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
-          toast.error(message);
-        });
-      goCart();
+      try {
+        const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
+        console.log('[Reserve] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
+        
+        // Wait for addToCart operation to complete before navigating
+        await addToCart(currentProduct, 1, variantIndex);
+        console.log('✅ Product added successfully, navigating to cart');
+        
+        setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
+        goCart();
+      } catch (error) {
+        console.error('❌ Error adding product to cart:', error);
+        const message = typeof error?.error === 'string' ? error.error : error?.message || 'Failed to add to cart';
+        toast.error(message);
+      }
     }
   };
 
@@ -369,10 +372,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
       if (currentQuantity === 0) {
         const variantIndex = currentProduct.variants?.findIndex(v => v === variant) || 0;
         console.log('[BuyNow] product=', currentProduct._id, 'variantIndex=', variantIndex, 'tracks=', tracks, 'stock=', totalStock);
-        await addToCart(currentProduct, 1, variantIndex);
         
-  // Immediately refresh stock data after adding to cart
-  setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
+        // Wait for addToCart operation to complete before navigating
+        await addToCart(currentProduct, 1, variantIndex);
+        console.log('✅ Product added successfully via BuyNow, navigating to cart');
+        
+        // Immediately refresh stock data after adding to cart
+        setTimeout(() => productLiveCache.get(currentProduct._id, undefined, { force: true }), 800);
       }
       
       navigate('/cart');
@@ -586,7 +592,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                   }}
                 >
                   {isSelectingFreeProduct 
-                    ? '🎁 Select FREE' 
+                    ? 'Select FREE' 
                     : (!isProductAvailable ? 'Closed' : isOutOfStockTracked ? 'Unavailable' : 'Add')
                   }
                 </BlobButton>
@@ -745,69 +751,71 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
         </div>
 
         {/* Reserve Button - Creative Animated Design with Mobile Support */}
-        <button
-          onClick={handleReserve}
-          disabled={!isActive || totalStock === 0 || !isProductAvailable}
-          className={`group relative w-full sm:w-11/12 lg:w-3/4 mx-auto mt-3 sm:mt-4 py-2 px-3 text-xs font-light transition-all duration-200 rounded-lg overflow-hidden ${
-            !isActive || totalStock === 0 || !isProductAvailable
-              ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
-              : 'bg-white text-gray-900 border-2 border-[#733857] hover:text-white active:text-white touch-manipulation'
-          }`}
-          style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
-        >
-          {/* Animated background fill - works on both hover and active (touch) */}
-          {isActive && totalStock > 0 && isProductAvailable && (
-            <div className="absolute inset-0 bg-[#733857] transform -translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-200 ease-out"></div>
-          )}
-          
-          {/* Button content with animations for both hover and touch */}
-          <span className="relative z-10 flex items-center justify-center gap-1.5">
-            {!isActive ? (
-              'Unavailable'
-            ) : totalStock === 0 ? (
-              'No Stock'
-            ) : !isProductAvailable ? (
-              'Closed'
-            ) : (
+        {!isSelectingFreeProduct && (
+          <button
+            onClick={handleReserve}
+            disabled={!isActive || totalStock === 0 || !isProductAvailable}
+            className={`group relative w-full sm:w-11/12 lg:w-3/4 mx-auto mt-3 sm:mt-4 py-2 px-3 text-xs font-light transition-all duration-200 rounded-lg overflow-hidden ${
+              !isActive || totalStock === 0 || !isProductAvailable
+                ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
+                : 'bg-white text-gray-900 border-2 border-[#733857] hover:text-white active:text-white touch-manipulation'
+            }`}
+            style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+          >
+            {/* Animated background fill - works on both hover and active (touch) */}
+            {isActive && totalStock > 0 && isProductAvailable && (
+              <div className="absolute inset-0 bg-[#733857] transform -translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-200 ease-out"></div>
+            )}
+            
+            {/* Button content with animations for both hover and touch */}
+            <span className="relative z-10 flex items-center justify-center gap-1.5">
+              {!isActive ? (
+                'Unavailable'
+              ) : totalStock === 0 ? (
+                'No Stock'
+              ) : !isProductAvailable ? (
+                'Closed'
+              ) : (
+                <>
+                  <svg 
+                    className="w-3 h-3 transition-transform duration-200 group-hover:rotate-6 group-active:rotate-6" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
+                    <circle cx="12" cy="12" r="10" />
+                  </svg>
+                  <span className="transform transition-all duration-300 group-hover:tracking-wider group-active:tracking-wider">
+                    Reserve
+                  </span>
+                  <svg 
+                    className="w-3 h-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:translate-x-1 group-active:scale-110" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </>
+              )}
+            </span>
+
+            {/* Sparkle effects - show on both hover and active for mobile */}
+            {isActive && totalStock > 0 && isProductAvailable && (
               <>
-                <svg 
-                  className="w-3 h-3 transition-transform duration-200 group-hover:rotate-6 group-active:rotate-6" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
-                  <circle cx="12" cy="12" r="10" />
-                </svg>
-                <span className="transform transition-all duration-300 group-hover:tracking-wider group-active:tracking-wider">
-                  Reserve
-                </span>
-                <svg 
-                  className="w-3 h-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:translate-x-1 group-active:scale-110" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <div className="absolute top-1 right-2 w-1 h-1 bg-[#8d4466] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
+                <div className="absolute bottom-1 left-3 w-1 h-1 bg-[#733857] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
+                <div className="absolute top-2 left-1/2 w-0.5 h-0.5 bg-[#8d4466] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-pulse group-active:animate-pulse transition-opacity duration-300 delay-150"></div>
               </>
             )}
-          </span>
 
-          {/* Sparkle effects - show on both hover and active for mobile */}
-          {isActive && totalStock > 0 && isProductAvailable && (
-            <>
-              <div className="absolute top-1 right-2 w-1 h-1 bg-[#8d4466] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-100"></div>
-              <div className="absolute bottom-1 left-3 w-1 h-1 bg-[#733857] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-ping group-active:animate-ping transition-opacity duration-300 delay-200"></div>
-              <div className="absolute top-2 left-1/2 w-0.5 h-0.5 bg-[#8d4466] rounded-full opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:animate-pulse group-active:animate-pulse transition-opacity duration-300 delay-150"></div>
-            </>
-          )}
-
-          {/* Mobile-specific pulse animation on tap */}
-          {isProductAvailable && (
-            <div className="absolute inset-0 bg-[#733857] opacity-0 group-active:opacity-10 transition-opacity duration-150 rounded-lg md:hidden"></div>
-          )}
-        </button>
+            {/* Mobile-specific pulse animation on tap */}
+            {isProductAvailable && (
+              <div className="absolute inset-0 bg-[#733857] opacity-0 group-active:opacity-10 transition-opacity duration-150 rounded-lg md:hidden"></div>
+            )}
+          </button>
+        )}
       </div>
 
 

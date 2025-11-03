@@ -539,9 +539,16 @@ export const useCart = () => {
     }
   }, [user, dispatch]);
 
-  const refreshCart = useCallback(async () => {
+  const refreshCart = useCallback(async (force = false) => {
     try {
       if (user) {
+        // Check if there are pending operations and we're not forcing
+        const hasPendingOps = Object.keys(pendingOperations).length > 0;
+        if (!force && hasPendingOps) {
+          console.log('🔄 Skipping cart refresh due to pending operations:', Object.keys(pendingOperations));
+          return;
+        }
+        
         console.log('🔄 Refreshing cart from database');
         const result = await dispatch(fetchCart()).unwrap();
         console.log('✅ Cart refreshed, items:', result?.items?.length);
@@ -552,7 +559,7 @@ export const useCart = () => {
       console.error('❌ Error refreshing cart:', error);
       throw error;
     }
-  }, [user, dispatch]);
+  }, [user, dispatch, pendingOperations]);
 
   const clearCartError = useCallback(() => {
     dispatch(clearError());

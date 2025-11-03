@@ -33,17 +33,16 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import twilioRoutes from './routes/twilioRoutesNew.js';
 import stockRoutes from './routes/stockRoutes.js';
 import stockValidationRoutes from './routes/stockValidationRoutes.js';
-import analyticsRoutes from './routes/analyticsRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
 import emailDispatchRoutes from './routes/emailDispatchRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
-import ngoMediaRoutes from './routes/ngoMediaRoutes.js';
 import sitemapRoutes from './routes/sitemapRoutes.js';
 import freeProductRoutes from './routes/freeProductRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
 import { startMonthlyCleanupJob } from './utils/monthlyCleanupJob.js';
+import { scheduleMonthlyRewardCleanup } from './utils/cronJobs.js';
 
 // Initialize Express app
 const app = express();
@@ -340,11 +339,9 @@ const startServer = async () => {
     app.use('/api/twilio', twilioRoutes);
     app.use('/api/stock', stockRoutes);
     app.use('/api/stock-validation', stockValidationRoutes);
-    app.use('/api/analytics', analyticsRoutes);
     app.use('/api/contact', contactRoutes);
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/newsletter', newsletterRoutes);
-    app.use('/api/ngo-media', ngoMediaRoutes);
     app.use('/api/free-product', freeProductRoutes);
 
     // WebSocket setup
@@ -496,6 +493,10 @@ const startServer = async () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Health check available at http://localhost:${PORT}/health`);
       console.log(`WebSocket server running on port ${PORT}`);
+      
+      // Start monthly reward cleanup cron job
+      scheduleMonthlyRewardCleanup();
+      console.log('✓ Monthly reward cleanup cron job scheduled (runs at 00:01 on 1st of every month)');
     });
 
   } catch (error) {

@@ -319,12 +319,29 @@ export const getFreeProductProgress = asyncHandler(async (req, res) => {
 
   const eligibilityData = await checkEligibility(userId);
 
+  // Get user's order dates for timeline display
+  const user = await User.findById(userId).select('monthlyOrderDays');
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  
+  // Get current month order dates
+  const currentMonthOrders = (user?.monthlyOrderDays || []).filter(
+    orderDay => orderDay.month === currentMonth && orderDay.year === currentYear
+  );
+  
+  // Extract and sort dates
+  const orderDates = currentMonthOrders
+    .map(od => od.date)
+    .sort((a, b) => new Date(b) - new Date(a)); // Sort newest first
+
   const progress = {
     currentDays: eligibilityData.uniqueDaysCount,
     requiredDays: 10,
     daysRemaining: eligibilityData.daysRemaining,
     isEligible: eligibilityData.eligible,
-    percentage: Math.min((eligibilityData.uniqueDaysCount / 10) * 100, 100)
+    percentage: Math.min((eligibilityData.uniqueDaysCount / 10) * 100, 100),
+    orderDates: orderDates // Add order dates for timeline
   };
 
   res.json({
