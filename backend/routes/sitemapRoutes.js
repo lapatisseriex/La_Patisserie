@@ -21,7 +21,6 @@ router.get('/sitemap.xml', async (req, res) => {
       { url: '/contact', changefreq: 'monthly', priority: '0.7', lastmod: currentDate, keywords: 'contact bakery coimbatore, cake orders' },
       { url: '/our-services', changefreq: 'monthly', priority: '0.7', lastmod: currentDate, keywords: 'bakery services, custom cakes, catering' },
       { url: '/faq', changefreq: 'monthly', priority: '0.6', lastmod: currentDate, keywords: 'cake delivery faq, bakery questions' },
-      { url: '/support-education', changefreq: 'monthly', priority: '0.8', lastmod: currentDate, keywords: 'foeer ngo, charity bakery, support education' },
       { url: '/cart', changefreq: 'weekly', priority: '0.5', lastmod: currentDate },
       { url: '/favorites', changefreq: 'weekly', priority: '0.5', lastmod: currentDate },
       { url: '/privacy-policy', changefreq: 'yearly', priority: '0.3', lastmod: currentDate },

@@ -15,7 +15,6 @@ import { calculateCartTotals, calculatePricing, formatCurrency } from '../../uti
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import api from '../../services/apiService';
-import NGOSidePanel from './NGOSidePanel';
 
 const AUTO_REDIRECT_STORAGE_KEY = 'lapatisserie_payment_redirect';
 const AUTO_REDIRECT_DELAY_MS = 20000;
@@ -30,7 +29,6 @@ const Payment = () => {
   const navigate = useNavigate();
   const [showLocationError, setShowLocationError] = useState(false);
   const [useFreeCash, setUseFreeCash] = useState(false);
-  const [showNGOPanel, setShowNGOPanel] = useState(false);
   const redirectTimerRef = useRef(null);
   const countdownTimerRef = useRef(null);
   const [redirectCountdown, setRedirectCountdown] = useState(null);
@@ -50,11 +48,9 @@ const Payment = () => {
     } catch {}
   }, [setRedirectCountdown]);
 
-  // Handle navigation with side panel trigger
-  const handleNavigateWithPanel = (path) => {
-    // Set flag in sessionStorage to show panel after navigation
+  // Handle navigation
+  const handleNavigate = (path) => {
     clearAutoRedirect();
-    sessionStorage.setItem('showNGOPanel', 'true');
     navigate(path);
   };
 
@@ -220,25 +216,6 @@ const Payment = () => {
   useEffect(() => {
     if (!isOrderComplete) {
       setCompletedPaymentMethod(null);
-    }
-  }, [isOrderComplete]);
-
-  // Auto-open NGO panel after payment success (with minimal delay)
-  useEffect(() => {
-    if (isOrderComplete) {
-      // Scroll to top immediately to prevent auto-scroll to footer
-      window.scrollTo({ top: 0, behavior: 'instant' });
-      
-      // Replace the entire history stack to prevent going back to checkout/payment
-      // Push a new state for the payment confirmation
-      window.history.pushState({ orderComplete: true }, '', '/payment');
-      
-      // Show NGO panel after 800ms (just enough for smooth transition)
-      const timer = setTimeout(() => {
-        setShowNGOPanel(true);
-      }, 1500);
-
-      return () => clearTimeout(timer);
     }
   }, [isOrderComplete]);
 
@@ -825,7 +802,7 @@ if (isOrderComplete) {
             {/* 4. Updated Button Styles (Sharp Corners) */}
             <div className="mt-8 sm:mt-10 flex w-full flex-col-reverse gap-3 sm:gap-4 sm:flex-row sm:justify-center px-2 sm:px-0">
               <HoverButton
-                onClick={() => handleNavigateWithPanel('/')}
+                onClick={() => handleNavigate('/')}
                 text="Back to Home"
                 hoverText="Go Home"
                 variant="outline"
@@ -833,7 +810,7 @@ if (isOrderComplete) {
                 className="w-full sm:w-auto"
               />
               <HoverButton
-                onClick={() => handleNavigateWithPanel('/products')}
+                onClick={() => handleNavigate('/products')}
                 text="Browse Products"
                 hoverText="View Products"
                 variant="primary"
@@ -841,7 +818,7 @@ if (isOrderComplete) {
                 className="w-full sm:w-auto"
               />
               <HoverButton
-                onClick={() => handleNavigateWithPanel('/orders')}
+                onClick={() => handleNavigate('/orders')}
                 text="My Orders"
                 hoverText="View Orders"
                 variant="secondary"
@@ -857,9 +834,6 @@ if (isOrderComplete) {
             
           </div>
         </div>
-
-        {/* NGO Side Panel */}
-        <NGOSidePanel isOpen={showNGOPanel} onClose={() => setShowNGOPanel(false)} />
       </div>
     );
   }

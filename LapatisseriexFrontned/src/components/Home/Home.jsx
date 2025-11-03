@@ -13,7 +13,6 @@ import RecentlyViewedSection from './RecentlyViewedSection';
 import CategorySwiper from './categorySwiper';
 import PageLoadingAnimation from '../common/PageLoadingAnimation';
 import AdvertisementBanner from './AdvertisementBanner';
-import NGORibbon from '../NGO/NGORibbon';
 
 const Home = () => {
   const headingRef = useRef(null);
@@ -199,11 +198,6 @@ const Home = () => {
 
       <section ref={handpickedRef} className="w-full">
         <HandpickedForYou />
-      </section>
-
-      {/* NGO Support Ribbon - Before Newsletter */}
-      <section className="w-full">
-        <NGORibbon />
       </section>
 
     </div>
