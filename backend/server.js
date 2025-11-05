@@ -50,6 +50,10 @@ const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Configure trust proxy for deployment platforms (Vercel, Render, Heroku, etc.)
+// This allows Express to correctly identify client IPs from X-Forwarded-For headers
+app.set('trust proxy', true);
+
 // Middleware
 const allowedOrigins = [
   'https://la-patisseriex.netlify.app',

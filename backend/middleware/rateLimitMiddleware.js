@@ -3,10 +3,17 @@ import rateLimit from 'express-rate-limit';
 // Get environment-specific settings
 const isDevelopment = process.env.NODE_ENV === 'development';
 
+// Custom key generator that works with proxies
+const getClientIdentifier = (req) => {
+  // Trust proxy is enabled, so req.ip will be the real client IP from X-Forwarded-For
+  return req.ip;
+};
+
 // Create different rate limiters for different endpoints
 export const generalRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: isDevelopment ? 500 : 100, // More lenient in development
+  keyGenerator: getClientIdentifier,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.',
@@ -20,6 +27,7 @@ export const generalRateLimit = rateLimit({
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === 'development' ? 100 : 10, // More lenient in development
+  keyGenerator: getClientIdentifier,
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.',
@@ -31,6 +39,7 @@ export const authRateLimit = rateLimit({
 export const cartRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: isDevelopment ? 300 : 100, // Increased limits for smooth cart interactions
+  keyGenerator: getClientIdentifier,
   message: {
     success: false,
     message: 'Too many cart operations, please slow down.',
@@ -47,6 +56,7 @@ export const cartRateLimit = rateLimit({
 export const productRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: isDevelopment ? 500 : 200, // Even more lenient in development
+  keyGenerator: getClientIdentifier,
   message: {
     success: false,
     message: 'Too many product requests, please try again later.',
