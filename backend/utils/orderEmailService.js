@@ -57,36 +57,24 @@ const createTransporter = () => {
   });
 };
 
-// Simple minimal email template
+// Simple minimal email template - Gmail-safe (no special chars, simple HTML)
 const buildMinimalEmailHTML = (brandName, orderNumber, trackUrl) => {
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>${brandName} – Order #${orderNumber}</title>
-    </head>
-    <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
-      <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd;">
-        
-        <h1 style="text-align: center; color: #333; margin-bottom: 10px;">${brandName}</h1>
-        <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 30px;">Order #${orderNumber}</p>
-        
-        <p style="text-align: center; color: #555; font-size: 15px; margin: 30px 0;">
-          Track your order: <a href="${trackUrl}" style="color: #333; text-decoration: underline;">${trackUrl}</a>
-        </p>
-        
-        <p style="text-align: center; color: #666; font-size: 13px; margin-top: 30px;">
-          Thank you for your order!<br>
-          PDF invoice is attached to this email.
-        </p>
-        
-      </div>
-    </body>
-    </html>
-  `;
-};
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${brandName} - Order ${orderNumber}</title>
+</head>
+<body style="margin:0;padding:20px;font-family:Arial,sans-serif;background:#f5f5f5;color:#333">
+<div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border:1px solid #ddd">
+<h1 style="text-align:center;color:#333;margin-bottom:10px">${brandName}</h1>
+<p style="text-align:center;color:#666;font-size:14px;margin-bottom:30px">Order ${orderNumber}</p>
+<p style="text-align:center;color:#555;font-size:15px;margin:30px 0">Track your order: <a href="${trackUrl}" style="color:#333;text-decoration:underline">${trackUrl}</a></p>
+<p style="text-align:center;color:#666;font-size:13px;margin-top:30px">Thank you for your order!<br>PDF invoice is attached to this email.</p>
+</div>
+</body>
+</html>`;};
 
 // Dispatch email template with delivery information
 const buildDispatchEmailHTML = (brandName, orderNumber, trackUrl, orderDetails) => {
@@ -350,14 +338,16 @@ export const sendOrderStatusNotification = async (orderDetails, newStatus, userE
 };
 
 // Send order confirmation email (when order is first created) - SIMPLE & ROBUST
-export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoData = null, productImagesData = []) => {
+export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoData = null, productImagesData = [], skipDelegation = false) => {
   // Validate essential data first
   if (!userEmail) {
     console.error('❌ Cannot send order confirmation: no email provided');
     return { success: false, error: 'No email provided' };
   }
+  
+  // Only delegate if explicitly enabled AND not skipped by caller
   const base = getEmailDelegateApiBase();
-  if (isDelegationEnabled() && base) {
+  if (!skipDelegation && isDelegationEnabled() && base) {
     const result = await delegateEmailPost('/email-dispatch/order-confirmation', { orderDetails, userEmail });
     return { success: true, ...result };
   }
@@ -383,13 +373,13 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoDa
     };
   }
   
-  // Generate invoice PDF (non-blocking - continue if fails)
+  // Generate invoice PDF with full order details
   const attachments = [];
   if (orderDetails) {
     try {
       const { filename, buffer } = await generateInvoicePdf(orderDetails);
       attachments.push({ filename, content: buffer, contentType: 'application/pdf' });
-      console.log(`✅ Invoice PDF generated: ${filename}`);
+      console.log(`✅ Invoice PDF generated: ${filename} (${Math.round(buffer.length / 1024)}KB)`);
     } catch (e) {
       console.error('⚠️ Failed to generate invoice PDF (continuing without it):', e.message);
       // Continue without PDF - email is more important
@@ -406,8 +396,9 @@ export const sendOrderConfirmationEmail = async (orderDetails, userEmail, logoDa
         address: process.env.EMAIL_USER
       },
       to: userEmail,
-      subject: `Order Confirmation — #${orderNumber}`,
+      subject: `Order Confirmation - ${orderNumber}`,
       html: buildMinimalEmailHTML(brandName, orderNumber, trackUrl),
+      text: `La Patisserie\nOrder ${orderNumber}\n\nTrack your order: ${trackUrl}\n\nThank you for your order! PDF invoice is attached.`,
       attachments
     };
 
@@ -468,14 +459,15 @@ const buildAdminOrderHeader = (orderDetails = {}) => {
   `;
 };
 
-export const sendOrderPlacedAdminNotification = async (orderDetails, adminEmails) => {
+export const sendOrderPlacedAdminNotification = async (orderDetails, adminEmails, skipDelegation = false) => {
   if (!Array.isArray(adminEmails) || adminEmails.length === 0) {
     return { success: false, skipped: true, reason: 'No admin recipients' };
   }
 
   try {
+    // Only delegate if explicitly enabled AND not skipped by caller
     const base = getEmailDelegateApiBase();
-    if (isDelegationEnabled() && base) {
+    if (!skipDelegation && isDelegationEnabled() && base) {
       const result = await delegateEmailPost('/email-dispatch/admin-order-placed', { orderDetails, adminEmails });
       return { success: true, ...result };
     }
@@ -498,48 +490,29 @@ export const sendOrderPlacedAdminNotification = async (orderDetails, adminEmails
         address: process.env.EMAIL_USER
       },
       to: adminEmails,
-      subject: `New Order #${orderNumber}`,
-      html: `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>New Order #${orderNumber}</title>
-        </head>
-        <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
-          <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd;">
-            
-            <div style="background: #333; color: #fff; padding: 15px; text-align: center; margin-bottom: 20px;">
-              <strong>NEW ORDER ALERT</strong>
-            </div>
-            
-            <h2 style="color: #333; margin-bottom: 20px;">Order #${orderNumber}</h2>
-            
-            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px;">
-              <strong>Customer Email:</strong> ${customerEmail}
-            </p>
-            
-            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px;">
-              <strong>Payment Method:</strong> ${paymentMethod || 'N/A'}
-            </p>
-            
-            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px;">
-              <strong>Order Total:</strong> ₹${orderSummary?.grandTotal || 0}
-            </p>
-            
-            <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
-              <strong>Order Date:</strong> ${createdAt ? new Date(createdAt).toLocaleString() : 'N/A'}
-            </p>
-            
-            <div style="margin-top: 30px; padding: 15px; background: #f5f5f5; text-align: center;">
-              <p style="margin: 0; color: #666; font-size: 13px;">Complete order details are attached in the PDF invoice.</p>
-            </div>
-            
-          </div>
-        </body>
-        </html>
-      `,
+      subject: `New Order - ${orderNumber}`,
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Order ${orderNumber}</title>
+</head>
+<body style="margin:0;padding:20px;font-family:Arial,sans-serif;background:#f5f5f5;color:#333">
+<div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border:1px solid #ddd">
+<div style="background:#333;color:#fff;padding:15px;text-align:center;margin-bottom:20px"><strong>NEW ORDER ALERT</strong></div>
+<h2 style="color:#333;margin-bottom:20px">Order ${orderNumber}</h2>
+<p style="color:#555;font-size:15px;line-height:1.6;margin-bottom:10px"><strong>Customer Email:</strong> ${customerEmail}</p>
+<p style="color:#555;font-size:15px;line-height:1.6;margin-bottom:10px"><strong>Payment Method:</strong> ${paymentMethod || 'N/A'}</p>
+<p style="color:#555;font-size:15px;line-height:1.6;margin-bottom:10px"><strong>Order Total:</strong> Rs ${orderSummary?.grandTotal || 0}</p>
+<p style="color:#555;font-size:15px;line-height:1.6;margin-bottom:20px"><strong>Order Date:</strong> ${createdAt ? new Date(createdAt).toLocaleString() : 'N/A'}</p>
+<div style="margin-top:30px;padding:15px;background:#f5f5f5;text-align:center">
+<p style="margin:0;color:#666;font-size:13px">Complete order details are attached in the PDF invoice.</p>
+</div>
+</div>
+</body>
+</html>`,
+      text: `NEW ORDER ALERT\n\nOrder ${orderNumber}\n\nCustomer Email: ${customerEmail}\nPayment Method: ${paymentMethod || 'N/A'}\nOrder Total: Rs ${orderSummary?.grandTotal || 0}\nOrder Date: ${createdAt ? new Date(createdAt).toLocaleString() : 'N/A'}\n\nComplete order details are attached in the PDF invoice.`,
       attachments
     };
 

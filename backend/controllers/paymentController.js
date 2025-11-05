@@ -688,10 +688,11 @@ export const createOrder = asyncHandler(async (req, res) => {
       }
 
       // Send emails SYNCHRONOUSLY - wait for customer email before responding
-      // This ensures immediate email delivery for COD orders
+      // This ensures immediate email delivery for COD orders with full templates and PDF invoice
       try {
         let user = null;
         let userEmailTarget = null;
+        let orderDetailsForEmail = null;
 
         // Fetch user data
         try {
@@ -702,47 +703,30 @@ export const createOrder = asyncHandler(async (req, res) => {
           userEmailTarget = order?.userDetails?.email;
         }
 
-        // Customer email - SEND SYNCHRONOUSLY (blocking)
+        // Build order details for email
+        try {
+          orderDetailsForEmail = buildOrderDetailsForEmail(order, user);
+          if (!userEmailTarget) {
+            userEmailTarget = orderDetailsForEmail?.userDetails?.email;
+          }
+        } catch (buildError) {
+          console.error('⚠️ Error building order details:', buildError.message);
+          orderDetailsForEmail = order;
+        }
+
+        // Customer email - SEND SYNCHRONOUSLY (blocking) with full template and PDF
         if (userEmailTarget) {
-          console.log('📧 [COD] Sending order confirmation email to:', userEmailTarget, '(SYNCHRONOUS)');
+          console.log('📧 [COD] Sending order confirmation email to:', userEmailTarget, '(SYNCHRONOUS with PDF)');
           try {
-            // Always use minimal dispatcher for immediate delivery
-            const nodemailer = await import('nodemailer');
-            const transporter = nodemailer.default.createTransport({
-              host: process.env.SMTP_HOST || 'smtp.gmail.com',
-              port: Number(process.env.SMTP_PORT || 587),
-              secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
-              auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-              },
-            });
-
-            const trackUrl = `https://www.lapatisserie.shop/orders/${orderNumber}`;
-            const html = `
-              <!DOCTYPE html>
-              <html lang="en">
-              <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>La Patisserie - Order #${orderNumber}</title></head>
-              <body style="margin:0;padding:20px;font-family:Arial,sans-serif;background:#f5f5f5;color:#333">
-                <div style="max-width:600px;margin:0 auto;background:#fff;padding:24px;border:1px solid #e5e5e5">
-                  <h2 style="margin:0 0 8px 0;color:#111">La Patisserie</h2>
-                  <p style="margin:0 0 16px 0;color:#666">Order #${orderNumber}</p>
-                  <p style="margin:16px 0;color:#333">Track your order: <a href="${trackUrl}" style="color:#111">${trackUrl}</a></p>
-                  <p style="margin:24px 0 0 0;color:#666;font-size:13px">Thank you for your order!</p>
-                </div>
-              </body>
-              </html>`;
-            const text = `La Patisserie\nOrder #${orderNumber}\n\nTrack your order: ${trackUrl}\n\nThank you for your order!`;
-
-            const result = await transporter.sendMail({
-              from: { name: 'La Patisserie', address: process.env.EMAIL_USER },
-              to: userEmailTarget,
-              subject: `Order Confirmation - #${orderNumber}`,
-              html,
-              text,
-            });
-
-            console.log('✅ [COD] Order confirmation email sent immediately:', result.messageId);
+            const logoData = getLogoData();
+            // Pass skipDelegation=true to force local sending with PDF, even if delegation is enabled
+            const result = await sendOrderConfirmationEmail(orderDetailsForEmail, userEmailTarget, logoData, [], true);
+            
+            if (result.success) {
+              console.log('✅ [COD] Order confirmation email sent immediately:', result.messageId);
+            } else {
+              console.error('❌ [COD] Order confirmation email failed:', result.error);
+            }
           } catch (emailError) {
             console.error('❌ [COD] Failed to send order confirmation email:', emailError.message);
             // Don't fail the order, just log it
@@ -751,41 +735,21 @@ export const createOrder = asyncHandler(async (req, res) => {
           console.log('⚠️ [COD] User email not found, skipping confirmation email');
         }
 
-        // Admin email - FIRE AND FORGET (async, non-blocking)
+        // Admin email - FIRE AND FORGET (async, non-blocking) with full template and PDF
         (async () => {
           try {
             const adminEmails = await getActiveAdminEmails();
             if (Array.isArray(adminEmails) && adminEmails.length > 0) {
-              console.log('📧 [COD] Sending admin notification email to:', adminEmails.join(', '), '(ASYNC)');
-              const nodemailer = await import('nodemailer');
-              const transporter = nodemailer.default.createTransport({
-                host: process.env.SMTP_HOST || 'smtp.gmail.com',
-                port: Number(process.env.SMTP_PORT || 587),
-                secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
-                auth: {
-                  user: process.env.EMAIL_USER,
-                  pass: process.env.EMAIL_PASS,
-                },
-              });
-
-              const html = `
-                <div style="font-family:Arial,sans-serif;color:#111">
-                  <h3 style="margin:0 0 8px 0">New Order Received</h3>
-                  <p style="margin:0 0 4px 0">Order Number: <strong>#${orderNumber}</strong></p>
-                  <p style="margin:0 0 4px 0">Total: ₹${order?.orderSummary?.grandTotal ?? 0}</p>
-                  <p style="margin:12px 0 0 0;color:#444">Check admin panel for details.</p>
-                </div>`;
-              const text = `New Order Received\nOrder Number: #${orderNumber}\nTotal: Rs ${order?.orderSummary?.grandTotal ?? 0}\nCheck admin panel for details.`;
-
-              const result = await transporter.sendMail({
-                from: { name: 'La Patisserie Alerts', address: process.env.EMAIL_USER },
-                to: adminEmails,
-                subject: `New Order - #${orderNumber}`,
-                html,
-                text,
-              });
-
-              console.log('✅ [COD] Admin email sent:', result.messageId);
+              console.log('📧 [COD] Sending admin notification email to:', adminEmails.join(', '), '(ASYNC with PDF)');
+              
+              // Pass skipDelegation=true to force local sending with PDF
+              const result = await sendOrderPlacedAdminNotification(orderDetailsForEmail, adminEmails, true);
+              
+              if (result.success) {
+                console.log('✅ [COD] Admin email sent:', result.messageId);
+              } else if (!result.skipped) {
+                console.error('❌ [COD] Admin email failed:', result.error);
+              }
             }
           } catch (adminEmailError) {
             console.error('❌ [COD] Admin email failed:', adminEmailError.message);
