@@ -24,13 +24,6 @@ export const getOrderStatusEmailTemplate = async (orderDetails, newStatus, logoA
   const { orderNumber, userDetails, cartItems, orderSummary } = orderDetails;
   
   const statusMessages = {
-    confirmed: {
-      subject: `Order Confirmed - ${orderNumber}`,
-      title: 'Order Confirmed!',
-      message: 'Great news! Your order has been confirmed and we\'re preparing to make your delicious treats.',
-      icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,11 12,14 22,4"></polyline><path d="m21,3-6.5,18a.55.55,0,0,1-1,0L10,14Z"></path></svg>`,
-      color: '#10B981'
-    },
     preparing: {
       subject: `Order Being Prepared - ${orderNumber}`,
       title: 'Your Order is Being Prepared!',

@@ -48,20 +48,6 @@ const buildTrackUrl = (orderNumber) => {
   return `https://www.lapatisserie.shop/orders/${orderNumber}`;
 };
 
-const minimalOrderConfirmationHtml = (brandName, orderNumber, trackUrl) => `
-  <!DOCTYPE html>
-  <html lang="en">
-  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${brandName} – Order #${orderNumber}</title></head>
-  <body style="margin:0;padding:20px;font-family:Arial,sans-serif;background:#f5f5f5;color:#333">
-    <div style="max-width:600px;margin:0 auto;background:#fff;padding:24px;border:1px solid #e5e5e5">
-      <h2 style="margin:0 0 8px 0;color:#111">${brandName}</h2>
-      <p style="margin:0 0 16px 0;color:#666">Order #${orderNumber}</p>
-      <p style="margin:16px 0;color:#333">Track your order: <a href="${trackUrl}" style="color:#111">${trackUrl}</a></p>
-      <p style="margin:24px 0 0 0;color:#666;font-size:13px">Thank you for your order!</p>
-    </div>
-  </body>
-  </html>`;
-
 const minimalStatusUpdateHtml = (orderNumber, statusLabel, trackUrl) => `
   <!DOCTYPE html>
   <html lang="en">
@@ -83,66 +69,6 @@ const formatStatusLabel = (status) => {
 
 // Each handler accepts a payload and triggers local nodemailer sending on this instance.
 // This file enables a second server (Render) to delegate email work to this server (Vercel).
-
-export const sendOrderConfirmation = async (req, res) => {
-  try {
-    const { orderDetails, userEmail } = req.body || {};
-    if (!orderDetails || !userEmail) {
-      return res.status(400).json({ success: false, message: 'orderDetails and userEmail are required' });
-    }
-
-    const transporter = createTransporter();
-    const orderNumber = orderDetails?.orderNumber || `ORDER-${Date.now()}`;
-    const trackUrl = buildTrackUrl(orderNumber);
-    const html = minimalOrderConfirmationHtml('La Patisserie', orderNumber, trackUrl);
-    const text = `La Patisserie\nOrder #${orderNumber}\n\nTrack your order: ${trackUrl}\n\nThank you for your order!`;
-
-    const info = await transporter.sendMail({
-      from: { name: 'La Patisserie', address: process.env.EMAIL_USER },
-      to: userEmail,
-      subject: `Order Confirmation - #${orderNumber}`,
-      html,
-      text,
-    });
-
-    return res.status(200).json({ success: true, messageId: info.messageId, orderNumber });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-export const sendAdminOrderPlaced = async (req, res) => {
-  try {
-    const { orderDetails, adminEmails } = req.body || {};
-    if (!orderDetails || !Array.isArray(adminEmails) || adminEmails.length === 0) {
-      return res.status(400).json({ success: false, message: 'orderDetails and adminEmails[] are required' });
-    }
-
-    const transporter = createTransporter();
-    const orderNumber = orderDetails?.orderNumber || `ORDER-${Date.now()}`;
-    const subject = `New Order - #${orderNumber}`;
-    const html = `
-      <div style="font-family:Arial,sans-serif;color:#111">
-        <h3 style="margin:0 0 8px 0">New Order Received</h3>
-        <p style="margin:0 0 4px 0">Order Number: <strong>#${orderNumber}</strong></p>
-        <p style="margin:0 0 4px 0">Total: ₹${orderDetails?.orderSummary?.grandTotal ?? 0}</p>
-        <p style="margin:12px 0 0 0;color:#444">Check admin panel for details.</p>
-      </div>`;
-    const text = `New Order Received\nOrder Number: #${orderNumber}\nTotal: Rs ${orderDetails?.orderSummary?.grandTotal ?? 0}\nCheck admin panel for details.`;
-
-    const info = await transporter.sendMail({
-      from: { name: 'La Patisserie Alerts', address: process.env.EMAIL_USER },
-      to: adminEmails,
-      subject,
-      html,
-      text,
-    });
-
-    return res.status(200).json({ success: true, messageId: info.messageId, orderNumber });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
 
 export const sendStatusUpdate = async (req, res) => {
   try {

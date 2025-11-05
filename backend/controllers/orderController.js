@@ -622,7 +622,7 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
           model: 'Category'
         }
       })
-      .populate('userId', 'name email phone');
+      .populate('userId', '_id name email phone');
 
     if (!order) {
       return res.status(404).json({
@@ -721,7 +721,13 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
 
       // Send real-time notification via WebSocket
       if (global.io && global.connectedUsers) {
-        const userSocketId = global.connectedUsers.get(order.userId._id.toString());
+        const userId = order.userId._id ? order.userId._id.toString() : order.userId.toString();
+        const userSocketId = global.connectedUsers.get(userId);
+        
+        console.log(`🔔 Attempting WebSocket notification for user ${userId}`);
+        console.log(`🔌 User socket ID: ${userSocketId || 'NOT CONNECTED'}`);
+        console.log(`👥 Total connected users: ${global.connectedUsers.size}`);
+        
         if (userSocketId) {
           global.io.to(userSocketId).emit('orderStatusUpdate', {
             orderNumber: order.orderNumber,
@@ -731,10 +737,15 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
             dispatchProgress: dispatchProgress,
             timestamp: new Date().toISOString()
           });
+          console.log(`✅ WebSocket notification sent to user ${userId}`);
+        } else {
+          console.log(`⚠️ User ${userId} is not connected via WebSocket`);
         }
+      } else {
+        console.log('⚠️ WebSocket not available: io or connectedUsers is undefined');
       }
     } catch (notificationError) {
-      console.error('Error sending notification:', notificationError);
+      console.error('❌ Error sending notification:', notificationError);
     }
 
     res.status(200).json({

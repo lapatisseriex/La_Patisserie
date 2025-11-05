@@ -455,7 +455,7 @@ export const signInWithEmail = createAsyncThunk(
         // Store the email to pre-fill signup form
         localStorage.setItem('pendingSignupEmail', email);
       } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Password is wrong. Please enter the correct password or reset your password.';
+        errorMessage = 'Incorrect password. Please enter the correct password or reset your password if you forgot it.';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Invalid email address. Please enter a valid email.';
       } else if (error.code === 'auth/user-disabled') {
@@ -465,9 +465,7 @@ export const signInWithEmail = createAsyncThunk(
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = 'Network error. Please check your internet connection and try again.';
       } else if (error.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid credentials! Either the email is not registered or the password is incorrect. Please check your credentials or sign up if you don\'t have an account.';
-        // Also store email for potential signup
-        localStorage.setItem('pendingSignupEmail', email);
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
       } else if (error.message) {
         errorMessage = error.message;
       }

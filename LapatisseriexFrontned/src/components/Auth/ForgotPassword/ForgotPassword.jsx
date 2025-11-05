@@ -401,6 +401,11 @@ const ForgotPassword = () => {
             formData.newPassword.length < 6
           }
           className="w-full text-white py-2 px-4 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 auth-button"
+          style={{
+            backgroundColor: '#733857'
+          }}
+          onMouseEnter={(e) => !passwordReset.loading && (e.currentTarget.style.backgroundColor = '#8d4466')}
+          onMouseLeave={(e) => !passwordReset.loading && (e.currentTarget.style.backgroundColor = '#733857')}
         >
           {passwordReset.loading ? 'RESETTING...' : 'RESET PASSWORD'}
         </button>

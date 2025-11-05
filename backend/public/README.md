@@ -47,7 +47,7 @@ Response:
 ## Email Integration
 
 ### Automatic Logo Attachment
-The email service now automatically includes the logo from the public directory when sending emails:
+The email service can include the logo from the public directory when sending status update emails:
 
 ```javascript
 import { getLogoData } from '../utils/logoUtils.js';
@@ -56,7 +56,7 @@ import { getLogoData } from '../utils/logoUtils.js';
 const logoData = getLogoData();
 
 // Send email with logo attachment
-await sendOrderConfirmationEmail(orderDetails, userEmail, logoData);
+await sendOrderStatusNotification(orderDetails, newStatus, userEmail, logoData);
 ```
 
 ### Utility Functions
