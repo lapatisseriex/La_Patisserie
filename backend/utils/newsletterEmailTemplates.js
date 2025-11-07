@@ -51,82 +51,71 @@ const getEmailFooter = () => `
   </div>
 `;
 
-// Template for New Product
+// Template for New Product - Simple and Plain (matching dispatch email style)
 const newProductTemplate = (product) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Dessert Alert - La Pâtisserie</title>
+  <title>New Product - La Patisserie</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #1a1a1a; font-family: system-ui, -apple-system, sans-serif;">
-  ${getEmailHeader()}
-  
-  <div style="background-color: #1a1a1a; padding: 40px 20px;">
-    <div style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #281c20 0%, #1a1a1a 100%); border-radius: 12px; overflow: hidden; border: 1px solid rgba(168, 85, 247, 0.2);">
-      
-      <!-- Announcement Badge -->
-      <div style="background: linear-gradient(90deg, #A855F7 0%, #733857 100%); padding: 15px; text-align: center;">
-        <h2 style="color: #ffffff; font-size: 18px; font-weight: 500; letter-spacing: 0.2em; margin: 0; text-transform: uppercase;">
-          ✨ NEW DESSERT ALERT ✨
-        </h2>
-      </div>
-
-      <!-- Product Image -->
-      ${product.image ? `
-      <div style="padding: 0;">
-        <img src="${product.image}" alt="${product.name}" style="width: 100%; height: auto; display: block; max-height: 400px; object-fit: cover;">
-      </div>
-      ` : ''}
-
-      <!-- Product Details -->
-      <div style="padding: 40px 30px;">
-        <h1 style="color: #A855F7; font-size: 32px; font-weight: 300; letter-spacing: 0.1em; margin: 0 0 15px 0; text-align: center;">
-          ${product.name}
-        </h1>
-        
-        ${product.description ? `
-        <p style="color: rgba(255, 255, 255, 0.8); font-size: 16px; line-height: 1.8; margin: 20px 0; text-align: center;">
-          ${product.description}
-        </p>
-        ` : ''}
-
-        <div style="text-align: center; margin: 30px 0;">
-          <div style="display: inline-block; background: rgba(168, 85, 247, 0.1); border: 2px solid #A855F7; border-radius: 8px; padding: 15px 30px;">
-            <p style="color: rgba(255, 255, 255, 0.6); font-size: 12px; letter-spacing: 0.15em; margin: 0 0 5px 0; text-transform: uppercase;">
-              Price
-            </p>
-            <p style="color: #A855F7; font-size: 28px; font-weight: 600; margin: 0;">
-              ₹${product.price}
-            </p>
-          </div>
-        </div>
-
-        ${product.category ? `
-        <p style="color: rgba(255, 255, 255, 0.5); font-size: 13px; text-align: center; margin: 20px 0;">
-          Category: <span style="color: #A855F7;">${product.category}</span>
-        </p>
-        ` : ''}
-
-
-        <!-- Link -->
-        <div style="text-align: center; margin: 35px 0 20px 0;">
-          <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
-            Order now: <a href="${product.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline;">${product.link || 'https://lapatisserie.com/products'}</a>
-          </p>
-        </div>
-
-
-
-        <p style="color: rgba(255, 255, 255, 0.6); font-size: 14px; line-height: 1.6; text-align: center; margin: 30px 0 0 0;">
-          Indulge in our latest creation, crafted with love and the finest ingredients. <a href="${product.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline; font-weight: 500;">Order now</a> and treat yourself to something extraordinary!
-        </p>
-      </div>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 5px;">
+    
+    <h2 style="color: #333333; margin-top: 0;">New Product Available!</h2>
+    
+    <p style="color: #555555; line-height: 1.6;">
+      We're excited to introduce <strong>${product.name}</strong> to our menu!
+    </p>
+    
+    ${product.image ? `
+    <div style="margin: 20px 0;">
+      <img src="${product.image}" alt="${product.name}" style="width: 100%; max-width: 500px; height: auto; display: block; border-radius: 5px;">
     </div>
+    ` : ''}
+    
+    ${product.description ? `
+    <div style="background-color: #f9f9f9; padding: 15px; border-left: 3px solid #4CAF50; margin: 20px 0;">
+      <p style="margin: 0; color: #333333; font-size: 14px;">
+        <strong>About this product:</strong><br>
+        ${product.description}
+      </p>
+    </div>
+    ` : ''}
+    
+    <div style="margin: 20px 0;">
+      <p style="color: #555555; line-height: 1.6; margin: 5px 0;">
+        <strong>Price:</strong> ₹${product.price}
+      </p>
+      ${product.category ? `
+      <p style="color: #555555; line-height: 1.6; margin: 5px 0;">
+        <strong>Category:</strong> ${product.category}
+      </p>
+      ` : ''}
+    </div>
+    
+    <p style="color: #555555; line-height: 1.6;">
+      Order now and enjoy this delicious new addition to our collection!
+    </p>
+    
+    <p style="margin: 20px 0;">
+      <a href="${product.link || 'https://www.lapatisserie.shop/products'}" style="display: inline-block; background-color: #4CAF50; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        View Product
+      </a>
+    </p>
+    
+    <p style="color: #555555; line-height: 1.6;">
+      Thank you for choosing La Patisserie!
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+    
+    <p style="color: #999999; font-size: 12px; text-align: center; margin: 0;">
+      If you have any questions, feel free to contact us.
+    </p>
+    
   </div>
-
-  ${getEmailFooter()}
 </body>
 </html>
 `;
@@ -195,100 +184,79 @@ const newCategoryTemplate = (category) => `
 </html>
 `;
 
-// Template for Discount/Special Offer
+// Template for Discount/Special Offer - Simple and Plain (matching dispatch email style)
 const discountTemplate = (discount) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Special Discount - La Pâtisserie</title>
+  <title>Special Discount - La Patisserie</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #1a1a1a; font-family: system-ui, -apple-system, sans-serif;">
-  ${getEmailHeader()}
-  
-  <div style="background-color: #1a1a1a; padding: 40px 20px;">
-    <div style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #281c20 0%, #1a1a1a 100%); border-radius: 12px; overflow: hidden; border: 1px solid rgba(168, 85, 247, 0.2);">
-      
-      <!-- Announcement Badge -->
-      <div style="background: linear-gradient(90deg, #ff6b6b 0%, #A855F7 100%); padding: 15px; text-align: center;">
-        <h2 style="color: #ffffff; font-size: 18px; font-weight: 500; letter-spacing: 0.2em; margin: 0; text-transform: uppercase;">
-          🎊 SPECIAL OFFER 🎊
-        </h2>
-      </div>
-
-      <!-- Product Image (if available) -->
-      ${discount.image ? `
-      <div style="padding: 0;">
-        <img src="${discount.image}" alt="${discount.productName}" style="width: 100%; height: auto; display: block; max-height: 350px; object-fit: cover;">
-      </div>
-      ` : ''}
-
-      <!-- Discount Details -->
-      <div style="padding: 40px 30px;">
-        <!-- Discount Badge -->
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="display: inline-block; background: linear-gradient(135deg, #A855F7 0%, #ff6b6b 100%); border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);">
-            <div style="text-align: center;">
-              <p style="color: #ffffff; font-size: 36px; font-weight: 700; margin: 0; line-height: 1;">
-                ${discount.discountPercentage}%
-              </p>
-              <p style="color: #ffffff; font-size: 14px; font-weight: 500; margin: 5px 0 0 0; text-transform: uppercase; letter-spacing: 0.1em;">
-                OFF
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <h1 style="color: #A855F7; font-size: 28px; font-weight: 300; letter-spacing: 0.1em; margin: 0 0 15px 0; text-align: center;">
-          ${discount.productName}
-        </h1>
-        
-        ${discount.description ? `
-        <p style="color: rgba(255, 255, 255, 0.8); font-size: 16px; line-height: 1.8; margin: 20px 0; text-align: center;">
-          ${discount.description}
-        </p>
-        ` : ''}
-
-        <!-- Price Comparison -->
-        <div style="text-align: center; margin: 30px 0;">
-          <div style="display: inline-block; background: rgba(168, 85, 247, 0.1); border-radius: 8px; padding: 20px 30px;">
-            <p style="color: rgba(255, 255, 255, 0.5); font-size: 16px; text-decoration: line-through; margin: 0 0 10px 0;">
-              ₹${discount.originalPrice}
-            </p>
-            <p style="color: #A855F7; font-size: 32px; font-weight: 600; margin: 0;">
-              ₹${discount.discountedPrice}
-            </p>
-            <p style="color: rgba(255, 255, 255, 0.6); font-size: 13px; margin: 10px 0 0 0; letter-spacing: 0.1em;">
-              YOU SAVE ₹${discount.originalPrice - discount.discountedPrice}
-            </p>
-          </div>
-        </div>
-
-        ${discount.validUntil ? `
-        <p style="color: #ff6b6b; font-size: 14px; text-align: center; margin: 25px 0; font-weight: 500;">
-          ⏰ Hurry! Offer valid until ${new Date(discount.validUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
-        ` : ''}
-
-<<<<<<< HEAD
-        <!-- Link -->
-        <div style="text-align: center; margin: 35px 0 20px 0;">
-          <p style="color: rgba(255, 255, 255, 0.8); font-size: 15px;">
-            Claim discount: <a href="${discount.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline;">${discount.link || 'https://lapatisserie.com/products'}</a>
-          </p>
-        </div>
-
-=======
->>>>>>> 98602f4c1246afa2b779bcec4a4da072cb2c946f
-        <p style="color: rgba(255, 255, 255, 0.6); font-size: 14px; line-height: 1.6; text-align: center; margin: 30px 0 0 0;">
-          Don't miss out on this exclusive offer! <a href="${discount.link || 'https://lapatisserie.com/products'}" style="color: #A855F7; text-decoration: underline; font-weight: 500;">Claim your discount now</a> and treat yourself or someone special to our delicious desserts at an amazing price.
-        </p>
-      </div>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 5px;">
+    
+    <h2 style="color: #333333; margin-top: 0;">🎊 Special Discount Offer!</h2>
+    
+    <p style="color: #555555; line-height: 1.6;">
+      Great news! We have a special discount on <strong>${discount.productName}</strong>
+    </p>
+    
+    ${discount.image ? `
+    <div style="margin: 20px 0;">
+      <img src="${discount.image}" alt="${discount.productName}" style="width: 100%; max-width: 500px; height: auto; display: block; border-radius: 5px;">
     </div>
+    ` : ''}
+    
+    <div style="background-color: #fff3cd; padding: 20px; border-left: 3px solid #ff9800; margin: 20px 0; border-radius: 5px;">
+      <p style="margin: 0 0 10px 0; color: #333333; font-size: 18px; font-weight: bold;">
+        ${discount.discountPercentage}% OFF
+      </p>
+      <p style="margin: 5px 0; color: #555555; font-size: 14px;">
+        <span style="text-decoration: line-through;">₹${discount.originalPrice}</span>
+        <strong style="color: #ff9800; font-size: 24px; margin-left: 10px;">₹${discount.discountedPrice}</strong>
+      </p>
+      <p style="margin: 10px 0 0 0; color: #555555; font-size: 13px;">
+        You save: <strong>₹${discount.originalPrice - discount.discountedPrice}</strong>
+      </p>
+    </div>
+    
+    ${discount.description ? `
+    <div style="margin: 20px 0;">
+      <p style="color: #333333; font-size: 14px; line-height: 1.6;">
+        <strong>About this product:</strong><br>
+        ${discount.description}
+      </p>
+    </div>
+    ` : ''}
+    
+    ${discount.validUntil ? `
+    <p style="color: #d32f2f; font-size: 14px; font-weight: bold; margin: 15px 0;">
+      ⏰ Hurry! Offer valid until ${new Date(discount.validUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+    </p>
+    ` : ''}
+    
+    <p style="color: #555555; line-height: 1.6;">
+      Don't miss out on this exclusive offer!
+    </p>
+    
+    <p style="margin: 20px 0;">
+      <a href="${discount.link || 'https://www.lapatisserie.shop/products'}" style="display: inline-block; background-color: #ff9800; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        Claim Discount Now
+      </a>
+    </p>
+    
+    <p style="color: #555555; line-height: 1.6;">
+      Thank you for choosing La Patisserie!
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+    
+    <p style="color: #999999; font-size: 12px; text-align: center; margin: 0;">
+      If you have any questions, feel free to contact us.
+    </p>
+    
   </div>
-
-  ${getEmailFooter()}
 </body>
 </html>
 `;

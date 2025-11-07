@@ -25,11 +25,18 @@ class WebSocketService {
     }
 
     const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
-    
+
     this.socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
       upgrade: true,
-      rememberUpgrade: true
+      rememberUpgrade: true,
+      timeout: 5000, // Reduce timeout for faster connection attempts
+      forceNew: false, // Reuse connections when possible
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000, // Start reconnecting quickly
+      reconnectionDelayMax: 5000,
+      randomizationFactor: 0.5
     });
 
     this.userId = normalizedId;

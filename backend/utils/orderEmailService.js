@@ -175,11 +175,29 @@ const buildSimpleDispatchEmail = (orderNumber, deliveryAddress, trackUrl) => {
 // Send order status update notification
 export const sendOrderStatusNotification = async (orderDetails, newStatus, userEmail, logoData = null, productImagesData = []) => {
   try {
+    // PRIORITY: For dispatch emails (out_for_delivery), ALWAYS try delegation first to Vercel for faster delivery
     const base = getEmailDelegateApiBase();
-    if (isDelegationEnabled() && base) {
+    const isDelegated = isDelegationEnabled();
+    
+    // Force delegation for dispatch emails if base URL is available, regardless of EMAIL_VIA_VERCEL flag
+    if (newStatus === 'out_for_delivery' && base) {
+      console.log(`📧 Delegating dispatch email to Vercel for order ${orderDetails?.orderNumber}`);
+      try {
+        const result = await delegateEmailPost('/email-dispatch/status-update', { orderDetails, newStatus, userEmail });
+        console.log(`✅ Dispatch email delegated successfully to Vercel`);
+        return { success: true, ...result };
+      } catch (delegationError) {
+        console.warn(`⚠️ Delegation failed for dispatch email, falling back to local sending:`, delegationError.message);
+        // Continue to local sending as fallback
+      }
+    }
+    
+    // For other emails, use normal delegation logic based on EMAIL_VIA_VERCEL flag
+    if (isDelegated && base && newStatus !== 'out_for_delivery') {
       const result = await delegateEmailPost('/email-dispatch/status-update', { orderDetails, newStatus, userEmail });
       return { success: true, ...result };
     }
+    
     const transporter = createTransporter();
     const orderNumber = orderDetails?.orderNumber || '';
     

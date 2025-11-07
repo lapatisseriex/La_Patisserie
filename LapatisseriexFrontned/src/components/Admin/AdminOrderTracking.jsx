@@ -302,8 +302,9 @@ const AdminOrderTracking = () => {
         return;
       }
       
-      const apiBaseUrl = import.meta.env.VITE_API_URL;
-      
+      // Use VITE_VERCEL_API_URL for admin operations to ensure emails are sent from production backend
+      const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
+
       // Fetch both grouped and individual data
       const [groupedResponse, individualResponse] = await Promise.all([
         fetch(`${apiBaseUrl}/admin/orders/grouped`, {
@@ -747,7 +748,8 @@ const AdminOrderTracking = () => {
       for (const order of todaysOrders) {
         for (const item of order.pendingItems || []) {
           try {
-            const apiBaseUrl = import.meta.env.VITE_API_URL;
+            // Use VITE_VERCEL_API_URL for dispatch operations to ensure emails are sent from production backend
+            const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
             const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
               method: 'POST',
               headers: {
@@ -813,7 +815,8 @@ const AdminOrderTracking = () => {
       for (const order of individualOrders) {
         for (const item of order.pendingItems || []) {
           try {
-            const apiBaseUrl = import.meta.env.VITE_API_URL;
+            // Use VITE_VERCEL_API_URL for dispatch operations to ensure emails are sent from production backend
+            const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
             const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
               method: 'POST',
               headers: {
@@ -871,7 +874,8 @@ const AdminOrderTracking = () => {
         return;
       }
       
-      const apiBaseUrl = import.meta.env.VITE_API_URL;
+      // Use VITE_VERCEL_API_URL for dispatch operations to ensure emails are sent from production backend
+      const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
       const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
         method: 'POST',
         headers: {
@@ -1017,8 +1021,8 @@ const AdminOrderTracking = () => {
         return updatedData;
       });
       
-      // Use environment variable for API base URL or fallback to relative path
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      // Use VITE_VERCEL_API_URL for dispatch operations to ensure emails are sent from production backend
+      const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
       const apiUrl = `${apiBaseUrl}/admin/dispatch`;
       
       const response = await fetch(apiUrl, {

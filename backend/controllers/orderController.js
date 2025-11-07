@@ -483,32 +483,34 @@ export const dispatchOrders = asyncHandler(async (req, res) => {
         return plainItem;
       });
 
-      await Order.findByIdAndUpdate(order._id, {
+      // Update order asynchronously to avoid blocking WebSocket notification
+      Order.findByIdAndUpdate(order._id, {
         cartItems: updatedCartItems,
         updatedAt: new Date()
-      });
-
-      const statusProbe = await Order.findById(order._id);
-      const calculatedStatus = statusProbe.calculateOrderStatus();
-      let newOrderStatus = calculatedStatus;
-
-      if (calculatedStatus !== statusProbe.orderStatus) {
-        await Order.findByIdAndUpdate(order._id, {
-          orderStatus: calculatedStatus
-        });
-      }
+      }).then(async (updatedOrder) => {
+        if (updatedOrder) {
+          const calculatedStatus = updatedOrder.calculateOrderStatus();
+          if (calculatedStatus !== updatedOrder.orderStatus) {
+            await Order.findByIdAndUpdate(order._id, {
+              orderStatus: calculatedStatus
+            }).catch(err => console.error('Failed to update order status:', err.message));
+          }
+        }
+      }).catch(err => console.error('Failed to update order cart items:', err.message));
 
       const finalOrderDoc = await Order.findById(order._id)
         .populate('userId', 'name email phone');
 
       if (finalOrderDoc) {
         finalOrderDoc.cartItems = updatedCartItems;
-        await sendStatusEmails(finalOrderDoc, previousStatus, newOrderStatus);
+        // Send emails asynchronously (non-blocking) via Vercel
+        sendStatusEmails(finalOrderDoc, previousStatus, finalOrderDoc.orderStatus)
+          .then(() => console.log(`✅ Bulk dispatch email sent for order #${finalOrderDoc.orderNumber}`))
+          .catch(err => console.error(`❌ Bulk dispatch email failed for order #${finalOrderDoc.orderNumber}:`, err.message));
       }
 
       const finalOrder = finalOrderDoc ? finalOrderDoc.toObject({ virtuals: true }) : order.toObject();
       finalOrder.cartItems = updatedCartItems;
-      finalOrder.orderStatus = newOrderStatus;
 
       return finalOrder;
     });
@@ -536,22 +538,7 @@ export const dispatchOrders = asyncHandler(async (req, res) => {
           notificationMessage = `**${productName}** from your order **#${updatedOrder.orderNumber}** has been dispatched! (${dispatchProgress.dispatched}/${dispatchProgress.total} items dispatched)`;
         }
 
-        await createNotification(
-          updatedOrder.userId,
-          updatedOrder.orderNumber,
-          'order_dispatched',
-          notificationTitle,
-          notificationMessage,
-          {
-            orderNumber: updatedOrder.orderNumber,
-            productName: productName,
-            hostel: hostel,
-            deliveryLocation: updatedOrder.deliveryLocation,
-            dispatchProgress: dispatchProgress
-          }
-        );
-
-        // Send real-time notification via WebSocket
+        // Send real-time WebSocket notification immediately (before database write for faster delivery)
         if (global.io && global.connectedUsers) {
           const userSocketId = global.connectedUsers.get(updatedOrder.userId.toString());
           if (userSocketId) {
@@ -565,6 +552,22 @@ export const dispatchOrders = asyncHandler(async (req, res) => {
             });
           }
         }
+
+        // Create notification in database (non-blocking)
+        createNotification(
+          updatedOrder.userId,
+          updatedOrder.orderNumber,
+          'order_dispatched',
+          notificationTitle,
+          notificationMessage,
+          {
+            orderNumber: updatedOrder.orderNumber,
+            productName: productName,
+            hostel: hostel,
+            deliveryLocation: updatedOrder.deliveryLocation,
+            dispatchProgress: dispatchProgress
+          }
+        ).catch(err => console.error('Failed to create dispatch notification:', err.message));
       }
     } catch (notificationError) {
       console.error('Error sending notifications:', notificationError);
@@ -679,12 +682,15 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
     order.orderStatus = newOrderStatus;
     order.updatedAt = new Date();
 
-    await order.save();
+    // Save order asynchronously to avoid blocking WebSocket notification
+    order.save().catch(err => console.error('Failed to save order status:', err.message));
 
-    // Send status emails immediately (blocking operation to ensure instant delivery)
-    console.log(`🚀 Sending dispatch email for order #${order.orderNumber} at ${new Date().toISOString()}`);
-    await sendStatusEmails(order, previousStatus, newOrderStatus);
-    console.log(`✅ Dispatch email sent for order #${order.orderNumber} at ${new Date().toISOString()}`);
+    // Send status emails asynchronously (non-blocking) via Vercel
+    console.log(`🚀 Triggering dispatch email for order #${order.orderNumber} at ${new Date().toISOString()}`);
+    // Don't await - fire and forget to avoid blocking the response
+    sendStatusEmails(order, previousStatus, newOrderStatus)
+      .then(() => console.log(`✅ Dispatch email sent for order #${order.orderNumber} at ${new Date().toISOString()}`))
+      .catch(err => console.error(`❌ Dispatch email failed for order #${order.orderNumber}:`, err.message));
 
     // Send notification to user
     try {
@@ -704,30 +710,15 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
         notificationMessage = `**${productName}** from your order **#${order.orderNumber}** has been dispatched! (${dispatchedItems}/${totalItems} items dispatched)`;
       }
 
-      await createNotification(
-        order.userId._id,
-        order.orderNumber,
-        'order_dispatched',
-        notificationTitle,
-        notificationMessage,
-        {
-          orderNumber: order.orderNumber,
-          productName: productName,
-          hostelName: order.hostelName,
-          deliveryLocation: order.deliveryLocation,
-          dispatchProgress: dispatchProgress
-        }
-      );
-
-      // Send real-time notification via WebSocket
+      // Send real-time WebSocket notification immediately (before database write for faster delivery)
       if (global.io && global.connectedUsers) {
         const userId = order.userId._id ? order.userId._id.toString() : order.userId.toString();
         const userSocketId = global.connectedUsers.get(userId);
-        
+
         console.log(`🔔 Attempting WebSocket notification for user ${userId}`);
         console.log(`🔌 User socket ID: ${userSocketId || 'NOT CONNECTED'}`);
         console.log(`👥 Total connected users: ${global.connectedUsers.size}`);
-        
+
         if (userSocketId) {
           global.io.to(userSocketId).emit('orderStatusUpdate', {
             orderNumber: order.orderNumber,
@@ -744,6 +735,22 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
       } else {
         console.log('⚠️ WebSocket not available: io or connectedUsers is undefined');
       }
+
+      // Create notification in database (non-blocking)
+      createNotification(
+        order.userId._id,
+        order.orderNumber,
+        'order_dispatched',
+        notificationTitle,
+        notificationMessage,
+        {
+          orderNumber: order.orderNumber,
+          productName: productName,
+          hostelName: order.hostelName,
+          deliveryLocation: order.deliveryLocation,
+          dispatchProgress: dispatchProgress
+        }
+      ).catch(err => console.error('Failed to create dispatch notification:', err.message));
     } catch (notificationError) {
       console.error('❌ Error sending notification:', notificationError);
     }
@@ -882,9 +889,13 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
   order.orderStatus = newOrderStatus;
     order.updatedAt = new Date();
 
-    await order.save();
+    // Save order asynchronously to avoid blocking WebSocket notification
+    order.save().catch(err => console.error('Failed to save delivery status:', err.message));
 
-  await sendStatusEmails(order, previousStatus, newOrderStatus);
+  // Send status emails asynchronously (non-blocking) via Vercel
+  sendStatusEmails(order, previousStatus, newOrderStatus)
+    .then(() => console.log(`✅ Delivery email sent for order #${order.orderNumber}`))
+    .catch(err => console.error(`❌ Delivery email failed for order #${order.orderNumber}:`, err.message));
 
     if (shouldFinalizeCodPayment) {
       try {
@@ -931,22 +942,7 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
         notificationMessage = `**${updatedItems[0]}** from your order **#${order.orderNumber}** has been delivered! (${deliveredItems}/${totalItems} items delivered)`;
       }
 
-      await createNotification(
-        order.userId._id,
-        order.orderNumber,
-        'order_delivered',
-        notificationTitle,
-        notificationMessage,
-        {
-          orderNumber: order.orderNumber,
-          deliveredItems: updatedItems,
-          hostelName: order.hostelName,
-          deliveryLocation: order.deliveryLocation,
-          deliveryProgress: deliveryProgress
-        }
-      );
-
-      // Send real-time notification via WebSocket
+      // Send real-time WebSocket notification immediately (before database write for faster delivery)
       if (global.io && global.connectedUsers) {
         const userSocketId = global.connectedUsers.get(order.userId._id.toString());
         if (userSocketId) {
@@ -960,6 +956,22 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
           });
         }
       }
+
+      // Create notification in database (non-blocking)
+      createNotification(
+        order.userId._id,
+        order.orderNumber,
+        'order_delivered',
+        notificationTitle,
+        notificationMessage,
+        {
+          orderNumber: order.orderNumber,
+          deliveredItems: updatedItems,
+          hostelName: order.hostelName,
+          deliveryLocation: order.deliveryLocation,
+          deliveryProgress: deliveryProgress
+        }
+      ).catch(err => console.error('Failed to create delivery notification:', err.message));
     } catch (notificationError) {
       console.error('Error sending delivery notification:', notificationError);
     }

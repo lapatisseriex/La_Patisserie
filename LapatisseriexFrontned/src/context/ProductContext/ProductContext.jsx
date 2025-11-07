@@ -444,23 +444,26 @@ export const ProductProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Get auth token
       const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
-      
+
       // Ensure price is a number
       const sanitizedData = {
         ...productData,
         price: typeof productData.price === 'number' ? productData.price : Number(productData.price)
       };
-      
+
+      // Use VITE_VERCEL_API_URL for createProduct to ensure it goes to production backend
+      const createProductUrl = import.meta.env.VITE_VERCEL_API_URL || API_URL;
+
       const response = await axios.post(
-        `${API_URL}/products`, 
+        `${createProductUrl}/products`,
         sanitizedData,
         {
-          headers: { 
+          headers: {
             Authorization: `Bearer ${idToken}`,
             'Content-Type': 'application/json'
           }
@@ -724,8 +727,3 @@ export const ProductProvider = ({ children }) => {
 };
 
 export default ProductContext;
-
-
-
-
-
