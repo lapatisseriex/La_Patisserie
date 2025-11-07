@@ -15,6 +15,12 @@ const isDelegationEnabled = () => {
   return String(process.env.EMAIL_VIA_VERCEL || '').toLowerCase() === 'true';
 };
 
+/**
+ * Delegate email sending to remote server
+ * @param {string} endpoint - API endpoint
+ * @param {Object} payload - Email payload
+ * @returns {Promise<Object>} - Response from remote server
+ */
 const delegateEmailPost = async (endpoint, payload) => {
   const base = getEmailDelegateApiBase();
   if (!base) throw new Error('Email delegation base URL not configured');

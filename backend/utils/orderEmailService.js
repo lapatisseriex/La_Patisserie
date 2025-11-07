@@ -46,80 +46,20 @@ const createLogoAttachment = (logoData) => {
   }
 };
 
-// Create transporter with simple configuration
+// Create transporter with enhanced configuration (matching welcomeEmailService)
 const createTransporter = () => {
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
-    }
+    },
+    pool: true, // Use connection pooling
+    maxConnections: 5,
+    maxMessages: 100,
+    rateDelta: 20000, // 20 seconds
+    rateLimit: 5 // max 5 messages per rateDelta
   });
-};
-
-// Dispatch email template with delivery information
-const buildDispatchEmailHTML = (brandName, orderNumber, trackUrl, orderDetails) => {
-  const deliveryLocation = orderDetails?.deliveryLocation || 'your specified location';
-  const hostelName = orderDetails?.hostelName || '';
-  const deliveryAddress = hostelName ? `${deliveryLocation}, ${hostelName}` : deliveryLocation;
-  
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>${brandName} – Order Dispatched!</title>
-    </head>
-    <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; color: #333;">
-      <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 8px;">
-        
-        <!-- Header -->
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #333; margin-bottom: 10px; font-size: 28px;">${brandName}</h1>
-          <p style="color: #666; font-size: 14px; margin: 5px 0;">Order #${orderNumber}</p>
-        </div>
-        
-        <!-- Delivery Information -->
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
-          <h3 style="color: #333; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Delivery Details</h3>
-          <p style="margin: 8px 0; color: #555; font-size: 15px; line-height: 1.6;">
-            <strong>Delivering to:</strong><br>
-            ${deliveryAddress}
-          </p>
-        </div>
-        
-        <!-- Message -->
-        <div style="text-align: center; margin: 30px 0;">
-          <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 10px 0;">
-            Your delicious treats are on their way!
-          </p>
-          <p style="color: #777; font-size: 14px; line-height: 1.6; margin: 0;">
-            Our delivery team will reach you shortly.
-          </p>
-        </div>
-        
-        <!-- Track Order Button -->
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${trackUrl}" style="display: inline-block; background: #333; color: #fff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-            Track Your Order
-          </a>
-        </div>
-        
-        <!-- Footer Message -->
-        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-          <p style="color: #999; font-size: 13px; margin: 5px 0;">
-            Thank you for choosing ${brandName}!
-          </p>
-          <p style="color: #999; font-size: 12px; margin: 5px 0;">
-            Questions? Contact us anytime.
-          </p>
-        </div>
-        
-      </div>
-    </body>
-    </html>
-  `;
 };
 
 // Simple dispatch email template (no logo, no attachments, default styling)
@@ -175,27 +115,12 @@ const buildSimpleDispatchEmail = (orderNumber, deliveryAddress, trackUrl) => {
 // Send order status update notification
 export const sendOrderStatusNotification = async (orderDetails, newStatus, userEmail, logoData = null, productImagesData = []) => {
   try {
-    // PRIORITY: For dispatch emails (out_for_delivery), ALWAYS try delegation first to Vercel for faster delivery
+    // Use standard delegation logic like password reset and OTP emails
     const base = getEmailDelegateApiBase();
-    const isDelegated = isDelegationEnabled();
-    
-    // Force delegation for dispatch emails if base URL is available, regardless of EMAIL_VIA_VERCEL flag
-    if (newStatus === 'out_for_delivery' && base) {
-      console.log(`📧 Delegating dispatch email to Vercel for order ${orderDetails?.orderNumber}`);
-      try {
-        const result = await delegateEmailPost('/email-dispatch/status-update', { orderDetails, newStatus, userEmail });
-        console.log(`✅ Dispatch email delegated successfully to Vercel`);
-        return { success: true, ...result };
-      } catch (delegationError) {
-        console.warn(`⚠️ Delegation failed for dispatch email, falling back to local sending:`, delegationError.message);
-        // Continue to local sending as fallback
-      }
-    }
-    
-    // For other emails, use normal delegation logic based on EMAIL_VIA_VERCEL flag
-    if (isDelegated && base && newStatus !== 'out_for_delivery') {
+    if (isDelegationEnabled() && base) {
+      // Delegate to remote server (e.g., Vercel)
       const result = await delegateEmailPost('/email-dispatch/status-update', { orderDetails, newStatus, userEmail });
-      return { success: true, ...result };
+      return Promise.resolve({ success: true, ...result });
     }
     
     const transporter = createTransporter();
@@ -296,9 +221,9 @@ export const sendOrderStatusNotification = async (orderDetails, newStatus, userE
 
     console.log(`Sending order status email to ${userEmail} for order ${orderDetails.orderNumber} - Status: ${newStatus}`);
     console.log(`📧 Attachments: ${attachments.length} (Logo: ${!!logoAttachment}, Products: ${productAttachments.length})`);
-    
+
     const result = await transporter.sendMail(mailOptions);
-    
+
     console.log('Order status email sent successfully:', {
       messageId: result.messageId,
       orderNumber: orderDetails.orderNumber,
