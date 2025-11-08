@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
@@ -29,6 +30,17 @@ const Payment = () => {
   const navigate = useNavigate();
   const [showLocationError, setShowLocationError] = useState(false);
   const [useFreeCash, setUseFreeCash] = useState(false);
+  // Donation functionality with persistence
+  const [donationAmount, setDonationAmount] = useState(() => {
+    const saved = localStorage.getItem('lapatisserie_donation_amount');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [selectedDonation, setSelectedDonation] = useState(() => {
+    const saved = localStorage.getItem('lapatisserie_selected_donation');
+    return saved ? parseInt(saved) : null;
+  });
+  const [showDonationThanks, setShowDonationThanks] = useState(false);
+  const [isEditingDonation, setIsEditingDonation] = useState(false);
   const redirectTimerRef = useRef(null);
   const countdownTimerRef = useRef(null);
   const [redirectCountdown, setRedirectCountdown] = useState(null);
@@ -47,6 +59,38 @@ const Payment = () => {
       sessionStorage.removeItem(AUTO_REDIRECT_STORAGE_KEY);
     } catch {}
   }, [setRedirectCountdown]);
+
+  // Save donation data to localStorage
+  useEffect(() => {
+    localStorage.setItem('lapatisserie_donation_amount', donationAmount.toString());
+  }, [donationAmount]);
+
+  useEffect(() => {
+    if (selectedDonation !== null) {
+      localStorage.setItem('lapatisserie_selected_donation', selectedDonation.toString());
+    } else {
+      localStorage.removeItem('lapatisserie_selected_donation');
+    }
+  }, [selectedDonation]);
+
+  // Donation helper functions
+  const updateDonationAmount = useCallback((amount) => {
+    setDonationAmount(amount);
+    if (amount === 0) {
+      localStorage.removeItem('lapatisserie_donation_amount');
+    }
+  }, []);
+
+  const updateSelectedDonation = useCallback((amount) => {
+    setSelectedDonation(amount);
+  }, []);
+
+  const clearDonationData = useCallback(() => {
+    setDonationAmount(0);
+    setSelectedDonation(null);
+    localStorage.removeItem('lapatisserie_donation_amount');
+    localStorage.removeItem('lapatisserie_selected_donation');
+  }, []);
 
   // Handle navigation
   const handleNavigate = (path) => {
@@ -138,9 +182,9 @@ const Payment = () => {
   const appliedFreeCash = useFreeCash ? totalFreeCashAvailable : 0;
   
   const grandTotal = useMemo(() => {
-    const total = discountedCartTotal + deliveryCharge - appliedFreeCash;
+    const total = discountedCartTotal + deliveryCharge - appliedFreeCash + donationAmount;
     return isNaN(total) ? 0 : Math.max(0, total);
-  }, [discountedCartTotal, deliveryCharge, appliedFreeCash]);
+  }, [discountedCartTotal, deliveryCharge, appliedFreeCash, donationAmount]);
 
   const resolvedLocation = useMemo(() => {
     if (user?.location) {
@@ -492,6 +536,11 @@ const Payment = () => {
         },
         deliveryLocation: user?.location?.fullAddress || getCurrentLocationName(),
         hostelName: user?.hostel?.name || null,
+        donationDetails: donationAmount > 0 ? {
+          donationAmount: donationAmount,
+          initiativeName: 'கற்பிப்போம் பயிலகம் - Education Initiative',
+          initiativeDescription: 'Supporting student education and learning resources'
+        } : null,
         orderSummary: {
           cartTotal: discountedCartTotal,
           discountedTotal: discountedCartTotal,
@@ -583,6 +632,8 @@ const Payment = () => {
               try {
                 await clearCart();
                 console.log('🧹 Cart cleared after successful payment');
+                clearDonationData();
+                console.log('💝 Donation data cleared after successful payment');
               } catch (cartError) {
                 console.error('❌ Failed to clear cart after payment:', cartError);
               }
@@ -726,6 +777,8 @@ const Payment = () => {
       
       try {
         await clearCart();
+        clearDonationData();
+        console.log('🧹 Cart and donation data cleared after COD order');
       } catch (cartError) {
         console.error('❌ Failed to clear cart after COD order:', cartError);
         // Don't fail the order if cart clear fails
@@ -842,6 +895,36 @@ if (isOrderComplete) {
                 </p>
               )}
             </div>
+
+            {/* Education Initiative Thank You Banner */}
+            {donationAmount > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="mt-6 w-full border-2 border-[#733857]/20 bg-gradient-to-r from-amber-50/80 via-white to-pink-50/80 p-6 text-center shadow-sm"
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                transition={{ delay: 0.8, type: 'spring', stiffness: 300 }}
+                className="flex justify-center mb-3"
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-[#733857] to-[#8d4466] flex items-center justify-center">
+                </div>
+              </motion.div>                <h3 className="text-lg font-bold text-[#412434] mb-2">Thank You for Supporting Education</h3>
+                <p className="text-sm text-[#8d4466] mb-3 leading-relaxed">
+                  Your Rs.{donationAmount} contribution will help provide online learning resources to underprivileged children 
+                  through our கற்றல் பயிலகம் initiative under Aramsei Payilagam.
+                </p>
+                
+                <div className="bg-white/60 text-center">
+                  <div className="flex items-center justify-center text-xs text-[#733857]">
+                    <span className="font-medium">Your donation has been added to the Education Fund</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* 4. Updated Button Styles (Sharp Corners) */}
             <div className="mt-8 sm:mt-10 flex w-full flex-col-reverse gap-3 sm:gap-4 sm:flex-row sm:justify-center px-2 sm:px-0">
@@ -1086,30 +1169,323 @@ if (isOrderComplete) {
                   </div>
 
                   {totalFreeCashAvailable > 0 && (
-                    <div className="border border-slate-200 bg-slate-50 p-3">
-                      <label className="flex items-center justify-between text-sm font-medium text-slate-900">
-                        <span>Use free cash</span>
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 border border-slate-400 bg-white text-emerald-600 focus:ring-emerald-500"
-                          checked={useFreeCash}
-                          onChange={(e) => setUseFreeCash(e.target.checked)}
-                        />
-                      </label>
-                      <p className="mt-2 text-xs text-slate-500">Available: {formatCurrency(totalFreeCashAvailable)}</p>
-                      {useFreeCash && (
-                        <div className="mt-2 flex justify-between text-emerald-600">
-                          <span>Applied</span>
-                          <span>-{formatCurrency(appliedFreeCash)}</span>
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative border-2 border-[#733857]/30 bg-gradient-to-br from-amber-50 to-yellow-50 p-3 rounded-xl shadow-lg overflow-hidden"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 30%, #f7eef3 70%, #733857 100%)',
+                        borderImage: 'linear-gradient(45deg, #f59e0b, #733857, #000000) 1'
+                      }}
+                    >
+                      {/* Animated background on check */}
+                      <motion.div
+                        className="absolute inset-0"
+                        style={{
+                          background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(115, 56, 87, 0.2) 50%, rgba(0, 0, 0, 0.1) 100%)'
+                        }}
+                        initial={{ opacity: 0, x: '-100%' }}
+                        animate={{ 
+                          opacity: useFreeCash ? 1 : 0,
+                          x: useFreeCash ? '0%' : '-100%'
+                        }}
+                        transition={{ duration: 0.5, ease: 'easeInOut' }}
+                      />
+                      
+                      <label className="relative flex items-center justify-between text-sm font-semibold cursor-pointer">
+                        <div className="flex items-center gap-2.5">
+                          <motion.div 
+                            className="w-6 h-6 rounded-lg flex items-center justify-center shadow-lg border border-[#733857]/40"
+                            style={{
+                              background: 'linear-gradient(135deg, #f59e0b 0%, #733857 50%, #1f2937 100%)'
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <motion.div
+                              initial={{ rotate: 0 }}
+                              animate={{ rotate: useFreeCash ? 360 : 0 }}
+                              transition={{ duration: 0.6, ease: 'easeInOut' }}
+                            >
+                            </motion.div>
+                          </motion.div>
+                          <div>
+                            <motion.span 
+                              className="font-bold text-transparent bg-clip-text"
+                              style={{
+                                backgroundImage: 'linear-gradient(90deg, #b45309 0%, #733857 50%, #1f2937 100%)',
+                                backgroundSize: '200% 100%'
+                              }}
+                              animate={{ 
+                                backgroundPosition: useFreeCash ? '100% 0%' : '0% 0%'
+                              }}
+                              transition={{ duration: 0.6 }}
+                            >
+                              Apply Free Cash
+                            </motion.span>
+                            <motion.div 
+                              className="text-xs font-normal"
+                              animate={{ 
+                                color: useFreeCash ? '#733857' : '#8d4466'
+                              }}
+                            >
+                              Save {formatCurrency(totalFreeCashAvailable)} instantly
+                            </motion.div>
+                          </div>
                         </div>
-                      )}
-                    </div>
+                        
+                        <div className="flex items-center gap-2.5">
+                          <motion.div 
+                            className="text-right"
+                            animate={{ scale: useFreeCash ? 1.05 : 1 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <motion.div 
+                              className="text-sm font-bold text-transparent bg-clip-text"
+                              style={{
+                                backgroundImage: 'linear-gradient(90deg, #d97706 0%, #733857 100%)',
+                                backgroundSize: '200% 100%'
+                              }}
+                              animate={{ 
+                                backgroundPosition: useFreeCash ? '100% 0%' : '0% 0%'
+                              }}
+                            >
+                              {formatCurrency(totalFreeCashAvailable)}
+                            </motion.div>
+                            <div className="text-xs text-[#8d4466]">Available</div>
+                          </motion.div>
+                          
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 border-2 border-[#733857] bg-white focus:ring-[#733857] focus:ring-2 rounded transition-all duration-300"
+                              style={{ accentColor: '#733857' }}
+                              checked={useFreeCash}
+                              onChange={(e) => setUseFreeCash(e.target.checked)}
+                            />
+                          </motion.div>
+                        </div>
+                      </label>
+                      
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ 
+                          height: useFreeCash ? 'auto' : 0,
+                          opacity: useFreeCash ? 1 : 0
+                        }}
+                        transition={{ duration: 0.4, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-2.5 pt-2.5 border-t border-[#733857]/30">
+                          <motion.div 
+                            className="flex justify-between items-center rounded-lg p-2 border border-[#733857]/20 shadow-md"
+                            style={{
+                              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(247, 238, 243, 0.6) 50%, rgba(115, 56, 87, 0.1) 100%)',
+                              backdropFilter: 'blur(10px)'
+                            }}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: 0.2, duration: 0.3 }}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ delay: 0.3, duration: 0.5, type: 'spring', stiffness: 300 }}
+                              >
+                                <svg className="w-3.5 h-3.5 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </motion.div>
+                              <span className="font-semibold text-sm text-[#412434]">Free Cash Applied</span>
+                            </div>
+                            <motion.span 
+                              className="font-bold text-transparent bg-clip-text"
+                              style={{
+                                backgroundImage: 'linear-gradient(90deg, #d97706 0%, #733857 100%)'
+                              }}
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.4, duration: 0.3, type: 'spring' }}
+                            >
+                              -{formatCurrency(appliedFreeCash)}
+                            </motion.span>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ height: 'auto', opacity: 1 }}
+                        animate={{ 
+                          height: useFreeCash ? 0 : 'auto',
+                          opacity: useFreeCash ? 0 : 1
+                        }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-2.5 pt-2.5 border-t border-[#733857]/30">
+                          <motion.div 
+                            className="flex items-center gap-1.5 text-[#8d4466] text-xs"
+                            animate={{ opacity: useFreeCash ? 0 : 1 }}
+                          >
+                            <motion.div
+                              animate={{ rotate: [0, 10, -10, 0] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                            >
+                              <svg className="w-3.5 h-3.5 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </motion.div>
+                            <span>Check the box above to apply your free cash and save money!</span>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    </motion.div>
                   )}
 
                   <div className="flex justify-between">
                     <span>Delivery</span>
                     <span className="font-medium text-slate-900">{formatCurrency(deliveryCharge)}</span>
                   </div>
+
+                  {/* Show donation as a line item when selected */}
+                  {donationAmount > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="flex justify-between items-center py-1"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Donation to Hope Fund</span>
+                        <svg className="w-3 h-3 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </div>
+                      <span className="font-medium text-[#733857]">+{formatCurrency(donationAmount)}</span>
+                    </motion.div>
+                  )}
+
+                  {/* Charity Donation Widget */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between py-3 px-4  transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-semibold text-[#412434]">Donate to கற்பிப்போம் பயிலகம்</span>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setShowDonationThanks(true)}
+                          className="p-1 text-[#733857] hover:bg-[#733857]/10 rounded-full transition-all duration-200"
+                          title="Learn more about this education initiative"
+                        >
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                          </svg>
+                        </motion.button>
+                      </div>
+                      <div className="flex items-center gap-1   px-2 py-1   hover:border-[#733857]/40 transition-colors">
+                        <span className="text-sm text-[#8d4466] font-medium">₹</span>
+                        {isEditingDonation ? (
+                          <motion.input
+                            type="number"
+                            min="1"
+                            max="1000"
+                            value={selectedDonation || ''}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              if (value >= 0) {
+                                updateSelectedDonation(value);
+                                // Don't auto-set donationAmount here
+                              }
+                            }}
+                            onBlur={() => setIsEditingDonation(false)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setIsEditingDonation(false);
+                              }
+                            }}
+                            autoFocus
+                            whileFocus={{ scale: 1.02 }}
+                            className="w-12 text-sm text-[#412434] bg-transparent text-center font-semibold"
+                            placeholder="4"
+                          />
+                        ) : (
+                          <span className="w-12 text-sm text-[#412434] text-center font-semibold">
+                            {selectedDonation || 4}
+                          </span>
+                        )}
+                        <motion.button
+                          initial={{ opacity: 0.6 }}
+                          animate={{ opacity: 0.8 }}
+                          whileHover={{ opacity: 1, scale: 1.15 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => {
+                            setIsEditingDonation(true);
+                            // Reset donation state to allow re-adding
+                            updateDonationAmount(0);
+                          }}
+                          className="ml-1 p-1.5 rounded-md bg-white border border-[#733857] hover:border-[#8d4466] transition-all duration-200"
+                        >
+                          <motion.svg 
+                            className="w-3 h-3 text-[#733857]" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </motion.svg>
+                        </motion.button>
+                      </div>
+                    </div>
+                    
+                    <motion.button
+                      whileHover={{ 
+                        scale: 1.05,
+                        boxShadow: "0 3px 10px rgba(115, 56, 87, 0.25)"
+                      }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.3 }}
+                      onClick={() => {
+                        if (donationAmount > 0) {
+                          // Remove donation
+                          updateDonationAmount(0);
+                        } else {
+                          // Add donation with current selected amount
+                          const amount = selectedDonation || 4;
+                          updateDonationAmount(amount);
+                        }
+                      }}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-md border-2 border-[#733857] bg-white text-[#733857] transition-all duration-300 shadow-sm hover:shadow-lg hover:bg-[#733857] hover:text-white`}
+                    >
+                      <motion.span
+                        transition={{ duration: 0.3 }}
+                      >
+                        {donationAmount > 0 ? 'ADDED' : 'ADD'}
+                      </motion.span>
+                    </motion.button>
+                  </motion.div>
+
+                  {/* Dynamic total update with enhanced styling */}
+                  {donationAmount > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3 pt-3"
+                    >
+                      <div className="flex justify-between items-center text-sm p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#8d4466] font-bold">Education Fund Contribution</span>
+                        </div>
+                        <span className="font-bold text-[#733857] text-lg">Rs.{donationAmount}</span>
+                      </div>
+                    </motion.div>
+                  )}
 
                   <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-base font-semibold text-slate-900">
                     <span className="text-xl">Total due</span>
@@ -1179,6 +1555,9 @@ if (isOrderComplete) {
               </div>
             )}
             {/* --- End Delivery Card --- */}
+
+            {/* --- Free Cash Information Section --- */}
+          
 
 
             {/* --- Payment Card (Reference layout) --- */}
@@ -1339,6 +1718,40 @@ if (isOrderComplete) {
         </div>
         </div>
       </ShopClosureOverlay>
+
+      {/* Donation Information Modal */}
+      {showDonationThanks && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowDonationThanks(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 "
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+             
+              
+              <h3 className="text-xl font-bold text-[#412434] mb-2">கற்பிப்போம் பயிலகம் - Education Initiative</h3>
+              <p className="text-sm text-[#8d4466] mb-4 leading-relaxed">
+                An Initiative under Aramsei Payilagam providing FREE ONLINE CLASSES to underprivileged children. 
+                Your contribution helps provide educational resources and technology access.
+              </p>
+              
+             
+
+             
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
       <div className="px-4 py-6 sm:px-6 lg:px-8">
         <ServiceAssuranceBanner
           className="mx-auto flex w-full max-w-7xl"

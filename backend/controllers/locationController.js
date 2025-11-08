@@ -74,3 +74,19 @@ export const toggleLocationStatus = asyncHandler(async (req, res) => {
   
   res.status(200).json({ id: location._id, isActive: location.isActive });
 });
+
+// @desc    Delete a location
+// @route   DELETE /api/admin/locations/:id
+// @access  Admin
+export const deleteLocation = asyncHandler(async (req, res) => {
+  const location = await Location.findById(req.params.id);
+  
+  if (!location) {
+    res.status(404);
+    throw new Error('Location not found');
+  }
+  
+  await Location.findByIdAndDelete(req.params.id);
+  
+  res.status(200).json({ message: 'Location deleted successfully' });
+});

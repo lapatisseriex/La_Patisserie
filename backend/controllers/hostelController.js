@@ -21,7 +21,7 @@ export const getHostelsByLocation = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/hostels
 // @access  Admin
 export const getAllHostels = asyncHandler(async (req, res) => {
-  const hostels = await Hostel.find({})
+  const hostels = await Hostel.find({ locationId: { $ne: null } }) // Only get hostels with valid locationId
     .populate('locationId')
     .sort({ locationId: 1, name: 1 });
   

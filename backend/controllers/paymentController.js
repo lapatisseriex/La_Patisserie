@@ -9,6 +9,7 @@ import Hostel from '../models/hostelModel.js';
 import DeliveryLocationMapping from '../models/deliveryLocationMappingModel.js';
 import mongoose from 'mongoose';
 import Payment from '../models/paymentModel.js';
+import Donation from '../models/donationModel.js';
 import Notification from '../models/notificationModel.js';
 import {
   sendOrderStatusNotification
@@ -373,11 +374,13 @@ export const createOrder = asyncHandler(async (req, res) => {
       userDetails,
       deliveryLocation,
       hostelName,
-      orderSummary 
+      orderSummary,
+      donationDetails
     } = req.body;
 
     console.log('Creating order with amount:', amount, 'Payment method:', paymentMethod);
     console.log('Hostel name received:', hostelName);
+    console.log('Donation details received:', donationDetails);
     console.log('User from request:', { uid: req.user?.uid, _id: req.user?._id });
     console.log('Cart items received:', JSON.stringify(cartItems, null, 2));
 
@@ -551,6 +554,39 @@ export const createOrder = asyncHandler(async (req, res) => {
     await order.save();
     console.log('Order saved to database:', order._id);
     console.log('Order hostelName stored:', order.hostelName);
+
+    // 💝 Track donation if present
+    if (donationDetails && donationDetails.donationAmount > 0) {
+      try {
+        const donation = new Donation({
+          userId,
+          userEmail: userDetails.email,
+          userName: userDetails.name,
+          userPhone: userDetails.phone,
+          donationAmount: donationDetails.donationAmount,
+          orderId: order._id,
+          orderNumber,
+          paymentMethod,
+          paymentStatus: paymentMethod === 'cod' ? 'completed' : 'pending',
+          initiativeName: donationDetails.initiativeName || 'கற்பிப்போம் பயிலகம் - Education Initiative',
+          initiativeDescription: donationDetails.initiativeDescription || 'Supporting student education and learning resources',
+          deliveryLocation,
+          hostelName
+        });
+
+        await donation.save();
+        console.log('✅ Donation tracked:', {
+          donationAmount: donationDetails.donationAmount,
+          orderNumber,
+          paymentMethod,
+          userId
+        });
+      } catch (donationError) {
+        console.error('❌ Failed to track donation:', donationError);
+        // Don't fail the order creation if donation tracking fails
+      }
+    }
+
     console.log('Starting notification creation for user:', userId, 'order:', orderNumber);
 
     // ⚠️ DO NOT CREATE NOTIFICATION FOR ONLINE PAYMENTS YET
@@ -790,6 +826,28 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       }
       
       console.log('Payment verified successfully for order:', order.orderNumber);
+
+      // 💝 Update donation status to completed for online payments
+      try {
+        const donationUpdate = await Donation.updateMany(
+          { 
+            orderId: order._id,
+            paymentMethod: 'razorpay',
+            paymentStatus: 'pending'
+          },
+          { 
+            paymentStatus: 'completed',
+            updatedAt: new Date()
+          }
+        );
+        
+        if (donationUpdate.matchedCount > 0) {
+          console.log('✅ Donation status updated to completed for order:', order.orderNumber);
+        }
+      } catch (donationError) {
+        console.error('❌ Failed to update donation status:', donationError);
+        // Don't fail the payment verification if donation update fails
+      }
 
       await ensureOrderPlacedNotification(order, { forceEmit: true });
 
@@ -1380,52 +1438,621 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 
 // Admin: List all payments with filters and pagination
 export const listPayments = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20, status, method, startDate, endDate, search } = req.query;
-  const filter = {};
-  if (status) filter.paymentStatus = status;
-  if (method) filter.paymentMethod = method;
-  if (startDate || endDate) {
-    filter.date = {};
-    if (startDate) filter.date.$gte = new Date(startDate);
-    if (endDate) filter.date.$lte = new Date(endDate);
-  }
-  if (search) {
-    filter.$or = [
-      { email: { $regex: search, $options: 'i' } },
-      { orderId: { $regex: search, $options: 'i' } },
-    ];
-  }
-  const skip = (Number(page) - 1) * Number(limit);
-  const [payments, total] = await Promise.all([
-    Payment.find(filter).sort({ date: -1 }).skip(skip).limit(Number(limit)),
-    Payment.countDocuments(filter)
-  ]);
+  const {
+    page = 1,
+    limit = 20,
+    status,
+    method,
+    startDate,
+    endDate,
+    search,
+    orderStatus,
+    orderPaymentStatus,
+    deliveryLocation,
+    hostel,
+    email,
+    phone
+  } = req.query;
 
-  // Enrich payments with order status
-  const items = await Promise.all(payments.map(async (payment) => {
-    const paymentObj = payment.toObject();
-    
-    // Try to find the order by orderNumber
-    if (payment.orderId) {
-      try {
-        const order = await Order.findOne({ orderNumber: payment.orderId })
-          .select('orderStatus orderNumber paymentStatus')
-          .lean();
-        
-        if (order) {
-          paymentObj.data = {
-            order: {
-              orderStatus: order.orderStatus,
-              orderNumber: order.orderNumber,
-              paymentStatus: order.paymentStatus
+  const trimmedSearch = typeof search === 'string' ? search.trim() : '';
+  const trimmedDelivery = typeof deliveryLocation === 'string' ? deliveryLocation.trim() : '';
+  const trimmedHostel = typeof hostel === 'string' ? hostel.trim() : '';
+  const trimmedEmail = typeof email === 'string' ? email.trim() : '';
+  const trimmedPhoneRaw = typeof phone === 'string' ? phone.trim() : '';
+  const trimmedPhone = trimmedPhoneRaw.replace(/[^0-9+]/g, '');
+  const trimmedPhoneDigits = trimmedPhone.replace(/\D/g, '');
+
+  const pageNumber = Math.max(1, Number(page) || 1);
+  const limitNumber = Math.min(100, Math.max(1, Number(limit) || 20));
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const paymentMatch = {};
+  if (status) paymentMatch.paymentStatus = status;
+  if (method) paymentMatch.paymentMethod = method;
+
+  if (startDate || endDate) {
+    paymentMatch.date = paymentMatch.date || {};
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      paymentMatch.date.$gte = start;
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      paymentMatch.date.$lte = end;
+    }
+  }
+
+  const codEligibleStatuses = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const hostelRegex = trimmedHostel
+    ? new RegExp(trimmedHostel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+    : null;
+
+  const pipeline = [
+    { $match: paymentMatch },
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'orderId',
+        foreignField: 'orderNumber',
+        as: 'orderDoc'
+      }
+    },
+    { $unwind: { path: '$orderDoc', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'userDoc'
+      }
+    },
+    { $unwind: { path: '$userDoc', preserveNullAndEmptyArrays: true } },
+    {
+      $addFields: {
+        orderCity: { $ifNull: ['$orderDoc.userDetails.city', ''] },
+        orderHostel: {
+          $cond: {
+            if: { $eq: [{ $type: '$orderDoc.hostelName' }, 'string'] },
+            then: { $trim: { input: '$orderDoc.hostelName' } },
+            else: {
+              $cond: {
+                if: { $eq: [{ $type: '$orderDoc.hostelName' }, 'null'] },
+                then: '',
+                else: {
+                  $ifNull: ['$orderDoc.hostelName', '']
+                }
+              }
             }
-          };
+          }
+        },
+        orderPhone: {
+          $switch: {
+            branches: [
+              {
+                case: { $in: [{ $type: '$orderDoc.userDetails.phone' }, ['int', 'long', 'double', 'decimal']] },
+                then: { $toString: '$orderDoc.userDetails.phone' }
+              },
+              {
+                case: { $eq: [{ $type: '$orderDoc.userDetails.phone' }, 'string'] },
+                then: '$orderDoc.userDetails.phone'
+              }
+            ],
+            default: ''
+          }
+        },
+        userPhone: {
+          $switch: {
+            branches: [
+              {
+                case: { $in: [{ $type: '$userDoc.phone' }, ['int', 'long', 'double', 'decimal']] },
+                then: { $toString: '$userDoc.phone' }
+              },
+              {
+                case: { $eq: [{ $type: '$userDoc.phone' }, 'string'] },
+                then: '$userDoc.phone'
+              }
+            ],
+            default: ''
+          }
+        },
+        deliveryArea: { $ifNull: ['$orderDoc.deliveryLocation.area', ''] },
+        deliveryCityFromObj: { $ifNull: ['$orderDoc.deliveryLocation.city', ''] },
+        deliveryPincode: {
+          $switch: {
+            branches: [
+              {
+                case: { $in: [{ $type: '$orderDoc.deliveryLocation.pincode' }, ['int', 'long', 'double', 'decimal']] },
+                then: { $toString: '$orderDoc.deliveryLocation.pincode' }
+              },
+              {
+                case: { $eq: [{ $type: '$orderDoc.deliveryLocation.pincode' }, 'string'] },
+                then: '$orderDoc.deliveryLocation.pincode'
+              }
+            ],
+            default: ''
+          }
+        },
+        deliveryLocationString: {
+          $switch: {
+            branches: [
+              {
+                case: { $eq: [{ $type: '$orderDoc.deliveryLocation' }, 'objectId'] },
+                then: { $toString: '$orderDoc.deliveryLocation' }
+              },
+              {
+                case: { $in: [{ $type: '$orderDoc.deliveryLocation' }, ['int', 'long', 'double', 'decimal']] },
+                then: { $toString: '$orderDoc.deliveryLocation' }
+              },
+              {
+                case: { $eq: [{ $type: '$orderDoc.deliveryLocation' }, 'string'] },
+                then: '$orderDoc.deliveryLocation'
+              }
+            ],
+            default: ''
+          }
         }
-      } catch (error) {
-        console.error('Error fetching order for payment:', error);
       }
     }
-    
+    ];
+
+  if (orderStatus) {
+    pipeline.push({ $match: { 'orderDoc.orderStatus': orderStatus } });
+  }
+
+  if (orderPaymentStatus) {
+    pipeline.push({ $match: { 'orderDoc.paymentStatus': orderPaymentStatus } });
+  }
+
+  if (trimmedDelivery) {
+    const locationRegex = new RegExp(trimmedDelivery, 'i');
+    pipeline.push({
+      $match: {
+        $or: [
+          { orderCity: locationRegex },
+          { orderHostel: locationRegex },
+          { deliveryArea: locationRegex },
+          { deliveryCityFromObj: locationRegex },
+          { deliveryPincode: locationRegex },
+          { deliveryLocationString: locationRegex }
+        ]
+      }
+    });
+  }
+
+  if (trimmedEmail) {
+    const emailRegex = new RegExp(trimmedEmail, 'i');
+    pipeline.push({
+      $match: {
+        $or: [
+          { email: emailRegex },
+          { 'userDoc.email': emailRegex },
+          { 'orderDoc.userDetails.email': emailRegex }
+        ]
+      }
+    });
+  }
+
+  if (trimmedPhone) {
+    const escapedRaw = trimmedPhone.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const phoneRegex = new RegExp(escapedRaw, 'i');
+    const digitRegex = trimmedPhoneDigits
+      ? new RegExp(trimmedPhoneDigits.split('').map((d) => `${d}\\D*`).join(''), 'i')
+      : null;
+
+    const phoneOrConditions = [
+      { orderPhone: phoneRegex },
+      { userPhone: phoneRegex }
+    ];
+
+    if (digitRegex) {
+      phoneOrConditions.push(
+        { orderPhone: digitRegex },
+        { userPhone: digitRegex }
+      );
+    }
+
+    pipeline.push({
+      $match: {
+        $or: phoneOrConditions
+      }
+    });
+  }
+
+  if (trimmedSearch) {
+    const searchRegex = new RegExp(trimmedSearch, 'i');
+    pipeline.push({
+      $match: {
+        $or: [
+          { email: searchRegex },
+          { orderId: searchRegex },
+          { gatewayOrderId: searchRegex },
+          { gatewayPaymentId: searchRegex },
+          { orderCity: searchRegex },
+          { orderHostel: searchRegex },
+          { orderPhone: searchRegex },
+          { userPhone: searchRegex },
+          { 'userDoc.email': searchRegex },
+          { 'userDoc.name': searchRegex },
+          { 'orderDoc.userDetails.email': searchRegex },
+          { 'orderDoc.userDetails.name': searchRegex }
+        ]
+      }
+    });
+  }
+
+  pipeline.push(
+    { $sort: { date: -1, createdAt: -1 } },
+    {
+      $facet: {
+        items: [
+          ...(hostelRegex ? [{ $match: { orderHostel: hostelRegex } }] : []),
+          { $skip: skip },
+          { $limit: limitNumber }
+        ],
+        totalCount: [
+          ...(hostelRegex ? [{ $match: { orderHostel: hostelRegex } }] : []),
+          { $count: 'value' }
+        ],
+        metrics: [
+          ...(hostelRegex ? [{ $match: { orderHostel: hostelRegex } }] : []),
+          {
+            $group: {
+              _id: null,
+              totalPayments: { $sum: 1 },
+              totalRevenue: {
+                $sum: {
+                  $cond: [
+                    {
+                      $or: [
+                        { $eq: ['$paymentStatus', 'success'] },
+                        {
+                          $and: [
+                            { $eq: ['$paymentMethod', 'cod'] },
+                            { $in: ['$orderDoc.orderStatus', codEligibleStatuses] }
+                          ]
+                        }
+                      ]
+                    },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              },
+              success: {
+                $sum: {
+                  $cond: [{ $eq: ['$paymentStatus', 'success'] }, 1, 0]
+                }
+              },
+              pending: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$paymentStatus', 'pending'] },
+                        { $ne: ['$orderDoc.orderStatus', 'cancelled'] }
+                      ]
+                    },
+                    1,
+                    0
+                  ]
+                }
+              },
+              cancelled: {
+                $sum: {
+                  $cond: [
+                    { $eq: ['$orderDoc.orderStatus', 'cancelled'] },
+                    1,
+                    0
+                  ]
+                }
+              },
+              successAmount: {
+                $sum: {
+                  $cond: [
+                    { $eq: ['$paymentStatus', 'success'] },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              },
+              pendingAmount: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$paymentStatus', 'pending'] },
+                        { $ne: ['$orderDoc.orderStatus', 'cancelled'] }
+                      ]
+                    },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              },
+              cancelledAmount: {
+                $sum: {
+                  $cond: [
+                    {
+                      $or: [
+                        { $eq: ['$orderDoc.orderStatus', 'cancelled'] },
+                        { $eq: ['$paymentStatus', 'failed'] }
+                      ]
+                    },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              },
+              codDelivered: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$paymentMethod', 'cod'] },
+                        { $eq: ['$orderDoc.orderStatus', 'delivered'] }
+                      ]
+                    },
+                    1,
+                    0
+                  ]
+                }
+              },
+              codDeliveredAmount: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$paymentMethod', 'cod'] },
+                        { $eq: ['$orderDoc.orderStatus', 'delivered'] }
+                      ]
+                    },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        last7Days: [
+          ...(hostelRegex ? [{ $match: { orderHostel: hostelRegex } }] : []),
+          { $match: { date: { $gte: sevenDaysAgo } } },
+          {
+            $group: {
+              _id: null,
+              totalPayments: { $sum: 1 },
+              totalRevenue: {
+                $sum: {
+                  $cond: [
+                    {
+                      $or: [
+                        { $eq: ['$paymentStatus', 'success'] },
+                        {
+                          $and: [
+                            { $eq: ['$paymentMethod', 'cod'] },
+                            { $in: ['$orderDoc.orderStatus', codEligibleStatuses] }
+                          ]
+                        }
+                      ]
+                    },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              },
+              success: {
+                $sum: {
+                  $cond: [{ $eq: ['$paymentStatus', 'success'] }, 1, 0]
+                }
+              },
+              pending: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$paymentStatus', 'pending'] },
+                        { $ne: ['$orderDoc.orderStatus', 'cancelled'] }
+                      ]
+                    },
+                    1,
+                    0
+                  ]
+                }
+              },
+              cancelled: {
+                $sum: {
+                  $cond: [
+                    { $eq: ['$orderDoc.orderStatus', 'cancelled'] },
+                    1,
+                    0
+                  ]
+                }
+              },
+              successAmount: {
+                $sum: {
+                  $cond: [
+                    { $eq: ['$paymentStatus', 'success'] },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              },
+              pendingAmount: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$paymentStatus', 'pending'] },
+                        { $ne: ['$orderDoc.orderStatus', 'cancelled'] }
+                      ]
+                    },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              },
+              cancelledAmount: {
+                $sum: {
+                  $cond: [
+                    {
+                      $or: [
+                        { $eq: ['$orderDoc.orderStatus', 'cancelled'] },
+                        { $eq: ['$paymentStatus', 'failed'] }
+                      ]
+                    },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              },
+              codDelivered: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$paymentMethod', 'cod'] },
+                        { $eq: ['$orderDoc.orderStatus', 'delivered'] }
+                      ]
+                    },
+                    1,
+                    0
+                  ]
+                }
+              },
+              codDeliveredAmount: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$paymentMethod', 'cod'] },
+                        { $eq: ['$orderDoc.orderStatus', 'delivered'] }
+                      ]
+                    },
+                    { $ifNull: ['$amount', 0] },
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        hostels: [
+          {
+            $group: {
+              _id: '$orderHostel'
+            }
+          },
+          {
+            $match: {
+              _id: { $nin: ['', null] }
+            }
+          },
+          { $sort: { _id: 1 } }
+        ]
+      }
+    }
+  );
+
+  const [result] = await Payment.aggregate(pipeline);
+  const rawItems = result?.items || [];
+  const total = result?.totalCount?.[0]?.value || 0;
+  const metricsRaw = result?.metrics?.[0] || null;
+  const metricsLast7Raw = result?.last7Days?.[0] || null;
+  const hostelOptions = (result?.hostels || []).map((h) => h?._id).filter(Boolean);
+
+  const items = await Promise.all(rawItems.map(async (doc) => {
+    const order = doc.orderDoc || null;
+    const user = doc.userDoc || null;
+
+    const base = {
+      _id: doc._id,
+      userId: doc.userId,
+      email: doc.email,
+      orderId: doc.orderId,
+      amount: doc.amount,
+      paymentMethod: doc.paymentMethod,
+      paymentStatus: doc.paymentStatus,
+      date: doc.date,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+      gatewayPaymentId: doc.gatewayPaymentId,
+      gatewayOrderId: doc.gatewayOrderId,
+      meta: doc.meta
+    };
+
+  const customerEmail = base.email || order?.userDetails?.email || user?.email || '';
+  const customerName = order?.userDetails?.name || user?.name || '';
+  const customerPhone = doc.orderPhone || doc.userPhone || order?.userDetails?.phone || user?.phone || '';
+
+    const locationInfo = order ? await resolveLocationInfo(order.deliveryLocation, order.userDetails) : null;
+    const labelParts = [];
+    if (locationInfo?.area) labelParts.push(locationInfo.area);
+    if (locationInfo?.city) labelParts.push(locationInfo.city);
+    let deliveryLabel = labelParts.join(', ');
+    if (locationInfo?.pincode) {
+      deliveryLabel = deliveryLabel ? `${deliveryLabel} - ${locationInfo.pincode}` : `${locationInfo.pincode}`;
+    }
+
+    if (!deliveryLabel) {
+      const fallbackParts = [doc.deliveryArea, doc.deliveryCityFromObj].filter(Boolean);
+      if (fallbackParts.length) {
+        deliveryLabel = fallbackParts.join(', ');
+      }
+      if (doc.deliveryPincode) {
+        deliveryLabel = deliveryLabel ? `${deliveryLabel} - ${doc.deliveryPincode}` : `${doc.deliveryPincode}`;
+      }
+      if (!deliveryLabel) {
+        if (typeof order?.deliveryLocation === 'string' && order.deliveryLocation.trim()) {
+          deliveryLabel = order.deliveryLocation.trim();
+        } else if (doc.orderHostel) {
+          deliveryLabel = doc.orderHostel;
+        } else if (doc.orderCity) {
+          deliveryLabel = doc.orderCity;
+        } else if (doc.deliveryLocationString) {
+          deliveryLabel = doc.deliveryLocationString;
+        }
+      }
+    }
+
+    const paymentObj = {
+      ...base,
+      email: customerEmail,
+      customerName,
+      phone: customerPhone,
+      deliveryLocationLabel: deliveryLabel,
+      hostelName: order?.hostelName || doc.orderHostel || ''
+    };
+
+    if (user) {
+      paymentObj.user = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        city: user.city,
+        pincode: user.pincode
+      };
+    }
+
+    if (order) {
+      paymentObj.data = {
+        order: {
+          orderStatus: order.orderStatus,
+          orderNumber: order.orderNumber,
+          paymentStatus: order.paymentStatus
+        },
+        location: locationInfo
+      };
+    } else if (locationInfo) {
+      paymentObj.data = { location: locationInfo };
+    }
+
     return paymentObj;
   }));
 
@@ -1433,7 +2060,55 @@ export const listPayments = asyncHandler(async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
-  res.json({ success: true, items, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
+  const toNumber = (value) => {
+    if (typeof value === 'number') return value;
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'object' && typeof value.toString === 'function') {
+      const parsed = Number(value.toString());
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const coerceMetrics = (src) => ({
+    totalPayments: toNumber(src?.totalPayments),
+    totalRevenue: toNumber(src?.totalRevenue),
+    success: toNumber(src?.success),
+    pending: toNumber(src?.pending),
+    cancelled: toNumber(src?.cancelled),
+    successAmount: toNumber(src?.successAmount),
+    pendingAmount: toNumber(src?.pendingAmount),
+    cancelledAmount: toNumber(src?.cancelledAmount),
+    codDelivered: toNumber(src?.codDelivered),
+    codDeliveredAmount: toNumber(src?.codDeliveredAmount)
+  });
+
+  const metrics = coerceMetrics(metricsRaw || {});
+  const metricsLast7 = coerceMetrics(metricsLast7Raw || {});
+
+  const hostelDocs = await Hostel.find({ isActive: true }).select('name').sort({ name: 1 }).lean();
+  const hostelsAll = hostelDocs.map((h) => (typeof h?.name === 'string' ? h.name.trim() : '')).filter(Boolean);
+  const combinedHostels = Array.from(new Set([...hostelsAll, ...hostelOptions])).sort((a, b) => a.localeCompare(b));
+
+  res.json({
+    success: true,
+    items,
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      total,
+      pages: Math.ceil(total / limitNumber)
+    },
+    metadata: {
+      metrics: {
+        filtered: metrics,
+        last7Days: metricsLast7
+      },
+      hostels: combinedHostels,
+      hostelsAll: hostelsAll
+    }
+  });
 });
 
 // Admin: Get single payment by id

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaUser, FaPhone, FaMapMarkerAlt, FaCrown, FaExclamationTriangle, FaEye, FaFilter, FaEnvelope, FaBell, FaTimes, FaSyncAlt } from 'react-icons/fa';
+import { FaUser, FaPhone, FaMapMarkerAlt, FaCrown, FaExclamationTriangle, FaEye, FaFilter, FaEnvelope, FaBell, FaTimes, FaSyncAlt, FaShoppingCart, FaCreditCard, FaHeart, FaGift, FaComment, FaNewspaper, FaCalendarAlt, FaChartLine, FaDollarSign } from 'react-icons/fa';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
@@ -12,6 +12,8 @@ const AdminUsers = () => {
   const [error, setError] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   // Filters
   const [nameQuery, setNameQuery] = useState('');
   const [phoneQuery, setPhoneQuery] = useState('');
@@ -90,9 +92,44 @@ const AdminUsers = () => {
   };
   
   // View user details
-  const viewUserDetails = (user) => {
+  const viewUserDetails = async (user) => {
     setSelectedUser(user);
     setShowUserModal(true);
+    setLoadingDetails(true);
+    setUserDetails(null);
+
+    try {
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+
+      // Fetch comprehensive user details from multiple endpoints
+      const [detailsRes, contactsRes, newsletterRes, loyaltyRes] = await Promise.all([
+        axios.get(`${API_URL}/admin/users/${user.uid}/details`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        }),
+        axios.get(`${API_URL}/admin/contacts/user/${user.email}`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        }),
+        axios.get(`${API_URL}/admin/newsletter/status/${user.email}`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        }),
+        axios.get(`${API_URL}/admin/users/${user.uid}/loyalty`, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        })
+      ]);
+
+      setUserDetails({
+        userInfo: detailsRes.data.data,
+        contacts: contactsRes.data.data || [],
+        newsletter: newsletterRes.data.data,
+        loyalty: loyaltyRes.data.data
+      });
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      toast.error('Failed to load user details');
+    } finally {
+      setLoadingDetails(false);
+    }
   };
 
   // Clear all filters and close panel
@@ -688,89 +725,344 @@ const AdminUsers = () => {
         )}
       </div>
       
-      {/* User Details Modal */}
+      {/* Comprehensive User Details Modal */}
       {showUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-24 md:pt-28">
-          <div className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] shadow-2xl flex flex-col mx-4 sm:mx-6 md:mx-8 lg:mx-10">
-
-            {/* Header / padding wrapper */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-4 sm:p-6 md:p-8 lg:p-10">
-                <h3 className="text-lg font-bold text-black mb-6 md:mb-4 flex items-center">
-                  <FaUser className="mr-2" />
-                  User Details
-                </h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-10">
+          <div className="bg-white rounded-lg w-full max-w-[95vw] lg:max-w-7xl h-[calc(100vh-5rem)] shadow-2xl flex flex-col mx-4">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-sm font-bold text-black mb-2">Basic Information</h4>
-                <div className="bg-gray-100 rounded-md p-4">
-                  <p className="mb-2">
-                    <span className="font-bold">Name:</span> <span className="font-normal break-words">{selectedUser.name || 'Not provided'}</span>
-                  </p>
-                  <p className="mb-2">
-                    <span className="font-bold">Phone:</span> <span className="font-normal break-words">{selectedUser.phone || 'Not provided'}</span>
-                  </p>
-                  <p className="mb-2">
-                    <span className="font-bold">Email:</span> <span className="font-normal break-words">{selectedUser.email || 'Not provided'}</span>
-                  </p>
-                  <p className="mb-2">
-                    <span className="font-bold">Role:</span> 
-                    <span className={`${selectedUser.role === 'admin' ? 'font-bold text-amber-700' : 'font-normal'}`}>
-                      {selectedUser.role}
-                    </span>
-                  </p>
-                  <p className="mb-2">
-                    <span className="font-bold">Joined:</span> <span className="font-normal">{new Date(selectedUser.createdAt).toLocaleString()}</span>
-                  </p>
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <FaUser className="text-xl text-blue-600" />
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {selectedUser.name || 'User Details'}
+                  </h3>
+                  <p className="text-sm text-gray-600">{selectedUser.email}</p>
                 </div>
               </div>
-              
-              <div>
-                <h4 className="text-sm font-bold text-black mb-2">Delivery Location</h4>
-                <div className="bg-gray-100 rounded-md p-4">
-                  {selectedUser.location ? (
-                    <>
-                      <div className="flex items-start mb-2">
-                        <FaMapMarkerAlt className={`mt-1 mr-2 ${selectedUser.location.isActive ? 'text-black' : 'text-gray-400'}`} />
-                        <div className="min-w-0">
-                          <p className="font-bold break-words">{selectedUser.location.area}</p>
-                          <p className="font-normal break-words">{selectedUser.location.city}, {selectedUser.location.pincode}</p>
+              <button
+                onClick={() => setShowUserModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FaTimes className="text-gray-600" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6">
+                
+                {loadingDetails ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <span className="ml-3 text-gray-600">Loading user details...</span>
+                  </div>
+                ) : userDetails ? (
+                  <div className="space-y-8">
+                    
+                    {/* Basic Information Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      
+                      {/* User Information */}
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <FaUser className="mr-2 text-blue-600" />
+                          User Information
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="font-medium text-gray-700">Name:</span>
+                            <span className="text-gray-900">{selectedUser.name || 'Not provided'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium text-gray-700">Email:</span>
+                            <span className="text-gray-900">{selectedUser.email}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium text-gray-700">Phone:</span>
+                            <span className="text-gray-900">{selectedUser.phone || 'Not provided'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium text-gray-700">Role:</span>
+                            <span className={`${selectedUser.role === 'admin' ? 'text-amber-600 font-semibold' : 'text-gray-900'}`}>
+                              {selectedUser.role === 'admin' && <FaCrown className="inline mr-1" />}
+                              {selectedUser.role}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium text-gray-700">Joined:</span>
+                            <span className="text-gray-900">{new Date(selectedUser.createdAt).toLocaleDateString()}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className={`text-xs mt-2 px-2 py-1 rounded inline-block font-medium ${
-                        selectedUser.location.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {selectedUser.location.isActive ? 'Active location' : 'Inactive location'}
+
+                      {/* Location & Statistics */}
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <FaMapMarkerAlt className="mr-2 text-green-600" />
+                          Location & Stats
+                        </h4>
+                        <div className="space-y-3">
+                          {selectedUser.location ? (
+                            <>
+                              <div>
+                                <span className="font-medium text-gray-700">Area:</span>
+                                <p className="text-gray-900">{selectedUser.location.area}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">City:</span>
+                                <p className="text-gray-900">{selectedUser.location.city}, {selectedUser.location.pincode}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Status:</span>
+                                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                                  selectedUser.location.isActive 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {selectedUser.location.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-gray-500 italic">No delivery location set</p>
+                          )}
+                          
+                          {userDetails.userInfo && (
+                            <>
+                              <div className="pt-2 border-t border-gray-200">
+                                <span className="font-medium text-gray-700">Total Orders:</span>
+                                <span className="text-gray-900 ml-2">{userDetails.userInfo.totalOrders || 0}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Total Spent:</span>
+                                <span className="text-gray-900 ml-2">₹{userDetails.userInfo.totalSpent || 0}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Average Order:</span>
+                                <span className="text-gray-900 ml-2">₹{userDetails.userInfo.averageOrderValue || 0}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </>
-                  ) : (
-                    <p className="text-black font-light">No delivery location set</p>
-                  )}
-                </div>
-                
-                <h4 className="text-sm font-bold text-black mt-4 mb-2">Order Statistics</h4>
-                <div className="bg-gray-100 rounded-md p-4">
-                  <p className="mb-2">
-                    <span className="font-bold">Total Orders:</span> <span className="font-normal">{selectedUser.totalOrders || 0}</span>
-                  </p>
-                  <p className="mb-2">
-                    <span className="font-bold">Last Order:</span> <span className="font-normal">{selectedUser.lastOrderDate ? new Date(selectedUser.lastOrderDate).toLocaleDateString() : 'Never'}</span>
-                  </p>
-                </div>
+                    </div>
+
+                    {/* Orders Section */}
+                    {userDetails.userInfo?.recentOrders && (
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <FaShoppingCart className="mr-2 text-purple-600" />
+                          Recent Orders ({userDetails.userInfo.recentOrders.length})
+                        </h4>
+                        
+                        {userDetails.userInfo.recentOrders.length > 0 ? (
+                          <div className="space-y-4 max-h-64 overflow-y-auto">
+                            {userDetails.userInfo.recentOrders.map((order) => (
+                              <div key={order._id} className="bg-white rounded-lg p-4 border border-gray-200">
+                                <div className="flex justify-between items-start mb-3">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-gray-900">Order #{order.orderNumber}</p>
+                                    <div className="flex items-center space-x-3 text-sm text-gray-600">
+                                      <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                                      {order.cartItems && order.cartItems.length > 0 && (
+                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                                          {order.cartItems.reduce((total, item) => total + item.quantity, 0)} items
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-semibold text-gray-900">₹{order.amount}</p>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                                      order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                      order.orderStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      order.orderStatus === 'placed' ? 'bg-blue-100 text-blue-800' :
+                                      order.orderStatus === 'out_for_delivery' ? 'bg-amber-100 text-amber-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {order.orderStatus}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Product Items */}
+                                {order.cartItems && order.cartItems.length > 0 && (
+                                  <div className="mb-3">
+                                    <p className="text-xs font-medium text-gray-700 mb-2">
+                                      Products ({order.cartItems.length})
+                                    </p>
+                                    <div className="space-y-1">
+                                      {order.cartItems.map((item, index) => (
+                                        <div key={index} className="flex items-center space-x-3 bg-gray-50 rounded-lg p-2">
+                                          {/* Product Image */}
+                                          <div className="flex-shrink-0">
+                                            {item.productId?.images?.[0] ? (
+                                              <img 
+                                                src={item.productId.images[0]} 
+                                                alt={item.productName}
+                                                className="w-10 h-10 rounded-md object-cover border border-gray-200"
+                                                onError={(e) => {
+                                                  e.target.src = '/placeholder-image.png';
+                                                  e.target.onerror = null;
+                                                }}
+                                              />
+                                            ) : (
+                                              <div className="w-10 h-10 rounded-md bg-gray-200 flex items-center justify-center">
+                                                <FaShoppingCart className="text-gray-400 text-xs" />
+                                              </div>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Product Details */}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between">
+                                              <p className="text-sm font-medium text-gray-900 truncate">
+                                                {item.productName || 'Product'}
+                                              </p>
+                                              <span className="text-sm font-semibold text-gray-900 ml-2">
+                                                ₹{item.price}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs text-gray-600">
+                                              <span>Qty: {item.quantity}</span>
+                                              {item.variantLabel && (
+                                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                                  {item.variantLabel}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="text-sm text-gray-600 space-y-1">
+                                  {order.deliveryLocation && (
+                                    <p>
+                                      <FaMapMarkerAlt className="inline mr-1" />
+                                      {order.deliveryLocation}
+                                    </p>
+                                  )}
+                                  {order.hostelName && (
+                                    <p className="text-xs text-gray-500">Hostel: {order.hostelName}</p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 italic">No orders found</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Secondary Information Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      
+                      {/* Contact Messages */}
+                      <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <FaComment className="mr-2 text-orange-600" />
+                          Contact Messages
+                        </h4>
+                        
+                        {userDetails.contacts && userDetails.contacts.length > 0 ? (
+                          <div className="space-y-3 max-h-48 overflow-y-auto">
+                            {userDetails.contacts.map((contact, index) => (
+                              <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                                <p className="text-sm font-medium text-gray-900">{contact.subject || 'No Subject'}</p>
+                                <p className="text-xs text-gray-600 mt-1">
+                                  {new Date(contact.createdAt).toLocaleDateString()}
+                                </p>
+                                <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+                                  {contact.message?.substring(0, 100)}...
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 italic">No contact messages</p>
+                        )}
+                      </div>
+
+                      {/* Newsletter & Loyalty */}
+                      <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <FaNewspaper className="mr-2 text-teal-600" />
+                          Newsletter & Loyalty
+                        </h4>
+                        
+                        <div className="space-y-4">
+                          {/* Newsletter Status */}
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Newsletter Status:</p>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              userDetails.newsletter?.subscribed 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {userDetails.newsletter?.subscribed ? 'Subscribed' : 'Not Subscribed'}
+                            </span>
+                            {userDetails.newsletter?.subscribedAt && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                Since: {new Date(userDetails.newsletter.subscribedAt).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Loyalty Status */}
+                          {userDetails.loyalty && (
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">Monthly Rewards:</p>
+                              <div className="mt-2 space-y-1">
+                                <div className="flex justify-between text-xs">
+                                  <span>Days this month:</span>
+                                  <span className="font-medium">{userDetails.loyalty.uniqueDaysCount}/10</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-blue-600 h-2 rounded-full" 
+                                    style={{ width: `${Math.min((userDetails.loyalty.uniqueDaysCount / 10) * 100, 100)}%` }}
+                                  ></div>
+                                </div>
+                                {userDetails.loyalty.freeProductEligible && (
+                                  <p className="text-xs text-green-600 font-medium">Eligible for free product!</p>
+                                )}
+                                {userDetails.loyalty.freeProductClaimed && (
+                                  <p className="text-xs text-blue-600 font-medium">Free product claimed</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FaExclamationTriangle className="text-gray-400 text-3xl mb-3 mx-auto" />
+                    <p className="text-gray-600">Failed to load user details. Please try again.</p>
+                  </div>
+                )}
               </div>
             </div>
-            
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={() => setShowUserModal(false)}
-                    className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
-                  >
-                    Close
-                  </button>
-                </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 p-6 bg-gray-50">
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowUserModal(false)}
+                  className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

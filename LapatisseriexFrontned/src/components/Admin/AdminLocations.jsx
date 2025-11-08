@@ -211,6 +211,35 @@ const AdminLocations = () => {
     }
   };
 
+  // Delete location
+  const deleteLocation = async (locationId) => {
+    if (!window.confirm('Are you sure you want to delete this location? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      // Get ID token from auth
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        setError('Please log in to delete locations');
+        return;
+      }
+      const idToken = await user.getIdToken(true);
+      
+      await axios.delete(`${API_URL}/admin/locations/${locationId}`, {
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      
+      // Refresh locations
+      fetchLocations();
+    } catch (err) {
+      console.error('Error deleting location:', err);
+      setError('Failed to delete location. Please try again.');
+    }
+  };
+
   // Hostel management functions
   const createHostel = async () => {
     try {
@@ -372,7 +401,7 @@ const AdminLocations = () => {
       setEditingHostel(hostel);
       setHostelFormData({
         name: hostel.name,
-        locationId: hostel.locationId._id || hostel.locationId,
+        locationId: (hostel.locationId && hostel.locationId._id) || hostel.locationId || '',
         address: hostel.address || '',
         isActive: hostel.isActive
       });
@@ -418,7 +447,10 @@ const AdminLocations = () => {
       const locationHostels = await fetchHostelsByLocation(locationId);
       setHostels(prev => {
         // Remove existing hostels for this location and add new ones
-        const filtered = prev.filter(h => h.locationId._id !== locationId);
+        const filtered = prev.filter(h => {
+          if (!h.locationId) return true; // Keep hostels without locationId
+          return (h.locationId._id || h.locationId) !== locationId;
+        });
         return [...filtered, ...locationHostels];
       });
     }
@@ -426,9 +458,10 @@ const AdminLocations = () => {
   
   // Get hostels for a specific location
   const getHostelsForLocation = (locationId) => {
-    return hostels.filter(hostel => 
-      (hostel.locationId._id || hostel.locationId) === locationId
-    );
+    return hostels.filter(hostel => {
+      if (!hostel.locationId) return false;
+      return (hostel.locationId._id || hostel.locationId) === locationId;
+    });
   };
   
   // Load locations and hostels after auth initializes and user is available
@@ -450,7 +483,7 @@ const AdminLocations = () => {
   <div className="mb-0 md:mb-6 flex justify-between items-center">
         {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
         <div>
-          <h1 className="text-2xl font-semibold text-black font-bold">Delivery Locations & Hostels</h1>
+          <h1 className="text-2xl font-bold text-black">Delivery Locations & Hostels</h1>
           <p className="text-black font-light">Manage delivery locations and hostels for your store</p>
         </div>
         {/* Desktop header actions (visible on md+) */}
@@ -519,6 +552,13 @@ const AdminLocations = () => {
                     title="Edit location"
                   >
                     <FaEdit />
+                  </button>
+                  <button
+                    onClick={() => deleteLocation(location._id)}
+                    className="text-red-600 hover:text-red-900"
+                    title="Delete location"
+                  >
+                    <FaTrash />
                   </button>
                   <button
                     onClick={() => toggleLocationStatus(location._id)}
@@ -709,6 +749,13 @@ const AdminLocations = () => {
                           title="Edit location"
                         >
                           <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => deleteLocation(location._id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete location"
+                        >
+                          <FaTrash />
                         </button>
                         <button
                           onClick={() => toggleLocationStatus(location._id)}

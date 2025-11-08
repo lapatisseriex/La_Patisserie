@@ -31,6 +31,7 @@ import {
   ChevronRight,
   ExternalLink,
   LayoutDashboard,
+  GraduationCap,
 } from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';
 import OrderCard from '../components/Orders/OrderCard';
@@ -53,6 +54,12 @@ const ProfilePage = () => {
   // Pagination state for transactions
   const [currentPage, setCurrentPage] = useState(1);
   const transactionsPerPage = 6;
+  
+  // Donations state
+  const [donations, setDonations] = useState([]);
+  const [donationStats, setDonationStats] = useState(null);
+  const [donationsLoading, setDonationsLoading] = useState(false);
+  const [donationsError, setDonationsError] = useState(null);
   
   // Recently viewed context
   const { recentlyViewed, loading: recentlyViewedLoading, fetchRecentlyViewed } = useRecentlyViewed();
@@ -156,6 +163,68 @@ const ProfilePage = () => {
     }
   };
 
+  // Fetch user donations
+  const fetchUserDonations = async () => {
+    if (!user) return;
+    
+    setDonationsLoading(true);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/donations/user`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch donations');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setDonations(data.data.donations || []);
+        setDonationStats(data.data.stats || null);
+        setDonationsError(null);
+      } else {
+        throw new Error(data.message || 'Failed to fetch donations');
+      }
+    } catch (error) {
+      console.error('Error fetching donations:', error);
+      setDonationsError(error.message);
+    } finally {
+      setDonationsLoading(false);
+    }
+  };
+
+  // Fetch donation summary (for stats card)
+  const fetchDonationSummary = async () => {
+    if (!user) return;
+    
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/donations/user/summary`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setDonationStats(data.data.totalStats || null);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching donation summary:', error);
+    }
+  };
+
   // Handle navigation state to set active tab
   useEffect(() => {
     if (location.state?.activeTab) {
@@ -167,6 +236,7 @@ const ProfilePage = () => {
   useEffect(() => {
     if (user) {
       fetchUserOrders();
+      fetchDonationSummary();
     }
   }, [user]);
 
@@ -181,6 +251,12 @@ const ProfilePage = () => {
       fetchRecentlyViewed();
     }
   }, [user, activeTab, fetchRecentlyViewed]);
+
+  useEffect(() => {
+    if (user && activeTab === 'donations') {
+      fetchUserDonations();
+    }
+  }, [user, activeTab]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -257,6 +333,7 @@ const ProfilePage = () => {
     { id: 'profile', label: 'My Profile', icon: User },
     { id: 'recently-viewed', label: 'Recently Viewed', icon: Eye },
     { id: 'favorites', label: 'Favorites', icon: Heart },
+    { id: 'donations', label: 'My Contributions', icon: GraduationCap },
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
   ];
 
@@ -283,6 +360,7 @@ const ProfilePage = () => {
                 { id: 'profile', label: 'My Profile', icon: User, color: '#733857', gradient: 'linear-gradient(135deg, rgba(115, 56, 87, 0.05), rgba(115, 56, 87, 0.02))' },
                 { id: 'addresses', label: 'Addresses', icon: MapPin, color: '#412434', gradient: 'linear-gradient(135deg, rgba(65, 36, 52, 0.05), rgba(65, 36, 52, 0.02))' },
                 { id: 'favorites', label: 'Favorites', icon: Heart, color: '#8d4466', count: favorites?.length || 0, gradient: 'linear-gradient(135deg, rgba(141, 68, 102, 0.05), rgba(141, 68, 102, 0.02))' },
+                ...(donationStats?.donationCount > 0 ? [{ id: 'donations', label: 'Donations', icon: GraduationCap, color: '#4a7c59', count: donationStats?.donationCount || 0, gradient: 'linear-gradient(135deg, rgba(74, 124, 89, 0.05), rgba(74, 124, 89, 0.02))' }] : []),
               ].map((item) => (
                 <button
                   key={item.id}
@@ -332,11 +410,12 @@ const ProfilePage = () => {
             </div>
 
             {/* Desktop/tablet view - Elegant Cards */}
-            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 { id: 'profile', label: 'My Profile', icon: User, description: 'View and edit your personal information', color: '#733857', gradient: 'linear-gradient(135deg, rgba(115, 56, 87, 0.04), rgba(115, 56, 87, 0.01))' },
                 { id: 'addresses', label: 'Saved Addresses', icon: MapPin, description: 'Manage your delivery locations', color: '#412434', gradient: 'linear-gradient(135deg, rgba(65, 36, 52, 0.04), rgba(65, 36, 52, 0.01))' },
                 { id: 'favorites', label: 'My Favorites', icon: Heart, description: 'Your favorite desserts & pastries', color: '#8d4466', count: favorites?.length || 0, gradient: 'linear-gradient(135deg, rgba(141, 68, 102, 0.04), rgba(141, 68, 102, 0.01))' },
+                ...(donationStats?.donationCount > 0 ? [{ id: 'donations', label: 'My Contributions', icon: GraduationCap, description: 'Your contribution to student life', color: '#4a7c59', count: donationStats?.donationCount || 0, gradient: 'linear-gradient(135deg, rgba(74, 124, 89, 0.04), rgba(74, 124, 89, 0.01))' }] : []),
               ].map((item) => (
                 <button
                   key={item.id}
@@ -1139,6 +1218,181 @@ const ProfilePage = () => {
           </div>
         );
 
+      case 'donations':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-light tracking-wide text-black border-b border-gray-200 pb-3" style={{ letterSpacing: '0.02em' }}>
+                Your Contribution to Student Life
+              </h3>
+              <div className="text-sm font-medium px-3 py-1.5 rounded-full bg-gradient-to-r from-[#f7eef3] to-[#f1e8ed] text-[#733857]">
+                கற்பிப்போம் பயிலகம்
+              </div>
+            </div>
+            
+            {donationsLoading ? (
+              <div className="bg-white border border-gray-100 p-12 text-center">
+                <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center mx-auto mb-6">
+                  <GraduationCap className="h-8 w-8 animate-pulse" style={{ color: '#733857' }} />
+                </div>
+                <h4 className="text-lg font-medium mb-2" style={{ color: '#1a1a1a' }}>Loading Your Contributions...</h4>
+                <p className="text-sm tracking-wide" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>Please wait while we fetch your donation history</p>
+              </div>
+            ) : donationsError ? (
+              <div className="bg-white border border-gray-100 p-8 text-center">
+                <h4 className="text-lg font-medium mb-2" style={{ color: '#733857' }}>Error Loading Donations</h4>
+                <p className="mb-6 text-sm" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>{donationsError}</p>
+                <button
+                  onClick={fetchUserDonations}
+                  className="px-6 py-2.5 border text-xs font-bold tracking-widest transition-all duration-300"
+                  style={{ 
+                    borderColor: '#733857',
+                    color: '#733857',
+                    letterSpacing: '0.08em'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#733857';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#733857';
+                  }}
+                >
+                  TRY AGAIN
+                </button>
+              </div>
+            ) : donations.length === 0 ? (
+              <div className="bg-white border border-gray-100 p-12 text-center">
+                <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center mx-auto mb-6">
+                  <GraduationCap className="h-8 w-8" style={{ color: '#733857' }} />
+                </div>
+                <h4 className="text-lg font-medium mb-2" style={{ color: '#1a1a1a' }}>No Contributions Yet</h4>
+                <p className="text-sm tracking-wide mb-6" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>Start making a difference in student lives by adding donations to your orders</p>
+                <Link
+                  to="/products"
+                  className="inline-flex items-center px-6 py-2.5 border text-xs font-bold tracking-widest transition-all duration-300"
+                  style={{ 
+                    borderColor: '#733857',
+                    color: '#733857',
+                    letterSpacing: '0.08em'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#733857';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#733857';
+                  }}
+                >
+                  BROWSE PRODUCTS
+                </Link>
+              </div>
+            ) : (
+              <>
+                {/* Donation Statistics */}
+                {donationStats && (
+                  <div className="bg-gradient-to-br from-[#f7eef3] to-[#f1e8ed] rounded-lg p-6 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-semibold text-[#412434]">
+                        Impact Summary
+                      </h4>
+                      <GraduationCap className="h-6 w-6 text-[#733857]" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-[#733857]">₹{donationStats.totalAmount || 0}</div>
+                        <div className="text-xs text-[#8d4466] font-medium uppercase tracking-wider">Total Donated</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-[#733857]">{donationStats.donationCount || 0}</div>
+                        <div className="text-xs text-[#8d4466] font-medium uppercase tracking-wider">Contributions</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-[#733857]">
+                          {donationStats.lastDonation 
+                            ? new Date(donationStats.lastDonation).toLocaleDateString('en-US', { month: 'short' })
+                            : 'N/A'
+                          }
+                        </div>
+                        <div className="text-xs text-[#8d4466] font-medium uppercase tracking-wider">Last Contribution</div>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-white/50 rounded-md">
+                      <p className="text-xs text-[#412434] text-center font-medium">
+                        Thank you for supporting education initiatives and making a difference in student lives! 🎓
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Donations List */}
+                <div className="space-y-4">
+                  {donations.map((donation, index) => (
+                    <div key={index} className="bg-white border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <GraduationCap className="h-4 w-4 text-[#733857]" />
+                            <span className="font-semibold text-[#412434]">
+                              {donation.initiativeName}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {donation.initiativeDescription}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>Order: #{donation.orderNumber}</span>
+                            <span>•</span>
+                            <span>{new Date(donation.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short', 
+                              day: 'numeric'
+                            })}</span>
+                            <span>•</span>
+                            <span className="capitalize">{donation.paymentMethod}</span>
+                            <span>•</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              donation.paymentStatus === 'completed' 
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {donation.paymentStatus}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <div className="text-xl font-bold text-[#733857]">₹{donation.donationAmount}</div>
+                          {donation.deliveryLocation && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              📍 {donation.deliveryLocation}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {donations.length > 0 && (
+                  <div className="text-center pt-6 border-t border-gray-100">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Keep making a difference! Add donations to your next order.
+                    </p>
+                    <Link 
+                      to="/products"
+                      className="inline-flex items-center px-4 py-2 text-xs font-medium text-[#733857] hover:text-white hover:bg-[#733857] border border-[#733857] transition-all duration-300"
+                    >
+                      Continue Shopping
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+
       case 'transactions':
         return (
           <div className="space-y-6">
@@ -1456,7 +1710,7 @@ const ProfilePage = () => {
                 {[
                   { icon: Package, value: orders?.length || 0, label: 'Orders', color: '#733857' },
                   { icon: Heart, value: favorites?.length || 0, label: 'Favorites', color: '#8d4466' },
-                  { icon: ShoppingCart, value: cartCount || 0, label: 'In Cart', color: '#412434' }
+                  { icon: GraduationCap, value: donationStats?.donationCount || 0, label: 'Contributions', color: '#412434' }
                 ].map((stat, index) => (
                   <div key={index} className="relative group">
                     <div className="bg-white p-4 sm:p-6 text-center transition-all duration-300 hover:shadow-lg" style={{

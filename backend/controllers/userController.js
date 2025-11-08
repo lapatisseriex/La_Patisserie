@@ -266,6 +266,80 @@ export const getUsers = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get comprehensive user details for admin
+// @route   GET /api/admin/users/:userId/details
+// @access  Admin
+export const getUserDetailsForAdmin = asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+
+  // First try to find by Firebase uid (which is what we usually get from frontend)
+  let user = await User.findOne({ uid: userId }).populate('location').populate('hostel');
+  
+  if (!user) {
+    // If not found by uid, try by MongoDB _id (just in case)
+    try {
+      user = await User.findById(userId).populate('location').populate('hostel');
+    } catch (error) {
+      // Ignore cast errors for invalid ObjectId format
+      if (error.name !== 'CastError') {
+        throw error;
+      }
+    }
+  }
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Get user orders using the MongoDB _id (not Firebase uid)
+  const orders = await Order.find({ userId: user._id })
+    .populate('cartItems.productId', 'name images price')
+    .sort('-createdAt')
+    .limit(20);
+
+  // Get order statistics using the MongoDB _id
+  const totalSpentResult = await Order.aggregate([
+    { $match: { userId: user._id, orderStatus: { $ne: 'cancelled' } } },
+    { $group: { _id: null, total: { $sum: '$amount' } } }
+  ]);
+
+  const orderStats = {
+    totalOrders: await Order.countDocuments({ userId: user._id }),
+    completedOrders: await Order.countDocuments({ 
+      userId: user._id, 
+      orderStatus: 'delivered' 
+    }),
+    cancelledOrders: await Order.countDocuments({ 
+      userId: user._id, 
+      orderStatus: 'cancelled' 
+    }),
+    pendingOrders: await Order.countDocuments({ 
+      userId: user._id, 
+      orderStatus: { $in: ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery'] }
+    }),
+    totalSpent: totalSpentResult[0]?.total || 0,
+    averageOrderValue: 0
+  };
+
+  // Calculate average order value
+  if (orderStats.totalOrders > 0) {
+    orderStats.averageOrderValue = Math.round(orderStats.totalSpent / orderStats.totalOrders);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      ...user.toObject(),
+      totalOrders: orderStats.totalOrders,
+      totalSpent: orderStats.totalSpent,
+      averageOrderValue: orderStats.averageOrderValue,
+      orderStats,
+      recentOrders: orders
+    }
+  });
+});
+
 // Favorites functionality has been removed
 
 // @desc    Add product to recently viewed

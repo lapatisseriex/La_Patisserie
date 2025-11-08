@@ -7,7 +7,8 @@ import {
   addSubscriberManually,
   updateSubscriber,
   deleteSubscriber,
-  getNewsletterStats
+  getNewsletterStats,
+  getNewsletterStatusByEmail
 } from '../controllers/newsletterController.js';
 import { sendCustomNewsletter } from '../utils/newsletterEmailService.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
@@ -20,6 +21,7 @@ router.post('/unsubscribe', unsubscribe);
 // Admin routes - Protected
 router.get('/admin/subscribers', protect, admin, getAllSubscribers);
 router.get('/admin/stats', protect, admin, getNewsletterStats);
+router.get('/admin/user/:email', protect, admin, getNewsletterStatusByEmail);
 router.post('/admin/add', protect, admin, addSubscriberManually);
 router.put('/admin/:id', protect, admin, updateSubscriber);
 router.delete('/admin/:id', protect, admin, deleteSubscriber);

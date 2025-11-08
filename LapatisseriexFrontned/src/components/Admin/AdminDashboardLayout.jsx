@@ -17,7 +17,8 @@ import {
   FaEnvelope,
   FaTruck,
   FaBell,
-  FaGift
+  FaGift,
+  FaGraduationCap
 } from 'react-icons/fa';
 import { MdPayment } from 'react-icons/md';
 
@@ -290,6 +291,16 @@ const AdminDashboardLayout = () => {
                 >
                   <FaGift className="mr-3 flex-shrink-0" />
                   <span className={!isSidebarOpen ? 'hidden' : ''}>Free Product Rewards</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/admin/donations"
+                  onClick={closeSidebarIfOpen}
+                  className={`flex items-center py-3 px-4 font-medium ${location.pathname === '/admin/donations' ? 'bg-rose-700 text-white' : 'hover:bg-rose-700'}`}
+                >
+                  <FaGraduationCap className="mr-3 flex-shrink-0" />
+                  <span className={!isSidebarOpen ? 'hidden' : ''}>Donations</span>
                 </Link>
               </li>
             </ul>

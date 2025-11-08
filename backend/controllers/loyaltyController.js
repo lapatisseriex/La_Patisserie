@@ -2,6 +2,60 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import LoyaltyProgram from '../models/loyaltyProgramModel.js';
 import Product from '../models/productModel.js';
 
+// @desc    Get loyalty status for admin view
+// @route   GET /api/admin/users/:userId/loyalty
+// @access  Private (Admin only)
+export const getUserLoyaltyForAdmin = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const loyalty = await LoyaltyProgram.findOne({ userId });
+
+    if (!loyalty) {
+      return res.json({
+        success: true,
+        data: {
+          hasLoyaltyProgram: false,
+          uniqueDaysCount: 0,
+          totalOrdersThisMonth: 0,
+          freeProductEligible: false,
+          freeProductClaimed: false,
+          remainingDays: 10,
+          currentMonth: new Date().toISOString().substring(0, 7),
+          lastOrderDate: null,
+          history: []
+        }
+      });
+    }
+
+    const remainingDays = loyalty.getRemainingDays();
+
+    res.json({
+      success: true,
+      data: {
+        hasLoyaltyProgram: true,
+        uniqueDaysCount: loyalty.uniqueDaysCount,
+        totalOrdersThisMonth: loyalty.totalOrdersThisMonth,
+        freeProductEligible: loyalty.freeProductEligible,
+        freeProductClaimed: loyalty.freeProductClaimed,
+        freeProductClaimedAt: loyalty.freeProductClaimedAt,
+        remainingDays,
+        currentMonth: loyalty.currentMonth,
+        lastOrderDate: loyalty.lastOrderDate,
+        orderDates: loyalty.orderDates,
+        history: loyalty.history || []
+      }
+    });
+  } catch (error) {
+    console.error('Error getting user loyalty for admin:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user loyalty status',
+      error: error.message
+    });
+  }
+});
+
 // @desc    Get loyalty status for current user
 // @route   GET /api/loyalty/status
 // @access  Private

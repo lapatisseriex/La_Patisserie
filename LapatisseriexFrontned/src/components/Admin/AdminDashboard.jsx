@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaUsers, FaShoppingCart, FaMapMarkerAlt, FaList, FaCheckCircle } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { FaUsers, FaShoppingCart, FaMapMarkerAlt, FaList, FaCheckCircle, FaSearch } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import InventoryWidget from './Dashboard/InventoryWidget';
@@ -11,6 +11,8 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 const AdminDashboard = () => {
   const { user } = useAuth();
   const { locations } = useLocationContext();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalOrders: 0,
@@ -73,6 +75,11 @@ const AdminDashboard = () => {
           ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(order.orderStatus)
         ).length;
 
+        // Fetch products statistics
+        const productsResponse = await axios.get(`${API_URL}/products`, { headers });
+        const productsData = productsResponse.data || [];
+        const totalProducts = Array.isArray(productsData) ? productsData.length : 0;
+
         // Set recent users (last 5)
         // Make sure we're sorting correctly based on the actual data structure
         const sortedUsers = Array.isArray(usersData) ?
@@ -94,7 +101,7 @@ const AdminDashboard = () => {
           totalUsers: Array.isArray(raw) ? usersData.length : (raw?.totalUsers ?? usersData.length ?? 0),
           totalOrders: totalOrders,
           pendingOrders: pendingOrders,
-          totalProducts: 0, // We're setting this to 0 as requested
+          totalProducts: totalProducts,
           activeLocations: locations ? locations.filter(loc => loc.isActive).length : 0
         });
 
@@ -114,14 +121,70 @@ const AdminDashboard = () => {
     }
   }, [authReady, user, locations]);
 
+  // Handle global search
+  const handleGlobalSearch = () => {
+    if (!searchQuery.trim()) return;
+    
+    // Check if it looks like an order number
+    if (searchQuery.includes('ORD') || searchQuery.match(/^\d{13}/)) {
+      navigate(`/admin/orders`, { state: { searchQuery: searchQuery.trim() } });
+    } 
+    // Check if it looks like an email
+    else if (searchQuery.includes('@')) {
+      navigate(`/admin/users`, { state: { searchQuery: searchQuery.trim() } });
+    }
+    // Default to orders search
+    else {
+      navigate(`/admin/orders`, { state: { searchQuery: searchQuery.trim() } });
+    }
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleGlobalSearch();
+    }
+  };
+
   return (
     <div className="container mx-auto pl-8 pr-4 py-8 md:px-6 md:py-8 font-sans">
       {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
       {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
       <div className="mb-2 md:mb-8">
         {/* Tweak header margin: change mb-0 md:mb-8 to desired values (e.g., mb-2 md:mb-6 for less spacing) */}
-        <h1 className="text-2xl md:text-3xl font-bold text-black">Admin Dashboard</h1>
-        <p className="text-black font-light">Welcome back, Admin</p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-black">Admin Dashboard</h1>
+            <p className="text-black font-light">Welcome back, Admin</p>
+          </div>
+          
+          {/* Global Search Bar */}
+          <div className="lg:max-w-md w-full">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaSearch className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Quick search: order number, email, payment ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={handleGlobalSearch}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <div className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                    Search
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}

@@ -7,7 +7,8 @@ import {
   replyToContact,
   deleteContact,
   bulkUpdateContacts,
-  getContactStats
+  getContactStats,
+  getContactsByUser
 } from '../controllers/contactController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import rateLimit from 'express-rate-limit';
@@ -35,6 +36,7 @@ router.use(protect, admin);
 
 router.get('/', getContacts);
 router.get('/stats', getContactStats);
+router.get('/user/:email', getContactsByUser);
 router.get('/:id', getContact);
 router.put('/:id/status', updateContactStatus);
 router.post('/:id/reply', replyToContact);

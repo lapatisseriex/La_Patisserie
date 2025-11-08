@@ -1,5 +1,6 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import User from '../models/userModel.js';
+import LoyaltyProgram from '../models/loyaltyProgramModel.js';
 import { resetMonthlyRewardsForAllUsers } from '../utils/monthlyRewardCleanup.js';
 
 /**
@@ -15,10 +16,8 @@ export const getAllUsersRewardStatus = asyncHandler(async (req, res) => {
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
     
-    // Build query - get users who have ordered at least once
-    const query = {
-      'monthlyOrderDays.0': { $exists: true }
-    };
+    // Build query - get all users
+    const query = {};
     
     // Filter by status if provided
     if (status === 'eligible') {
@@ -35,20 +34,39 @@ export const getAllUsersRewardStatus = asyncHandler(async (req, res) => {
     
     // Get all users
     const users = await User.find(query)
-      .select('name email phone monthlyOrderDays freeProductEligible freeProductUsed lastRewardMonth freeProductClaimHistory')
+      .select('name email phone uid monthlyOrderDays freeProductEligible freeProductUsed lastRewardMonth freeProductClaimHistory')
       .sort({ updatedAt: -1 })
       .limit(parseInt(limit))
       .skip(skip);
     
     const totalCount = await User.countDocuments(query);
     
+    // Get loyalty program data for all users
+    const userUids = users.map(user => user.uid).filter(uid => uid);
+    const loyaltyPrograms = await LoyaltyProgram.find({ userId: { $in: userUids } });
+    
+    // Create a map of loyalty data by UID
+    const loyaltyMap = {};
+    loyaltyPrograms.forEach(loyalty => {
+      loyaltyMap[loyalty.userId] = loyalty;
+    });
+    
     // Format user data
     const usersData = users.map(user => {
-      // Calculate current month order days
-      const currentMonthOrders = (user.monthlyOrderDays || []).filter(
-        orderDay => orderDay.month === currentMonth && orderDay.year === currentYear
-      );
-      const uniqueDays = new Set(currentMonthOrders.map(od => new Date(od.date).getDate()));
+      // Get loyalty program data for this user
+      const loyaltyData = loyaltyMap[user.uid];
+      
+      let currentMonthDays = 0;
+      if (loyaltyData && loyaltyData.uniqueDaysCount !== undefined) {
+        currentMonthDays = loyaltyData.uniqueDaysCount;
+      } else {
+        // Fallback to old monthlyOrderDays method
+        const currentMonthOrders = (user.monthlyOrderDays || []).filter(
+          orderDay => orderDay.month === currentMonth && orderDay.year === currentYear
+        );
+        const uniqueDays = new Set(currentMonthOrders.map(od => new Date(od.date).getDate()));
+        currentMonthDays = uniqueDays.size;
+      }
       
       // Get last claim
       const lastClaim = user.freeProductClaimHistory && user.freeProductClaimHistory.length > 0
@@ -68,8 +86,8 @@ export const getAllUsersRewardStatus = asyncHandler(async (req, res) => {
         userName: user.name,
         userEmail: user.email,
         userPhone: user.phone,
-        currentOrderDays: uniqueDays.size,
-        daysRemaining: Math.max(0, 10 - uniqueDays.size),
+        currentOrderDays: currentMonthDays,
+        daysRemaining: Math.max(0, 10 - currentMonthDays),
         status: userStatus,
         eligible: user.freeProductEligible,
         used: user.freeProductUsed,

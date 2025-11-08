@@ -407,3 +407,25 @@ export const getContactStats = asyncHandler(async (req, res) => {
     throw new Error('Failed to fetch statistics');
   }
 });
+
+// @desc    Get contact messages by user email (for admin)
+// @route   GET /api/admin/contacts/user/:email
+// @access  Admin
+export const getContactsByUser = asyncHandler(async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    const contacts = await Contact.find({ email: email.toLowerCase() })
+      .sort('-createdAt')
+      .limit(10);
+
+    res.status(200).json({
+      success: true,
+      data: contacts
+    });
+  } catch (error) {
+    console.error('❌ Error fetching user contacts:', error);
+    res.status(500);
+    throw new Error('Failed to fetch user contacts');
+  }
+});

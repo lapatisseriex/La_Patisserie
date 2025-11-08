@@ -13,8 +13,22 @@ const buildQuery = (params = {}) => {
 
 export const paymentsService = {
   // Admin: list all payments with filters
-  list: async ({ page = 1, limit = 20, status, method, startDate, endDate, search } = {}) => {
-    const qs = buildQuery({ page, limit, status, method, startDate, endDate, search });
+  list: async ({
+    page = 1,
+    limit = 20,
+    status,
+    method,
+    startDate,
+    endDate,
+    search,
+    orderStatus,
+    orderPaymentStatus,
+    deliveryLocation,
+    hostel,
+    email,
+    phone
+  } = {}) => {
+    const qs = buildQuery({ page, limit, status, method, startDate, endDate, search, orderStatus, orderPaymentStatus, deliveryLocation, hostel, email, phone });
     return apiGet(`/payments${qs}`, { cache: false, dedupe: true });
   },
   // Admin: get by id
@@ -41,15 +55,34 @@ export const paymentsService = {
 // Utility: export array of payments to CSV string
 export const paymentsToCSV = (items = []) => {
   const headers = [
-    'Date', 'OrderID', 'Email', 'Amount', 'Method', 'Status', 'GatewayPaymentId', 'GatewayOrderId'
+    'Date',
+    'OrderID',
+    'CustomerName',
+    'Email',
+    'Phone',
+    'Amount',
+    'Method',
+    'PaymentStatus',
+    'OrderStatus',
+    'OrderPaymentStatus',
+    'DeliveryLocation',
+    'Hostel',
+    'GatewayPaymentId',
+    'GatewayOrderId'
   ];
   const rows = items.map(p => [
     new Date(p.date || p.createdAt).toLocaleString(),
     p.orderId || '',
+    p.customerName || '',
     p.email || '',
+    p.phone || '',
     typeof p.amount === 'number' ? p.amount.toFixed(2) : p.amount,
     p.paymentMethod || '',
     p.paymentStatus || '',
+    p.data?.order?.orderStatus || '',
+    p.data?.order?.paymentStatus || '',
+    p.deliveryLocationLabel || '',
+    p.hostelName || '',
     p.gatewayPaymentId || '',
     p.gatewayOrderId || ''
   ]);

@@ -40,6 +40,7 @@ import emailDispatchRoutes from './routes/emailDispatchRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import sitemapRoutes from './routes/sitemapRoutes.js';
 import freeProductRoutes from './routes/freeProductRoutes.js';
+import donationRoutes from './routes/donationRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
 import { startMonthlyCleanupJob } from './utils/monthlyCleanupJob.js';
 import { scheduleMonthlyRewardCleanup } from './utils/cronJobs.js';
@@ -50,9 +51,20 @@ const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Configure trust proxy for deployment platforms (Vercel, Render, Heroku, etc.)
-// This allows Express to correctly identify client IPs from X-Forwarded-For headers
-app.set('trust proxy', true);
+// Configure trust proxy only when deployed behind a known proxy
+// Using `true` is overly permissive and flagged by express-rate-limit
+const envTrustProxy = process.env.TRUST_PROXY;
+let trustProxySetting;
+if (envTrustProxy === undefined) {
+  trustProxySetting = NODE_ENV === 'production' ? 1 : false;
+} else if (envTrustProxy === 'false' || envTrustProxy === '0') {
+  trustProxySetting = false;
+} else if (/^\d+$/.test(envTrustProxy)) {
+  trustProxySetting = parseInt(envTrustProxy, 10);
+} else {
+  trustProxySetting = envTrustProxy;
+}
+app.set('trust proxy', trustProxySetting);
 
 // Middleware
 const allowedOrigins = [
@@ -347,6 +359,7 @@ const startServer = async () => {
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/newsletter', newsletterRoutes);
     app.use('/api/free-product', freeProductRoutes);
+    app.use('/api/donations', donationRoutes);
 
     // WebSocket setup
     const io = new Server(server, {

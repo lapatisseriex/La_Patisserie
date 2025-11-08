@@ -235,3 +235,26 @@ export const checkFavoriteStatus = asyncHandler(async (req, res) => {
     });
   }
 });
+
+// @desc    Get user's favorites by user ID (for admin)
+// @route   GET /api/admin/favorites/user/:userId
+// @access  Admin
+export const getUserFavoritesForAdmin = asyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const favoritesData = await buildPopulatedFavoritesResponse(userId);
+    
+    res.status(200).json({
+      success: true,
+      data: favoritesData
+    });
+  } catch (error) {
+    console.error('Get user favorites for admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user favorites',
+      error: error.message
+    });
+  }
+});

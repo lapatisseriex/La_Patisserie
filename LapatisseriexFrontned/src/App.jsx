@@ -59,6 +59,7 @@ import AdminPayments from './components/Admin/AdminPayments';
 import AdminNewsletter from './components/Admin/AdminNewsletter';
 import AdminNotifications from './components/Admin/AdminNotifications';
 import AdminFreeProductRewards from './components/Admin/AdminFreeProductRewards';
+import AdminDonations from './components/Admin/AdminDonations';
 
 // Contact Components
 import Contact from './pages/Contact';
@@ -256,6 +257,7 @@ function App() {
                               <Route path="contacts" element={<React.Suspense fallback={<div>Loading...</div>}><ContactManagement /></React.Suspense>} />
                               <Route path="newsletter" element={<React.Suspense fallback={<div>Loading...</div>}><AdminNewsletter /></React.Suspense>} />
                               <Route path="rewards" element={<React.Suspense fallback={<div>Loading...</div>}><AdminFreeProductRewards /></React.Suspense>} />
+                              <Route path="donations" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDonations /></React.Suspense>} />
                             </Route>
                           </Route>
                           {/* Catch-all route for any undefined paths */}

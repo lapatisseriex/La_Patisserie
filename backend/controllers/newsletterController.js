@@ -250,6 +250,25 @@ const getNewsletterStats = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get newsletter subscription status by email (for admin)
+// @route   GET /api/admin/newsletter/status/:email
+// @access  Admin
+const getNewsletterStatusByEmail = asyncHandler(async (req, res) => {
+  const { email } = req.params;
+
+  const subscriber = await Newsletter.findOne({ email: email.toLowerCase() });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      subscribed: !!subscriber,
+      subscribedAt: subscriber?.createdAt || null,
+      source: subscriber?.source || null,
+      status: subscriber?.status || 'not_subscribed'
+    }
+  });
+});
+
 export {
   subscribe,
   unsubscribe,
@@ -257,5 +276,6 @@ export {
   addSubscriberManually,
   updateSubscriber,
   deleteSubscriber,
-  getNewsletterStats
+  getNewsletterStats,
+  getNewsletterStatusByEmail
 };
