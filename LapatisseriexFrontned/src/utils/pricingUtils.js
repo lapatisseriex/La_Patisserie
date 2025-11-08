@@ -35,17 +35,7 @@ export const calculatePricing = (variant) => {
   // Calculate final price (base selling + free cash) - this is what customer pays without discount
   const finalPrice = baseSelling + freeCash;
   
-  // Debug logging for development
-  if (process.env.NODE_ENV === 'development' && variant.costPrice) {
-    console.log('🧮 Pricing Calculation:', {
-      costPrice: basePrice,
-      profitWanted: profitNeeded,
-      freeCashExpected: freeCash,
-      baseSelling: baseSelling,
-      finalPrice: finalPrice,
-      discount: variant.discount
-    });
-  }
+  // Debug logging removed (was noisy in console)
   
   // Ensure finalPrice is valid - this is the customer's base price before any discounts
   if (isNaN(finalPrice) || finalPrice < 0) {
@@ -134,10 +124,7 @@ export const calculatePricing = (variant) => {
     discountAmount: Math.round(Math.max(0, discountAmount))
   };
   
-  // Debug logging for development
-  if (process.env.NODE_ENV === 'development' && variant.costPrice) {
-    console.log('✅ Final Pricing Result:', result);
-  }
+  // Debug logging removed (was noisy in console)
   
   return result;
 };

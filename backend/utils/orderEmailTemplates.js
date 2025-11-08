@@ -24,13 +24,6 @@ export const getOrderStatusEmailTemplate = async (orderDetails, newStatus, logoA
   const { orderNumber, userDetails, cartItems, orderSummary } = orderDetails;
   
   const statusMessages = {
-    confirmed: {
-      subject: `Order Confirmed - ${orderNumber}`,
-      title: 'Order Confirmed!',
-      message: 'Great news! Your order has been confirmed and we\'re preparing to make your delicious treats.',
-      icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,11 12,14 22,4"></polyline><path d="m21,3-6.5,18a.55.55,0,0,1-1,0L10,14Z"></path></svg>`,
-      color: '#10B981'
-    },
     preparing: {
       subject: `Order Being Prepared - ${orderNumber}`,
       title: 'Your Order is Being Prepared!',
@@ -597,20 +590,6 @@ export const getOrderStatusEmailTemplate = async (orderDetails, newStatus, logoA
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z"></path></svg>
                 ${userDetails.phone}
               </div>
-            </div>
-
-            <!-- Track Order CTA -->
-            <div class="cta-section">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/orders/${orderNumber}" class="cta-button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <p style="color: #000000ff;">Track Your Order</p>
-              </a>
-              <p style="margin: 16px 0 0 0; font-size: 13px; color: #6B7280;">
-                Click the button above to view real-time updates
-              </p>
             </div>
           </div>
 

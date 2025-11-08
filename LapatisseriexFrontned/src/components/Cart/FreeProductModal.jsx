@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaGift } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 const FreeProductModal = ({ isOpen, onClose }) => {
@@ -24,79 +24,93 @@ const FreeProductModal = ({ isOpen, onClose }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            className="fixed inset-0 bg-black bg-opacity-20 z-50"
           />
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-gradient-to-br from-white to-[#f9f4f6] rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-[#d9c4cd]/50 overflow-hidden">
-              {/* Decorative background elements */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-[#733857]/5 rounded-full -mr-20 -mt-20"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#8d4466]/5 rounded-full -ml-16 -mb-16"></div>
-              
+            <div className="bg-white border border-gray-200 max-w-sm w-full p-6 relative">
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 text-[#733857]/60 hover:text-[#733857] transition-colors z-10"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
                 aria-label="Close"
               >
-                <FaTimes size={24} />
+                <FaTimes size={18} />
               </button>
 
-              {/* Icon */}
-              <div className="flex justify-center mb-4 relative z-10">
-                <div className="bg-gradient-to-br from-[#733857] to-[#8d4466] rounded-full p-4 shadow-lg">
-                  <FaGift className="text-white text-4xl" />
-                </div>
+              <div className="flex justify-center mb-4">
+                <motion.div 
+                  className="w-12 h-12 border-2 border-blue-500 flex items-center justify-center"
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    duration: 6,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                >
+                  <img 
+                    src="/images/logo.png" 
+                    alt="La Patisserie Logo" 
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      // Fallback if logo doesn't load
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="w-full h-full bg-blue-500 flex items-center justify-center" style={{ display: 'none' }}>
+                    <div className="w-6 h-6 bg-white"></div>
+                  </div>
+                </motion.div>
               </div>
 
               {/* Title */}
-              <h2 className="text-2xl font-bold text-center text-[#412434] mb-3 relative z-10">
-                🎉 Congratulations!
+              <h2 className="text-xl font-bold text-center text-gray-900 mb-3">
+                Congratulations!
               </h2>
 
               {/* Message */}
-              <p className="text-center text-[#733857] mb-6 leading-relaxed relative z-10">
-                You've unlocked a <span className="font-semibold text-[#733857] bg-[#f7eef3] px-2 py-0.5 rounded">FREE product</span>! 
-                <br />
-                Pick any item from our catalog as your reward.
-                <br />
-                <span className="text-xs font-medium text-[#8d4466] mt-2 inline-block">
-                  ⚠️ Only ONE free product allowed per month
-                </span>
+              <p className="text-center text-gray-700 mb-4 leading-relaxed text-sm">
+                You've unlocked a <span className="font-semibold text-blue-600 border-b border-blue-300 pb-0.5">free product</span> reward! 
+                Pick any item from our catalog.
+              </p>
+              
+              <p className="text-center text-xs text-gray-500 mb-6">
+                Only one free product allowed per month
               </p>
 
               {/* Description */}
-              <div className="bg-[#f7eef3] border border-[#d9c4cd] rounded-lg p-4 mb-6 relative z-10">
-                <p className="text-sm text-[#412434] leading-relaxed">
-                  <strong className="text-[#733857]">How it works:</strong>
+              <div className="border border-gray-200 p-4 mb-6">
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  <span className="font-semibold text-gray-900">How it works:</span>
                   <br />
-                  1. Click below to browse our products
+                  1. Browse our products
                   <br />
                   2. Select your favorite item
                   <br />
-                  3. It will be added to your cart for FREE!
+                  3. It will be added to your cart for free
                 </p>
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col gap-3 relative z-10">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={handleSelectProduct}
-                  className="w-full bg-gradient-to-r from-[#733857] to-[#8d4466] hover:from-[#8d4466] hover:to-[#733857] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                  className="w-full border-2 border-blue-500 text-blue-600 hover:text-blue-700 hover:border-blue-600 font-semibold py-3 px-6 transition-colors duration-200 text-sm"
                 >
                   Select Free Product
                 </button>
                 
                 <button
                   onClick={onClose}
-                  className="w-full bg-[#e8dce3] hover:bg-[#d9c4cd] text-[#733857] font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                  className="w-full border border-gray-300 text-gray-600 hover:text-gray-700 hover:border-gray-400 font-medium py-3 px-6 transition-colors duration-200 text-sm"
                 >
                   Maybe Later
                 </button>

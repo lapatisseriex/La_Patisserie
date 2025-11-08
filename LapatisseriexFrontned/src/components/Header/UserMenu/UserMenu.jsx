@@ -15,6 +15,8 @@ const UserMenu = memo(() => {
   
   const isProfileIncomplete = user && (!user.name || !user.dob || !user.location);
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -29,18 +31,37 @@ const UserMenu = memo(() => {
     };
   }, []);
 
-  const handleSignOut = (e) => {
+  const handleSignOut = async (e) => {
     e.preventDefault();
-    // Clear any pending timeout
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    logout();
-    setIsMenuOpen(false);
-    navigate('/');
+    e.stopPropagation();
+    
+    // Prevent double-clicks
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
+    
+    try {
+      // Clear any pending timeout
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      
+      // Close menu immediately
+      setIsMenuOpen(false);
+      
+      // Perform logout
+      await logout();
+      
+      // Navigate after logout is complete
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
     <div 
-      className="relative" 
+      className="relative user-menu" 
       ref={menuRef}
       onMouseEnter={() => {
         // Clear any existing timeout to prevent menu from closing
@@ -56,7 +77,7 @@ const UserMenu = memo(() => {
     >
       <div 
         className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 border border-transparent cursor-pointer relative group"
-        style={{fontFamily: 'sans-serif', color: '#281c20'}}
+        style={{color: '#281c20'}}
         aria-label="My Account"
       >
         {/* Show only CUSTOM uploaded profile photos (with a valid public_id). 
@@ -253,15 +274,18 @@ const UserMenu = memo(() => {
           <div className="p-2 border-t border-gray-100">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) relative group backdrop-filter backdrop-blur-sm"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20' }}
+              disabled={isLoggingOut}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) relative group backdrop-filter backdrop-blur-sm auth-button-secondary ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+              style={{ color: '#281c20' }}
             >
               <img 
                 src="/signout.png" 
                 alt="Logout Icon" 
-                className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+                className={`h-4 w-4 transition-all duration-300 group-hover:scale-110 ${isLoggingOut ? 'opacity-50' : ''}`} 
               />
-              <span className="font-light relative z-10">Sign Out</span>
+              <span className="font-light relative z-10">
+                {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
+              </span>
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
             </button>
           </div>

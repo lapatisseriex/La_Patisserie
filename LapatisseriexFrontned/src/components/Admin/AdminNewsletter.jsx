@@ -51,6 +51,7 @@ const AdminNewsletter = () => {
   const [sending, setSending] = useState(false);
   
   const API_URL = import.meta.env.VITE_API_URL;
+  const VERCEL_URL = import.meta.env.VITE_VERCEL_API_URL;
   
   // Fetch subscribers
   const fetchSubscribers = async () => {
@@ -188,7 +189,7 @@ const AdminNewsletter = () => {
       const idToken = await auth.currentUser.getIdToken(true);
       
       const response = await axios.post(
-        `${API_URL}/newsletter/admin/send`,
+        `${VERCEL_URL}/newsletter/admin/send`,
         {
           subject: newsletterSubject,
           title: newsletterTitle,

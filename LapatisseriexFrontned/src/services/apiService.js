@@ -330,16 +330,223 @@ export const apiGet = async (url, options = {}) => {
   return reqPromise;
 };
 
-// Email verification services
+// ============================================================================
+// EMAIL API BASE URL - Vercel for Email Services
+// ============================================================================
+const getEmailApiUrl = () => {
+  const vercelUrl = import.meta.env?.VITE_VERCEL_API_URL;
+  console.log(`📧 [Email API Config] Using: ${vercelUrl}`);
+  return vercelUrl;
+};
+
+// ============================================================================
+// EMAIL-RELATED API CALLS - All route to Vercel
+// ============================================================================
+
+// Email verification services (Profile email updates)
 export const emailService = {
   sendOtp: async (email) => {
     if (!email) throw new Error('Email is required');
-    return api.post('/email/send-otp', { email }).then(r => r.data);
+    console.log(`[Email API] 📧 Sending email OTP to: ${email}`);
+    
+    return api.post('/email/send-otp', { email }, {
+      baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+    }).then(r => {
+      console.log('✅ Email OTP sent successfully via Vercel');
+      return r.data;
+    }).catch(error => {
+      console.error('❌ Failed to send email OTP:', error);
+      throw error;
+    });
   },
+  
   verifyOtp: async (email, otp) => {
     if (!email || !otp) throw new Error('Email and OTP are required');
-    return api.post('/email/verify-otp', { email, otp }).then(r => r.data);
+    console.log(`[Email API] 📧 Verifying email OTP for: ${email}`);
+    
+    return api.post('/email/verify-otp', { email, otp }, {
+      baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+    }).then(r => {
+      console.log('✅ Email OTP verified successfully via Vercel');
+      return r.data;
+    }).catch(error => {
+      console.error('❌ Failed to verify email OTP:', error);
+      throw error;
+    });
   }
+};
+
+// Authentication email API calls
+export const sendSignupOtp = async (email) => {
+  if (!email) throw new Error('Email is required');
+  console.log(`[Email API] 📧 Sending signup OTP to: ${email}`);
+  
+  return api.post('/auth/signup/send-otp', { email }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Signup OTP sent successfully via Vercel');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to send signup OTP:', error);
+    throw error;
+  });
+};
+
+export const verifySignupOtp = async (email, otp, password, name, locationId = null) => {
+  if (!email || !otp || !password || !name) {
+    throw new Error('Email, OTP, password, and name are required');
+  }
+  console.log(`[Email API] 📧 Verifying signup OTP for: ${email}`);
+  
+  return api.post('/auth/signup/verify-otp', { email, otp, password, name, locationId }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Signup verified and account created via Vercel');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to verify signup OTP:', error);
+    throw error;
+  });
+};
+
+export const sendPasswordResetOtp = async (email) => {
+  if (!email) throw new Error('Email is required');
+  console.log(`[Email API] 📧 Sending password reset OTP to: ${email}`);
+  
+  return api.post('/auth/forgot-password', { email: email.toLowerCase().trim() }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Password reset OTP sent successfully via Vercel');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to send password reset OTP:', error);
+    throw error;
+  });
+};
+
+export const verifyPasswordResetOtp = async (email, otp) => {
+  if (!email || !otp) throw new Error('Email and OTP are required');
+  console.log(`[Email API] 📧 Verifying password reset OTP for: ${email}`);
+  
+  return api.post('/auth/verify-reset-otp', { 
+    email: email.toLowerCase().trim(), 
+    otp: otp.trim() 
+  }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Password reset OTP verified successfully via Vercel');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to verify password reset OTP:', error);
+    throw error;
+  });
+};
+
+export const resetPassword = async (email, newPassword) => {
+  if (!email || !newPassword) throw new Error('Email and new password are required');
+  console.log(`[Email API] 📧 Resetting password for: ${email}`);
+  
+  return api.post('/auth/reset-password', { 
+    email: email.toLowerCase().trim(), 
+    newPassword 
+  }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Password reset successfully via Vercel');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to reset password:', error);
+    throw error;
+  });
+};
+
+// Newsletter API calls
+export const subscribeToNewsletter = async (email, source = 'homepage') => {
+  if (!email) throw new Error('Email is required');
+  console.log(`[Email API] 📧 Subscribing to newsletter: ${email} (source: ${source})`);
+  
+  return api.post('/newsletter/subscribe', { email, source }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Newsletter subscription successful via Vercel');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Newsletter subscription failed:', error);
+    throw error;
+  });
+};
+
+export const sendCustomNewsletter = async (newsletterData) => {
+  const { subject, title, body, ctaText, ctaLink } = newsletterData;
+  if (!subject || !body) throw new Error('Subject and body are required');
+  console.log(`[Email API] 📧 Sending custom newsletter: ${subject}`);
+  
+  return api.post('/newsletter/admin/send', { subject, title, body, ctaText, ctaLink }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Custom newsletter sent successfully via Vercel');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to send custom newsletter:', error);
+    throw error;
+  });
+};
+
+// Contact form API call
+export const sendContactForm = async (formData) => {
+  const { name, email, phone, subject, message } = formData;
+  if (!name || !email || !subject || !message) {
+    throw new Error('Name, email, subject, and message are required');
+  }
+  console.log(`[Email API] 📧 Sending contact form from: ${email}`);
+  
+  return api.post('/contact', { name, email, phone, subject, message }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Contact form sent successfully via Vercel');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to send contact form:', error);
+    throw error;
+  });
+};
+
+// Order & Payment email API calls
+export const createOrderWithEmail = async (orderData) => {
+  if (!orderData) throw new Error('Order data is required');
+  console.log(`[Email API] 📧 Creating order (will trigger confirmation email)`);
+  
+  return api.post('/payments/create-order', orderData, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Order created successfully via Vercel (confirmation email sent)');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to create order:', error);
+    throw error;
+  });
+};
+
+export const verifyPaymentWithEmail = async (paymentData) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData;
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    throw new Error('Payment verification data is incomplete');
+  }
+  console.log(`[Email API] 📧 Verifying payment (will trigger success email)`);
+  
+  return api.post('/payments/verify', { 
+    razorpay_order_id, 
+    razorpay_payment_id, 
+    razorpay_signature 
+  }, {
+    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
+  }).then(r => {
+    console.log('✅ Payment verified successfully via Vercel (success email sent)');
+    return r.data;
+  }).catch(error => {
+    console.error('❌ Failed to verify payment:', error);
+    throw error;
+  });
 };
 
 // Export default api instance for other services

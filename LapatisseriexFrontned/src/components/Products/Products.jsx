@@ -5,7 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from './ProductCard';
 import ProductCardSkeleton from './ProductCardSkeleton';
 import { fetchProducts, makeSelectListByKey, makeSelectLoadingByKey } from '../../redux/productsSlice';
+import { selectCartItems } from '../../redux/cartSlice';
 import { useCategory } from '../../context/CategoryContext/CategoryContext';
+import { useCart } from '../../hooks/useCart';
+import { useAuth } from '../../hooks/useAuth';
 import CategorySwiper from './CategorySwiper';
 import TextCategoryBar from './TextCategoryBar';
 
@@ -15,12 +18,23 @@ const Products = () => {
   const selectLoadingAll = makeSelectLoadingByKey('allProducts');
   const allProductsFromRedux = useSelector(selectAllProducts);
   const loadingFromRedux = useSelector(selectLoadingAll);
+  const reduxCartItems = useSelector(selectCartItems);
   const { categories, fetchCategories, loading: loadingCategories, error: categoryError } = useCategory();
+  const { cartItems, refreshCart } = useCart();
+  const { user } = useAuth();
   const location = useLocation();
   
   // Initialize with category from URL if present
   const initialCategory = new URLSearchParams(location.search).get('category');
   const isSelectingFreeProduct = new URLSearchParams(location.search).get('selectFreeProduct') === 'true';
+
+  // Force cart refresh when entering free product selection mode
+  useEffect(() => {
+    if (isSelectingFreeProduct && user) {
+      console.log('🔄 Entering free product selection mode - refreshing cart');
+      refreshCart();
+    }
+  }, [isSelectingFreeProduct, user, refreshCart]);
 
   // Products state organized by categories
   const [productsByCategory, setProductsByCategory] = useState({});
@@ -56,6 +70,26 @@ const Products = () => {
   // Add state for scrollY debug display
   const [scrollY, setScrollY] = useState(0);
 
+  // Function to filter products that are already in cart when selecting free product
+  const filterProductsForFreeSelection = useCallback((products) => {
+    if (!isSelectingFreeProduct) {
+      return products;
+    }
+    
+    // Use cartItems from hook first, then fallback to Redux
+    const activeCartItems = cartItems || reduxCartItems || [];
+    
+    if (!activeCartItems || activeCartItems.length === 0) {
+      return products;
+    }
+    
+    // Get list of product IDs already in cart
+    const cartProductIds = activeCartItems.map(item => item.productId);
+    
+    // Filter out products that are already in cart
+    return products.filter(product => !cartProductIds.includes(product._id));
+  }, [isSelectingFreeProduct, cartItems, reduxCartItems]);
+
   // Track actual category bar height (text or swiper)
   const [categoryBarHeight, setCategoryBarHeight] = useState(48);
   const textBarRef = useRef(null);
@@ -84,14 +118,15 @@ const Products = () => {
       })).unwrap();
       
       // Update the products for this category
+      const filteredProducts = filterProductsForFreeSelection(result.products || []);
       setProductsByCategory(prev => ({
         ...prev,
-        [categoryId]: result.products || []
+        [categoryId]: filteredProducts
       }));
     } catch (err) {
       console.error(`Error loading products for category ${categoryId}:`, err);
     }
-  }, [dispatch, productsByCategory]);
+  }, [dispatch, productsByCategory, filterProductsForFreeSelection]);
 
   // Measure actual header height dynamically
   useEffect(() => {
@@ -310,7 +345,8 @@ const Products = () => {
           limit: 20,
           sort: 'createdAt:-1',
         })).unwrap();
-        setAllProducts(allProductsResult.products || []);
+        const filteredAllProducts = filterProductsForFreeSelection(allProductsResult.products || []);
+        setAllProducts(filteredAllProducts);
         
         // Initialize an empty products by category object
         const productsByCat = {};
@@ -325,7 +361,8 @@ const Products = () => {
             category: selectedCategory,
             sort: 'createdAt:-1',
           })).unwrap();
-          productsByCat[selectedCategory] = result.products || [];
+          const filteredCategoryProducts = filterProductsForFreeSelection(result.products || []);
+          productsByCat[selectedCategory] = filteredCategoryProducts;
           
           // For visible categories near the selected one, prefetch them in the background
           // This will be handled by the intersection observer instead
@@ -349,7 +386,8 @@ const Products = () => {
                 category: catId,
                 sort: 'createdAt:-1',
               })).unwrap();
-              productsByCat[catId] = res.products || [];
+              const filteredCatProducts = filterProductsForFreeSelection(res.products || []);
+              productsByCat[catId] = filteredCatProducts;
             } catch (e) {
               console.warn('Prefetch category failed:', catId, e?.message || e);
             }
@@ -394,7 +432,7 @@ const Products = () => {
     };
     
     loadInitialProducts();
-  }, [fetchProducts, categories, selectedCategory]);
+  }, [fetchProducts, categories, selectedCategory, filterProductsForFreeSelection]);
 
   // ========================================================================================
   // SCROLL SWITCHING LOGIC - CONTROLS WHEN CATEGORYSWIPER SWITCHES TO TEXTCATEGORYSWIPER
@@ -629,13 +667,13 @@ const Products = () => {
     <section ref={productsSectionRef} className="bg-white min-h-screen pt-0">{/* Removed any default top padding */}      
       {/* Free Product Selection Banner */}
       {isSelectingFreeProduct && (
-        <div className="bg-gradient-to-r from-[#733857] to-[#8d4466] text-white py-4 px-4 md:px-6 text-center shadow-md relative overflow-hidden">
-          {/* Decorative elements */}
-          <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mt-16"></div>
-          <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
-          
-          <p className="text-sm md:text-base font-semibold relative z-10 tracking-wide">
-            🎁 Select Your Free Product! Choose any item below to add it FREE to your cart.
+        <div className="py-6 px-4 md:px-6 text-center">
+          <p className="text-base md:text-lg font-medium text-[#733857] tracking-wide" style={{
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            fontWeight: '500',
+            letterSpacing: '0.025em'
+          }}>
+            Select Your Free Product! Choose any item below to add it FREE to your cart.
           </p>
         </div>
       )}

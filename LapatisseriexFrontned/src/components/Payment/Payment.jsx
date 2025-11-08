@@ -14,8 +14,7 @@ import HoverButton from '../common/HoverButton';
 import { calculateCartTotals, calculatePricing, formatCurrency } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
-import api from '../../services/apiService';
-import NGOSidePanel from './NGOSidePanel';
+import api, { createOrderWithEmail, verifyPaymentWithEmail } from '../../services/apiService';
 
 const AUTO_REDIRECT_STORAGE_KEY = 'lapatisserie_payment_redirect';
 const AUTO_REDIRECT_DELAY_MS = 20000;
@@ -30,7 +29,6 @@ const Payment = () => {
   const navigate = useNavigate();
   const [showLocationError, setShowLocationError] = useState(false);
   const [useFreeCash, setUseFreeCash] = useState(false);
-  const [showNGOPanel, setShowNGOPanel] = useState(false);
   const redirectTimerRef = useRef(null);
   const countdownTimerRef = useRef(null);
   const [redirectCountdown, setRedirectCountdown] = useState(null);
@@ -50,11 +48,9 @@ const Payment = () => {
     } catch {}
   }, [setRedirectCountdown]);
 
-  // Handle navigation with side panel trigger
-  const handleNavigateWithPanel = (path) => {
-    // Set flag in sessionStorage to show panel after navigation
+  // Handle navigation
+  const handleNavigate = (path) => {
     clearAutoRedirect();
-    sessionStorage.setItem('showNGOPanel', 'true');
     navigate(path);
   };
 
@@ -216,29 +212,11 @@ const Payment = () => {
   // COD-specific loading UX (2-second detailed loading)
   const [codCountdown, setCodCountdown] = useState(null);
   const codCountdownTimerRef = useRef(null);
+  const successPageRef = useRef(null);
 
   useEffect(() => {
     if (!isOrderComplete) {
       setCompletedPaymentMethod(null);
-    }
-  }, [isOrderComplete]);
-
-  // Auto-open NGO panel after payment success (with minimal delay)
-  useEffect(() => {
-    if (isOrderComplete) {
-      // Scroll to top immediately to prevent auto-scroll to footer
-      window.scrollTo({ top: 0, behavior: 'instant' });
-      
-      // Replace the entire history stack to prevent going back to checkout/payment
-      // Push a new state for the payment confirmation
-      window.history.pushState({ orderComplete: true }, '', '/payment');
-      
-      // Show NGO panel after 800ms (just enough for smooth transition)
-      const timer = setTimeout(() => {
-        setShowNGOPanel(true);
-      }, 1500);
-
-      return () => clearTimeout(timer);
     }
   }, [isOrderComplete]);
 
@@ -318,6 +296,25 @@ const Payment = () => {
       };
     }
   }, [isOrderComplete, navigate]);
+
+  useEffect(() => {
+    if (!isOrderComplete) {
+      return;
+    }
+
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      if (successPageRef.current) {
+        successPageRef.current.scrollIntoView({ block: 'start', behavior: 'auto' });
+      }
+    };
+
+    // Scroll immediately and shortly after layout settles
+    scrollToTop();
+    const recheck = setTimeout(scrollToTop, 60);
+
+    return () => clearTimeout(recheck);
+  }, [isOrderComplete]);
 
   const timezoneAbbreviation = useMemo(() => {
     if (!timezone) {
@@ -437,6 +434,9 @@ const Payment = () => {
 
   const createOrder = async (amount, paymentMethod = 'razorpay') => {
     try {
+      // Log which API base will be used for order creation (email will be handled server-side)
+      const orderApiBase = import.meta.env.VITE_VERCEL_API_URL;
+      console.log(`🧭 [Order] Creating order via API: ${orderApiBase || 'N/A'} (method: ${paymentMethod})`);
       const orderData = {
         amount: Math.round(amount * 100), // Convert to paise
         currency: 'INR',
@@ -501,7 +501,18 @@ const Payment = () => {
         }
       };
 
-      const { data } = await api.post('/payments/create-order', orderData);
+  // Route order creation to Vercel API (ensures email sending on create)
+  const data = await createOrderWithEmail(orderData);
+
+      // Log the outcome and expected email behavior
+      if (data?.success !== false) {
+        const emailNote = paymentMethod === 'cod'
+          ? 'emailTrigger=queued on server (async)'
+          : 'emailTrigger=will occur after payment verification';
+        console.log(`✅ [Order] create-order success via ${orderApiBase || 'N/A'} (${emailNote})`);
+      } else {
+        console.warn(`⚠️ [Order] create-order response indicated failure via ${orderApiBase || 'N/A'}`);
+      }
       
       // Handle duplicate order response
       if (data.isDuplicate) {
@@ -556,20 +567,16 @@ const Payment = () => {
           window.__paymentVerifying = true;
           try {
             console.log('✅ Payment successful, verifying...');
-            const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/payments/verify`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
+            const verifyData = await verifyPaymentWithEmail({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
             });
-            const verifyData = await verifyResponse.json();
             if (verifyData.success) {
               console.log('✅ Payment verified successfully');
+              // Log which API verified and that email dispatch is handled server-side
+              const verifyApiBase = import.meta.env.VITE_VERCEL_API_URL;
+              console.log(`📬 [Order] Online payment verified via ${verifyApiBase || 'N/A'} (emailTrigger=queued on server, async)`);
               setCompletedPaymentMethod('razorpay');
               setIsOrderComplete(true);
               setOrderNumber(verifyData.orderNumber);
@@ -581,6 +588,8 @@ const Payment = () => {
               }
             } else {
               console.error('❌ Payment verification failed:', verifyData.message);
+              const verifyApiBase = import.meta.env.VITE_VERCEL_API_URL;
+              console.log(`🚫 [Order] Payment verification failed via ${verifyApiBase || 'N/A'} (email not triggered)`);
               setCompletedPaymentMethod(null);
               alert('Payment verification failed. Please contact support with your order details.');
               try {
@@ -621,7 +630,8 @@ const Payment = () => {
             console.log('🚫 Razorpay popup dismissed/cancelled by user');
             setIsProcessing(false);
             try {
-              const cancelResponse = await fetch(`${import.meta.env.VITE_API_URL}/payments/cancel-order`, {
+              // Cancel the order on the same backend used for creation (Vercel)
+              const cancelResponse = await fetch(`${import.meta.env.VITE_VERCEL_API_URL}/payments/cancel-order`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -700,8 +710,14 @@ const Payment = () => {
       
       if (orderData.isDuplicate) {
         console.log('✅ Using existing order (duplicate detected):', orderData.orderNumber);
+        // For duplicates, backend will not re-send emails; log explicitly
+        const orderApiBase = import.meta.env.VITE_VERCEL_API_URL;
+        console.log(`ℹ️ [Order] Duplicate COD order via ${orderApiBase || 'N/A'} (email not re-sent)`);
       } else {
         console.log('✅ New COD order created:', orderData.orderNumber);
+        // Log which API created the order and that email was queued server-side
+        const orderApiBase = import.meta.env.VITE_VERCEL_API_URL;
+        console.log(`📬 [Order] COD order placed via ${orderApiBase || 'N/A'} (emailTrigger=queued on server, async)`);
       }
       
       setOrderNumber(orderData.orderNumber);
@@ -778,7 +794,12 @@ if (isOrderComplete) {
       : 'Payment captured successfully via Razorpay.';
 
     return (
-      <div className="min-h-screen  px-4 py-10" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+      <div
+        ref={successPageRef}
+        tabIndex={-1}
+        className="min-h-screen  px-4 py-10"
+        style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
+      >
         {/* Main content card with sharp corners */}
         <div className="mx-auto max-w-lg  p-8 sm:p-10">
           <div className="flex flex-col items-center text-center">
@@ -825,7 +846,7 @@ if (isOrderComplete) {
             {/* 4. Updated Button Styles (Sharp Corners) */}
             <div className="mt-8 sm:mt-10 flex w-full flex-col-reverse gap-3 sm:gap-4 sm:flex-row sm:justify-center px-2 sm:px-0">
               <HoverButton
-                onClick={() => handleNavigateWithPanel('/')}
+                onClick={() => handleNavigate('/')}
                 text="Back to Home"
                 hoverText="Go Home"
                 variant="outline"
@@ -833,7 +854,7 @@ if (isOrderComplete) {
                 className="w-full sm:w-auto"
               />
               <HoverButton
-                onClick={() => handleNavigateWithPanel('/products')}
+                onClick={() => handleNavigate('/products')}
                 text="Browse Products"
                 hoverText="View Products"
                 variant="primary"
@@ -841,7 +862,7 @@ if (isOrderComplete) {
                 className="w-full sm:w-auto"
               />
               <HoverButton
-                onClick={() => handleNavigateWithPanel('/orders')}
+                onClick={() => handleNavigate('/orders')}
                 text="My Orders"
                 hoverText="View Orders"
                 variant="secondary"
@@ -857,9 +878,6 @@ if (isOrderComplete) {
             
           </div>
         </div>
-
-        {/* NGO Side Panel */}
-        <NGOSidePanel isOpen={showNGOPanel} onClose={() => setShowNGOPanel(false)} />
       </div>
     );
   }

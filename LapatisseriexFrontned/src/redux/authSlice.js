@@ -29,6 +29,7 @@ const auth = getAuth(app);
 
 // Backend API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL;
+const VERCEL_URL = import.meta.env.VITE_VERCEL_API_URL;
 
 // Initialize Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
@@ -219,7 +220,7 @@ export const sendSignupOTP = createAsyncThunk(
     try {
       console.log('🔄 Sending signup OTP to:', email);
       
-      const response = await axios.post(`${API_URL}/auth/signup/send-otp`, { email });
+      const response = await axios.post(`${VERCEL_URL}/auth/signup/send-otp`, { email });
       
       console.log('✅ Signup OTP sent successfully');
       
@@ -251,7 +252,7 @@ export const verifySignupOTP = createAsyncThunk(
       console.log('🔄 Verifying signup OTP and creating account for:', email);
       
       // Verify OTP and create user account
-      const response = await axios.post(`${API_URL}/auth/signup/verify-otp`, {
+      const response = await axios.post(`${VERCEL_URL}/auth/signup/verify-otp`, {
         email,
         otp,
         password,
@@ -450,9 +451,11 @@ export const signInWithEmail = createAsyncThunk(
       let errorMessage = 'Failed to sign in with email';
       
       if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email address. Please check your email or sign up for a new account.';
+        errorMessage = 'Email not found! This email address is not registered. Please sign up to create a new account.';
+        // Store the email to pre-fill signup form
+        localStorage.setItem('pendingSignupEmail', email);
       } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Password is wrong. Please enter the correct password or reset your password.';
+        errorMessage = 'Incorrect password. Please enter the correct password or reset your password if you forgot it.';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Invalid email address. Please enter a valid email.';
       } else if (error.code === 'auth/user-disabled') {
@@ -462,7 +465,7 @@ export const signInWithEmail = createAsyncThunk(
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = 'Network error. Please check your internet connection and try again.';
       } else if (error.code === 'auth/invalid-credential') {
-        errorMessage = 'Password is wrong or email does not exist. Please check your credentials and try again.';
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -567,7 +570,7 @@ export const sendPasswordResetOTP = createAsyncThunk(
   'auth/sendPasswordResetOTP',
   async ({ email }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+      const response = await axios.post(`${VERCEL_URL}/auth/forgot-password`, {
         email: email.toLowerCase().trim()
       });
       
@@ -587,7 +590,7 @@ export const verifyPasswordResetOTP = createAsyncThunk(
   'auth/verifyPasswordResetOTP',
   async ({ email, otp }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/verify-reset-otp`, {
+      const response = await axios.post(`${VERCEL_URL}/auth/verify-reset-otp`, {
         email: email.toLowerCase().trim(),
         otp: otp.trim()
       });
@@ -607,7 +610,7 @@ export const resetPassword = createAsyncThunk(
   'auth/resetPassword',
   async ({ email, newPassword }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/reset-password`, {
+      const response = await axios.post(`${VERCEL_URL}/auth/reset-password`, {
         email: email.toLowerCase().trim(),
         newPassword
       });

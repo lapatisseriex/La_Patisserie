@@ -4,6 +4,8 @@ import rateLimit from 'express-rate-limit';
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 // Create different rate limiters for different endpoints
+// Note: Removed custom keyGenerator to use default IP-based key generation
+// which properly handles IPv6 addresses
 export const generalRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: isDevelopment ? 500 : 100, // More lenient in development

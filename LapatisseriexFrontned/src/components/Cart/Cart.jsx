@@ -84,7 +84,7 @@ const deriveEggStatus = (productLike) => {
 
 const Cart = () => {
   const { isOpen, checkShopStatusNow } = useShopStatus();
-  const { cartItems, updateQuantity, removeFromCart, pendingOperations, getCartItem, refreshCart } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, pendingOperations, getCartItem, refreshCart, isLoading } = useCart();
   
   // Use our hooks
   const { user } = useAuth();
@@ -103,13 +103,43 @@ const Cart = () => {
   const removedRef = useRef(new Set());
   const EXPIRY_SECONDS_DEFAULT = Number(import.meta.env.VITE_CART_EXPIRY_SECONDS || 86400); // 24 hours default
 
-  // Fetch fresh cart data when component mounts
+  // Fetch fresh cart data when component mounts, but only if no pending add operations
   useEffect(() => {
     if (user) {
-      console.log('🛒 Cart component mounted, fetching fresh cart data...');
-      refreshCart();
+      const hasPendingAddOps = Object.values(pendingOperations || {}).some(op => 
+        op?.type === 'adding' || op === 'adding'
+      );
+      if (!hasPendingAddOps) {
+        console.log('🛒 Cart component mounted, fetching fresh cart data...');
+        refreshCart();
+      } else {
+        console.log('🛒 Cart component mounted but has pending add operations, waiting before refresh...');
+        // Wait a bit for pending add operations to complete, then refresh
+        const timeoutId = setTimeout(() => {
+          console.log('🛒 Delayed refresh after pending add operations');
+          refreshCart(true); // Force refresh
+        }, 1000);
+        
+        return () => clearTimeout(timeoutId);
+      }
     }
-  }, [user, refreshCart]);
+  }, [user, refreshCart]); // Removed pendingOperations from deps to avoid constant refetches
+
+  // Additional effect to refresh when pending operations complete
+  const prevHadPendingOpsRef = useRef(false);
+  useEffect(() => {
+    const hasPendingAddOps = Object.values(pendingOperations || {}).some(op => 
+      op?.type === 'adding' || op === 'adding'
+    );
+    
+    // Only refresh after add operations complete, not quantity updates
+    if (prevHadPendingOpsRef.current && !hasPendingAddOps && user) {
+      console.log('🛒 Add operations completed, refreshing cart');
+      refreshCart(true); // Force refresh
+    }
+    
+    prevHadPendingOpsRef.current = hasPendingAddOps;
+  }, [pendingOperations, user, refreshCart]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -140,6 +170,43 @@ const Cart = () => {
     return `${h}:${m}:${s}`;
   };
 
+  // Generate aesthetic expiry message
+  const getExpiryMessage = (timeLeft) => {
+    const totalHours = Math.floor(timeLeft / (1000 * 60 * 60));
+    const totalMinutes = Math.floor(timeLeft / (1000 * 60));
+    
+    if (totalHours >= 1) {
+      return `Fresh for ${totalHours}h`;
+    } else if (totalMinutes >= 30) {
+      return `Fresh for ${totalMinutes}m`;
+    } else if (totalMinutes >= 1) {
+      return `${totalMinutes}m left`;
+    } else {
+      return 'Expiring soon';
+    }
+  };
+
+  // Expiry tooltip message
+  const getExpiryTooltip = () => {
+    return "Items stay fresh in your cart for 24 hours to ensure availability and quality. Complete your order soon!";
+  };
+
+  // Get earliest expiry message for all items in cart
+  const getEarliestExpiryMessage = () => {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) return null;
+    
+    let earliestTime = Infinity;
+    cartItems.forEach((item) => {
+      const timeLeft = timeLeftForItem(item);
+      if (timeLeft < earliestTime) {
+        earliestTime = timeLeft;
+      }
+    });
+    
+    if (earliestTime === Infinity) return null;
+    return getExpiryMessage(earliestTime);
+  };
+
   // Auto-remove when countdown reaches zero
   useEffect(() => {
     if (!Array.isArray(cartItems) || cartItems.length === 0) return;
@@ -150,9 +217,24 @@ const Cart = () => {
       if (left <= 0 && !removedRef.current.has(pid)) {
         removedRef.current.add(pid);
         removeFromCart(pid).finally(() => {
-          toast.info(`Removed "${item.name || 'item'}" from your cart (expired). Click to view.`, {
-            onClick: () => { try { window.location.href = `/products/${pid}`; } catch {} }
-          });
+          toast.info(
+            `🕒 "${item.name || 'Item'}" was automatically removed after 24 hours to ensure freshness.`, 
+            {
+              position: 'top-center',
+              autoClose: 4000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              onClick: () => { try { window.location.href = `/products/${pid}`; } catch {} },
+              style: {
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                color: '#0f172a',
+                border: '1px solid #7dd3fc',
+                borderRadius: '8px',
+                fontSize: '14px'
+              }
+            }
+          );
         });
       }
     });
@@ -359,8 +441,44 @@ const Cart = () => {
     }
     navigate(`/product/${productId}`);
   };
-  // If cart is empty
-  if (cartItems.length === 0) {
+
+  // Check cart state and determine what to show
+  const hasPendingOps = Object.keys(pendingOperations || {}).length > 0;
+  const isCartEmpty = cartItems.length === 0;
+  
+  // Only show loading for initial cart fetch, not for quantity updates
+  const hasPendingAddOperations = Object.values(pendingOperations || {}).some(op => 
+    op?.type === 'adding' || op === 'adding'
+  );
+  const shouldShowLoadingState = isLoading || hasPendingAddOperations;
+  const shouldShowEmptyState = isCartEmpty && !shouldShowLoadingState;
+
+  // Show loading state only for cart fetch or add operations (not quantity updates)
+  if (shouldShowLoadingState) {
+    return (
+      <div className="min-h-screen bg-white px-4 py-20 flex items-center justify-center">
+        <div className="max-w-2xl w-full text-center space-y-6">
+          <div className="flex flex-col items-center gap-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#733857]"></div>
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.35em] text-[#733857]/60">
+                {hasPendingAddOperations ? 'Processing' : 'Loading'}
+              </p>
+              <h2 className="text-xl font-light tracking-wide text-[#733857]">
+                {hasPendingAddOperations ? 'Adding to cart...' : 'Loading your cart...'}
+              </h2>
+              <p className="text-sm text-gray-500 max-w-md mx-auto">
+                {hasPendingAddOperations ? 'Please wait while we add your items' : 'Please wait while we fetch your items'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If cart is empty (and not loading)
+  if (shouldShowEmptyState) {
     return (
       <div className="min-h-screen bg-white px-4 py-20 flex items-center justify-center">
         <div className="max-w-2xl w-full text-center space-y-10">
@@ -430,8 +548,11 @@ const Cart = () => {
                 <div className="col-span-2 text-center">
                   <span className="text-sm font-medium text-gray-600">Quantity</span>
                 </div>
-                <div className="col-span-2 text-center">
+                <div className="col-span-1 text-center">
                   <span className="text-sm font-medium text-gray-600">Total</span>
+                </div>
+                <div className="col-span-1 text-center">
+                  <span className="text-sm font-medium text-gray-600">Remove</span>
                 </div>
               </div>
               
@@ -501,9 +622,9 @@ const Cart = () => {
                                 className="w-full h-full object-cover"
                               />
                             </button>
-                            {/* Tiny countdown (mobile) */}
-                            <p className="text-[10px] leading-3 text-gray-400 mt-1">
-                              Removes in: {formatHMS(timeLeftForItem(item))}
+                            {/* Simple countdown (mobile) */}
+                            <p className="text-[9px] text-green-600 mt-1 font-medium text-center" title={getExpiryTooltip()}>
+                              {getExpiryMessage(timeLeftForItem(item))}
                             </p>
                           </div>
                           
@@ -538,13 +659,23 @@ const Cart = () => {
                             </p>
                           </div>
                           
-                          {/* Remove Button */}
+                          {/* Remove Button with quantity-based styling */}
                           <button 
                             onClick={() => handleRemoveItem(item)}
-                            className="text-gray-600 hover:text-red-500 transition-colors"
+                            className={`flex items-center justify-center w-12 h-12 transition-all duration-300 rounded-lg border group ml-3 ${
+                              item.quantity === 1 
+                                ? 'text-red-500 border-red-400 bg-red-50 hover:bg-red-100 hover:border-red-500 animate-pulse' 
+                                : 'text-gray-400 hover:text-red-500 hover:bg-red-50 border-gray-200 hover:border-red-200'
+                            }`}
                             aria-label="Remove item"
+                            title={item.quantity === 1 ? "Click to remove this item" : "Remove item from cart"}
                           >
-                            Remove
+                            <FaTrash 
+                              size={16} 
+                              className={`group-hover:scale-110 transition-transform duration-200 ${
+                                item.quantity === 1 ? 'animate-bounce' : ''
+                              }`} 
+                            />
                           </button>
                         </div>
                         
@@ -557,9 +688,14 @@ const Cart = () => {
                                 e.stopPropagation();
                                 handleQuantityChangeWithAnimation(item.productId, -1, stock);
                               }}
-                              className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 rounded-l-lg font-light select-none"
+                              className={`w-8 h-8 flex items-center justify-center transition-all duration-150 rounded-l-lg font-light select-none ${
+                                item.quantity <= 1 
+                                  ? 'text-gray-300 cursor-not-allowed bg-gray-50' 
+                                  : 'text-[#733857] hover:bg-[#733857]/10'
+                              }`}
                               disabled={item.quantity <= 1}
                               style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
+                              title={item.quantity <= 1 ? "Use trash icon to remove item" : "Decrease quantity"}
                             >
                               −
                             </button>
@@ -623,6 +759,15 @@ const Cart = () => {
                             )}
                           </div>
                         </div>
+                        
+                        {/* Helpful message when quantity is 1 - Mobile */}
+                        {item.quantity === 1 && (
+                          <div className="mt-2 text-center">
+                            <p className="text-xs text-red-600 font-medium animate-pulse">
+                              👆 Use the trash icon above to remove this item
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Desktop Layout */}
@@ -659,9 +804,9 @@ const Cart = () => {
                           <p className="text-xs text-gray-600 mt-1">
                             Egg (or) Eggless: <span className="font-medium text-gray-800">{eggLabel}</span>
                           </p>
-                          {/* Tiny countdown (desktop) */}
-                          <p className="text-[10px] leading-3 text-gray-400 mt-1">
-                            Removes in: {formatHMS(timeLeftForItem(item))}
+                          {/* Simple countdown (desktop) */}
+                          <p className="text-[10px] text-green-600 mt-1 font-medium" title="Items stay fresh in your cart for 24 hours to ensure availability and quality. Complete your order soon!">
+                            {getExpiryMessage(timeLeftForItem(item))}
                           </p>
                         </div>
                       </div>
@@ -692,9 +837,14 @@ const Cart = () => {
                               e.stopPropagation();
                               handleQuantityChangeWithAnimation(item.productId, -1, stock);
                             }}
-                            className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 rounded-l-lg font-light select-none"
+                            className={`w-8 h-8 flex items-center justify-center transition-all duration-150 rounded-l-lg font-light select-none ${
+                              item.quantity <= 1 
+                                ? 'text-gray-300 cursor-not-allowed bg-gray-50' 
+                                : 'text-[#733857] hover:bg-[#733857]/10'
+                            }`}
                             disabled={item.quantity <= 1}
                             style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
+                            title={item.quantity <= 1 ? "Use trash icon to remove item" : "Decrease quantity"}
                           >
                             −
                           </button>
@@ -749,8 +899,8 @@ const Cart = () => {
                         </div>
                       </div>
 
-                      {/* Total - spans 2 */}
-                      <div className="hidden md:flex col-span-2 items-center justify-center relative">
+                      {/* Total - spans 1 */}
+                      <div className="hidden md:flex col-span-1 items-center justify-center">
                         <div className="text-center space-y-1">
                           {hasDiscount && (
                             <span className="block text-xs text-gray-400 line-through">
@@ -761,13 +911,33 @@ const Cart = () => {
                             ₹{lineTotal.toFixed(2)}
                           </span>
                         </div>
+                      </div>
+
+                      {/* Remove Button - spans 1 */}
+                      <div className="hidden md:flex col-span-1 items-center justify-center flex-col">
                         <button 
                           onClick={() => handleRemoveItem(item)}
-                          className="text-gray-300 hover:text-red-500 transition-colors absolute top-0 right-4"
+                          className={`flex items-center justify-center w-10 h-10 transition-all duration-300 rounded-lg border group ${
+                            item.quantity === 1 
+                              ? 'text-red-500 border-red-400 bg-red-50 hover:bg-red-100 hover:border-red-500 animate-pulse' 
+                              : 'text-gray-400 hover:text-red-500 hover:bg-red-50 border-gray-200 hover:border-red-200'
+                          }`}
                           aria-label="Remove item"
+                          title={item.quantity === 1 ? "Click to remove this item" : "Remove item from cart"}
                         >
-                          <FaTrash size={10} />
+                          <FaTrash 
+                            size={16} 
+                            className={`group-hover:scale-110 transition-transform duration-200 ${
+                              item.quantity === 1 ? 'animate-bounce' : ''
+                            }`} 
+                          />
                         </button>
+                        {/* Helpful text when quantity is 1 - Desktop */}
+                        {item.quantity === 1 && (
+                          <p className="text-xs text-red-600 font-medium mt-1 text-center animate-pulse">
+                            Click to remove
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
@@ -810,6 +980,23 @@ const Cart = () => {
                   {canProceedToCheckout() ? "CHECKOUT" : "SELECT HOSTEL"}
                 </AnimatedButton>
               </div>
+
+              {/* Countdown explanation below checkout on mobile */}
+              <div className="md:hidden px-4 mt-3 flex justify-center">
+                <p className="text-xs text-gray-500 text-center">
+                Items stay fresh for 24 hours to ensure quality & availability
+                </p>
+              </div>
+
+              {/* Countdown explanation below checkout on desktop */}
+              <div className="hidden md:flex justify-center mt-3">
+                <p className="text-xs text-gray-500 text-center">
+                  Items stay fresh for 24 hours to ensure quality & availability
+                </p>
+              </div>
+
+              {/* Countdown message below checkout on mobile */}
+           
               
               {!canProceedToCheckout() && (
                 <div className="mt-3 flex justify-center">

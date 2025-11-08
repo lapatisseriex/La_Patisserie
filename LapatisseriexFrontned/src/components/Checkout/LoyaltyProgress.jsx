@@ -59,8 +59,21 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
     return null;
   }
 
-  const { uniqueDaysCount, freeProductEligible, freeProductClaimed, remainingDays } = loyaltyData;
+  const { uniqueDaysCount, freeProductEligible, freeProductClaimed, remainingDays, orderDates } = loyaltyData;
   const progressPercentage = (uniqueDaysCount / 10) * 100;
+
+  // Format order dates for display
+  const formatOrderDates = () => {
+    if (!orderDates || orderDates.length === 0) return [];
+    return orderDates
+      .map(date => new Date(date))
+      .sort((a, b) => b - a) // Sort newest first
+      .map(date => date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric' 
+      }));
+  };
 
   return (
     <motion.div
@@ -171,9 +184,14 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
                     Progress This Month
                   </span>
                 </div>
-                <span className="text-sm font-bold text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <button
+                  onClick={() => setShowDates(!showDates)}
+                  className="text-sm font-bold text-[#733857] hover:text-[#8d4466] transition-colors flex items-center gap-1"
+                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                >
                   {uniqueDaysCount}/10 days
-                </span>
+                  <span className="text-xs">{showDates ? '▲' : '▼'}</span>
+                </button>
               </div>
               <div className="relative w-full h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                 <motion.div
@@ -185,6 +203,53 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
                   <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                 </motion.div>
               </div>
+
+              {/* Show order dates when clicked */}
+              <AnimatePresence>
+                {showDates && uniqueDaysCount > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-3 bg-white/60 rounded-lg p-3 border border-[#733857]/20"
+                  >
+                    <p className="text-xs font-semibold text-[#733857] mb-3" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                      📅 Your Order Timeline This Month:
+                    </p>
+                    <div className="space-y-2">
+                      {formatOrderDates().map((date, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center gap-3"
+                        >
+                          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-[#733857] to-[#8d4466] rounded-full flex items-center justify-center text-white font-bold text-xs">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 bg-gradient-to-r from-[#f7eef3] to-[#f9f4f6] rounded-lg px-4 py-2 border border-[#733857]/10">
+                            <p className="text-sm font-semibold text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                              {date}
+                            </p>
+                            <p className="text-xs text-gray-600">Order placed</p>
+                          </div>
+                          <div className="flex-shrink-0 text-green-500">
+                            ✓
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                    {remainingDays > 0 && (
+                      <div className="mt-3 pt-3 border-t border-[#733857]/10">
+                        <p className="text-xs text-center text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                          🎯 Order on <span className="font-bold text-[#733857]">{remainingDays} more {remainingDays === 1 ? 'day' : 'different days'}</span> to unlock your free product!
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {remainingDays > 0 && (
@@ -210,7 +275,7 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
 
       <div className="mt-4 pt-4 border-t border-[#733857]/10">
         <p className="text-xs text-gray-600 text-center" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-          💡 <span className="font-semibold">Tip:</span> Order on different days to unlock rewards faster!
+          <span className="font-semibold">Tip:</span> Order on different days to unlock rewards faster!
         </p>
       </div>
     </motion.div>

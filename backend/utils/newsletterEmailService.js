@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
+import { getEmailDelegateApiBase, isDelegationEnabled, delegateEmailPost } from './emailDelegator.js';
 import Newsletter from '../models/newsletterModel.js';
+import User from '../models/userModel.js';
 import {
   newProductTemplate,
   newCategoryTemplate,
@@ -58,6 +60,12 @@ const sendEmailToSubscriber = async (email, subject, htmlContent) => {
  */
 const sendNewsletterToAll = async (subject, htmlContent, type = 'custom') => {
   try {
+    // If delegation is enabled, forward the request to remote server and return its result
+    const base = getEmailDelegateApiBase();
+    if (isDelegationEnabled() && base) {
+      const result = await delegateEmailPost('/email-dispatch/newsletter/send', { subject, title: undefined, body: htmlContent, ctaText: undefined, ctaLink: undefined });
+      return result;
+    }
     // Get all active subscribers
     const subscribers = await Newsletter.getActiveSubscribers();
     
@@ -131,8 +139,8 @@ const sendNewsletterToAll = async (subject, htmlContent, type = 'custom') => {
  */
 const sendNewProductNewsletter = async (product) => {
   try {
-    const subject = `🍰 New Dessert Alert: ${product.name} - La Pâtisserie`;
-    
+    const subject = `New Dessert Alert: ${product.name} - La Patisserie`;
+
     // Get price from product variants (use first variant's price, or lowest price if multiple variants)
     let price = product.price; // fallback to direct price if exists
     if (product.variants && product.variants.length > 0) {
@@ -144,30 +152,30 @@ const sendNewProductNewsletter = async (product) => {
         price = Math.min(...prices);
       }
     }
-    
+
     // Get image - handle different possible structures
     let image = null;
-    
+
     // Check images array first (most common in your schema)
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
       const firstImage = product.images[0];
       // Handle if image is an object with url property or just a string
       image = typeof firstImage === 'string' ? firstImage : (firstImage?.url || firstImage);
     }
-    
+
     // Fallback to featuredImage virtual
     if (!image && product.featuredImage) {
       image = typeof product.featuredImage === 'string' ? product.featuredImage : (product.featuredImage?.url || product.featuredImage);
     }
-    
+
     // Fallback to direct image field
     if (!image && product.image) {
       image = typeof product.image === 'string' ? product.image : (product.image?.url || product.image);
     }
-    
+
     console.log('Newsletter image extracted:', image);
     console.log('Product images array:', product.images);
-    
+
     const productData = {
       name: product.name,
       description: product.description,
@@ -178,10 +186,123 @@ const sendNewProductNewsletter = async (product) => {
     };
 
     const htmlContent = newProductTemplate(productData);
-    
+
     return await sendNewsletterToAll(subject, htmlContent, 'new_product');
   } catch (error) {
     console.error('Error sending new product newsletter:', error);
+    throw error;
+  }
+};
+
+/**
+ * Send new product announcement to all registered users
+ */
+const sendNewProductToAllUsers = async (product) => {
+  try {
+    const subject = `New Product: ${product.name} - La Patisserie`;
+
+    // Get price from product variants (use first variant's price, or lowest price if multiple variants)
+    let price = product.price; // fallback to direct price if exists
+    if (product.variants && product.variants.length > 0) {
+      // Get the lowest price from all variants
+      const prices = product.variants
+        .filter(v => v.price && v.price > 0)
+        .map(v => v.price);
+      if (prices.length > 0) {
+        price = Math.min(...prices);
+      }
+    }
+
+    // Get image - handle different possible structures
+    let image = null;
+
+    // Check images array first (most common in your schema)
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      const firstImage = product.images[0];
+      // Handle if image is an object with url property or just a string
+      image = typeof firstImage === 'string' ? firstImage : (firstImage?.url || firstImage);
+    }
+
+    // Fallback to featuredImage virtual
+    if (!image && product.featuredImage) {
+      image = typeof product.featuredImage === 'string' ? product.featuredImage : (product.featuredImage?.url || product.featuredImage);
+    }
+
+    // Fallback to direct image field
+    if (!image && product.image) {
+      image = typeof product.image === 'string' ? product.image : (product.image?.url || product.image);
+    }
+
+    console.log('New product email image extracted:', image);
+    console.log('Product images array:', product.images);
+
+    const productData = {
+      name: product.name,
+      description: product.description,
+      price: price,
+      image: image,
+      category: product.category?.name || product.categoryName,
+      link: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/products/${product._id}`
+    };
+
+    const htmlContent = newProductTemplate(productData);
+
+    // Get all registered users (not just newsletter subscribers)
+    const users = await User.find({ isActive: true, isTemp: { $ne: true } }).select('email name');
+
+    if (users.length === 0) {
+      return {
+        success: false,
+        message: 'No active users found',
+        sent: 0,
+        failed: 0
+      };
+    }
+
+    console.log(`Sending new product email to ${users.length} registered users...`);
+
+    const results = {
+      sent: 0,
+      failed: 0,
+      errors: []
+    };
+
+    // Send emails in batches to avoid overwhelming the server
+    const batchSize = 10;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+
+      const promises = batch.map(async (user) => {
+        const result = await sendEmailToSubscriber(user.email, subject, htmlContent);
+
+        if (result.success) {
+          results.sent++;
+        } else {
+          results.failed++;
+          results.errors.push({ email: user.email, error: result.error });
+        }
+      });
+
+      await Promise.all(promises);
+
+      // Add a small delay between batches to avoid rate limiting
+      if (i + batchSize < users.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    console.log(`New product email sent: ${results.sent} successful, ${results.failed} failed`);
+
+    return {
+      success: true,
+      message: `New product email sent to ${results.sent} users`,
+      sent: results.sent,
+      failed: results.failed,
+      totalUsers: users.length,
+      errors: results.errors
+    };
+  } catch (error) {
+    console.error('Error sending new product email to all users:', error);
     throw error;
   }
 };
@@ -191,7 +312,7 @@ const sendNewProductNewsletter = async (product) => {
  */
 const sendNewCategoryNewsletter = async (category) => {
   try {
-    const subject = `🎉 New Collection: ${category.name} - La Pâtisserie`;
+    const subject = `New Collection: ${category.name} - La Patisserie`;
     
     const categoryData = {
       name: category.name,
@@ -213,7 +334,7 @@ const sendNewCategoryNewsletter = async (category) => {
  */
 const sendDiscountNewsletter = async (product) => {
   try {
-    const subject = `🎊 Special Offer: ${product.discountPercentage}% OFF on ${product.name} - La Pâtisserie`;
+    const subject = `Special Offer: ${product.discountPercentage}% OFF on ${product.name} - La Patisserie`;
     
     const discountData = {
       productName: product.name,
@@ -256,7 +377,7 @@ const sendCustomNewsletter = async (newsletterContent) => {
  */
 const sendWelcomeEmail = async (email) => {
   try {
-    const subject = 'Welcome to La Pâtisserie Newsletter! 🍰';
+    const subject = 'Welcome to La Patisserie Newsletter!';
     
     const welcomeContent = {
       title: '✨ WELCOME TO OUR FAMILY ✨',
@@ -297,6 +418,7 @@ export {
   sendEmailToSubscriber,
   sendNewsletterToAll,
   sendNewProductNewsletter,
+  sendNewProductToAllUsers,
   sendNewCategoryNewsletter,
   sendDiscountNewsletter,
   sendCustomNewsletter,

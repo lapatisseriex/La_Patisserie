@@ -5,7 +5,7 @@ import Category from '../models/categoryModel.js';
 import TimeSettings from '../models/timeSettingsModel.js';
 import { deleteFromCloudinary, getPublicIdFromUrl } from '../utils/cloudinary.js';
 import { cache } from '../utils/cache.js';
-import { sendNewProductNewsletter, sendDiscountNewsletter } from '../utils/newsletterEmailService.js';
+import { sendNewProductNewsletter, sendNewProductToAllUsers, sendDiscountNewsletter } from '../utils/newsletterEmailService.js';
 import { formatVariantLabel } from '../utils/variantUtils.js';
 
 // @desc    Get all products with optional filtering
@@ -344,9 +344,9 @@ export const createProduct = asyncHandler(async (req, res) => {
   // Clear cache after creating product to ensure fresh data on next fetch
   cache.clear();
 
-  // Send newsletter to all subscribers about new product (async, don't wait)
-  sendNewProductNewsletter(createdProduct).catch(err => {
-    console.error('Failed to send new product newsletter:', err);
+  // Send email to all registered users about new product (async, don't wait)
+  sendNewProductToAllUsers(createdProduct).catch(err => {
+    console.error('Failed to send new product email to all users:', err);
   });
 
   res.status(201).json(createdProduct);

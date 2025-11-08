@@ -33,22 +33,26 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import twilioRoutes from './routes/twilioRoutesNew.js';
 import stockRoutes from './routes/stockRoutes.js';
 import stockValidationRoutes from './routes/stockValidationRoutes.js';
-import analyticsRoutes from './routes/analyticsRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
+import emailDispatchRoutes from './routes/emailDispatchRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
-import ngoMediaRoutes from './routes/ngoMediaRoutes.js';
 import sitemapRoutes from './routes/sitemapRoutes.js';
 import freeProductRoutes from './routes/freeProductRoutes.js';
 import { calculateShopStatus } from './utils/shopStatus.js';
 import { startMonthlyCleanupJob } from './utils/monthlyCleanupJob.js';
+import { scheduleMonthlyRewardCleanup } from './utils/cronJobs.js';
 
 // Initialize Express app
 const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Configure trust proxy for deployment platforms (Vercel, Render, Heroku, etc.)
+// This allows Express to correctly identify client IPs from X-Forwarded-For headers
+app.set('trust proxy', true);
 
 // Middleware
 const allowedOrigins = [
@@ -323,7 +327,8 @@ const startServer = async () => {
   app.use('/api', dbReadyGate);
     app.use('/api/auth', authRateLimit, authRoutes);
     app.use('/api/users', userRoutes);
-    app.use('/api/email', emailRoutes);
+  app.use('/api/email', emailRoutes);
+  app.use('/api/email-dispatch', emailDispatchRoutes);
     app.use('/api/locations', locationRoutes);
     app.use('/api/admin', adminRoutes);
     app.use('/api/categories', categoryRoutes);
@@ -338,11 +343,9 @@ const startServer = async () => {
     app.use('/api/twilio', twilioRoutes);
     app.use('/api/stock', stockRoutes);
     app.use('/api/stock-validation', stockValidationRoutes);
-    app.use('/api/analytics', analyticsRoutes);
     app.use('/api/contact', contactRoutes);
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/newsletter', newsletterRoutes);
-    app.use('/api/ngo-media', ngoMediaRoutes);
     app.use('/api/free-product', freeProductRoutes);
 
     // WebSocket setup
@@ -494,6 +497,10 @@ const startServer = async () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Health check available at http://localhost:${PORT}/health`);
       console.log(`WebSocket server running on port ${PORT}`);
+      
+      // Start monthly reward cleanup cron job
+      scheduleMonthlyRewardCleanup();
+      console.log('✓ Monthly reward cleanup cron job scheduled (runs at 00:01 on 1st of every month)');
     });
 
   } catch (error) {

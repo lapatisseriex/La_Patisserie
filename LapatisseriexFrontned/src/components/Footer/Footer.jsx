@@ -20,8 +20,7 @@ const Footer = () => {
     '/shipping-policy',
     '/refund-policy',
     '/terms',
-    '/our-services',
-    '/support-education'
+    '/our-services'
   ];
   
   if (!footerPages.includes(location.pathname)) {
@@ -41,7 +40,7 @@ const Footer = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/newsletter/subscribe`, {
+      const response = await axios.post(`${import.meta.env.VITE_VERCEL_API_URL}/newsletter/subscribe`, {
         email,
         source: 'footer'
       });
@@ -108,13 +107,6 @@ const Footer = () => {
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Products
-              </Link>
-              <Link 
-                to="/support-education" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-              >
-                Support Education
               </Link>
             </nav>
           </div>
