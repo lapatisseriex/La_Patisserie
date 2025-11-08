@@ -212,6 +212,7 @@ const Payment = () => {
   // COD-specific loading UX (2-second detailed loading)
   const [codCountdown, setCodCountdown] = useState(null);
   const codCountdownTimerRef = useRef(null);
+  const successPageRef = useRef(null);
 
   useEffect(() => {
     if (!isOrderComplete) {
@@ -295,6 +296,25 @@ const Payment = () => {
       };
     }
   }, [isOrderComplete, navigate]);
+
+  useEffect(() => {
+    if (!isOrderComplete) {
+      return;
+    }
+
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      if (successPageRef.current) {
+        successPageRef.current.scrollIntoView({ block: 'start', behavior: 'auto' });
+      }
+    };
+
+    // Scroll immediately and shortly after layout settles
+    scrollToTop();
+    const recheck = setTimeout(scrollToTop, 60);
+
+    return () => clearTimeout(recheck);
+  }, [isOrderComplete]);
 
   const timezoneAbbreviation = useMemo(() => {
     if (!timezone) {
@@ -774,7 +794,12 @@ if (isOrderComplete) {
       : 'Payment captured successfully via Razorpay.';
 
     return (
-      <div className="min-h-screen  px-4 py-10" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+      <div
+        ref={successPageRef}
+        tabIndex={-1}
+        className="min-h-screen  px-4 py-10"
+        style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
+      >
         {/* Main content card with sharp corners */}
         <div className="mx-auto max-w-lg  p-8 sm:p-10">
           <div className="flex flex-col items-center text-center">
