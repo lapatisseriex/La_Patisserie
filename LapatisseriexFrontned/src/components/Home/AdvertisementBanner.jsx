@@ -7,9 +7,9 @@ const AdvertisementBanner = () => {
   const [currentX, setCurrentX] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const advertisements = [
-    { id: 1, type: 'image', src: '/jk.png' },
-    { id: 2, type: 'image', src: '/images/Brown.png' },
-    { id: 3, type: 'image', src: '/images/Yellow and Brown Organic Abstract Food YouTube Thumbnail.png' },
+    { id: 1, type: 'video', src: '/Black and Yellow Modern Pizza Sale Video(2).mp4' },
+    { id: 2, type: 'image', src: '/Brown Gradient Elegant Coffee Shop Banner(3).png' },
+    { id: 3, type: 'image', src: '/Orange Modern New Restaurant Coming Soon Banner Landscape(3).png' },
   ];
   const intervalRef = useRef(null);
 
@@ -94,12 +94,12 @@ const AdvertisementBanner = () => {
       >
         {advertisements.map((ad, index) => (
           <div key={ad.id} className="w-full flex-shrink-0 relative">
-            <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[450px] xl:h-[500px] overflow-hidden">
+            <div className="w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden">
               {ad.type === 'image' ? (
                 <img
                   src={ad.src}
                   alt={`Advertisement ${index + 1}`}
-                  className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-700"
                   draggable={false}
                   onError={(e) => {
                     e.target.src = '/placeholder-image.jpg';
@@ -108,7 +108,7 @@ const AdvertisementBanner = () => {
               ) : (
                 <video
                   src={ad.src}
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-cover"
                   autoPlay
                   muted
                   loop
