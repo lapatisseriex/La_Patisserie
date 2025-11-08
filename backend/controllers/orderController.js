@@ -1115,36 +1115,15 @@ export const cancelUserOrder = asyncHandler(async (req, res) => {
     }
 
     // Update order status to cancelled
-  order.orderStatus = 'cancelled';
-  order.cancelReason = cancelReason || 'Cancelled by user';
-  order.cancelledAt = new Date();
+    order.orderStatus = 'cancelled';
+    order.cancelReason = cancelReason || 'Cancelled by user';
+    order.cancelledAt = new Date();
     await order.save();
 
     console.log('✅ Order cancelled successfully:', order.orderNumber);
 
-    // Send status update emails to user and admin
-    await sendStatusEmails(order, previousStatus, 'cancelled');
-
-    // Create notification for user
-    try {
-      await createNotification(
-        order.userId,
-        order.orderNumber,
-        'order_cancelled',
-        'Order Cancelled',
-        `Your order #${order.orderNumber} has been cancelled${cancelReason ? ': ' + cancelReason : ''}`,
-        {
-          cancelReason: cancelReason || 'No reason provided',
-          cancelledAt: new Date(),
-          previousStatus: previousStatus
-        }
-      );
-      console.log('✅ User notification created for order cancellation');
-    } catch (notificationError) {
-      console.error('Failed to create user cancellation notification:', notificationError);
-    }
-
-    res.status(200).json({
+    // Send response immediately to improve user experience
+    const responseData = {
       success: true,
       message: 'Order cancelled successfully. Stock has been restored.',
       order: {
@@ -1152,7 +1131,39 @@ export const cancelUserOrder = asyncHandler(async (req, res) => {
         orderStatus: order.orderStatus,
         cancelReason: order.cancelReason
       }
+    };
+
+    // Send status update emails and notifications asynchronously (non-blocking)
+    // This prevents the user from waiting for email delivery which can be slow
+    setImmediate(async () => {
+      try {
+        await sendStatusEmails(order, previousStatus, 'cancelled');
+        console.log('✅ Cancellation emails sent successfully');
+      } catch (emailError) {
+        console.error('⚠️ Failed to send cancellation emails (non-critical):', emailError.message);
+      }
+
+      // Create notification for user
+      try {
+        await createNotification(
+          order.userId,
+          order.orderNumber,
+          'order_cancelled',
+          'Order Cancelled',
+          `Your order #${order.orderNumber} has been cancelled${cancelReason ? ': ' + cancelReason : ''}`,
+          {
+            cancelReason: cancelReason || 'No reason provided',
+            cancelledAt: new Date(),
+            previousStatus: previousStatus
+          }
+        );
+        console.log('✅ User notification created for order cancellation');
+      } catch (notificationError) {
+        console.error('⚠️ Failed to create user cancellation notification (non-critical):', notificationError);
+      }
     });
+
+    res.status(200).json(responseData);
 
   } catch (error) {
     console.error('Error in cancelUserOrder:', error);

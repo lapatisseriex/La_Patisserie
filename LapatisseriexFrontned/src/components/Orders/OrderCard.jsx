@@ -18,7 +18,8 @@ import {
 import { Link } from 'react-router-dom';
 import { calculatePricing } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
-import axios from 'axios';
+import { longTimeoutAxiosInstance } from '../../utils/axiosConfig';
+import { toast } from 'react-toastify';
 import './OrderCard.css';
 
 const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
@@ -143,7 +144,7 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
 
     try {
       const token = localStorage.getItem('authToken');
-      await axios.put(
+      await longTimeoutAxiosInstance.put(
         `${import.meta.env.VITE_API_URL}/payments/orders/${order.orderNumber}/cancel`,
         { cancelReason: cancelReason || 'Cancelled by user' },
         {
@@ -153,6 +154,12 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
         }
       );
 
+      // Show success message
+      toast.success('Order cancelled successfully!', {
+        position: "top-center",
+        autoClose: 3000,
+      });
+
       if (onOrderCancelled) {
         onOrderCancelled(order.orderNumber);
       }
@@ -160,7 +167,27 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
       closeCancelDialog();
     } catch (error) {
       console.error('Error cancelling order:', error);
-      alert('Failed to cancel order. Please try again.');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to cancel order. Please try again.';
+      
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'The cancellation is taking longer than expected. Please refresh the page to check if the order was cancelled.';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || 'Order cannot be cancelled at this stage.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You are not authorized to cancel this order.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Order not found.';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again in a few moments.';
+      }
+      
+      // Use toast for better user experience
+      toast.error(errorMessage, {
+        position: "top-center",
+        autoClose: 5000,
+      });
     } finally {
       setIsCancelling(false);
     }
@@ -401,23 +428,38 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
               {canCancel && (
                 <button
                   onClick={handleCancelClick}
-                  className="order-dialog-trigger inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold tracking-widest transition-all duration-300 border w-full sm:w-auto"
+                  disabled={isCancelling}
+                  className="order-dialog-trigger inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold tracking-widest transition-all duration-300 border w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ 
-                    color: '#733857',
-                    borderColor: '#733857',
-                    letterSpacing: '0.08em'
+                    color: isCancelling ? '#9ca3af' : '#733857',
+                    borderColor: isCancelling ? '#d1d5db' : '#733857',
+                    letterSpacing: '0.08em',
+                    backgroundColor: isCancelling ? '#f9fafb' : 'transparent'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#733857';
-                    e.currentTarget.style.color = 'white';
+                    if (!isCancelling) {
+                      e.currentTarget.style.backgroundColor = '#733857';
+                      e.currentTarget.style.color = 'white';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#733857';
+                    if (!isCancelling) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#733857';
+                    }
                   }}
                 >
-                  <X className="h-3.5 w-3.5" />
-                  <span>CANCEL ORDER</span>
+                  {isCancelling ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-current border-t-transparent"></div>
+                      <span>CANCELLING...</span>
+                    </>
+                  ) : (
+                    <>
+                      <X className="h-3.5 w-3.5" />
+                      <span>CANCEL ORDER</span>
+                    </>
+                  )}
                 </button>
               )}
 
@@ -507,11 +549,18 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
               </button>
               <button
                 type="button"
-                className="order-dialog-primary"
+                className="order-dialog-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleCancelConfirm}
                 disabled={isCancelling}
               >
-                {isCancelling ? 'Cancelling...' : 'Yes, cancel order'}
+                {isCancelling ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                    <span>Cancelling...</span>
+                  </div>
+                ) : (
+                  'Yes, cancel order'
+                )}
               </button>
             </div>
           </div>
