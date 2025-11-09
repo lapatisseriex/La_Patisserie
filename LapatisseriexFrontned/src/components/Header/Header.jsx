@@ -566,7 +566,7 @@ const Header = ({ isAdminView = false }) => {
         <div className="flex justify-between items-center">
           {/* Left side - Shop Name */}
           <Link to="/" className="flex items-center">
-            <span className="text-lg font-light" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}>
+            <span className="text-xl" style={{fontFamily: "'Dancing Script', cursive", color: '#733857', fontWeight: 600, letterSpacing: '1px'}}>
               La Patisserie
             </span>
           </Link>
@@ -620,7 +620,7 @@ const Header = ({ isAdminView = false }) => {
           <div className="hidden md:flex items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center header-logo-text">
-                <span className="transition-colors duration-300 font-light text-bold sm:text-xl md:text-2xl truncate max-w-[120px] sm:max-w-none" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}>
+                <span className="transition-colors duration-300 sm:text-xl md:text-2xl truncate max-w-[120px] sm:max-w-none" style={{fontFamily: "'Dancing Script', cursive", color: '#733857', fontWeight: 600, letterSpacing: '1px'}}>
                   La Patisserie
                   <div className="sugar-sprinkles">
                     {[...Array(15)].map((_, i) => (

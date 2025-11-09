@@ -6,6 +6,7 @@ const RollingGallery = ({ items }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
   const touchEndX = useRef(0);
   const dragStartX = useRef(0);
   const dragEndX = useRef(0);
@@ -76,20 +77,30 @@ const RollingGallery = ({ items }) => {
 
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
     touchEndX.current = e.touches[0].clientX;
     initialX.current = currentIndex;
-    e.preventDefault();
+    // Don't prevent default to allow vertical scrolling
   };
 
   const handleTouchMove = (e) => {
     touchEndX.current = e.touches[0].clientX;
-    const diff = touchStartX.current - touchEndX.current;
+    const horizontalDiff = Math.abs(touchStartX.current - e.touches[0].clientX);
+    const verticalDiff = Math.abs(touchStartY.current - e.touches[0].clientY);
     
-    // Provide visual feedback during touch movement
-    if (containerRef.current) {
-      const movement = -diff / 2;
-      containerRef.current.style.transform = `translateX(${movement}px)`;
+    // Only prevent default and handle horizontal swipe if movement is primarily horizontal
+    if (horizontalDiff > verticalDiff && horizontalDiff > 10) {
+      // This is primarily a horizontal swipe, prevent default to enable gallery swiping
+      e.preventDefault();
+      
+      const diff = touchStartX.current - touchEndX.current;
+      // Provide visual feedback during touch movement
+      if (containerRef.current) {
+        const movement = -diff / 2;
+        containerRef.current.style.transform = `translateX(${movement}px)`;
+      }
     }
+    // If vertical movement is greater, don't prevent default - allow page scrolling
   };
 
   const handleTouchEnd = (e) => {
@@ -140,7 +151,7 @@ const RollingGallery = ({ items }) => {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          style={{ touchAction: 'none' }}
+          style={{ touchAction: 'pan-y' }}
         >
           <AnimatePresence initial={false} mode="popLayout">
             {items.map((item, index) => {

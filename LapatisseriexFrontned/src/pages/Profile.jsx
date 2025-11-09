@@ -333,7 +333,7 @@ const ProfilePage = () => {
     { id: 'profile', label: 'My Profile', icon: User },
     { id: 'recently-viewed', label: 'Recently Viewed', icon: Eye },
     { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'donations', label: 'My Contributions', icon: GraduationCap },
+    ...(donationStats?.donationCount > 0 ? [{ id: 'donations', label: 'My Contributions', icon: GraduationCap }] : []),
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
   ];
 
