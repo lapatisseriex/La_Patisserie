@@ -26,8 +26,8 @@ const EmailVerification = () => {
     }
   }, [user?.email, email]);
 
-  // Check if user already has Firebase-verified email
-  const isFirebaseVerified = user?.emailVerified;
+  // Check if user already has Firebase-verified email OR backend-verified email
+  const isEmailVerified = user?.emailVerified; // This covers both Firebase and OTP verification
 
   const remaining = useMemo(() => (expiresAt ? expiresAt - Date.now() : 0), [expiresAt]);
 
@@ -137,11 +137,11 @@ const EmailVerification = () => {
         letterSpacing: '0.02em'
       }}>
         <Mail className="h-3 w-3 sm:h-4 sm:w-4" style={{color: 'rgba(115, 56, 87, 0.6)'}} strokeWidth={1.5} />
-        Email Address {!isFirebaseVerified && <span style={{color: '#733857'}}>*</span>}
+        Email Address {!isEmailVerified && <span style={{color: '#733857'}}>*</span>}
       </label>
       <div className="space-y-4"  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-        {isFirebaseVerified ? (
-          // Show verified status for Firebase-verified emails
+        {isEmailVerified ? (
+          // Show verified status for verified emails (Firebase or OTP)
           <div>
             <div className="relative">
               <input
@@ -155,13 +155,10 @@ const EmailVerification = () => {
                 }}
               />
             </div>
-            <div className="mt-2 inline-flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: '#10B981', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> 
-              Verified via {user?.email?.includes('@gmail.com') ? 'Google' : 'Firebase Auth'} on {user?.emailVerifiedAt ? new Date(user.emailVerifiedAt).toLocaleDateString() : 'login'}
-            </div>
+          
           </div>
         ) : (
-          // Original OTP verification UI for non-Firebase verified emails
+          // Original OTP verification UI for non-verified emails
           <>
             <div className="space-y-4">
               <div className="relative">

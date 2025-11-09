@@ -1246,11 +1246,13 @@ const Profile = () => {
             <PhoneVerification 
               key={`phone-${user?.phoneVerified}-${user?.phoneVerifiedAt}`}
               onVerificationSuccess={() => {
-                console.log('Phone verified - entering edit mode');
-                setIsEditMode(true);
-                localStorage.setItem('profileEditMode', 'true');
+                console.log('Phone verified and saved automatically - staying in view mode');
+                // Don't enter edit mode - phone is already saved
                 setLocalError('');
-                setSuccessMessage('');
+                setSuccessMessage('Phone verified and saved successfully!');
+                // Keep edit mode OFF so user doesn't see Save/Cancel buttons
+                setIsEditMode(false);
+                localStorage.removeItem('profileEditMode');
               }}
             />
           </div>

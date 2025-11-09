@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Send, ShieldCheck, Phone, Timer, CheckCircle2, XCircle, RefreshCcw } from 'lucide-react';
+import { Send, ShieldCheck, Phone, Timer, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { auth } from '../../../config/firebase';
 import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
@@ -19,7 +19,6 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   const [status, setStatus] = useState('idle'); // idle|sending|sent|verifying|verified|error
   const [message, setMessage] = useState('');
   const [expiresAt, setExpiresAt] = useState(null); // timestamp
-  const [isEditingNumber, setIsEditingNumber] = useState(false); // New state for editing mode
   const [verificationId, setVerificationId] = useState(null); // Store verification ID instead of confirmation
   const timerRef = useRef(null);
 
@@ -46,24 +45,22 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       userPhone: user?.phone,
       phoneVerified: user?.phoneVerified,
       currentPhone: phone,
-      currentStatus: status,
-      isEditingNumber
+      currentStatus: status
     });
     
     // Update phone state whenever user.phone changes (including when it becomes available)
-    // But only if we're not currently editing a new number
-    if (user?.phone !== phone && !isEditingNumber) {
+    if (user?.phone !== phone) {
       setPhone(user?.phone || '');
     }
     
     // Reset verification status to idle if phone is verified to show verified state
-    if (user?.phoneVerified && status !== 'idle' && !isEditingNumber) {
+    if (user?.phoneVerified && status !== 'idle') {
       setStatus('idle');
       setMessage('');
       setOtp('');
       setExpiresAt(null);
     }
-  }, [user?.phone, user?.phoneVerified, user?.phoneVerifiedAt, isEditingNumber]);
+  }, [user?.phone, user?.phoneVerified, user?.phoneVerifiedAt]);
 
   const remaining = useMemo(() => (expiresAt ? expiresAt - Date.now() : 0), [expiresAt]);
 
@@ -204,8 +201,8 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   };
 
   const onVerify = async () => {
-    // Check if already verified to prevent duplicate calls (only if same number)
-    if (user?.phoneVerified && user?.phone === phone.trim() && !isEditingNumber) {
+    // Check if already verified to prevent duplicate calls
+    if (user?.phoneVerified && user?.phone === phone.trim()) {
       setStatus('verified');
       setMessage('Phone number already verified');
       return;
@@ -269,9 +266,6 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
         // Refresh user data to get the latest information
         await getCurrentUser();
         
-        // Reset editing state
-        setIsEditingNumber(false);
-        
         console.log('Phone number updated in database successfully');
       } catch (updateError) {
         console.error('Failed to update phone number in database:', updateError);
@@ -319,27 +313,17 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   const phoneValid = useMemo(() => /^\+?[0-9]{10,15}$/.test(phone || ''), [phone]);
   const otpValid = useMemo(() => /^(\d){6}$/.test(otp || ''), [otp]);
   
-  // Function to handle changing the phone number
-  const handleChangeNumber = () => {
-    setIsEditingNumber(true);
-    setStatus('idle');
-    setMessage('');
-    setOtp('');
-    setExpiresAt(null);
-    setPhone(''); // Clear the current phone number to allow entering a new one
-  };
-  
   // Effect to sync component state with user state changes
   useEffect(() => {
-    if (user?.phoneVerified && status !== 'verified' && !isEditingNumber) {
+    if (user?.phoneVerified && status !== 'verified') {
       console.log('PhoneVerification - User is verified, updating component status');
       setStatus('verified');
       setPhone(user.phone || '');
-    } else if (!user?.phoneVerified && status === 'verified' && !isEditingNumber) {
+    } else if (!user?.phoneVerified && status === 'verified') {
       console.log('PhoneVerification - User verification revoked, resetting component');
       setStatus('idle');
     }
-  }, [user?.phoneVerified, user?.phone, isEditingNumber]);
+  }, [user?.phoneVerified, user?.phone]);
 
   // Debug log for render
   console.log('PhoneVerification render - Current state:', {
@@ -348,7 +332,6 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
     userPhoneVerifiedAt: user?.phoneVerifiedAt,
     componentPhone: phone,
     componentStatus: status,
-    isEditingNumber,
     renderTimestamp: new Date().toISOString()
   });
   
@@ -370,9 +353,9 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Enter phone number"
-              disabled={status === 'sending' || status === 'verifying' || (user?.phoneVerified && !isEditingNumber)}
+              disabled={status === 'sending' || status === 'verifying' || user?.phoneVerified}
               className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
-                (user?.phoneVerified && !isEditingNumber) || status === 'sending' || status === 'verifying'
+                user?.phoneVerified || status === 'sending' || status === 'verifying'
                   ? 'border-gray-200 bg-gray-50 text-gray-700' 
                   : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black'
               }`}
@@ -382,31 +365,17 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
               }}
             />
           </div>
-          {((user?.phoneVerified && !isEditingNumber) || status === 'verified') && (
+          {(user?.phoneVerified || status === 'verified') && (
             <div className="mt-2 space-y-1">
-              <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: '#10B981', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> 
-                {status === 'verified' && !user?.phoneVerified 
-                  ? 'Verified - Click "Save Profile" to complete' 
-                  : `Verified on ${user?.phoneVerifiedAt ? new Date(user.phoneVerifiedAt).toLocaleDateString() : '—'}`}
-              </div>
-              <div className="text-xs sm:text-sm" style={{ color: '#374151', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                {status === 'verified' && !user?.phoneVerified 
-                  ? <span>Phone number <span className="font-semibold">{phone}</span> is verified. Save your profile to complete the process.</span>
-                  : <span>Your verified phone number: <span className="font-semibold">{user.phone}</span></span>}
-              </div>
-            </div>
-          )}
-          {isEditingNumber && (
-            <div className="mt-2 text-xs sm:text-sm" style={{ color: '#733857', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              Enter your new phone number and click "Send OTP" to verify it.
+             
+            
             </div>
           )}
         </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {((!user?.phoneVerified && status !== 'verified') || isEditingNumber) && (
+          {!user?.phoneVerified && status !== 'verified' && (
             <button
               type="button"
               onClick={onSend}
@@ -447,17 +416,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
               </div>
             </div>
           )}
-          {user?.phoneVerified && !isEditingNumber && (
-            <div className="px-4 py-2.5 sm:py-3 border inline-flex items-center gap-1.5 text-sm sm:text-base font-medium" style={{ 
-              backgroundColor: 'rgba(240, 253, 244, 0.5)', 
-              borderColor: 'rgba(16, 185, 129, 0.2)', 
-              color: '#166534',
-              borderRadius: '4px',
-              fontFamily: 'system-ui, -apple-system, sans-serif'
-            }}>
-              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} /> Verified
-            </div>
-          )}
+         
         </div>
 
         {status === 'sent' && (
@@ -553,67 +512,6 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
           }}>
             {status === 'error' ? <XCircle className="h-4 w-4" strokeWidth={2}/> : <CheckCircle2 className="h-4 w-4" strokeWidth={2}/>} 
             {message}
-          </div>
-        )}
-
-        {user?.phoneVerified && !isEditingNumber && (
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              type="button"
-              onClick={handleChangeNumber}
-              className="inline-flex items-center gap-2 px-4 py-2.5 border text-xs sm:text-sm font-medium transition-all duration-300"
-              style={{ 
-                borderColor: 'rgba(115, 56, 87, 0.2)', 
-                color: '#733857',
-                backgroundColor: 'transparent',
-                borderRadius: '4px',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.05)';
-                e.currentTarget.style.borderColor = '#733857';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = 'rgba(115, 56, 87, 0.2)';
-              }}
-            >
-              <RefreshCcw className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2}/> Change Number
-            </button>
-          </div>
-        )}
-
-        {isEditingNumber && (
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsEditingNumber(false);
-                setPhone(user?.phone || '');
-                setStatus('idle');
-                setMessage('');
-                setOtp('');
-                setExpiresAt(null);
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 border text-xs sm:text-sm font-medium transition-all duration-300"
-              style={{ 
-                borderColor: 'rgba(107, 114, 128, 0.2)', 
-                color: '#374151',
-                backgroundColor: 'transparent',
-                borderRadius: '4px',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#F9FAFB';
-                e.currentTarget.style.borderColor = '#9CA3AF';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.2)';
-              }}
-            >
-              Cancel
-            </button>
           </div>
         )}
         
