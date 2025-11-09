@@ -172,10 +172,10 @@ const EmailVerification = () => {
                   placeholder="you@example.com"
                   disabled={status==='sending' || status==='verifying'}
                   className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
-                    isEditMode 
-                      ? 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md' 
-                      : 'border-gray-200 bg-gray-50'
-                  } ${(status==='sending' || status==='verifying') ? 'opacity-60' : ''}`}
+                    status === 'sending' || status === 'verifying'
+                      ? 'border-gray-200 bg-gray-50 opacity-60' 
+                      : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md'
+                  }`}
                   style={{
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                     borderRadius: '4px'

@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Send, ShieldCheck, Phone, Timer, CheckCircle2, XCircle, RefreshCcw } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
-import axios from 'axios';
+import { auth } from '../../../config/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { toast } from 'react-toastify';
 
 const formatTime = (ms) => {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -18,7 +20,25 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   const [message, setMessage] = useState('');
   const [expiresAt, setExpiresAt] = useState(null); // timestamp
   const [isEditingNumber, setIsEditingNumber] = useState(false); // New state for editing mode
+  const [confirmationResult, setConfirmationResult] = useState(null); // Firebase confirmation result
   const timerRef = useRef(null);
+
+  // Cleanup reCAPTCHA on component unmount
+  useEffect(() => {
+    return () => {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (error) {
+          console.error('Error clearing reCAPTCHA on unmount:', error);
+        }
+        window.recaptchaVerifier = null;
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   // Auto-populate phone when user data changes and reset status if verified
   useEffect(() => {
@@ -61,40 +81,124 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
 
   const canResend = !expiresAt || remaining <= 0;
 
+  // Setup Firebase reCAPTCHA
+  const setupRecaptcha = () => {
+    try {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (error) {
+          console.error('Error clearing reCAPTCHA:', error);
+        }
+        window.recaptchaVerifier = null;
+      }
+
+      const container = document.getElementById('recaptcha-container-profile');
+      if (!container) {
+        throw new Error('reCAPTCHA container not found');
+      }
+
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        container,
+        {
+          size: 'invisible',
+          callback: (response) => {
+            console.log('reCAPTCHA solved successfully', response);
+          },
+          'expired-callback': () => {
+            console.log('reCAPTCHA expired');
+            setStatus('error');
+            setMessage('Verification expired. Please try again.');
+            if (window.recaptchaVerifier) {
+              try {
+                window.recaptchaVerifier.clear();
+              } catch (error) {
+                console.error('Error clearing expired reCAPTCHA:', error);
+              }
+              window.recaptchaVerifier = null;
+            }
+          }
+        }
+      );
+
+      console.log('reCAPTCHA verifier created successfully');
+      return window.recaptchaVerifier;
+    } catch (error) {
+      console.error('Error setting up reCAPTCHA:', error);
+      setStatus('error');
+      setMessage('Error setting up verification. Please try again.');
+      return null;
+    }
+  };
+
   const onSend = async () => {
     try {
       setStatus('sending');
       setMessage('');
       setOtp('');
       
-      // Get the auth token
-      const authToken = localStorage.getItem('authToken');
+      // Setup reCAPTCHA
+      const recaptchaVerifier = setupRecaptcha();
       
-      // Check if user is authenticated
-      if (!authToken) {
-        setStatus('error');
-        setMessage('Session expired. Please log in again.');
-        return;
+      if (!recaptchaVerifier) {
+        throw new Error('reCAPTCHA not initialized');
+      }
+
+      // Format phone number - ensure it has country code
+      let formattedPhoneNumber = phone.trim();
+      if (!formattedPhoneNumber.startsWith('+')) {
+        formattedPhoneNumber = '+91' + formattedPhoneNumber.replace(/^0/, '');
       }
       
-      // Call Twilio API to send OTP with auth token
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/twilio/send-otp`, 
-        { phone: phone.trim() },
-        { headers: { Authorization: `Bearer ${authToken}` }}
+      console.log('Sending verification code to:', formattedPhoneNumber);
+      
+      // Send OTP via Firebase
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        formattedPhoneNumber,
+        recaptchaVerifier
       );
       
+      console.log('Verification code sent successfully');
+      setConfirmationResult(confirmation);
       setStatus('sent');
-      setMessage(response?.data?.message || 'OTP sent successfully. Please check your phone.');
+      setMessage('OTP sent successfully. Please check your phone.');
+      toast.success('OTP sent to your phone!');
       // Set expiry to 3 minutes (180000ms)
       setExpiresAt(Date.now() + 180000);
     } catch (err) {
+      console.error('Error sending OTP:', err);
       setStatus('error');
-      // Check for authentication errors
-      if (err?.response?.status === 401 || err?.response?.status === 403) {
-        setMessage('Session expired. Please log in again to continue.');
-      } else {
-        setMessage(err?.response?.data?.error || err.message || 'Failed to send OTP');
+      
+      // Handle specific Firebase errors
+      let errorMessage = 'Failed to send OTP';
+      if (err.code) {
+        switch (err.code) {
+          case 'auth/invalid-phone-number':
+            errorMessage = 'Invalid phone number format. Please check and try again.';
+            break;
+          case 'auth/invalid-app-credential':
+            errorMessage = 'Verification service error. Please try again.';
+            break;
+          case 'auth/quota-exceeded':
+            errorMessage = 'SMS quota exceeded. Please try again later.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Too many requests. Please try again later.';
+            break;
+          default:
+            errorMessage = err.message || 'Failed to send OTP';
+        }
+      }
+      
+      setMessage(errorMessage);
+      toast.error(errorMessage);
+      
+      // Reset reCAPTCHA
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
       }
     }
   };
@@ -107,39 +211,39 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       return;
     }
     
+    if (!confirmationResult) {
+      setStatus('error');
+      setMessage('Please request OTP first');
+      return;
+    }
+    
     try {
       setStatus('verifying');
       setMessage('');
       
-      // Get the auth token
-      const authToken = localStorage.getItem('authToken');
+      console.log('Verifying OTP code...');
       
-      // Check if user is authenticated
-      if (!authToken) {
-        setStatus('error');
-        setMessage('Session expired. Please log in again.');
-        return;
-      }
+      // Verify the OTP with Firebase
+      await confirmationResult.confirm(otp.trim());
       
-      // Call Twilio API to verify OTP with auth token
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/twilio/verify-otp`, 
-        {
-          phone: phone.trim(),
-          otp: otp.trim()
-        },
-        { headers: { Authorization: `Bearer ${authToken}` }}
-      );
+      console.log('OTP verified successfully with Firebase');
       
       setStatus('verified');
-      setMessage(response?.data?.message || 'Phone number verified successfully');
+      setMessage('Phone number verified successfully');
+      toast.success('Phone number verified successfully!');
       
       console.log('Phone verification completed successfully - triggering edit mode');
+      
+      // Format phone number for storage
+      let formattedPhoneNumber = phone.trim();
+      if (!formattedPhoneNumber.startsWith('+')) {
+        formattedPhoneNumber = '+91' + formattedPhoneNumber.replace(/^0/, '');
+      }
       
       // Update the user's phone number in the database
       try {
         await updateProfile({ 
-          phone: phone.trim(),
+          phone: formattedPhoneNumber,
           phoneVerified: true,
           phoneVerifiedAt: new Date().toISOString()
         });
@@ -154,24 +258,43 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       } catch (updateError) {
         console.error('Failed to update phone number in database:', updateError);
         setMessage('Phone verified but failed to update in database. Please try refreshing the page.');
+        toast.error('Failed to update phone in database');
       }
       
-      // IMPORTANT: Don't update user state here to avoid conflicts
-      // The phone is already verified in the database
       // Trigger edit mode so user can save their profile
       if (onVerificationSuccess) {
         onVerificationSuccess();
       }
       
       setExpiresAt(null);
-    } catch (err) {
-      setStatus('error');
-      // Check for authentication errors
-      if (err?.response?.status === 401 || err?.response?.status === 403) {
-        setMessage('Session expired. Please log in again to continue.');
-      } else {
-        setMessage(err?.response?.data?.error || err.message || 'Invalid OTP');
+      setConfirmationResult(null);
+      
+      // Clear reCAPTCHA
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
       }
+    } catch (err) {
+      console.error('Error verifying OTP:', err);
+      setStatus('error');
+      
+      // Handle specific Firebase errors
+      let errorMessage = 'Invalid OTP';
+      if (err.code) {
+        switch (err.code) {
+          case 'auth/invalid-verification-code':
+            errorMessage = 'Invalid verification code. Please try again.';
+            break;
+          case 'auth/code-expired':
+            errorMessage = 'Verification code has expired. Please request a new one.';
+            break;
+          default:
+            errorMessage = err.message || 'Invalid OTP';
+        }
+      }
+      
+      setMessage(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -475,6 +598,9 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
             </button>
           </div>
         )}
+        
+        {/* Hidden reCAPTCHA container for Firebase phone verification */}
+        <div id="recaptcha-container-profile"></div>
     </div>
   );
 };
