@@ -315,7 +315,7 @@ const AdminUsers = () => {
   }, [users, nameQuery, phoneQuery, locationId, joinYear, joinMonth, joinDay, globalSearch]);
 
   return (
-    <div className="container mx-auto pl-8 pr-4 py-6 pt-8 font-sans overflow-x-hidden min-w-0">
+    <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 font-sans overflow-x-hidden min-w-0 max-w-[1400px]">
       {/* New User Notification Banner */}
       {showNewUserBanner && (
         <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-md animate-slide-down">
@@ -361,7 +361,7 @@ const AdminUsers = () => {
 
       {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
       {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
-      <div className="mb-2 md:mb-4 flex items-center justify-between">
+  <div className="mb-6 md:mb-8 pt-16 md:pt-4 flex items-center justify-between">
         {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
         <div className="flex-1">
           <div className="flex items-center gap-3">
@@ -511,8 +511,8 @@ const AdminUsers = () => {
       </div>
       )}
 
-      {/* Desktop table (md+) with its own vertical scroller */}
-      <div className="hidden md:block bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
+  {/* Desktop table (xl+) with its own vertical scroller */}
+  <div className="hidden xl:block bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
         <div className="max-w-full overflow-x-auto max-h-[65vh] overflow-y-auto">
           <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100">
@@ -641,8 +641,8 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Mobile cards (<md) */}
-      <div className="md:hidden space-y-3">
+  {/* Cards (<xl): 1/2/3 responsive columns */}
+  <div className="xl:hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {loading ? (
           <div className="text-center text-black py-6">Loading users...</div>
         ) : users.length === 0 ? (

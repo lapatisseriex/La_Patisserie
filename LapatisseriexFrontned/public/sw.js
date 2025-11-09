@@ -25,10 +25,9 @@ const dynamicCachePatterns = [
   '/fonts/'   // All fonts
 ];
 
-// External resources to cache
+// External resources to cache (CSS only; font files fetched by browser with proper CORS)
 const externalResources = [
-  'https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap',
-  'https://fonts.gstatic.com/' // Font files
+  'https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap'
 ];
 
 // Message event - handle skip waiting
@@ -60,23 +59,7 @@ self.addEventListener('install', (event) => {
           externalResources.map(url => cache.add(url).catch(err => console.warn('Failed to cache:', url)))
         );
       }),
-      
-      // Cache external resources separately
-      caches.open(UI_CACHE).then((cache) => {
-        console.log('Service Worker: Caching External Resources');
-        const externalUrls = headerUICache.filter(url => url.startsWith('http'));
-        return Promise.allSettled(
-          externalUrls.map(url => 
-            fetch(url, { mode: 'cors' })
-              .then(response => {
-                if (response.ok) {
-                  return cache.put(url, response);
-                }
-              })
-              .catch(err => console.log('Failed to cache:', url, err))
-          )
-        );
-      })
+      // No duplicate external caching block
     ]).then(() => {
       console.log('Service Worker: All caches updated');
       return self.skipWaiting();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiMail, 
@@ -37,6 +37,9 @@ const ContactManagement = () => {
   });
   const [pagination, setPagination] = useState({});
   const [selectedContacts, setSelectedContacts] = useState([]);
+  // Responsive view state: table on large screens when space allows, cards otherwise
+  const [useTableView, setUseTableView] = useState(true);
+  const contentWidthRef = useRef(null);
 
   // Fetch contacts
   const fetchContacts = async (showLoading = true) => {
@@ -229,6 +232,35 @@ const ContactManagement = () => {
     fetchContacts();
   }, [filters]);
 
+  // Decide between table or card view based on available width / potential overflow
+  useEffect(() => {
+    const decideView = () => {
+      // Force card view below large breakpoint (Tailwind lg = 1024px)
+      if (window.innerWidth < 1024) {
+        setUseTableView(false);
+        return;
+      }
+
+      // If container exists, check for horizontal overflow
+      const el = contentWidthRef.current;
+      if (el) {
+        // Temporarily ensure table styles for measurement (rough heuristic using contacts length)
+        // Assume each column ~140px + checkbox ~40px + padding; estimate width need.
+        const estimatedWidth = 40 + 140 * 6; // checkbox + six columns
+        const available = el.clientWidth;
+        if (available < estimatedWidth) {
+          setUseTableView(false);
+          return;
+        }
+      }
+      setUseTableView(true);
+    };
+
+    decideView();
+    window.addEventListener('resize', decideView);
+    return () => window.removeEventListener('resize', decideView);
+  }, [contacts, selectedContact]);
+
   // Status badge component
   const StatusBadge = ({ status }) => {
     const statusStyles = {
@@ -271,19 +303,20 @@ const ContactManagement = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Contact Management</h1>
+          <div className="pt-16 md:pt-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900 truncate">Contact Management</h1>
               <p className="text-gray-600 mt-1">Manage user inquiries and messages</p>
             </div>
-            
-            <button
-              onClick={() => fetchContacts()}
-              className="flex items-center px-4 py-2 bg-black text-white hover:bg-gray-800 transition-colors"
-            >
-              <FiRefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => fetchContacts()}
+                className="flex items-center px-4 py-2 bg-black text-white hover:bg-gray-800 transition-colors"
+              >
+                <FiRefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </button>
+            </div>
           </div>
 
           {/* Stats */}
@@ -395,27 +428,100 @@ const ContactManagement = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Contacts List */}
-          <div className="flex-1">
+          <div ref={contentWidthRef} className="flex-1">
             {contacts.length === 0 ? (
               <div className="bg-white p-8 text-center">
                 <FiInbox className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">No contacts found</p>
               </div>
             ) : (
-              <div className="bg-white border border-gray-200">
-                <div className="divide-y divide-gray-200">
-                  {contacts.map((contact) => (
-                    <div
-                      key={contact._id}
-                      className={`p-4 hover:bg-gray-50 cursor-pointer ${
-                        selectedContact?._id === contact._id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                      }`}
-                      onClick={() => setSelectedContact(contact)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-3 flex-1">
+              <>
+                {useTableView && (
+                  <div className="bg-white border border-gray-200 overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50 text-xs uppercase text-gray-600">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Select</th>
+                          <th className="px-3 py-2 text-left">Name</th>
+                          <th className="px-3 py-2 text-left">Email</th>
+                          <th className="px-3 py-2 text-left">Phone</th>
+                          <th className="px-3 py-2 text-left">Subject</th>
+                          <th className="px-3 py-2 text-left">Status</th>
+                          <th className="px-3 py-2 text-left">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {contacts.map(contact => (
+                          <tr
+                            key={contact._id}
+                            onClick={() => setSelectedContact(contact)}
+                            className={`cursor-pointer hover:bg-gray-50 ${selectedContact?._id === contact._id ? 'bg-blue-50' : ''}`}
+                          >
+                            <td className="px-3 py-2 align-top">
+                              <input
+                                type="checkbox"
+                                checked={selectedContacts.includes(contact._id)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedContacts(prev =>
+                                    e.target.checked
+                                      ? [...prev, contact._id]
+                                      : prev.filter(id => id !== contact._id)
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap max-w-[180px] truncate">{contact.name}</td>
+                            <td className="px-3 py-2 text-gray-600 whitespace-nowrap max-w-[220px] truncate">{contact.email}</td>
+                            <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">{contact.phone || '-'}</td>
+                            <td className="px-3 py-2 text-gray-800 max-w-[220px] truncate">{contact.subject}</td>
+                            <td className="px-3 py-2"><StatusBadge status={contact.status} /></td>
+                            <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">{new Date(contact.createdAt).toLocaleDateString()} {new Date(contact.createdAt).toLocaleTimeString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {pagination.pages > 1 && (
+                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">
+                            Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                            {pagination.total} results
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              disabled={!pagination.hasPrevPage}
+                              onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
+                              className="px-3 py-1 text-sm border border-gray-300 disabled:opacity-50 hover:bg-gray-100"
+                            >
+                              Previous
+                            </button>
+                            <button
+                              disabled={!pagination.hasNextPage}
+                              onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                              className="px-3 py-1 text-sm border border-gray-300 disabled:opacity-50 hover:bg-gray-100"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Card / list view */}
+                {!useTableView && (
+                  <div className="bg-white border border-gray-200 divide-y divide-gray-200">
+                    {contacts.map(contact => (
+                      <div
+                        key={contact._id}
+                        className={`p-4 hover:bg-gray-50 cursor-pointer ${selectedContact?._id === contact._id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+                        onClick={() => setSelectedContact(contact)}
+                      >
+                        <div className="flex items-start space-x-3">
                           <input
                             type="checkbox"
                             checked={selectedContacts.includes(contact._id)}
@@ -431,61 +537,58 @@ const ContactManagement = () => {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium text-gray-900">{contact.name}</p>
+                              <p className="text-sm font-medium text-gray-900 truncate">{contact.name}</p>
                               <StatusBadge status={contact.status} />
                             </div>
-                            <p className="text-sm text-gray-600">{contact.email}</p>
+                            <p className="text-sm text-gray-600 truncate">{contact.email}</p>
                             {contact.phone && (
                               <p className="text-xs text-gray-500">📞 {contact.phone}</p>
                             )}
-                            <p className="text-sm font-medium text-gray-900 mt-1">{contact.subject}</p>
+                            <p className="text-sm font-medium text-gray-900 mt-1 truncate">{contact.subject}</p>
                             <p className="text-sm text-gray-600 truncate">{contact.messagePreview}</p>
                             <p className="text-xs text-gray-400 mt-1">
-                              {new Date(contact.createdAt).toLocaleDateString()} at{' '}
-                              {new Date(contact.createdAt).toLocaleTimeString()}
+                              {new Date(contact.createdAt).toLocaleDateString()} at {new Date(contact.createdAt).toLocaleTimeString()}
                             </p>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {pagination.pages > 1 && (
-                  <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600">
-                        Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-                        {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                        {pagination.total} results
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          disabled={!pagination.hasPrevPage}
-                          onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
-                          className="px-3 py-1 text-sm border border-gray-300 disabled:opacity-50 hover:bg-gray-100"
-                        >
-                          Previous
-                        </button>
-                        <button
-                          disabled={!pagination.hasNextPage}
-                          onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
-                          className="px-3 py-1 text-sm border border-gray-300 disabled:opacity-50 hover:bg-gray-100"
-                        >
-                          Next
-                        </button>
+                    ))}
+                    {pagination.pages > 1 && (
+                      <div className="px-4 py-3 bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">
+                            Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                            {pagination.total} results
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              disabled={!pagination.hasPrevPage}
+                              onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
+                              className="px-3 py-1 text-sm border border-gray-300 disabled:opacity-50 hover:bg-gray-100"
+                            >
+                              Previous
+                            </button>
+                            <button
+                              disabled={!pagination.hasNextPage}
+                              onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                              className="px-3 py-1 text-sm border border-gray-300 disabled:opacity-50 hover:bg-gray-100"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
-              </div>
+              </>
             )}
           </div>
 
           {/* Contact Details */}
           {selectedContact && (
-            <div className="w-96 bg-white border border-gray-200 p-6">
+            <div className="w-full lg:w-96 bg-white border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Contact Details</h3>
                 <button

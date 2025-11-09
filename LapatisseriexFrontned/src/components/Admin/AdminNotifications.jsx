@@ -134,10 +134,10 @@ const AdminNotifications = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 max-w-[1400px]">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Notifications</h1>
+      <div className="mb-6 md:mb-8 pt-16 md:pt-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Notifications</h1>
         <p className="text-gray-600">Monitor all order activities and customer notifications</p>
       </div>
 
@@ -258,7 +258,7 @@ const AdminNotifications = () => {
 
                   {/* User and Order Details */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-600 mb-2">
                         <strong>Order Number:</strong>{' '}
                         <Link
@@ -292,9 +292,11 @@ const AdminNotifications = () => {
                     </div>
 
                     {notification.data && notification.data.cancelReason && (
-                      <div className="bg-red-50 p-3 rounded-lg">
+                      <div className="bg-red-50 p-3 rounded-lg w-full md:col-span-2 col-span-1">
                         <p className="text-sm font-semibold text-red-800 mb-1">Cancellation Reason:</p>
-                        <p className="text-sm text-red-700">{notification.data.cancelReason}</p>
+                        <div className="text-xs sm:text-sm text-red-700 whitespace-pre-wrap break-words">
+                          {notification.data.cancelReason}
+                        </div>
                       </div>
                     )}
                   </div>

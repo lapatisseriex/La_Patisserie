@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { 
   FaEnvelope, 
@@ -53,103 +53,48 @@ const AdminNewsletter = () => {
   const API_URL = import.meta.env.VITE_API_URL;
   const VERCEL_URL = import.meta.env.VITE_VERCEL_API_URL;
   
-  // Fetch subscribers
+  // Fetch subscribers (correct implementation)
   const fetchSubscribers = async () => {
     try {
       setLoading(true);
       const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
-      
+
       const params = new URLSearchParams();
       params.set('page', String(page));
       params.set('limit', '10');
       if (statusFilter) params.set('status', statusFilter);
-      
+
       const response = await axios.get(
         `${API_URL}/newsletter/admin/subscribers?${params.toString()}`,
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
-      
+
       setSubscribers(response.data.data);
       setTotalPages(response.data.pagination.totalPages);
       setTotalSubscribers(response.data.pagination.totalSubscribers);
       setError(null);
     } catch (err) {
-      console.error('Error fetching subscribers:', err);
       setError('Failed to load subscribers. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-  
-  // Fetch statistics
+
+  // Fetch statistics (was referenced but missing leading to ReferenceError)
   const fetchStats = async () => {
     try {
       const { getAuth } = await import('firebase/auth');
       const auth = getAuth();
       const idToken = await auth.currentUser.getIdToken(true);
-      
       const response = await axios.get(
         `${API_URL}/newsletter/admin/stats`,
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
-      
       setStats(response.data.data);
     } catch (err) {
-      console.error('Error fetching stats:', err);
-    }
-  };
-  
-  // Add subscriber
-  const handleAddSubscriber = async (e) => {
-    e.preventDefault();
-    try {
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
-      const idToken = await auth.currentUser.getIdToken(true);
-      
-      await axios.post(
-        `${API_URL}/newsletter/admin/add`,
-        { email: newEmail },
-        { headers: { Authorization: `Bearer ${idToken}` } }
-      );
-      
-      setSuccess('Subscriber added successfully!');
-      setNewEmail('');
-      setShowAddModal(false);
-      fetchSubscribers();
-      fetchStats();
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add subscriber');
-      setTimeout(() => setError(null), 3000);
-    }
-  };
-  
-  // Update subscriber
-  const handleUpdateSubscriber = async (e) => {
-    e.preventDefault();
-    try {
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
-      const idToken = await auth.currentUser.getIdToken(true);
-      
-      await axios.put(
-        `${API_URL}/newsletter/admin/${selectedSubscriber._id}`,
-        { email: editEmail, status: editStatus },
-        { headers: { Authorization: `Bearer ${idToken}` } }
-      );
-      
-      setSuccess('Subscriber updated successfully!');
-      setShowEditModal(false);
-      setSelectedSubscriber(null);
-      fetchSubscribers();
-      fetchStats();
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update subscriber');
-      setTimeout(() => setError(null), 3000);
+      // Silent fail; stats optional
     }
   };
   
@@ -217,6 +162,60 @@ const AdminNewsletter = () => {
     }
   };
   
+  // Add subscriber (Admin)
+  const handleAddSubscriber = async (e) => {
+    e.preventDefault();
+    if (!newEmail) return;
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+
+      await axios.post(
+        `${API_URL}/newsletter/admin/add`,
+        { email: newEmail },
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+
+      setSuccess('Subscriber added successfully!');
+      setShowAddModal(false);
+      setNewEmail('');
+      fetchSubscribers();
+      fetchStats();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to add subscriber');
+      setTimeout(() => setError(null), 4000);
+    }
+  };
+
+  // Update subscriber (Admin)
+  const handleUpdateSubscriber = async (e) => {
+    e.preventDefault();
+    if (!selectedSubscriber) return;
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const idToken = await auth.currentUser.getIdToken(true);
+
+      await axios.put(
+        `${API_URL}/newsletter/admin/${selectedSubscriber._id}`,
+        { email: editEmail, status: editStatus },
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+
+      setSuccess('Subscriber updated successfully!');
+      setShowEditModal(false);
+      setSelectedSubscriber(null);
+      fetchSubscribers();
+      fetchStats();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update subscriber');
+      setTimeout(() => setError(null), 4000);
+    }
+  };
+  
   // Open edit modal
   const openEditModal = (subscriber) => {
     setSelectedSubscriber(subscriber);
@@ -237,31 +236,67 @@ const AdminNewsletter = () => {
     sub.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
+  // Responsive table vs card view detection
+  const [useTableView, setUseTableView] = useState(true);
+  const listWidthRef = useRef(null);
+
+  useEffect(() => {
+    const decideView = () => {
+      // Force card view below md breakpoint (Tailwind md = 768px)
+      if (window.innerWidth < 768) {
+        setUseTableView(false);
+        return;
+      }
+      const el = listWidthRef.current;
+      if (el) {
+        // Estimate required width for table columns (email ~240, status ~120, source ~120, subscribed ~140, last email ~140, actions ~140 + padding)
+        const estimatedWidth = 240 + 120 + 120 + 140 + 140 + 140 + 64; // extra padding
+        if (el.clientWidth < estimatedWidth) {
+          setUseTableView(false);
+          return;
+        }
+      }
+      setUseTableView(true);
+    };
+    decideView();
+    window.addEventListener('resize', decideView);
+    return () => window.removeEventListener('resize', decideView);
+  }, [filteredSubscribers]);
+
   return (
     <div className="container mx-auto pl-8 pr-4 py-6 pt-8 font-sans overflow-x-hidden min-w-0">
       {/* Header */}
-      <div className="mb-2 md:mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-black">Newsletter Management</h1>
+      <div className="pt-16 md:pt-2 mb-2 md:mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-black truncate">Newsletter Management</h1>
           <p className="text-black font-light">Manage subscribers and send newsletters</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-sm"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-sm"
             onClick={() => setShowFilters((v) => !v)}
           >
             <FaFilter className="text-gray-700" />
             <span className="hidden sm:inline">Filters</span>
+            <span className="sm:hidden">Filter</span>
           </button>
           <button
-            onClick={() => setShowSendModal(true)}
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm font-medium"
+            onClick={() => {
+              // Auto-collapse sidebar on mobile to prevent modal collision
+              window.dispatchEvent(new CustomEvent('adminForceSidebarClose'));
+              setShowSendModal(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm font-medium"
           >
             <FaPaperPlane />
-            <span>Send Newsletter</span>
+            <span className="hidden sm:inline">Send Newsletter</span>
+            <span className="sm:hidden">Send</span>
           </button>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('adminForceSidebarClose'));
+              setShowAddModal(true);
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 text-sm font-medium"
           >
             <FaPlus />
@@ -271,16 +306,7 @@ const AdminNewsletter = () => {
         </div>
       </div>
       
-      {/* Mobile action buttons */}
-      <div className="sm:hidden mb-4">
-        <button
-          onClick={() => setShowSendModal(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm font-medium"
-        >
-          <FaPaperPlane />
-          <span>Send Newsletter</span>
-        </button>
-      </div>
+      {/* Mobile action buttons removed to avoid duplicate 'Send Newsletter' button */}
 
       {/* Statistics Cards */}
       {stats && (
@@ -403,8 +429,8 @@ const AdminNewsletter = () => {
         </div>
       )}
       
-      {/* Subscribers Table */}
-      {loading ? (
+  {/* Subscribers Table */}
+  {loading ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
         </div>
@@ -415,135 +441,77 @@ const AdminNewsletter = () => {
         </div>
       ) : (
         <>
-          {/* Desktop Table */}
-          <div className="hidden md:block bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Source
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subscribed
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Email
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSubscribers.map((subscriber) => (
-                  <tr key={subscriber._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <FaEnvelope className="text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">{subscriber.email}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        subscriber.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {subscriber.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {subscriber.source}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(subscriber.subscribedAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {subscriber.lastEmailSent 
-                        ? new Date(subscriber.lastEmailSent).toLocaleDateString()
-                        : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => openEditModal(subscriber)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSubscriber(subscriber._id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-4">
-            {filteredSubscribers.map((subscriber) => (
-              <div key={subscriber._id} className="bg-white border border-gray-100 rounded-lg shadow-sm p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center">
-                    <FaEnvelope className="text-gray-400 mr-2" />
-                    <span className="text-sm font-medium text-gray-900">{subscriber.email}</span>
-                  </div>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    subscriber.status === 'active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {subscriber.status}
-                  </span>
-                </div>
-                
-                <div className="space-y-2 text-xs text-gray-600 mb-3">
-                  <div className="flex justify-between">
-                    <span>Source:</span>
-                    <span className="font-medium">{subscriber.source}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Subscribed:</span>
-                    <span className="font-medium">{new Date(subscriber.subscribedAt).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Last Email:</span>
-                    <span className="font-medium">
-                      {subscriber.lastEmailSent 
-                        ? new Date(subscriber.lastEmailSent).toLocaleDateString()
-                        : '-'}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openEditModal(subscriber)}
-                    className="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 flex items-center justify-center gap-2"
-                  >
-                    <FaEdit /> Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteSubscriber(subscriber._id)}
-                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 flex items-center justify-center gap-2"
-                  >
-                    <FaTrash /> Delete
-                  </button>
-                </div>
+          <div ref={listWidthRef} className="space-y-4">
+            {useTableView ? (
+              <div className="bg-white border border-gray-100 rounded-lg shadow-sm overflow-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr className="text-xs text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left">Email</th>
+                      <th className="px-4 py-3 text-left">Status</th>
+                      <th className="px-4 py-3 text-left">Source</th>
+                      <th className="px-4 py-3 text-left">Subscribed</th>
+                      <th className="px-4 py-3 text-left">Last Email</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredSubscribers.map(subscriber => (
+                      <tr key={subscriber._id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 whitespace-nowrap max-w-[260px] truncate">
+                          <div className="flex items-center">
+                            <FaEnvelope className="text-gray-400 mr-2" />
+                            <span className="text-gray-900 text-sm">{subscriber.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${subscriber.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{subscriber.status}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-600 text-xs">{subscriber.source}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-600 text-xs">{new Date(subscriber.subscribedAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-600 text-xs">{subscriber.lastEmailSent ? new Date(subscriber.lastEmailSent).toLocaleDateString() : '-'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
+                          <button onClick={() => openEditModal(subscriber)} className="text-blue-600 hover:text-blue-900 mr-3">
+                            <FaEdit />
+                          </button>
+                          <button onClick={() => handleDeleteSubscriber(subscriber._id)} className="text-red-600 hover:text-red-900">
+                            <FaTrash />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-4">
+                {filteredSubscribers.map(subscriber => (
+                  <div key={subscriber._id} className="bg-white border border-gray-100 rounded-lg shadow-sm p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center min-w-0">
+                        <FaEnvelope className="text-gray-400 mr-2 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-900 truncate">{subscriber.email}</span>
+                      </div>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${subscriber.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{subscriber.status}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-gray-600 mb-3">
+                      <div className="flex justify-between"><span>Source:</span><span className="font-medium truncate max-w-[80px]">{subscriber.source}</span></div>
+                      <div className="flex justify-between"><span>Subscribed:</span><span className="font-medium">{new Date(subscriber.subscribedAt).toLocaleDateString()}</span></div>
+                      <div className="flex justify-between col-span-2"><span>Last Email:</span><span className="font-medium">{subscriber.lastEmailSent ? new Date(subscriber.lastEmailSent).toLocaleDateString() : '-'}</span></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => openEditModal(subscriber)} className="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 flex items-center justify-center gap-2">
+                        <FaEdit /> Edit
+                      </button>
+                      <button onClick={() => handleDeleteSubscriber(subscriber._id)} className="flex-1 px-3 py-2 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 flex items-center justify-center gap-2">
+                        <FaTrash /> Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-6 flex items-center justify-between">
@@ -573,7 +541,7 @@ const AdminNewsletter = () => {
       
       {/* Add Subscriber Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[120] p-4" data-modal="add-subscriber">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">Add New Subscriber</h3>
@@ -615,7 +583,7 @@ const AdminNewsletter = () => {
       
       {/* Edit Subscriber Modal */}
       {showEditModal && selectedSubscriber && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[120] p-4" data-modal="edit-subscriber">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">Edit Subscriber</h3>
@@ -667,7 +635,7 @@ const AdminNewsletter = () => {
       
       {/* Send Newsletter Modal */}
       {showSendModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[120] p-4 overflow-y-auto" data-modal="send-newsletter">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 my-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">Send Newsletter</h3>

@@ -140,7 +140,7 @@ const AdminCategories = () => {
       <div className="mb-0 md:mb-6 px-4 md:px-8">
         {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
         {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
-        <div className="flex justify-between items-start md:items-center">
+        <div className="pt-16 md:pt-2 flex justify-between items-start md:items-center">
           <div className="flex-1">
             <h1 className="text-2xl font-bold">Categories</h1>
             <div className="mt-4 flex flex-col space-y-4">
@@ -246,17 +246,17 @@ const AdminCategories = () => {
           {/* Category Form Modal - Positioned within admin layout boundaries */}
           {showForm && (
             <div
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-24 md:pt-28"
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-16 md:pt-20"
               style={{ paddingLeft: isMobile ? 0 : (isSidebarOpen ? 256 : 80) }}
             >
               <div
-                className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] shadow-2xl flex flex-col mx-4 sm:mx-6 md:mx-8 lg:mx-10"
+                className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] shadow-2xl flex flex-col mx-4 sm:mx-6 md:mx-8 lg:mx-10 -translate-x-3"
                 style={{ maxWidth: `calc(100vw - ${(isMobile ? 0 : (isSidebarOpen ? 256 : 80)) + (isMobile ? 16 : 32) * 2}px)` }}
               >
 
                 {/* Header / padding wrapper */}
                 <div className="flex-1 overflow-y-auto">
-                  <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+                  <div className="p-4 sm:p-6 md:p-6 lg:p-6">
                     <CategoryForm
                       category={editingCategory}
                       onClose={handleCloseForm}
@@ -276,8 +276,8 @@ const AdminCategories = () => {
             </div>
           ) : (
             <>
-              {/* Desktop table view (unchanged, visible on md+) */}
-              <div className="hidden md:block overflow-x-auto table-scroll px-8">
+              {/* Desktop table view (visible on xl and above) */}
+              <div className="hidden xl:block overflow-x-auto table-scroll px-8">
                 <table className="min-w-full bg-white border border-white" style={{ fontFamily: 'sans-serif' }}>
                   <thead className="bg-white">
                     <tr>
@@ -404,130 +404,136 @@ const AdminCategories = () => {
                 </table>
               </div>
 
-              {/* Mobile card view (visible < md) */}
-              <div className="md:hidden space-y-3 px-4 overflow-x-hidden">
+              {/* Card grid view for < xl (includes mobile). Two columns from md and up. */}
+              <div className="xl:hidden px-4 overflow-x-hidden">
                 {filteredCategories.length === 0 ? (
                   <div className="text-center text-black py-6">No categories found. Create your first category.</div>
                 ) : (
-                  filteredCategories.map((category) => (
-                    <div key={category._id} className="bg-white rounded-lg shadow-md border border-gray-100 p-3 w-full overflow-hidden">
-                      {/* Header: avatar + name and status */}
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="h-12 w-12 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
-                          {category.featuredImage ? (
-                            <img src={normalizeImageUrl(category.featuredImage)} alt={category.name} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="text-gray-400 text-xs">No Image</div>
-                          )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredCategories.map((category) => (
+                      <div key={category._id} className="bg-white rounded-lg shadow-md border border-gray-100 p-4 w-full overflow-hidden flex flex-col">
+                        {/* Header: avatar + name and status */}
+                        <div className="flex items-center gap-3 mb-3 min-w-0">
+                          <div className="h-12 w-12 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            {category.featuredImage ? (
+                              <img src={normalizeImageUrl(category.featuredImage)} alt={category.name} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="text-gray-400 text-xs">No Image</div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-base font-semibold text-black truncate">{category.name}</div>
+                            <div className={`inline-flex items-center text-xs mt-0.5 ${category.isActive ? 'text-green-700' : 'text-gray-800'}`}>{category.isActive ? 'Active' : 'Inactive'}</div>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-base font-semibold text-black truncate">{category.name}</div>
-                          <div className={`inline-flex items-center text-xs mt-0.5 ${category.isActive ? 'text-green-700' : 'text-gray-800'}`}>{category.isActive ? 'Active' : 'Inactive'}</div>
-                        </div>
-                      </div>
 
-                      {/* Body: description + media */}
-                      <div className="text-xs">
-                        <div className="space-y-3 text-left min-w-0">
-                          <div>
-                            <div className="text-gray-500">Description</div>
-                            {(() => {
-                              const desc = category.description || '—';
-                              const limit = 60;
-                              const expanded = !!expandedDescriptions[category._id];
-                              const needsSlice = (desc || '').length > limit;
-                              return (
-                                <div className={`text-black ${expanded ? 'whitespace-normal break-words' : 'truncate'}`}>
-                                  {expanded || !needsSlice ? (
-                                    desc
-                                  ) : (
-                                    <>
-                                      {desc.slice(0, limit)}
+                        {/* Body: description + media */}
+                        <div className="text-xs">
+                          <div className="space-y-3 text-left min-w-0">
+                            <div>
+                              <div className="text-gray-500">Description</div>
+                              {(() => {
+                                const desc = category.description || '—';
+                                const limit = 80;
+                                const expanded = !!expandedDescriptions[category._id];
+                                const needsSlice = (desc || '').length > limit;
+                                return (
+                                  <div className={`text-black ${expanded ? 'whitespace-normal break-words' : 'truncate'}`}>
+                                    {expanded || !needsSlice ? (
+                                      desc
+                                    ) : (
+                                      <>
+                                        {desc.slice(0, limit)}
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleDescription(category._id)}
+                                          className="ml-1 text-pink-600 hover:underline align-baseline"
+                                          aria-label="Show full description"
+                                        >
+                                          ...
+                                        </button>
+                                      </>
+                                    )}
+                                    {expanded && needsSlice && (
                                       <button
                                         type="button"
                                         onClick={() => toggleDescription(category._id)}
-                                        className="ml-1 text-pink-600 hover:underline align-baseline"
-                                        aria-label="Show full description"
+                                        className="ml-2 text-pink-600 hover:underline align-baseline text-xs"
+                                        aria-label="Show less"
                                       >
-                                        ...
+                                        Show less
                                       </button>
-                                    </>
-                                  )}
-                                  {expanded && needsSlice && (
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleDescription(category._id)}
-                                      className="ml-2 text-pink-600 hover:underline align-baseline text-xs"
-                                      aria-label="Show less"
-                                    >
-                                      Show less
-                                    </button>
-                                  )}
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                            <div>
+                              <div className="text-gray-500">Media</div>
+                              <div className="text-black truncate flex items-center gap-2">
+                                <span>{category.images?.length || 0} images</span>
+                                {category.videos?.length > 0 && <span>{category.videos.length} videos</span>}
+                              </div>
+                            </div>
+                          </div>
+                          {/* Actions row */}
+                          <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleEdit(category)}
+                                className="px-2 py-1 rounded hover:bg-gray-100 text-blue-600 hover:text-blue-900 text-xs"
+                              >
+                                Edit
+                              </button>
+                              <Link
+                                to={`/admin/categories/${category._id}/products`}
+                                className="px-2 py-1 rounded hover:bg-gray-100 text-green-600 hover:text-green-900 text-xs"
+                              >
+                                Products
+                              </Link>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {category.images?.length > 0 && (
+                                <button
+                                  onClick={() => handleReprocessImages(category._id, category.name)}
+                                  disabled={processingCategoryId === category._id}
+                                  className={`px-2 py-1 rounded hover:bg-gray-100 text-purple-600 hover:text-purple-900 text-xs ${processingCategoryId === category._id ? 'opacity-50 cursor-wait' : ''}`}
+                                  title="Remove backgrounds from all images in this category"
+                                >
+                                  {processingCategoryId === category._id ? 'Processing…' : 'Remove BG'}
+                                </button>
+                              )}
+                              {deleteId === category._id ? (
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs text-red-500">Confirm?</span>
+                                  <button
+                                    onClick={() => handleDelete(category._id)}
+                                    disabled={isDeleting}
+                                    className="text-red-600 hover:text-red-800 text-xs"
+                                  >
+                                    {isDeleting ? '...' : 'Yes'}
+                                  </button>
+                                  <button
+                                    onClick={handleCancelDelete}
+                                    className="text-black hover:text-black text-xs"
+                                  >
+                                    No
+                                  </button>
                                 </div>
-                              );
-                            })()}
-                          </div>
-                          <div>
-                            <div className="text-gray-500">Media</div>
-                            <div className="text-black truncate flex items-center gap-2">
-                              <span>{category.images?.length || 0} images</span>
-                              {category.videos?.length > 0 && <span>{category.videos.length} videos</span>}
+                              ) : (
+                                <button
+                                  onClick={() => setDeleteId(category._id)}
+                                  className="px-2 py-1 rounded hover:bg-gray-100 text-red-600 hover:text-red-800 text-xs"
+                                >
+                                  Delete
+                                </button>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        {/* Actions row on the left in single line */}
-                        <div className="mt-2 flex flex-wrap items-center justify-start gap-2">
-                          <button
-                            onClick={() => handleEdit(category)}
-                            className="px-2 py-1 rounded hover:bg-gray-100 text-blue-600 hover:text-blue-900 text-xs"
-                          >
-                            Edit
-                          </button>
-                          <Link
-                            to={`/admin/categories/${category._id}/products`}
-                            className="px-2 py-1 rounded hover:bg-gray-100 text-green-600 hover:text-green-900 text-xs"
-                          >
-                            Products
-                          </Link>
-                          {category.images?.length > 0 && (
-                            <button
-                              onClick={() => handleReprocessImages(category._id, category.name)}
-                              disabled={processingCategoryId === category._id}
-                              className={`px-2 py-1 rounded hover:bg-gray-100 text-purple-600 hover:text-purple-900 text-xs ${processingCategoryId === category._id ? 'opacity-50 cursor-wait' : ''}`}
-                              title="Remove backgrounds from all images in this category"
-                            >
-                              {processingCategoryId === category._id ? 'Processing…' : 'Remove BG'}
-                            </button>
-                          )}
-                          {deleteId === category._id ? (
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs text-red-500">Confirm?</span>
-                              <button
-                                onClick={() => handleDelete(category._id)}
-                                disabled={isDeleting}
-                                className="text-red-600 hover:text-red-800 text-xs"
-                              >
-                                {isDeleting ? '...' : 'Yes'}
-                              </button>
-                              <button
-                                onClick={handleCancelDelete}
-                                className="text-black hover:text-black text-xs"
-                              >
-                                No
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setDeleteId(category._id)}
-                              className="px-2 py-1 rounded hover:bg-gray-100 text-red-600 hover:text-red-800 text-xs"
-                            >
-                              Delete
-                            </button>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
             </>

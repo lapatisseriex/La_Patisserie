@@ -44,12 +44,12 @@ const StatCard = ({ title, value, tone = 'primary', subtitle, icon }) => {
   };
   return (
     <div className="p-4 rounded-xl bg-white shadow hover:shadow-md transition-shadow">
-      <div className={`inline-flex items-center text-white text-xs font-semibold px-2 py-1 rounded-md bg-gradient-to-r ${tones[tone]} mb-2`}>
-        {icon && <span className="mr-1">{icon}</span>}
-        {title}
+      <div className={`inline-flex flex-wrap items-center max-w-full overflow-hidden text-white text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-md bg-gradient-to-r ${tones[tone]} mb-2`}>
+        {icon && <span className="mr-1 shrink-0">{icon}</span>}
+        <span className="truncate break-words">{title}</span>
       </div>
-      <div className="text-2xl font-bold text-gray-800">{value}</div>
-      {subtitle && <div className="text-xs text-gray-500 mt-1">{subtitle}</div>}
+      <div className="text-xl sm:text-2xl font-bold text-gray-800 break-words">{value}</div>
+      {subtitle && <div className="text-[11px] sm:text-xs text-gray-500 mt-1 break-words">{subtitle}</div>}
     </div>
   );
 };
@@ -96,37 +96,6 @@ const PaymentFilters = ({
       </div>
 
       <div className="space-y-3">
-        {/* Prominent Order/Payment Search Bar */}
-        <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-4 rounded-lg border border-rose-200">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-semibold text-rose-700 flex items-center">
-              <FiSearch className="mr-2" />
-              Payment & Order Search
-            </div>
-            <div className="text-xs text-rose-600">Search by payment ID, order number, or Razorpay payment ID</div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search by order number, payment ID, or Razorpay ID..."
-                value={filters.search || ''}
-                onChange={(e) => onChange({ search: e.target.value })}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white placeholder-gray-500 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all"
-              />
-            </div>
-            <button
-              onClick={() => onRefresh && onRefresh()}
-              className="flex items-center justify-center px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 focus:ring-2 focus:ring-rose-500 transition-all"
-            >
-              <FiSearch className="mr-2" />
-              Search Payments
-            </button>
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <select
@@ -247,18 +216,15 @@ const PaymentFilters = ({
 
 const PaymentsTable = ({ items, onMarkPaid, onView }) => {
   const resolveBadge = (payment) => {
+    // Cancelled takes precedence
     if (payment.data?.order?.orderStatus === 'cancelled') {
       return { label: 'cancelled', tone: 'bg-red-100 text-red-700' };
     }
-    if (payment.paymentStatus === 'success') {
+    // Treat success OR legacy COD progression states as unified success
+    const codProgressStates = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
+    const isCodProgress = payment.paymentMethod === 'cod' && codProgressStates.includes(payment.data?.order?.orderStatus || '');
+    if (payment.paymentStatus === 'success' || isCodProgress) {
       return { label: 'success', tone: 'bg-green-100 text-green-700' };
-    }
-    if (
-      payment.paymentMethod === 'cod' &&
-      payment.data?.order?.orderStatus &&
-      ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'].includes(payment.data.order.orderStatus)
-    ) {
-      return { label: 'cod-confirmed', tone: 'bg-blue-100 text-blue-700' };
     }
     if (payment.paymentStatus === 'pending') {
       return { label: 'pending', tone: 'bg-yellow-100 text-yellow-700' };
@@ -270,7 +236,7 @@ const PaymentsTable = ({ items, onMarkPaid, onView }) => {
   };
 
   return (
-    <div className="overflow-auto rounded-xl border border-gray-100">
+    <div className="overflow-x-auto rounded-xl border border-gray-100 hidden xl:block">
       <table className="min-w-full divide-y divide-gray-100">
         <thead className="bg-gray-50">
           <tr>
@@ -323,27 +289,118 @@ const PaymentsTable = ({ items, onMarkPaid, onView }) => {
                 <td className="px-4 py-3 text-sm text-gray-700">
                   {p.deliveryLocationLabel || '—'}
                 </td>
-                <td className="px-4 py-3 text-sm text-right space-x-2 whitespace-nowrap">
-                  <button
-                    onClick={() => onView && onView(p)}
-                    className="px-3 py-1 rounded-md border hover:bg-gray-50 text-xs"
-                  >
-                    View
-                  </button>
-                  {p.paymentStatus === 'pending' && p.data?.order?.orderStatus !== 'cancelled' && (
+                <td className="px-4 py-3 text-sm">
+                  <div className="w-full flex flex-wrap gap-2 justify-end">
                     <button
-                      onClick={() => onMarkPaid && onMarkPaid(p)}
-                      className="px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                      onClick={() => onView && onView(p)}
+                      className="px-3 py-1 rounded-md border hover:bg-gray-50 text-xs"
                     >
-                      Mark Paid
+                      View
                     </button>
-                  )}
+                    {p.paymentStatus === 'pending' && p.data?.order?.orderStatus !== 'cancelled' && (
+                      <button
+                        onClick={() => onMarkPaid && onMarkPaid(p)}
+                        className="px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                      >
+                        Mark Paid
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+    </div>
+  );
+};
+
+// Responsive card layout for small screens
+const PaymentsCards = ({ items, onMarkPaid, onView }) => {
+  const resolveBadge = (payment) => {
+    if (payment.data?.order?.orderStatus === 'cancelled') {
+      return { label: 'cancelled', tone: 'bg-red-100 text-red-700' };
+    }
+    const codProgressStates = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
+    const isCodProgress = payment.paymentMethod === 'cod' && codProgressStates.includes(payment.data?.order?.orderStatus || '');
+    if (payment.paymentStatus === 'success' || isCodProgress) {
+      return { label: 'success', tone: 'bg-green-100 text-green-700' };
+    }
+    if (payment.paymentStatus === 'pending') {
+      return { label: 'pending', tone: 'bg-yellow-100 text-yellow-700' };
+    }
+    if (payment.paymentStatus === 'failed') {
+      return { label: 'failed', tone: 'bg-red-100 text-red-700' };
+    }
+    return { label: payment.paymentStatus || 'unknown', tone: 'bg-gray-100 text-gray-700' };
+  };
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 xl:hidden">
+      {items.map((p) => {
+        const badge = resolveBadge(p);
+        return (
+          <div key={p._id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm text-gray-600">{new Date(p.date || p.createdAt).toLocaleString()}</div>
+                <div className="mt-1 font-mono text-sm text-gray-900 break-all">{p.orderId}</div>
+                {p.gatewayPaymentId && (
+                  <div className="text-xs text-gray-500 break-all">Gateway: {p.gatewayPaymentId}</div>
+                )}
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-gray-900">₹{Number(p.amount).toFixed(2)}</div>
+                <div className="text-xs capitalize text-gray-600">{p.paymentMethod}</div>
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${badge.tone}`}>
+                {badge.label}
+              </span>
+              {p.data?.order?.paymentStatus && (
+                <span className="text-xs text-gray-500">Order payment: {p.data.order.paymentStatus}</span>
+              )}
+              {p.data?.order?.orderStatus && (
+                <span className="text-xs text-gray-500">Order: {p.data.order.orderStatus}</span>
+              )}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <div className="font-medium text-gray-700">Customer</div>
+                <div className="text-gray-900 truncate">{p.customerName || '—'}</div>
+                <div className="text-xs text-gray-500 break-all">{p.email || '—'}</div>
+                {p.phone && <div className="text-xs text-gray-500 break-all">{p.phone}</div>}
+              </div>
+              <div>
+                <div className="font-medium text-gray-700">Delivery</div>
+                <div className="text-gray-900 break-words">{p.deliveryLocationLabel || '—'}</div>
+                <div className="text-xs text-gray-500 break-words">{p.hostelName || '—'}</div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={() => onView && onView(p)}
+                className="px-3 py-1 rounded-md border hover:bg-gray-50 text-xs"
+              >
+                View
+              </button>
+              {p.paymentStatus === 'pending' && p.data?.order?.orderStatus !== 'cancelled' && (
+                <button
+                  onClick={() => onMarkPaid && onMarkPaid(p)}
+                  className="px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                >
+                  Mark Paid
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -471,7 +528,11 @@ const AdminPayments = () => {
       })
       .reduce((a, c) => a + Number(c.amount || 0), 0);
 
-    const successItems = items.filter(i => i.paymentStatus === 'success');
+    // Treat legacy COD progression states as success for display/metrics consistency
+    const successItems = items.filter(i => (
+      i.paymentStatus === 'success' ||
+      (i.paymentMethod === 'cod' && i.data?.order?.orderStatus && COD_REVENUE_STATUSES.includes(i.data.order.orderStatus))
+    ));
     const pendingItems = items.filter(i => i.paymentStatus === 'pending' && i.data?.order?.orderStatus !== 'cancelled');
     const cancelledItems = items.filter(i => i.data?.order?.orderStatus === 'cancelled' || i.paymentStatus === 'failed');
     const codDeliveredItems = items.filter(i => i.paymentMethod === 'cod' && i.data?.order?.orderStatus === 'delivered');
@@ -594,7 +655,8 @@ const AdminPayments = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-gray-800">Payments</h2>
+      <div className="pt-16 md:pt-2 flex items-center justify-between"/>
+      <h2 className="text-2xl font-bold text-gray-800 px-4">Payments</h2>
 
       {error && (
         <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
@@ -603,7 +665,8 @@ const AdminPayments = () => {
       )}
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+  {/* Metrics: show 2 columns on very small screens, 3 on small/medium, full 5 on large */}
+  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <StatCard 
           title="Total Payments" 
           value={filteredMetrics.totalPayments} 
@@ -666,20 +729,36 @@ const AdminPayments = () => {
           </div>
         </div>
       ) : (
-        <PaymentsTable
-          items={items}
-          onView={openView}
-          onMarkPaid={async (p) => {
-            try {
-              await paymentsService.updateStatus(p._id, 'success');
-              toast.success(`Marked order ${p.orderId} as Paid`);
-              await refresh();
-            } catch (e) {
-              console.error('Mark paid failed', e);
-              toast.error(e?.response?.data?.message || 'Failed to update payment');
-            }
-          }}
-        />
+        <>
+          <PaymentsTable
+            items={items}
+            onView={openView}
+            onMarkPaid={async (p) => {
+              try {
+                await paymentsService.updateStatus(p._id, 'success');
+                toast.success(`Marked order ${p.orderId} as Paid`);
+                await refresh();
+              } catch (e) {
+                console.error('Mark paid failed', e);
+                toast.error(e?.response?.data?.message || 'Failed to update payment');
+              }
+            }}
+          />
+          <PaymentsCards
+            items={items}
+            onView={openView}
+            onMarkPaid={async (p) => {
+              try {
+                await paymentsService.updateStatus(p._id, 'success');
+                toast.success(`Marked order ${p.orderId} as Paid`);
+                await refresh();
+              } catch (e) {
+                console.error('Mark paid failed', e);
+                toast.error(e?.response?.data?.message || 'Failed to update payment');
+              }
+            }}
+          />
+        </>
       )}
 
       {/* Enhanced Payment Details Modal */}

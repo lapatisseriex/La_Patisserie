@@ -346,7 +346,7 @@ const AdminTimeSettings = () => {
   return (
     // Tweak spacing to fixed mobile header: mt-20 keeps content below the fixed header; adjust pt-2 to reduce space above the title
     <div className="max-w-4xl mx-auto px-6 pb-6 space-y-8">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+      <div className="pt-16 md:pt-2 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Clock className="h-8 w-8 text-pink-500" />
           Time Settings

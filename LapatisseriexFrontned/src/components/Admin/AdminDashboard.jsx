@@ -147,12 +147,12 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto pl-8 pr-4 py-8 md:px-6 md:py-8 font-sans">
+  <div className="mx-auto px-4 sm:px-5 md:px-6 lg:px-8 py-6 md:py-8 font-sans max-w-[1600px]">
       {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
       {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
       <div className="mb-2 md:mb-8">
         {/* Tweak header margin: change mb-0 md:mb-8 to desired values (e.g., mb-2 md:mb-6 for less spacing) */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="pt-16 md:pt-2 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-black">Admin Dashboard</h1>
             <p className="text-black font-light">Welcome back, Admin</p>
@@ -197,7 +197,7 @@ const AdminDashboard = () => {
           <p className="font-medium">{error}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <div className="bg-blue-100 p-3 rounded-full">
@@ -264,11 +264,15 @@ const AdminDashboard = () => {
       )}
 
       {/* Recent Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  {/* Responsive dashboard widgets layout */}
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
         {/* Inventory Widget */}
         <InventoryWidget />
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-bold text-black mb-4">Recent Orders</h2>
+        <div className="bg-white rounded-lg shadow-md p-5 md:p-6 flex flex-col">
+          <h2 className="text-lg font-bold text-black mb-4 flex items-center justify-between">
+            <span>Recent Orders</span>
+            <span className="text-xs text-gray-500 font-medium">Last {recentOrders.length || 0}</span>
+          </h2>
           {recentOrders.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-gray-400 mb-4">
@@ -281,36 +285,36 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {recentOrders.map((order, i) => (
-                <div key={order._id || i} className="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-black">{order.orderNumber}</p>
-                      <p className="text-sm text-gray-600">{order.userDetails?.name || 'Customer'}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-black">₹{order.amount?.toFixed(2)}</p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
-                        order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(order.orderStatus) 
-                          ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.orderStatus?.replace('_', ' ')}
-                      </span>
+              {recentOrders.map((order, i) => {
+                const statusMap = {
+                  delivered: 'bg-green-100 text-green-800',
+                  cancelled: 'bg-red-100 text-red-800'
+                };
+                const inProgress = ['placed','confirmed','preparing','ready','out_for_delivery'];
+                const statusClass = statusMap[order.orderStatus] || (inProgress.includes(order.orderStatus) ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-800');
+                return (
+                  <div key={order._id || i} className="group border border-gray-100 hover:border-rose-200 rounded-lg p-3 transition-colors bg-white/50">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-black truncate" title={order.orderNumber}>{order.orderNumber}</p>
+                        <p className="text-sm text-gray-600 truncate" title={order.userDetails?.name}>{order.userDetails?.name || 'Customer'}</p>
+                        <p className="text-[11px] text-gray-500 whitespace-nowrap">
+                          {new Date(order.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between sm:flex-col sm:items-end sm:justify-start gap-2 w-full sm:w-auto">
+                        <p className="font-semibold text-black text-sm sm:text-base shrink-0">₹{order.amount?.toFixed(2)}</p>
+                        <span
+                          className={`inline-flex items-center max-w-[140px] sm:max-w-none px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium ${statusClass} truncate`}
+                          title={order.orderStatus?.replace('_',' ')}
+                        >
+                          {order.orderStatus?.replace('_', ' ')}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           <div className="mt-4">
@@ -318,8 +322,11 @@ const AdminDashboard = () => {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-bold text-black mb-4">Recent Users</h2>
+        <div className="bg-white rounded-lg shadow-md p-5 md:p-6 flex flex-col">
+          <h2 className="text-lg font-bold text-black mb-4 flex items-center justify-between">
+            <span>Recent Users</span>
+            <span className="text-xs text-gray-500 font-medium">Last {recentUsers.length || 0}</span>
+          </h2>
           {loading ? (
             <div className="text-center py-4">
               <p className="font-light">Loading user data...</p>
@@ -335,21 +342,19 @@ const AdminDashboard = () => {
           ) : (
             <div className="space-y-4">
               {recentUsers.map((userData, i) => (
-                <div key={userData._id || i} className="border-b border-white pb-3 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center font-medium">
+                <div key={userData._id || i} className="group border border-gray-100 hover:border-rose-200 rounded-lg p-3 transition-colors bg-white/50">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center text-sm font-semibold text-rose-700 shrink-0">
                         {userData.name ? userData.name.charAt(0).toUpperCase() : 'U'}
                       </div>
-                      <div className="ml-3">
-                        <p>{userData.name || 'Unnamed User'}</p>
-                        <p className="text-sm text-black font-light">{userData.phone || 'No phone'}</p>
+                      <div className="ml-3 min-w-0">
+                        <p className="text-sm font-medium text-black truncate" title={userData.name}>{userData.name || 'Unnamed User'}</p>
+                        <p className="text-xs text-gray-600 truncate" title={userData.phone}>{userData.phone || 'No phone'}</p>
                       </div>
                     </div>
-                    <div className="text-sm text-black font-light">
-                      Joined {userData.createdAt 
-                        ? new Date(userData.createdAt).toLocaleDateString() 
-                        : 'Unknown date'}
+                    <div className="text-[11px] text-gray-500 text-right whitespace-nowrap shrink-0">
+                      Joined {userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown'}
                     </div>
                   </div>
                 </div>

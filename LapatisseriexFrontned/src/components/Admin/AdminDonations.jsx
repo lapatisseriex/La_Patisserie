@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   GraduationCap, 
@@ -28,6 +28,9 @@ const AdminDonations = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  // Responsive rendering
+  const [useTableView, setUseTableView] = useState(true);
+  const listWidthRef = useRef(null);
 
   const fetchDonations = async (page = 1) => {
     try {
@@ -138,6 +141,26 @@ const AdminDonations = () => {
     fetchStats();
   }, [filters, currentPage]);
 
+  // Decide between table or cards based on available width/overflow
+  useEffect(() => {
+    const decide = () => {
+      const el = listWidthRef.current;
+      if (window.innerWidth < 1024) {
+        setUseTableView(false);
+        return;
+      }
+      const estimatedRequired = 1100; // columns + padding heuristic
+      if (el && el.clientWidth < estimatedRequired) {
+        setUseTableView(false);
+      } else {
+        setUseTableView(true);
+      }
+    };
+    decide();
+    window.addEventListener('resize', decide);
+    return () => window.removeEventListener('resize', decide);
+  }, [donations, filters, currentPage]);
+
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1);
@@ -165,26 +188,28 @@ const AdminDonations = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+      <div className="pt-16 md:pt-2 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+        <div className="min-w-0">
+          <h1 className="pl-4 md:pl-2 text-2xl font-bold text-gray-900 flex items-center gap-2">
             <GraduationCap className="text-[#733857]" />
             Education Initiative Donations
           </h1>
-          <p className="text-gray-600 mt-1">கற்பிப்போம் பயிலகம் - Supporting Student Education</p>
+          <p className="pl-4 md:pl-2 text-gray-600 mt-1">கற்பிப்போம் பயிலகம் - Supporting Student Education</p>
         </div>
-        <button
-          onClick={exportDonations}
-          className="flex items-center gap-2 px-4 py-2 bg-[#733857] text-white rounded-lg hover:bg-[#8d4466] transition-colors"
-        >
-          <Download className="h-4 w-4" />
-          Export CSV
-        </button>
+        <div className="md:self-auto self-start pl-4 md:pl-2">
+          <button
+            onClick={exportDonations}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#733857] to-[#8d4466] text-white rounded-lg hover:shadow-md hover:brightness-105 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#733857] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          >
+            <Download className="h-4 w-4" />
+            <span className="font-semibold tracking-wide">Export CSV</span>
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -256,8 +281,8 @@ const AdminDonations = () => {
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4 items-end">
+          <div className="min-w-[220px]">
             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
             <div className="relative">
               <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -270,8 +295,7 @@ const AdminDonations = () => {
               />
             </div>
           </div>
-
-          <div>
+          <div className="min-w-[180px]">
             <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
             <select
               value={filters.paymentMethod}
@@ -283,8 +307,7 @@ const AdminDonations = () => {
               <option value="razorpay">Online Payment</option>
             </select>
           </div>
-
-          <div>
+          <div className="min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={filters.paymentStatus}
@@ -296,8 +319,7 @@ const AdminDonations = () => {
               <option value="pending">Pending</option>
             </select>
           </div>
-
-          <div>
+          <div className="min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
             <input
               type="date"
@@ -306,22 +328,21 @@ const AdminDonations = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#733857]"
             />
           </div>
-
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#733857]"
-              />
-            </div>
+          <div className="min-w-[160px]">
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#733857]"
+            />
+          </div>
+          <div className="sm:col-span-2 xl:col-span-1 flex items-end">
             <button
               onClick={clearFilters}
-              className="px-3 py-2 text-sm text-gray-600 hover:text-[#733857] transition-colors mt-6"
+              className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
-              Clear
+              Clear Filters
             </button>
           </div>
         </div>
@@ -346,98 +367,88 @@ const AdminDonations = () => {
             <p className="text-gray-600">No donations match your current filters.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Donor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+          <div ref={listWidthRef} className="w-full">
+            {useTableView ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Donor</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {donations.map((donation) => (
+                      <motion.tr key={donation._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <div className="h-10 w-10 rounded-full bg-[#f7eef3] flex items-center justify-center">
+                                <span className="text-sm font-medium text-[#733857]">{donation.userName?.charAt(0)?.toUpperCase() || 'U'}</span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{donation.userName || 'Unknown'}</div>
+                              <div className="text-sm text-gray-500">{donation.userEmail}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap"><div className="text-lg font-bold text-[#733857]">₹{donation.donationAmount}</div></td>
+                        <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">#{donation.orderNumber}</div></td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium capitalize text-gray-900">{donation.paymentMethod}</span>
+                            <span className={`text-xs px-2 py-1 rounded-full inline-flex items-center ${donation.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{donation.paymentStatus}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(donation.createdAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">{donation.deliveryLocation}</div>
+                          {donation.hostelName && (<div className="text-xs text-blue-600 font-medium">🏠 {donation.hostelName}</div>)}
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                 {donations.map((donation) => (
-                  <motion.tr
-                    key={donation._id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-[#f7eef3] flex items-center justify-center">
-                            <span className="text-sm font-medium text-[#733857]">
-                              {donation.userName?.charAt(0)?.toUpperCase() || 'U'}
-                            </span>
-                          </div>
+                  <motion.div key={donation._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-full bg-[#f7eef3] flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-medium text-[#733857]">{donation.userName?.charAt(0)?.toUpperCase() || 'U'}</span>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {donation.userName || 'Unknown'}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {donation.userEmail}
-                          </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 truncate">{donation.userName || 'Unknown'}</div>
+                          <div className="text-xs text-gray-500 truncate">{donation.userEmail}</div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-lg font-bold text-[#733857]">
-                        ₹{donation.donationAmount}
+                      <div className="text-right">
+                        <div className="text-base font-bold text-[#733857]">₹{donation.donationAmount}</div>
+                        <div className="text-xs text-gray-500">#{donation.orderNumber}</div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        #{donation.orderNumber}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-700">
+                      <div><span className="text-gray-500">Payment:</span> <span className="font-medium capitalize">{donation.paymentMethod}</span></div>
+                      <div>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${donation.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{donation.paymentStatus}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium capitalize text-gray-900">
-                          {donation.paymentMethod}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full inline-flex items-center ${
-                          donation.paymentStatus === 'completed' 
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {donation.paymentStatus}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(donation.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">
-                        {donation.deliveryLocation}
-                      </div>
+                      <div><span className="text-gray-500">Date:</span> {new Date(donation.createdAt).toLocaleDateString()}</div>
+                      <div className="truncate"><span className="text-gray-500">Location:</span> <span className="font-medium">{donation.deliveryLocation}</span></div>
                       {donation.hostelName && (
-                        <div className="text-xs text-blue-600 font-medium">
-                          🏠 {donation.hostelName}
-                        </div>
+                        <div className="col-span-2 text-blue-700 font-medium">🏠 {donation.hostelName}</div>
                       )}
-                    </td>
-                  </motion.tr>
+                    </div>
+                  </motion.div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
         )}
 

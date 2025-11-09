@@ -397,7 +397,7 @@ const AdminProducts = () => {
   <div className="mb-0 md:mb-6 pl-8">
         {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
         {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
-        <div className="flex justify-between items-start md:items-center">
+        <div className="pt-16 md:pt-2 flex justify-between items-start md:items-center">
           <div className="flex-1">
             <h1 className="text-2xl font-semibold">Products</h1>
             <div className="mt-4 flex flex-col space-y-4">
@@ -414,7 +414,7 @@ const AdminProducts = () => {
               {/* Search and Filter Section - Right below links */}
               <div className="flex flex-col space-y-3">
                 {/* Desktop: wide search bar with filter button */}
-                <div className="hidden sm:flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-3 flex-wrap">
                   <div className="flex-1">
                     <input
                       type="text"
@@ -430,6 +430,12 @@ const AdminProducts = () => {
                   >
                     <FaFilter className="text-gray-700" />
                     <span>Filters</span>
+                  </button>
+                  <button
+                    onClick={handleAddNew}
+                    className="inline-flex px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 font-medium"
+                  >
+                    Add New Product
                   </button>
                 </div>
 
@@ -452,15 +458,7 @@ const AdminProducts = () => {
                 </div>
               </div>
 
-              {/* Right aligned add button */}
-              <div className="flex items-center justify-end w-full">
-                <button
-                  onClick={handleAddNew}
-                  className="hidden md:inline-flex px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 font-medium"
-                >
-                  Add New Product
-                </button>
-              </div>
+              {/* Desktop add button moved adjacent to Filters above; placeholder removed */}
             </div>
           </div>
         </div>
@@ -562,17 +560,17 @@ const AdminProducts = () => {
       {/* Product Form Modal - Positioned within admin layout boundaries */}
       {showForm && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-24 md:pt-28"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-16 md:pt-20"
           style={{ paddingLeft: isMobile ? 0 : (isSidebarOpen ? 256 : 80) }}
         >
           <div
-            className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] shadow-2xl flex flex-col mx-4 sm:mx-6 md:mx-8 lg:mx-10"
+            className="bg-white rounded-lg w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] shadow-2xl flex flex-col mx-4 sm:mx-6 md:mx-8 lg:mx-10 -translate-x-3"
             style={{ maxWidth: `calc(100vw - ${(isMobile ? 0 : (isSidebarOpen ? 256 : 80)) + (isMobile ? 16 : 32) * 2}px)` }}
           >
 
             {/* Header / padding wrapper */}
             <div className="flex-1 overflow-y-auto">
-              <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+              <div className="p-4 sm:p-6 md:p-6 lg:p-6">
                 <ProductForm
                   product={editingProduct}
                   onClose={handleCloseForm}
@@ -593,7 +591,8 @@ const AdminProducts = () => {
         </div>
       ) : (
         <>
-        <div className="hidden md:block overflow-x-auto table-scroll px-8">
+  {/* Desktop table visible at lg and above */}
+  <div className="hidden lg:block overflow-x-auto table-scroll px-8">
           <table className="min-w-full bg-white border border-white">
             <thead className="bg-white">
               <tr>
@@ -738,16 +737,17 @@ const AdminProducts = () => {
           </table>
         </div>
 
-        {/* Mobile cards (<md) */}
-        <div className="md:hidden space-y-3 px-4">
+        {/* Card grid for widths below lg (replaces table below ~1024px). Preserve original mobile + behavior. */}
+        <div className="lg:hidden px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {(productList || []).length === 0 ? (
-            <div className="text-center text-black py-6">No products found</div>
+            <div className="col-span-full text-center text-black py-6">No products found</div>
           ) : (
             productList.map((product) => {
               const rawSrc = product?.featuredImage || (Array.isArray(product?.images) && product.images[0]) || '/placeholder-image.jpg';
               const imgSrc = typeof rawSrc === 'string' && rawSrc.trim() ? rawSrc : '/placeholder-image.jpg';
               return (
-              <div key={product._id} className="bg-white rounded-lg shadow-md border border-gray-100 p-3">
+              <div key={product._id} className="bg-white rounded-lg shadow-md border border-gray-100 p-4 flex flex-col">
                 {/* Title: rounded image + name and id */}
                 <div className="flex items-center gap-3 mb-2">
                   <div className="h-12 w-12 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
@@ -759,10 +759,9 @@ const AdminProducts = () => {
                   </div>
                 </div>
 
-                {/* Body: two columns similar to users */}
-                <div className="grid grid-cols-[1.7fr_1fr] gap-1 text-xs">
-                  {/* Left: Category, Price */}
-                  <div className="space-y-3 text-left pr-5 min-w-0">
+                {/* Body metrics */}
+                <div className="grid grid-cols-2 gap-4 text-xs mb-3">
+                  <div className="space-y-2 min-w-0">
                     <div>
                       <div className="text-gray-500">Category</div>
                       <div className="text-black truncate">{product.category?.name || '—'}</div>
@@ -776,52 +775,68 @@ const AdminProducts = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Right: Status, Actions */}
-                  <div className="space-y-3 text-right min-w-0">
+                  <div className="space-y-2 text-right min-w-0">
                     <div>
                       <div className="text-gray-500">Status</div>
                       <div className={`inline-flex items-center gap-1 ${product.isActive ? 'text-green-700' : 'text-gray-800'}`}>
                         <span>{product.isActive ? 'Active' : 'Inactive'}</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEdit(product)}
-                        className="px-2 py-1 rounded hover:bg-gray-100 text-blue-600 hover:text-blue-900"
-                      >
-                        Edit
-                      </button>
-                      {deleteId === product._id ? (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs text-red-500">Confirm?</span>
-                          <button
-                            onClick={() => handleDelete(product._id)}
-                            disabled={isDeleting}
-                            className="text-red-600 hover:text-red-800 text-xs"
-                          >
-                            {isDeleting ? '...' : 'Yes'}
-                          </button>
-                          <button
-                            onClick={handleCancelDelete}
-                            className="text-black hover:text-black text-xs"
-                          >
-                            No
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setDeleteId(product._id)}
-                          className="px-2 py-1 rounded hover:bg-gray-100 text-red-600 hover:text-red-800"
-                        >
-                          Delete
-                        </button>
-                      )}
+                    <div>
+                      <div className="text-gray-500">Egg</div>
+                      <div className={`inline-flex items-center gap-1 ${product.hasEgg ? 'text-orange-700' : 'text-green-700'}`}>
+                        {product.hasEgg ? 'With Egg' : 'No Egg'}
+                      </div>
                     </div>
+                  </div>
+                </div>
+                {/* Actions */}
+                <div className="mt-auto pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {product.badge && (
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-[10px] font-medium truncate max-w-[100px]">
+                        {product.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEdit(product)}
+                      className="px-2 py-1 rounded hover:bg-gray-100 text-blue-600 hover:text-blue-900 text-xs"
+                    >
+                      Edit
+                    </button>
+                    {deleteId === product._id ? (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-red-500">Confirm?</span>
+                        <button
+                          onClick={() => handleDelete(product._id)}
+                          disabled={isDeleting}
+                          className="text-red-600 hover:text-red-800 text-xs"
+                        >
+                          {isDeleting ? '...' : 'Yes'}
+                        </button>
+                        <button
+                          onClick={handleCancelDelete}
+                          className="text-black hover:text-black text-xs"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteId(product._id)}
+                        className="px-2 py-1 rounded hover:bg-gray-100 text-red-600 hover:text-red-800 text-xs"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
             )})
           )}
+          </div>
         </div>
         </>
       )}

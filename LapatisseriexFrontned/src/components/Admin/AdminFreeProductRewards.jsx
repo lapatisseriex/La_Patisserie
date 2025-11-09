@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FaGift, FaCalendarAlt, FaUser, FaTrophy, FaSearch, FaDownload } from 'react-icons/fa';
 import apiClient from '../../services/apiService';
@@ -16,6 +16,9 @@ const AdminFreeProductRewards = () => {
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [viewMode, setViewMode] = useState('claims'); // 'claims' or 'all-users'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'eligible', 'used', 'progress'
+  // Responsive list rendering
+  const [useTableView, setUseTableView] = useState(true);
+  const listWidthRef = useRef(null);
 
   // Generate month options for filter
   const generateMonthOptions = () => {
@@ -98,6 +101,30 @@ const AdminFreeProductRewards = () => {
     }
   };
 
+  // Decide between table or card view based on available width / potential overflow
+  useEffect(() => {
+    const decideView = () => {
+      const el = listWidthRef.current;
+      // Prefer cards on smaller screens
+      if (window.innerWidth < 1024) {
+        setUseTableView(false);
+        return;
+      }
+      // Heuristic required width per view
+      const estimatedWidth = viewMode === 'claims'
+        ? 1200 /* 8 columns with padding */
+        : 1150 /* 7 columns with padding */;
+      if (el && el.clientWidth < estimatedWidth) {
+        setUseTableView(false);
+      } else {
+        setUseTableView(true);
+      }
+    };
+    decideView();
+    window.addEventListener('resize', decideView);
+    return () => window.removeEventListener('resize', decideView);
+  }, [viewMode, claims, allUsers, currentPage, selectedMonth, statusFilter]);
+
   const handleSearch = async () => {
     if (!searchEmail.trim()) return;
     
@@ -175,9 +202,9 @@ const AdminFreeProductRewards = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="pt-16 md:pt-2 mb-8">
           <h1 className="text-3xl font-bold text-[#412434] mb-2">
-            🎁 Free Product Rewards Dashboard
+            Free Product Rewards Dashboard
           </h1>
           <p className="text-[#733857]">
             Track user rewards, claims, and monthly progress
@@ -186,7 +213,7 @@ const AdminFreeProductRewards = () => {
 
         {/* Statistics Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <StatCard
               icon={FaTrophy}
               title="Total Claims (All Time)"
@@ -252,7 +279,7 @@ const AdminFreeProductRewards = () => {
         )}
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+  <div className="bg-white rounded-xl shadow-md p-6 mb-6">
           {/* View Mode Tabs */}
           <div className="mb-6">
             <div className="flex gap-2 border-b border-gray-200">
@@ -285,10 +312,10 @@ const AdminFreeProductRewards = () => {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end">
             {/* Month Filter - Only for Claims view */}
             {viewMode === 'claims' && (
-              <div className="flex-1">
+              <div className="min-w-[240px]">
                 <label className="block text-sm font-medium text-[#733857] mb-2">
                   Filter by Month
                 </label>
@@ -312,7 +339,7 @@ const AdminFreeProductRewards = () => {
 
             {/* Status Filter - Only for All Users view */}
             {viewMode === 'all-users' && (
-              <div className="flex-1">
+              <div className="min-w-[240px]">
                 <label className="block text-sm font-medium text-[#733857] mb-2">
                   Filter by Status
                 </label>
@@ -333,22 +360,22 @@ const AdminFreeProductRewards = () => {
             )}
 
             {/* Search */}
-            <div className="flex-1">
+            <div className="min-w-[260px] md:col-span-2 xl:col-span-1">
               <label className="block text-sm font-medium text-[#733857] mb-2">
                 Search by Email
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <input
                   type="text"
                   value={searchEmail}
                   onChange={(e) => setSearchEmail(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder="user@example.com"
-                  className="flex-1 px-4 py-2 border border-[#d9c4cd] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#733857]"
+                  className="min-w-0 flex-1 px-4 py-2 border border-[#d9c4cd] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#733857]"
                 />
                 <button
                   onClick={handleSearch}
-                  className="px-4 py-2 bg-gradient-to-r from-[#733857] to-[#8d4466] text-white rounded-lg hover:shadow-lg transition-all"
+                  className="shrink-0 px-4 py-2 bg-gradient-to-r from-[#733857] to-[#8d4466] text-white rounded-lg hover:shadow-lg transition-all"
                 >
                   <FaSearch />
                 </button>
@@ -356,11 +383,11 @@ const AdminFreeProductRewards = () => {
             </div>
 
             {/* Export */}
-            <div className="flex items-end">
+            <div className="flex items-end md:col-span-2 xl:col-span-1 justify-self-start xl:justify-self-end min-w-[180px]">
               <button
                 onClick={exportToCSV}
                 disabled={claims.length === 0}
-                className="px-6 py-2 bg-gradient-to-r from-[#8d4466] to-[#a05577] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full md:w-auto px-6 py-2 bg-gradient-to-r from-[#8d4466] to-[#a05577] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <FaDownload />
                 Export CSV
@@ -372,92 +399,114 @@ const AdminFreeProductRewards = () => {
         {/* Claims Table - Only show when viewMode is 'claims' */}
         {viewMode === 'claims' && (
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-[#733857] to-[#8d4466] text-white">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">User</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Product</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Claimed Date</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Month</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Order #</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Current Days</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
+          <div ref={listWidthRef} className="p-0">
+            {useTableView ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gradient-to-r from-[#733857] to-[#8d4466] text-white">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">User</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Product</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Claimed Date</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Month</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Order #</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Current Days</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="8" className="px-6 py-12 text-center">
+                          <div className="flex justify-center items-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#733857]"></div>
+                            <span className="ml-3 text-[#733857]">Loading...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : claims.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" className="px-6 py-12 text-center text-[#733857]">
+                          No claims found for the selected criteria
+                        </td>
+                      </tr>
+                    ) : (
+                      claims.map((claim, index) => (
+                        <tr key={index} className="hover:bg-[#f9f4f6] transition-colors">
+                          <td className="px-6 py-4 text-sm font-medium text-[#412434]">{claim.userName || 'N/A'}</td>
+                          <td className="px-6 py-4 text-sm text-[#733857]">{claim.userEmail}</td>
+                          <td className="px-6 py-4 text-sm font-medium text-[#412434]">{claim.productName}</td>
+                          <td className="px-6 py-4 text-sm text-[#733857]">
+                            {new Date(claim.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#733857]">{claim.month}</td>
+                          <td className="px-6 py-4 text-sm font-mono text-[#733857]">{claim.orderNumber}</td>
+                          <td className="px-6 py-4 text-sm text-center">
+                            <button onClick={() => fetchUserDetails(claim.userId)} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f7eef3] text-[#733857] hover:bg-[#733857] hover:text-white transition-colors cursor-pointer">
+                              {claim.currentOrderDays} days 👁️
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            {claim.currentEligible ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Eligible</span>
+                            ) : claim.currentUsed ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Used</span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Progress</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {loading ? (
-                  <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
-                      <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#733857]"></div>
-                        <span className="ml-3 text-[#733857]">Loading...</span>
-                      </div>
-                    </td>
-                  </tr>
+                  <div className="col-span-full px-6 py-12 text-center">
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#733857]"></div>
+                      <span className="ml-3 text-[#733857]">Loading...</span>
+                    </div>
+                  </div>
                 ) : claims.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center text-[#733857]">
-                      No claims found for the selected criteria
-                    </td>
-                  </tr>
+                  <div className="col-span-full px-6 py-12 text-center text-[#733857]">No claims found for the selected criteria</div>
                 ) : (
                   claims.map((claim, index) => (
-                    <tr
-                      key={index}
-                      className="hover:bg-[#f9f4f6] transition-colors"
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-[#412434]">
-                        {claim.userName || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#733857]">
-                        {claim.userEmail}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-[#412434]">
-                        {claim.productName}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#733857]">
-                        {new Date(claim.claimedAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#733857]">
-                        {claim.month}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-mono text-[#733857]">
-                        {claim.orderNumber}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-center">
-                        <button
-                          onClick={() => fetchUserDetails(claim.userId)}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f7eef3] text-[#733857] hover:bg-[#733857] hover:text-white transition-colors cursor-pointer"
-                        >
+                    <div key={index} className="p-4 sm:p-5 border border-gray-100 rounded-lg hover:bg-[#f9f4f6] transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-[#412434] truncate">{claim.userName || 'N/A'}</div>
+                          <div className="text-xs text-[#733857] truncate">{claim.userEmail}</div>
+                        </div>
+                        <div>
+                          {claim.currentEligible ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Eligible</span>
+                          ) : claim.currentUsed ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Used</span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Progress</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-[#733857]">
+                        <div><span className="text-gray-500">Product:</span> <span className="font-medium text-[#412434]">{claim.productName}</span></div>
+                        <div><span className="text-gray-500">Month:</span> <span className="font-medium">{claim.month}</span></div>
+                        <div><span className="text-gray-500">Claimed:</span> {new Date(claim.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                        <div className="font-mono"><span className="text-gray-500">Order #:</span> {claim.orderNumber}</div>
+                      </div>
+                      <div className="mt-3">
+                        <button onClick={() => fetchUserDetails(claim.userId)} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#f7eef3] text-[#733857] hover:bg-[#733857] hover:text-white transition-colors">
                           {claim.currentOrderDays} days 👁️
                         </button>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        {claim.currentEligible ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Eligible
-                          </span>
-                        ) : claim.currentUsed ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Used
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Progress
-                          </span>
-                        )}
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))
                 )}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
 
           {/* Pagination */}
@@ -490,99 +539,113 @@ const AdminFreeProductRewards = () => {
         {/* All Users Table - Only show when viewMode is 'all-users' */}
         {viewMode === 'all-users' && (
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-[#733857] to-[#8d4466] text-white">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">User</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Current Days</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Days Remaining</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Last Claim</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Total Claims</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
+          <div ref={listWidthRef} className="p-0">
+            {useTableView ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gradient-to-r from-[#733857] to-[#8d4466] text-white">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">User</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Current Days</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Days Remaining</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Last Claim</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Total Claims</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-12 text-center">
+                          <div className="flex justify-center items-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#733857]"></div>
+                            <span className="ml-3 text-[#733857]">Loading...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : allUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-12 text-center text-[#733857]">No users found</td>
+                      </tr>
+                    ) : (
+                      allUsers.map((user, index) => (
+                        <tr key={index} className="hover:bg-[#f9f4f6] transition-colors">
+                          <td className="px-6 py-4 text-sm font-medium text-[#412434]">{user.userName || 'N/A'}</td>
+                          <td className="px-6 py-4 text-sm text-[#733857]">{user.userEmail}</td>
+                          <td className="px-6 py-4 text-sm text-center">
+                            <button onClick={() => fetchUserDetails(user.userId)} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f7eef3] text-[#733857] hover:bg-[#733857] hover:text-white transition-colors cursor-pointer">
+                              {user.currentOrderDays}/10 days
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-center text-[#733857]">{user.daysRemaining} days</td>
+                          <td className="px-6 py-4 text-sm">
+                            {user.status === 'eligible' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Eligible</span>
+                            ) : user.status === 'used' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Used</span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">In Progress</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#733857]">
+                            {user.lastClaim ? (
+                              <div>
+                                <div className="font-medium">{user.lastClaim.productName}</div>
+                                <div className="text-xs text-gray-500">{new Date(user.lastClaim.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">Never</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-center">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{user.totalClaims}</span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {loading ? (
-                  <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center">
-                      <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#733857]"></div>
-                        <span className="ml-3 text-[#733857]">Loading...</span>
-                      </div>
-                    </td>
-                  </tr>
+                  <div className="col-span-full px-6 py-12 text-center">
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#733857]"></div>
+                      <span className="ml-3 text-[#733857]">Loading...</span>
+                    </div>
+                  </div>
                 ) : allUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-[#733857]">
-                      No users found
-                    </td>
-                  </tr>
+                  <div className="col-span-full px-6 py-12 text-center text-[#733857]">No users found</div>
                 ) : (
                   allUsers.map((user, index) => (
-                    <tr
-                      key={index}
-                      className="hover:bg-[#f9f4f6] transition-colors"
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-[#412434]">
-                        {user.userName || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#733857]">
-                        {user.userEmail}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-center">
-                        <button
-                          onClick={() => fetchUserDetails(user.userId)}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f7eef3] text-[#733857] hover:bg-[#733857] hover:text-white transition-colors cursor-pointer"
-                        >
-                          {user.currentOrderDays}/10 days
+                    <div key={index} className="p-4 sm:p-5 border border-gray-100 rounded-lg hover:bg-[#f9f4f6] transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-[#412434] truncate">{user.userName || 'N/A'}</div>
+                          <div className="text-xs text-[#733857] truncate">{user.userEmail}</div>
+                        </div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{user.totalClaims} total</span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-[#733857]">
+                        <div><span className="text-gray-500">Current:</span> <span className="font-medium">{user.currentOrderDays}/10 days</span></div>
+                        <div><span className="text-gray-500">Remaining:</span> <span className="font-medium">{user.daysRemaining} days</span></div>
+                        <div className="col-span-2"><span className="text-gray-500">Status:</span> <span className="font-medium">{user.status === 'eligible' ? 'Eligible' : user.status === 'used' ? 'Used' : 'In Progress'}</span></div>
+                        <div className="col-span-2">
+                          <span className="text-gray-500">Last Claim:</span> <span className="font-medium">{user.lastClaim ? `${user.lastClaim.productName} • ${new Date(user.lastClaim.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Never'}</span>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <button onClick={() => fetchUserDetails(user.userId)} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#f7eef3] text-[#733857] hover:bg-[#733857] hover:text-white transition-colors">
+                          View details 👁️
                         </button>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-center text-[#733857]">
-                        {user.daysRemaining} days
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        {user.status === 'eligible' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Eligible
-                          </span>
-                        ) : user.status === 'used' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Used
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            In Progress
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#733857]">
-                        {user.lastClaim ? (
-                          <div>
-                            <div className="font-medium">{user.lastClaim.productName}</div>
-                            <div className="text-xs text-gray-500">
-                              {new Date(user.lastClaim.claimedAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">Never</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-center">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                          {user.totalClaims}
-                        </span>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))
                 )}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
 
           {/* Pagination */}

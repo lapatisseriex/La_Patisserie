@@ -674,7 +674,7 @@ const AdminOrders = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-8">
       {/* New Order Notification Banner */}
       {showNewOrderBanner && (
         <div className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-lg shadow-md animate-slide-down">
@@ -718,11 +718,11 @@ const AdminOrders = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
+  {/* Header (Responsive) */}
+  <div className="pt-16 md:pt-4 flex flex-col gap-4 2xl:flex-row 2xl:justify-between 2xl:items-start mb-6">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900 truncate">Order Management</h1>
             {/* WebSocket Connection Status Badge */}
             <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
               wsConnected 
@@ -730,16 +730,16 @@ const AdminOrders = () => {
                 : 'bg-red-100 text-red-700 border border-red-300'
             }`}>
               <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-              <span>{wsConnected ? 'Live Updates Active' : 'Disconnected'}</span>
+              <span className="truncate max-w-[140px]">{wsConnected ? 'Live Updates Active' : 'Disconnected'}</span>
             </div>
           </div>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1 min-w-0 truncate">
             Manage and track all customer orders
           </p>
         </div>
-        <div className="flex space-x-3">
+  <div className="flex flex-wrap gap-3 order-last 2xl:order-none">
           {/* View Mode Toggle */}
-          <div className="flex items-center bg-gray-200 rounded-lg p-1">
+          <div className="flex items-center bg-gray-200 rounded-lg p-1 flex-shrink-0">
             <button
               onClick={() => setViewMode('table')}
               className={`flex items-center px-3 py-2 rounded-md transition-colors ${
@@ -767,12 +767,12 @@ const AdminOrders = () => {
           </div>
           <button
             onClick={() => fetchOrders(currentPage, filters)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex-shrink-0"
           >
             <FaSyncAlt className="mr-2" />
             Refresh
           </button>
-          <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex-shrink-0">
             <FaDownload className="mr-2" />
             Export
           </button>
@@ -815,41 +815,6 @@ const AdminOrders = () => {
 
         <div className="space-y-3">
           {/* Prominent Order Search Bar */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm font-semibold text-blue-700 flex items-center">
-                <FaSearch className="mr-2" />
-                Order Search
-              </div>
-              <div className="text-xs text-blue-600">Search by order number, order ID, or customer details</div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search by order number (e.g., ORD1762603488562331) or order ID..."
-                  value={filters.search || ''}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearch();
-                    }
-                  }}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                />
-              </div>
-              <button
-                onClick={() => handleSearch()}
-                className="flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-all"
-              >
-                <FaSearch className="mr-2" />
-                Search Orders
-              </button>
-            </div>
-          </div>
 
           {/* Status Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -955,9 +920,9 @@ const AdminOrders = () => {
         </div>
       </div>
 
-      {/* Orders Table View */}
+      {/* Orders Table View (Desktop 2xl+) & Card Grid (Below 2xl) */}
       {viewMode === 'table' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="rounded-lg shadow-sm border border-gray-200">
           {loading ? (
             <div className="flex justify-center items-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -972,8 +937,29 @@ const AdminOrders = () => {
             <p className="text-gray-500">No orders match your current filters.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <>
+            {/* Card Grid for <2xl screens */}
+            <div className="block 2xl:hidden bg-white p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {groupOrdersByNumber(orders).map(order => (
+                  <GroupedOrderCard 
+                    key={order._id}
+                    order={order}
+                    onViewDetails={viewOrderDetails}
+                    getStatusColor={getStatusColor}
+                    getPaymentStatusColor={getPaymentStatusColor}
+                    formatDate={formatDate}
+                    formatCurrency={formatCurrency}
+                    getItemImage={getItemImage}
+                    getVariantDisplay={getVariantDisplay}
+                    placeholderImage={placeholderImage}
+                  />
+                ))}
+              </div>
+            </div>
+            {/* Original Table for >=2xl */}
+            <div className="hidden 2xl:block overflow-x-auto bg-white">
+              <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1097,12 +1083,13 @@ const AdminOrders = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-lg">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => fetchOrders(Math.max(1, currentPage - 1), filters)}

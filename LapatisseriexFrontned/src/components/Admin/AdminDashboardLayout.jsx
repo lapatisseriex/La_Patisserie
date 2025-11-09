@@ -62,10 +62,31 @@ const AdminDashboardLayout = () => {
       } else {
         setIsSidebarOpen(true);
       }
+
+      // If a modal is open and viewport is below collapse threshold, ensure sidebar is closed
+      const WIDTH_THRESHOLD = 1191;
+      const HEIGHT_THRESHOLD = 876;
+      const modalOpen = document.querySelector('[data-modal]');
+      if (modalOpen && (window.innerWidth < WIDTH_THRESHOLD || window.innerHeight < HEIGHT_THRESHOLD)) {
+        setSidebarOpen(false);
+      }
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const forceCloseListener = () => {
+      // Conditionally close only if viewport below threshold (or mobile)
+      const WIDTH_THRESHOLD = 1191;
+      const HEIGHT_THRESHOLD = 876;
+      if (window.innerWidth < WIDTH_THRESHOLD || window.innerHeight < HEIGHT_THRESHOLD || window.innerWidth < 768) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('adminForceSidebarClose', forceCloseListener);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('adminForceSidebarClose', forceCloseListener);
+    };
   }, []);
 
   // Helper to set sidebar open state and broadcast changes

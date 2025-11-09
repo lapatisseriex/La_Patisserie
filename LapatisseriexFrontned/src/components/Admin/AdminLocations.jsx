@@ -478,16 +478,30 @@ const AdminLocations = () => {
 
   return (
     <div className="container mx-auto pl-8 pr-4 py-6 pt-8 md:pb-6 pb-28 font-sans overflow-x-hidden relative">
+      <style>{`
+        @media (max-width:1051px){
+          .locations-table{display:none !important;}
+          .locations-cards{display:block !important;}
+          .locations-header{flex-direction:column;align-items:flex-start;}
+          .locations-header-actions{display:none !important;}
+        }
+        @media (min-width:1052px){
+          .locations-table{display:block !important;}
+          .locations-cards{display:none !important;}
+          .locations-header{flex-direction:row;align-items:center;justify-content:space-between;}
+          .locations-header-actions{display:flex !important;}
+        }
+      `}</style>
       {/* Tweak left padding: change pl-8 to desired value (e.g., pl-6 for less, pl-10 for more) */}
       {/* Tweak top/bottom padding: change py-6 to desired value (e.g., py-4 for less, py-8 for more) */}
-  <div className="mb-0 md:mb-6 flex justify-between items-center">
+  <div className="pt-16 md:pt-2 locations-header mb-0 md:mb-6 flex gap-4">
         {/* Tweak header margin: change mb-0 md:mb-6 to desired values (e.g., mb-2 md:mb-4 for less spacing) */}
         <div>
           <h1 className="text-2xl font-bold text-black">Delivery Locations & Hostels</h1>
           <p className="text-black font-light">Manage delivery locations and hostels for your store</p>
         </div>
-        {/* Desktop header actions (visible on md+) */}
-        <div className="hidden md:flex space-x-3">
+  {/* Header actions: always visible; stack below title under 1052px */}
+  <div className="locations-header-actions flex flex-row flex-wrap gap-3 hidden md:flex">
           <button
             onClick={() => openHostelModal()}
             className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-700 transition-colors font-medium"
@@ -514,8 +528,8 @@ const AdminLocations = () => {
         </div>
       )}
       
-  {/* Mobile: Locations as Cards */}
-  <div className="md:hidden space-y-4 pb-24">
+  {/* Card view (below 1052px) */}
+  <div className="locations-cards space-y-4 pb-24" style={{display:'none'}}>
         {loading ? (
           <div className="bg-white rounded-lg shadow-sm border p-6 text-center text-black font-light">
             Loading locations...
@@ -648,8 +662,8 @@ const AdminLocations = () => {
         )}
       </div>
 
-      {/* Desktop: Locations Table (unchanged) */}
-  <div className="hidden md:block bg-white rounded-lg shadow-md overflow-hidden">
+      {/* Table view (>=1052px) */}
+      <div className="locations-table bg-white rounded-lg shadow-md overflow-hidden" style={{display:'block'}}>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100">
             <tr>

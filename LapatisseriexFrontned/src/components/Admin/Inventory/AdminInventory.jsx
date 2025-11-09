@@ -197,20 +197,19 @@ const AdminInventory = () => {
 
   return (
     <div 
-      className={`min-h-screen bg-gray-50 transition-all duration-300 ${
-        isSidebarOpen && !isMobile ? 'ml-64' : ''
-      }`}
+      className="min-h-screen bg-gray-50 transition-all duration-300"
       onClick={handleContentClick}
     >
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          {/* Header: stack buttons below title until large screens to prevent collision; side-by-side buttons always */}
+          <div className="pt-16 md:pt-2 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
               <p className="mt-2 text-gray-600">Monitor and manage product stock levels</p>
             </div>
-            <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-row flex-wrap items-center gap-2">
               <button
                 onClick={loadInventoryData}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -361,7 +360,7 @@ const AdminInventory = () => {
           </div>
         )}
 
-        {/* Products Table */}
+        {/* Products Table / Cards */}
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <h2 className="text-lg font-medium text-gray-900">Products Inventory</h2>
@@ -373,7 +372,8 @@ const AdminInventory = () => {
             </button>
           </div>
           
-          <div className="overflow-x-auto">
+          {/* Table view (lg and up). Below lg (including widths like 922px) we show cards */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -550,7 +550,6 @@ const AdminInventory = () => {
                 ))}
               </tbody>
             </table>
-            
             {filteredProducts.length === 0 && (
               <div className="text-center py-12">
                 <FaBox className="mx-auto h-12 w-12 text-gray-400" />
@@ -558,6 +557,174 @@ const AdminInventory = () => {
                 <p className="mt-1 text-sm text-gray-500">
                   Try adjusting your search or filter criteria.
                 </p>
+              </div>
+            )}
+          </div>
+
+          {/* Card view (below lg) */}
+          <div className="block lg:hidden">
+            {filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+                {filteredProducts.map((product) => (
+                  <div key={product._id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                        <p className="text-xs text-gray-500">ID: {product._id.slice(-6)}</p>
+                        <span className="mt-1 inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                          {product.category?.name || 'Uncategorized'}
+                        </span>
+                      </div>
+                      <Link
+                        to={`/admin/products?edit=${product._id}`}
+                        className="shrink-0 text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        View
+                      </Link>
+                    </div>
+
+                    <div className="mt-3 space-y-2">
+                      {product.variants.map((variant, index) => {
+                        const itemKey = `${product._id}-${index}`;
+                        const isEditing = editingItems.has(itemKey);
+                        const stockUpdate = stockUpdates[itemKey];
+                        return (
+                          <div key={index} className="p-2 border rounded">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-sm font-medium truncate">{variant.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {variant.quantity} {variant.measuringUnit} • ₹{variant.price}
+                                </div>
+                              </div>
+                              {!isEditing && (
+                                <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                  variant.status === 'in_stock' ? 'bg-green-100 text-green-800' :
+                                  variant.status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
+                                  variant.status === 'out_of_stock' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {variant.stock} {variant.isStockActive ? 'units' : '(disabled)'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              {isEditing ? (
+                                <>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      value={stockUpdate?.stock ?? variant.stock}
+                                      onChange={(e) => {
+                                        const newStock = e.target.value;
+                                        setStockUpdates(prev => ({
+                                          ...prev,
+                                          [itemKey]: {
+                                            ...prev[itemKey],
+                                            stock: newStock,
+                                            isStockActive: stockUpdate?.isStockActive ?? variant.isStockActive
+                                          }
+                                        }));
+                                      }}
+                                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded"
+                                      min="0"
+                                    />
+                                    <label className="flex items-center text-xs">
+                                      <input
+                                        type="checkbox"
+                                        checked={stockUpdate?.isStockActive ?? variant.isStockActive}
+                                        onChange={(e) => {
+                                          const isActive = e.target.checked;
+                                          setStockUpdates(prev => ({
+                                            ...prev,
+                                            [itemKey]: {
+                                              ...prev[itemKey],
+                                              stock: stockUpdate?.stock ?? variant.stock,
+                                              isStockActive: isActive
+                                            }
+                                          }));
+                                        }}
+                                        className="mr-1"
+                                      />
+                                      Active
+                                    </label>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {showBulkUpdate ? (
+                                      <button
+                                        onClick={() => {
+                                          setEditingItems(prev => {
+                                            const newSet = new Set(prev);
+                                            newSet.delete(itemKey);
+                                            return newSet;
+                                          });
+                                        }}
+                                        className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                      >
+                                        <FaSave size={12} />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          const update = stockUpdates[itemKey];
+                                          if (update) {
+                                            handleStockUpdate(product._id, index, update.stock, update.isStockActive);
+                                          }
+                                        }}
+                                        className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                      >
+                                        <FaSave size={12} />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        setEditingItems(prev => {
+                                          const newSet = new Set(prev);
+                                          newSet.delete(itemKey);
+                                          return newSet;
+                                        });
+                                        setStockUpdates(prev => {
+                                          const newUpdates = { ...prev };
+                                          delete newUpdates[itemKey];
+                                          return newUpdates;
+                                        });
+                                      }}
+                                      className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                    >
+                                      <FaTimes size={12} />
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditingItems(prev => new Set([...prev, itemKey]));
+                                    setStockUpdates(prev => ({
+                                      ...prev,
+                                      [itemKey]: {
+                                        stock: variant.stock,
+                                        isStockActive: variant.isStockActive
+                                      }
+                                    }));
+                                  }}
+                                  className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                >
+                                  <FaEdit size={12} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <FaBox className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
+                <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
               </div>
             )}
           </div>
