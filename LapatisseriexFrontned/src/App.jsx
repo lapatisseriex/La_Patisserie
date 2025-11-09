@@ -18,6 +18,7 @@ import Layout from './components/Layout/Layout';
 import AdminLayout from './components/Layout/AdminLayout';
 import FooterOnlyLayout from './components/Layout/FooterOnlyLayout';
 import ProductLayout from './components/Layout/ProductLayout';
+import PhoneVerificationTest from './pages/PhoneVerificationTest';
 
 // Pages
 import ProfilePage from './pages/Profile';
@@ -189,6 +190,7 @@ function App() {
                             <Route path="shipping-policy" element={<ShippingPolicy />} />
                             <Route path="refund-policy" element={<RefundPolicy />} />
                             <Route path="terms" element={<TermsAndConditions />} />
+                            <Route path="phone-verification-test" element={<PhoneVerificationTest />} />
                             <Route path="faq" element={<FAQ />} />
                             <Route path="our-services" element={<OurServices />} />
                             <Route path="cart" element={<Cart />} />

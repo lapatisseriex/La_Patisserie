@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { initializeApp } from 'firebase/app';
 import { 
-  getAuth, 
+  // getAuth removed; we use shared auth instance
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
@@ -12,20 +11,9 @@ import {
 } from 'firebase/auth';
 import axios from 'axios';
 import api from '../services/apiService';
+import { auth } from '../config/firebase';
 
-// Firebase configuration from environment variables
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// Use shared Firebase Auth instance from config to avoid duplicate initialization
 
 // Backend API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL;

@@ -58,15 +58,12 @@ export const protect = asyncHandler(async (req, res, next) => {
           
           const userData = {
             uid: decodedToken.uid,
-            email: decodedToken.email,
             name: decodedToken.name || null,
             profilePhoto: decodedToken.picture ? { url: decodedToken.picture, public_id: '' } : { url: '', public_id: '' },
             role,
             lastLogin: new Date(),
             lastActive: new Date(),
             isActive: true,
-            emailVerified: decodedToken.email_verified || false,
-            phoneVerified: false,
             // Add default values for other required fields
             dob: null,
             anniversary: null,
@@ -77,6 +74,21 @@ export const protect = asyncHandler(async (req, res, next) => {
             location: null,
             hostel: null
           };
+          
+          // Add email if available (not available for phone-only authentication)
+          if (decodedToken.email) {
+            userData.email = decodedToken.email;
+            userData.emailVerified = decodedToken.email_verified || false;
+          }
+          
+          // Add phone if available (for phone authentication)
+          if (decodedToken.phone_number) {
+            userData.phone = decodedToken.phone_number;
+            userData.phoneVerified = true;
+            userData.phoneVerifiedAt = new Date();
+          } else {
+            userData.phoneVerified = false;
+          }
           
           user = await User.create(userData);
           console.log(`User created successfully in auth middleware: ${user._id} (${decodedToken.uid}) - Role: ${role}`);
