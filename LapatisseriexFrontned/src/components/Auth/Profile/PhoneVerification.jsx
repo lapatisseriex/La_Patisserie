@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Send, ShieldCheck, Phone, Timer, CheckCircle2, XCircle, RefreshCcw } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { auth } from '../../../config/firebase';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { toast } from 'react-toastify';
 
 const formatTime = (ms) => {
@@ -20,7 +20,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   const [message, setMessage] = useState('');
   const [expiresAt, setExpiresAt] = useState(null); // timestamp
   const [isEditingNumber, setIsEditingNumber] = useState(false); // New state for editing mode
-  const [confirmationResult, setConfirmationResult] = useState(null); // Firebase confirmation result
+  const [verificationId, setVerificationId] = useState(null); // Store verification ID instead of confirmation
   const timerRef = useRef(null);
 
   // Cleanup reCAPTCHA on component unmount
@@ -153,15 +153,15 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       
       console.log('Sending verification code to:', formattedPhoneNumber);
       
-      // Send OTP via Firebase
-      const confirmation = await signInWithPhoneNumber(
-        auth,
+      // Use PhoneAuthProvider to get verification ID without signing in
+      const phoneProvider = new PhoneAuthProvider(auth);
+      const verificationId = await phoneProvider.verifyPhoneNumber(
         formattedPhoneNumber,
         recaptchaVerifier
       );
       
       console.log('Verification code sent successfully');
-      setConfirmationResult(confirmation);
+      setVerificationId(verificationId);
       setStatus('sent');
       setMessage('OTP sent successfully. Please check your phone.');
       toast.success('OTP sent to your phone!');
@@ -211,7 +211,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       return;
     }
     
-    if (!confirmationResult) {
+    if (!verificationId) {
       setStatus('error');
       setMessage('Please request OTP first');
       return;
@@ -223,8 +223,26 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       
       console.log('Verifying OTP code...');
       
-      // Verify the OTP with Firebase
-      await confirmationResult.confirm(otp.trim());
+      // Create credential from verification ID and OTP
+      const credential = PhoneAuthProvider.credential(verificationId, otp.trim());
+      
+      // Link the phone credential to the current user WITHOUT replacing the session
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          await linkWithCredential(currentUser, credential);
+          console.log('Phone credential linked to current user');
+        } catch (linkError) {
+          // If credential is already in use or already linked, that's okay
+          // We just want to verify the phone number is valid
+          if (linkError.code === 'auth/credential-already-in-use' || 
+              linkError.code === 'auth/provider-already-linked') {
+            console.log('Phone already linked or in use, but OTP is valid');
+          } else {
+            throw linkError;
+          }
+        }
+      }
       
       console.log('OTP verified successfully with Firebase');
       
@@ -267,7 +285,7 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       }
       
       setExpiresAt(null);
-      setConfirmationResult(null);
+      setVerificationId(null);
       
       // Clear reCAPTCHA
       if (window.recaptchaVerifier) {
