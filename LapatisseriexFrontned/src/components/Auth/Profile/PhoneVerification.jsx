@@ -212,133 +212,206 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
   });
   
   return (
-    <div className="mt-8 border border-gray-200 overflow-hidden" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center gap-3" style={{ backgroundColor: '#DBEAFE' }}>
-        <div className="p-2 border border-blue-300" style={{ backgroundColor: '#EFF6FF' }}>
-          <ShieldCheck size={22} style={{ color: '#2563EB' }} />
-        </div>
+    <div className="space-y-2">
+      <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
+        color: '#733857',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        letterSpacing: '0.02em'
+      }}>
+        <Phone className="h-3 w-3 sm:h-4 sm:w-4" style={{color: 'rgba(115, 56, 87, 0.6)'}} strokeWidth={1.5} />
+        Phone Number {!user?.phoneVerified && <span style={{color: '#733857'}}>*</span>}
+      </label>
+      <div className="space-y-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
         <div>
-          <h4 className="text-base sm:text-lg font-semibold" style={{ color: '#281c20' }}>Phone verification</h4>
-          <p className="text-xs sm:text-sm" style={{ color: '#6B7280' }}>Verify your phone number to receive order updates and delivery notifications</p>
-        </div>
-      </div>
-
-      <div className="p-4 sm:p-6 space-y-4" style={{ backgroundColor: '#F0F9FF' }}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-start">
-          <div className="sm:col-span-2">
-            <label className="text-sm font-medium mb-1" style={{ color: '#2563EB', display: 'block' }}>Phone number</label>
-            <div className="relative">
-              <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#9CA3AF' }} />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter phone number"
-                disabled={status === 'sending' || status === 'verifying' || (user?.phoneVerified && !isEditingNumber)}
-                className="w-full pl-10 pr-3 py-3 border"
-                style={{ 
-                  borderColor: '#93C5FD',
-                  color: '#281c20',
-                  backgroundColor: (user?.phoneVerified && !isEditingNumber) || status === 'sending' || status === 'verifying' ? '#F9FAFB' : '#FFFFFF'
-                }}
-              />
+          <div className="relative">
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Enter phone number"
+              disabled={status === 'sending' || status === 'verifying' || (user?.phoneVerified && !isEditingNumber)}
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
+                (user?.phoneVerified && !isEditingNumber) || status === 'sending' || status === 'verifying'
+                  ? 'border-gray-200 bg-gray-50 text-gray-700' 
+                  : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black'
+              }`}
+              style={{
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                borderRadius: '4px'
+              }}
+            />
+          </div>
+          {((user?.phoneVerified && !isEditingNumber) || status === 'verified') && (
+            <div className="mt-2 space-y-1">
+              <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: '#10B981', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> 
+                {status === 'verified' && !user?.phoneVerified 
+                  ? 'Verified - Click "Save Profile" to complete' 
+                  : `Verified on ${user?.phoneVerifiedAt ? new Date(user.phoneVerifiedAt).toLocaleDateString() : '—'}`}
+              </div>
+              <div className="text-xs sm:text-sm" style={{ color: '#374151', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                {status === 'verified' && !user?.phoneVerified 
+                  ? <span>Phone number <span className="font-semibold">{phone}</span> is verified. Save your profile to complete the process.</span>
+                  : <span>Your verified phone number: <span className="font-semibold">{user.phone}</span></span>}
+              </div>
             </div>
-            {((user?.phoneVerified && !isEditingNumber) || status === 'verified') && (
-              <div className="mt-2 flex items-start gap-1 flex-col">
-                <div className="inline-flex items-center text-sm" style={{ color: '#10B981' }}>
-                  <CheckCircle2 size={16} className="mr-1"/> 
-                  {status === 'verified' && !user?.phoneVerified 
-                    ? 'Verified - Click "Save Profile" to complete' 
-                    : `Verified on ${user?.phoneVerifiedAt ? new Date(user.phoneVerifiedAt).toLocaleDateString() : '—'}`}
-                </div>
-                <div className="text-sm" style={{ color: '#374151' }}>
-                  {status === 'verified' && !user?.phoneVerified 
-                    ? <span>Phone number <span className="font-medium">{phone}</span> is verified. Save your profile to complete the process.</span>
-                    : <span>Your verified phone number: <span className="font-medium">{user.phone}</span></span>}
-                </div>
+          )}
+          {isEditingNumber && (
+            <div className="mt-2 text-xs sm:text-sm" style={{ color: '#733857', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              Enter your new phone number and click "Send OTP" to verify it.
+            </div>
+          )}
+        </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {((!user?.phoneVerified && status !== 'verified') || isEditingNumber) && (
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={!phoneValid || (!canResend && status === 'sent') || status === 'sending' || status === 'verifying'}
+              className="flex-1 sm:flex-initial px-4 sm:px-6 py-2.5 sm:py-3 text-white text-sm sm:text-base font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                backgroundColor: '#733857',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                borderRadius: '4px',
+                boxShadow: '0 2px 6px rgba(115, 56, 87, 0.15)'
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = '#5a2b43';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(115, 56, 87, 0.25)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#733857';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(115, 56, 87, 0.15)';
+              }}
+            >
+              <span className="inline-flex items-center justify-center gap-2">
+                <Send className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} />
+                {status === 'sending' ? 'Sending…' : canResend ? 'Send OTP' : 'Resend in ' + formatTime(remaining)}
+              </span>
+            </button>
+          )}
+          {(status === 'verified' && !user?.phoneVerified) && (
+            <div className="flex-1 text-center sm:text-left">
+              <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold mb-1" style={{ color: '#10B981', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> Phone Verified!
               </div>
-            )}
-            {isEditingNumber && (
-              <div className="mt-2 text-sm" style={{ color: '#2563EB' }}>
-                Enter your new phone number and click "Send OTP" to verify it.
+              <div className="text-[10px] sm:text-xs font-medium" style={{ color: '#EA580C', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Profile is now in edit mode - scroll down to "Save Profile"
               </div>
-            )}
-          </div>
-          <div className="flex sm:justify-end items-end">
-            {((!user?.phoneVerified && status !== 'verified') || isEditingNumber) && (
-              <button
-                type="button"
-                onClick={onSend}
-                disabled={!phoneValid || (!canResend && status === 'sent') || status === 'sending' || status === 'verifying'}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 text-white disabled:opacity-60 transition-colors"
-                style={{ backgroundColor: '#2563EB' }}
-                onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#1D4ED8')}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
-              >
-                <Send size={16}/> {status === 'sending' ? 'Sending…' : canResend ? 'Send OTP' : 'Resend in ' + formatTime(remaining)}
-              </button>
-            )}
-            {(status === 'verified' && !user?.phoneVerified) && (
-              <div className="text-center">
-                <div className="inline-flex items-center text-sm font-medium mb-1" style={{ color: '#10B981' }}>
-                  <CheckCircle2 size={16} className="mr-1"/> Phone Verified!
-                </div>
-                <div className="text-xs font-medium" style={{ color: '#EA580C' }}>Profile is now in edit mode - scroll down to "Save Profile"</div>
-              </div>
-            )}
-            {user?.phoneVerified && !isEditingNumber && (
-              <div className="px-4 py-3 border flex items-center" style={{ backgroundColor: '#F0F9FF', borderColor: '#93C5FD', color: '#1E40AF' }}>
-                <CheckCircle2 size={16} className="mr-2" style={{ color: '#10B981' }}/> Verified
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+          {user?.phoneVerified && !isEditingNumber && (
+            <div className="px-4 py-2.5 sm:py-3 border inline-flex items-center gap-1.5 text-sm sm:text-base font-medium" style={{ 
+              backgroundColor: 'rgba(240, 253, 244, 0.5)', 
+              borderColor: 'rgba(16, 185, 129, 0.2)', 
+              color: '#166534',
+              borderRadius: '4px',
+              fontFamily: 'system-ui, -apple-system, sans-serif'
+            }}>
+              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} /> Verified
+            </div>
+          )}
         </div>
 
         {status === 'sent' && (
-          <div className="border p-4" style={{ borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2" style={{ color: '#1E40AF' }}>
-                <Timer size={18} style={{ color: '#3B82F6' }}/>
-                <span className="text-sm font-medium">OTP expires in</span>
+          <div className="border p-4 sm:p-6" style={{ 
+            borderColor: 'rgba(190, 24, 93, 0.15)', 
+            backgroundColor: 'rgba(253, 242, 248, 0.5)',
+            borderRadius: '4px',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-medium" style={{ color: '#831843' }}>
+                <Timer className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} style={{ color: '#BE185D' }}/>
+                <span>OTP expires in</span>
               </div>
-              <span className="font-mono text-sm px-3 py-1 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#93C5FD', color: '#2563EB' }}>{formatTime(remaining)}</span>
+              <span className="font-mono text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 border" style={{ 
+                backgroundColor: '#FFFFFF', 
+                borderColor: 'rgba(190, 24, 93, 0.2)', 
+                color: '#BE185D',
+                borderRadius: '4px',
+                fontFamily: 'ui-monospace, monospace'
+              }}>{formatTime(remaining)}</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-              <div className="sm:col-span-2">
-                <label className="text-sm font-medium mb-1" style={{ color: '#2563EB', display: 'block' }}>Enter 6-digit code</label>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#831843', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  Enter 6-digit code
+                </label>
                 <input
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   inputMode="numeric"
                   pattern="[0-9]*"
                   placeholder="••••••"
-                  className="w-full px-3 py-3 border tracking-widest text-center font-semibold text-lg"
-                  style={{ borderColor: '#93C5FD', color: '#281c20', backgroundColor: '#FFFFFF' }}
+                  className="w-full px-4 py-3 sm:py-4 border tracking-widest text-center font-bold text-lg sm:text-xl transition-all duration-300 focus:outline-none"
+                  style={{ 
+                    borderColor: 'rgba(190, 24, 93, 0.2)', 
+                    color: '#281c20', 
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '4px',
+                    fontFamily: 'ui-monospace, monospace'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#BE185D';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(190, 24, 93, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(190, 24, 93, 0.2)';
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
               </div>
               <button
                 type="button"
                 onClick={onVerify}
                 disabled={!otpValid || remaining <= 0 || status === 'verifying'}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 text-white disabled:opacity-60 transition-colors"
-                style={{ backgroundColor: '#10B981' }}
-                onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#059669')}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#10B981'}
+                className="w-full px-6 py-3 sm:py-3.5 text-white text-sm sm:text-base font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                style={{ 
+                  backgroundColor: '#10B981',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.15)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.backgroundColor = '#059669';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(16, 185, 129, 0.25)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#10B981';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(16, 185, 129, 0.15)';
+                }}
               >
-                <ShieldCheck size={16}/> {status === 'verifying' ? 'Verifying…' : 'Verify'}
+                <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2}/> 
+                {status === 'verifying' ? 'Verifying…' : 'Verify Phone'}
               </button>
             </div>
             {remaining <= 0 && (
-              <div className="mt-2 flex items-center text-sm" style={{ color: '#D97706' }}>
-                <XCircle size={16} className="mr-1"/> The code has expired. Please resend a new OTP.
+              <div className="mt-3 sm:mt-4 flex items-center gap-2 text-xs sm:text-sm font-medium" style={{ color: '#D97706', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <XCircle className="h-4 w-4" strokeWidth={2}/> 
+                The code has expired. Please resend a new OTP.
               </div>
             )}
           </div>
         )}
 
         {message && (
-          <div className="flex items-center gap-2 text-sm" style={{ color: status === 'error' ? '#B91C1C' : '#059669' }}>
-            {status === 'error' ? <XCircle size={16}/> : <CheckCircle2 size={16}/>} {message}
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium" style={{ 
+            color: status === 'error' ? '#B91C1C' : '#059669',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}>
+            {status === 'error' ? <XCircle className="h-4 w-4" strokeWidth={2}/> : <CheckCircle2 className="h-4 w-4" strokeWidth={2}/>} 
+            {message}
           </div>
         )}
 
@@ -347,12 +420,24 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
             <button
               type="button"
               onClick={handleChangeNumber}
-              className="inline-flex items-center gap-2 px-3 py-2 border transition-colors"
-              style={{ borderColor: '#93C5FD', color: '#2563EB' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#DBEAFE'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              className="inline-flex items-center gap-2 px-4 py-2.5 border text-xs sm:text-sm font-medium transition-all duration-300"
+              style={{ 
+                borderColor: 'rgba(115, 56, 87, 0.2)', 
+                color: '#733857',
+                backgroundColor: 'transparent',
+                borderRadius: '4px',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.05)';
+                e.currentTarget.style.borderColor = '#733857';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'rgba(115, 56, 87, 0.2)';
+              }}
             >
-              <RefreshCcw size={16}/> Change Number
+              <RefreshCcw className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2}/> Change Number
             </button>
           </div>
         )}
@@ -369,16 +454,27 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
                 setOtp('');
                 setExpiresAt(null);
               }}
-              className="inline-flex items-center gap-2 px-3 py-2 border transition-colors"
-              style={{ borderColor: '#D1D5DB', color: '#374151' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              className="inline-flex items-center gap-2 px-4 py-2.5 border text-xs sm:text-sm font-medium transition-all duration-300"
+              style={{ 
+                borderColor: 'rgba(107, 114, 128, 0.2)', 
+                color: '#374151',
+                backgroundColor: 'transparent',
+                borderRadius: '4px',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F9FAFB';
+                e.currentTarget.style.borderColor = '#9CA3AF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.2)';
+              }}
             >
               Cancel
             </button>
           </div>
         )}
-      </div>
     </div>
   );
 };

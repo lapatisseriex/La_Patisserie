@@ -90,20 +90,20 @@ const Footer = () => {
           
           {/* Navigate */}
           <div className="text-center sm:text-left">
-            <h3 className="text-[#A855F7] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Navigate
             </h3>
             <nav className="space-y-1 sm:space-y-2">
               <Link 
                 to="/" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Home
               </Link>
               <Link 
                 to="/products" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Products
@@ -113,41 +113,41 @@ const Footer = () => {
 
           {/* Account */}
           <div className="text-center sm:text-left">
-            <h3 className="text-[#A855F7] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Account
             </h3>
             <nav className="space-y-1 sm:space-y-2">
               <Link 
                 to="/profile" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Account Info
               </Link>
               <Link 
                 to="/orders" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 My Orders
               </Link>
               <Link 
                 to="/about" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 About Us
               </Link>
               <Link 
                 to="/contact" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Contact Us
               </Link>
               <Link 
                 to="/faq" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 FAQ
@@ -157,41 +157,41 @@ const Footer = () => {
 
           {/* Legal */}
           <div className="text-center sm:text-left">
-            <h3 className="text-[#A855F7] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Legal
             </h3>
             <nav className="space-y-1 sm:space-y-2">
               <Link 
                 to="/privacy-policy" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Privacy Policy
               </Link>
               <Link 
                 to="/shipping-policy" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Shipping Policy
               </Link>
               <Link 
                 to="/refund-policy" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Refund Policy
               </Link>
               <Link 
                 to="/terms" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Terms & Conditions
               </Link>
               <Link 
                 to="/our-services" 
-                className="block text-white hover:text-[#A855F7] text-sm font-light transition-all duration-300 hover:translate-x-1"
+                className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Our Services
@@ -201,16 +201,16 @@ const Footer = () => {
 
           {/* Contact */}
           <div className="text-center sm:text-left">
-            <h3 className="text-[#A855F7] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Connect
             </h3>
             <div className="space-y-1 sm:space-y-2">
               <a 
                 href="tel:+917845712388" 
-                className="flex items-center justify-center sm:justify-start space-x-3 text-white hover:text-[#A855F7] text-sm font-light transition-colors duration-300 group"
+                className="flex items-center justify-center sm:justify-start space-x-3 text-white hover:text-[#733857] text-sm font-light transition-colors duration-300 group"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#A855F7]/50 transition-colors duration-300">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#733857]/50 transition-colors duration-300">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
@@ -220,10 +220,10 @@ const Footer = () => {
               
               <a 
                 href="tel:+919362166816" 
-                className="flex items-center justify-center sm:justify-start space-x-3 text-white hover:text-[#A855F7] text-sm font-light transition-colors duration-300 group"
+                className="flex items-center justify-center sm:justify-start space-x-3 text-white hover:text-[#733857] text-sm font-light transition-colors duration-300 group"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#A855F7]/50 transition-colors duration-300">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#733857]/50 transition-colors duration-300">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
@@ -233,10 +233,10 @@ const Footer = () => {
               
               <a 
                 href="mailto:lapatisserielapatisserie@gmail.com" 
-                className="flex items-center justify-center sm:justify-start space-x-3 text-white hover:text-[#A855F7] text-sm font-light transition-colors duration-300 group"
+                className="flex items-center justify-center sm:justify-start space-x-3 text-white hover:text-[#733857] text-sm font-light transition-colors duration-300 group"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#A855F7]/50 transition-colors duration-300">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#733857]/50 transition-colors duration-300">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
                   </svg>
@@ -261,7 +261,7 @@ const Footer = () => {
 
           {/* Newsletter & Stores */}
           <div className="text-center sm:text-left">
-            <h3 className="text-[#A855F7] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-2 sm:mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Sign up for updates
             </h3>
             
@@ -275,11 +275,11 @@ const Footer = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white/5 border border-white/10 rounded text-white text-xs sm:text-sm font-light placeholder-white/40 focus:outline-none focus:border-[#A855F7]/50 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white/5 border border-white/10 rounded text-white text-xs sm:text-sm font-light placeholder-white/40 focus:outline-none focus:border-[#733857]/50 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   />
                   <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-[#A855F7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
                     </svg>
                   </div>
@@ -287,7 +287,7 @@ const Footer = () => {
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full px-4 sm:px-6 py-2 sm:py-2.5 bg-transparent border border-[#A855F7] text-[#A855F7] text-xs sm:text-sm font-medium tracking-[0.15em] uppercase rounded hover:bg-[#A855F7] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 sm:px-6 py-2 sm:py-2.5 bg-transparent border border-[#733857] text-[#733857] text-xs sm:text-sm font-medium tracking-[0.15em] uppercase rounded hover:bg-[#733857] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 >
                   {loading ? 'Subscribing...' : 'Sign Up'}
@@ -322,7 +322,7 @@ const Footer = () => {
             href="https://www.facebook.com/lapatisserie" 
             target="_blank"
             rel="noopener noreferrer"
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300 hover:scale-110"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300 hover:scale-110"
             aria-label="Facebook"
           >
             <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -333,7 +333,7 @@ const Footer = () => {
             href="https://www.instagram.com/la_patisserie_coimbatore/" 
             target="_blank"
             rel="noopener noreferrer"
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300 hover:scale-110"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300 hover:scale-110"
             aria-label="Instagram"
           >
             <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -344,7 +344,7 @@ const Footer = () => {
             href="https://www.linkedin.com/company/lapatisserie" 
             target="_blank"
             rel="noopener noreferrer"
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300 hover:scale-110"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300 hover:scale-110"
             aria-label="LinkedIn"
           >
             <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -356,19 +356,19 @@ const Footer = () => {
         {/* Developers Section */}
         <div className="mb-6 pb-6 border-b border-[#733857]/20">
           <div className="text-center mb-4">
-            <h3 className="text-[#A855F7] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               Developed By
             </h3>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto px-4">
             {/* Arun A - MERN Stack Developer */}
-            <div className="group bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:border-[#A855F7]/50 transition-all duration-300 hover:transform hover:scale-105">
+            <div className="group bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:border-[#733857]/50 transition-all duration-300 hover:transform hover:scale-105">
               <div className="text-center">
                 <h4 className="text-white text-sm font-medium mb-1" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   Arun A
                 </h4>
-                <p className="text-[#A855F7]/80 text-xs font-light mb-3 tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <p className="text-[#733857]/80 text-xs font-light mb-3 tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   MERN Stack Developer
                 </p>
                 <div className="flex items-center justify-center space-x-3">
@@ -376,7 +376,7 @@ const Footer = () => {
                     href="https://github.com/Arunarivalagan743" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300"
+                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300"
                     aria-label="GitHub"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -387,7 +387,7 @@ const Footer = () => {
                     href="https://www.linkedin.com/in/arun-a-25b6a5289" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300"
+                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300"
                     aria-label="LinkedIn"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -399,12 +399,12 @@ const Footer = () => {
             </div>
 
             {/* Gokulan V - Full Stack Developer */}
-            <div className="group bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:border-[#A855F7]/50 transition-all duration-300 hover:transform hover:scale-105">
+            <div className="group bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:border-[#733857]/50 transition-all duration-300 hover:transform hover:scale-105">
               <div className="text-center">
                 <h4 className="text-white text-sm font-medium mb-1" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   Gokulan V
                 </h4>
-                <p className="text-[#A855F7]/80 text-xs font-light mb-3 tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <p className="text-[#733857]/80 text-xs font-light mb-3 tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   Full Stack Developer
                 </p>
                 <div className="flex items-center justify-center space-x-3">
@@ -412,7 +412,7 @@ const Footer = () => {
                     href="https://github.com/GokulanV7" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300"
+                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300"
                     aria-label="GitHub"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -423,7 +423,7 @@ const Footer = () => {
                     href="https://www.linkedin.com/in/gokulan-v-40424b293/" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300"
+                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300"
                     aria-label="LinkedIn"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -435,12 +435,12 @@ const Footer = () => {
             </div>
 
             {/* Sanjay Nithin S - Full Stack Developer */}
-            <div className="group bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:border-[#A855F7]/50 transition-all duration-300 hover:transform hover:scale-105 sm:col-span-2 lg:col-span-1">
+            <div className="group bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:border-[#733857]/50 transition-all duration-300 hover:transform hover:scale-105 sm:col-span-2 lg:col-span-1">
               <div className="text-center">
                 <h4 className="text-white text-sm font-medium mb-1" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   Sanjay Nithin S
                 </h4>
-                <p className="text-[#A855F7]/80 text-xs font-light mb-3 tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <p className="text-[#733857]/80 text-xs font-light mb-3 tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   Full Stack Developer
                 </p>
                 <div className="flex items-center justify-center space-x-3">
@@ -448,7 +448,7 @@ const Footer = () => {
                     href="https://github.com/Sanjay-nithin" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300"
+                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300"
                     aria-label="GitHub"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -459,7 +459,7 @@ const Footer = () => {
                     href="https://www.linkedin.com/in/sanjay-nithin-s-244870358/" 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#A855F7] hover:border-[#A855F7]/50 transition-all duration-300"
+                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-[#733857] hover:border-[#733857]/50 transition-all duration-300"
                     aria-label="LinkedIn"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">

@@ -1625,24 +1625,28 @@ const ProfilePage = () => {
       {/* Beautiful Profile Hero - Only show on main tab */}
       {activeTab === 'main' && (
         <div className="relative overflow-hidden" style={{ 
-          background: 'linear-gradient(135deg, #fdfbf9 0%, #fff5f0 50%, #fdfbf9 100%)',
-          borderBottom: '1px solid rgba(115, 56, 87, 0.1)'
+          background: 'linear-gradient(135deg, #fffcfe 0%, #fff5f8 30%, #fef2f5 50%, #fff5f8 70%, #fffcfe 100%)',
+          borderBottom: '1px solid rgba(115, 56, 87, 0.15)'
         }}>
           {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 opacity-5" style={{
-            background: 'radial-gradient(circle, #733857 0%, transparent 70%)',
+          <div className="absolute top-0 right-0 w-64 h-64 opacity-8" style={{
+            background: 'radial-gradient(circle, rgba(190, 24, 93, 0.18) 0%, rgba(190, 24, 93, 0.08) 40%, transparent 70%)',
           }}></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 opacity-5" style={{
-            background: 'radial-gradient(circle, #8d4466 0%, transparent 70%)',
+          <div className="absolute bottom-0 left-0 w-48 h-48 opacity-8" style={{
+            background: 'radial-gradient(circle, rgba(115, 56, 87, 0.15) 0%, rgba(115, 56, 87, 0.06) 40%, transparent 70%)',
+          }}></div>
+          <div className="absolute top-1/2 left-1/2 w-72 h-72 opacity-4" style={{
+            background: 'radial-gradient(circle, rgba(190, 24, 93, 0.12) 0%, transparent 70%)',
+            transform: 'translate(-50%, -50%)'
           }}></div>
           
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+            <div className="flex flex-col gap-6 sm:gap-8">
               {/* User Profile Info with Beautiful Layout */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                <div className="relative group">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+                <div className="relative group flex-shrink-0">
                   {/* Profile Photo with Elegant Frame */}
-                  <div className="relative w-24 h-24 sm:w-28 sm:h-28" style={{
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28" style={{
                     boxShadow: '0 8px 24px rgba(115, 56, 87, 0.12)'
                   }}>
                     <div className="absolute inset-0 border-2" style={{ 
@@ -1662,30 +1666,23 @@ const ProfilePage = () => {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                          <User className="h-10 w-10 sm:h-12 sm:w-12" style={{ color: '#733857', opacity: 0.4 }} />
+                          <User className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12" style={{ color: '#733857', opacity: 0.4 }} />
                         </div>
                       )}
                     </div>
                   </div>
                   {/* Premium Badge */}
-                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 text-white text-xs font-bold uppercase tracking-widest whitespace-nowrap" 
-                    style={{ 
-                      backgroundColor: '#733857',
-                      letterSpacing: '0.12em',
-                      boxShadow: '0 4px 12px rgba(115, 56, 87, 0.3)'
-                    }}>
-                    Member
-                  </div>
+               
                 </div>
                 
                 <div className="flex-1 text-center sm:text-left">
-                  <h1 className="text-3xl sm:text-4xl font-light mb-2" style={{ 
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light mb-1 sm:mb-2" style={{ 
                     color: '#281c20',
                     letterSpacing: '0.03em'
                   }}>
                     {user?.name || 'Guest'}
                   </h1>
-                  <p className="text-sm mb-4" style={{ 
+                  <p className="text-xs sm:text-sm mb-3 sm:mb-4" style={{ 
                     color: 'rgba(40, 28, 32, 0.6)',
                     letterSpacing: '0.02em'
                   }}>
@@ -1693,7 +1690,7 @@ const ProfilePage = () => {
                   </p>
                   <div className="flex items-center justify-center sm:justify-start gap-3">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" style={{ color: '#733857', opacity: 0.7 }} strokeWidth={1.5} />
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4" style={{ color: '#733857', opacity: 0.7 }} strokeWidth={1.5} />
                       <span className="text-xs" style={{ 
                         color: 'rgba(40, 28, 32, 0.6)',
                         letterSpacing: '0.05em'
@@ -1706,28 +1703,27 @@ const ProfilePage = () => {
               </div>
 
               {/* Elegant Stats Cards */}
-              <div className="grid grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {[
                   { icon: Package, value: orders?.length || 0, label: 'Orders', color: '#733857' },
                   { icon: Heart, value: favorites?.length || 0, label: 'Favorites', color: '#8d4466' },
                   { icon: GraduationCap, value: donationStats?.donationCount || 0, label: 'Contributions', color: '#412434' }
                 ].map((stat, index) => (
                   <div key={index} className="relative group">
-                    <div className="bg-white p-4 sm:p-6 text-center transition-all duration-300 hover:shadow-lg" style={{
-                      border: '1px solid rgba(115, 56, 87, 0.15)',
-                      boxShadow: '0 2px 8px rgba(115, 56, 87, 0.05)'
+                    <div className=" p-3 sm:p-4 lg:p-6 text-center transition-all duration-300 " style={{
+                  
                     }}>
-                      <stat.icon className="h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-3 transition-transform duration-300 group-hover:scale-110" 
+                      <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 mx-auto mb-2 sm:mb-3 transition-transform duration-300 group-hover:scale-110" 
                         style={{ color: stat.color, opacity: 0.8 }} 
                         strokeWidth={1.5} 
                       />
-                      <div className="text-3xl sm:text-4xl font-light mb-2" style={{ 
+                      <div className="text-2xl sm:text-3xl lg:text-4xl font-light mb-1 sm:mb-2" style={{ 
                         color: stat.color,
                         letterSpacing: '0.02em'
                       }}>
                         {stat.value}
                       </div>
-                      <div className="text-xs uppercase tracking-wider font-medium" style={{ 
+                      <div className="text-[10px] sm:text-xs uppercase tracking-wider font-medium" style={{ 
                         color: 'rgba(40, 28, 32, 0.6)',
                         letterSpacing: '0.08em'
                       }}>
@@ -1767,8 +1763,8 @@ const ProfilePage = () => {
             {/* Beautiful Desktop Sidebar Navigation */}
             <div className="lg:col-span-1">
               <div className="bg-white sticky top-24" style={{
-                border: '1px solid rgba(115, 56, 87, 0.15)',
-                boxShadow: '0 2px 12px rgba(115, 56, 87, 0.06)'
+              
+           
               }}>
                 <div className="p-6">
                   {/* Elegant Header */}
@@ -1792,7 +1788,7 @@ const ProfilePage = () => {
                       >
                         <div className="flex items-center gap-3 px-4 py-3 relative z-10 transition-all duration-300" style={{
                           backgroundColor: 'transparent',
-                          borderLeft: '2px solid transparent'
+                       
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.borderLeftColor = '#733857';
@@ -1830,7 +1826,7 @@ const ProfilePage = () => {
                       onClick={logout}
                       className="w-full flex items-center justify-center gap-3 px-4 py-3 transition-all duration-300"
                       style={{
-                        border: '1px solid rgba(115, 56, 87, 0.3)',
+                     
                         color: '#733857',
                         backgroundColor: 'transparent'
                       }}
@@ -1855,13 +1851,57 @@ const ProfilePage = () => {
 
             {/* Desktop Main Content */}
             <div className="lg:col-span-3">
-              <div className="bg-white shadow-lg border border-gray-200 min-h-[400px]">
+              <div className="bg-white  min-h-[400px]">
                 <div className="p-6 sm:p-8">
                   {activeTab === 'main' ? (
-                    <div className="text-center py-12">
-                      <User className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Welcome to Your Account</h3>
-                      <p className="text-gray-600">Select an option from the menu to get started</p>
+                    <div className="relative overflow-hidden" style={{
+                      background: 'linear-gradient(135deg, rgba(255, 252, 254, 0.5) 0%, rgba(254, 242, 245, 0.3) 100%)',
+                      border: '1px solid rgba(115, 56, 87, 0.08)'
+                    }}>
+                      {/* Decorative accent */}
+                      <div className="absolute top-0 right-0 w-32 h-32 opacity-5" style={{
+                        background: 'radial-gradient(circle, rgba(190, 24, 93, 0.3) 0%, transparent 70%)'
+                      }}></div>
+                      
+                      <div className="relative py-12 sm:py-16 lg:py-20 px-4 sm:px-6 text-center">
+                        {/* Icon with elegant frame */}
+                        <div className="relative inline-block mb-6 sm:mb-8">
+                          <div className="absolute inset-0 blur-xl opacity-20" style={{ background: 'linear-gradient(135deg, #733857, #BE185D)' }}></div>
+                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto border-2 flex items-center justify-center transition-all duration-500 hover:scale-110" style={{
+                            borderColor: 'rgba(115, 56, 87, 0.2)',
+                            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(253, 242, 248, 0.6))',
+                            backdropFilter: 'blur(10px)',
+                            boxShadow: '0 8px 32px rgba(115, 56, 87, 0.12)'
+                          }}>
+                            <User className="h-10 w-10 sm:h-12 sm:w-12" style={{ 
+                              color: '#733857',
+                              opacity: 0.7
+                            }} strokeWidth={1.5} />
+                          </div>
+                        </div>
+                        
+                        {/* Heading */}
+                        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extralight mb-3 sm:mb-4" style={{ 
+                          color: '#281c20',
+                          letterSpacing: '0.05em',
+                          fontFamily: 'system-ui, -apple-system, sans-serif'
+                        }}>
+                          Welcome to Your Account
+                        </h3>
+                        
+                        {/* Description */}
+                        <p className="text-xs sm:text-sm lg:text-base max-w-md mx-auto mb-6 sm:mb-8" style={{ 
+                          color: 'rgba(40, 28, 32, 0.6)',
+                          letterSpacing: '0.02em',
+                          lineHeight: '1.6',
+                          fontFamily: 'system-ui, -apple-system, sans-serif'
+                        }}>
+                          Select an option from the menu to manage your profile, view orders, and explore your account
+                        </p>
+                        
+                        {/* Action cards */}
+                     
+                      </div>
                     </div>
                   ) : (
                     renderContent()

@@ -907,47 +907,82 @@ const Profile = () => {
 
   return (
     <>
-      {/* Hero Section - Header Style */}
-      <div className="bg-white border-b border-gray-200">
-        {/* Reduced mobile padding: py-4 instead of py-8 for mobile, keeps py-8 for desktop */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Profile Image */}
-            <div className="relative">
-              <div className="relative">
-                <ProfileImageUpload isEditMode={isEditMode} />
+      {/* Hero Section - Elegant Dessert Shop Style */}
+      <div className="relative overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #FFF5F0 0%, #FFFFFF 50%, #FFF5F0 100%)',
+        borderBottom: '1px solid rgba(115, 56, 87, 0.1)'
+      }}>
+        {/* Decorative Elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.03]" style={{
+          background: 'radial-gradient(circle, #733857 0%, transparent 70%)',
+        }}></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-32 sm:h-32 opacity-[0.03]" style={{
+          background: 'radial-gradient(circle, #8d4466 0%, transparent 70%)',
+        }}></div>
+        
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 lg:gap-8">
+            {/* Profile Image - Elegant Frame */}
+            <div className="relative flex-shrink-0">
+              <div className="relative group">
+                {/* Decorative corner accents */}
+                <div className="absolute -top-2 -left-2 w-16 h-16 border-l-2 border-t-2 opacity-20 transition-opacity duration-300 group-hover:opacity-40" style={{borderColor: '#733857'}}></div>
+                <div className="absolute -bottom-2 -right-2 w-16 h-16 border-r-2 border-b-2 opacity-20 transition-opacity duration-300 group-hover:opacity-40" style={{borderColor: '#733857'}}></div>
+                
+                <div className="relative">
+                  <ProfileImageUpload isEditMode={isEditMode} />
+                </div>
               </div>
-             
             </div>
             
-            {/* User Info & Actions */}
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+            {/* User Info - Center on mobile, left on desktop */}
+            <div className="flex-1 text-center sm:text-left">
+              <div className="mb-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight mb-1" style={{
+                  color: '#281c20',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  letterSpacing: '0.01em'
+                }}>
                   {formData.name || 'Welcome Back'}
                 </h1>
-              
+                <p className="text-xs sm:text-sm" style={{
+                  color: 'rgba(40, 28, 32, 0.6)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  letterSpacing: '0.03em'
+                }}>
+                  Manage your sweet preferences & delivery details
+                </p>
               </div>
-              <p className="text-gray-600 mb-4" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Manage your sweet preferences & delivery details</p>
               
-              {/* Quick Stats */}
-              <div className="flex items-center justify-center md:justify-start gap-4 text-sm">
-                <div className="flex items-center gap-1 text-gray-500" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <MapPinned className="h-4 w-4" />
-                  <span>
+              {/* Quick Stats - Elegant Pills */}
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm transition-all duration-300 hover:shadow-sm" style={{
+                  backgroundColor: 'rgba(115, 56, 87, 0.05)',
+                  border: '1px solid rgba(115, 56, 87, 0.1)',
+                  borderRadius: '20px',
+                  color: '#733857',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>
+                  <MapPinned className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={1.5} />
+                  <span className="font-medium">
                     {formData.location 
-                      ? locations.find(loc => loc._id === formData.location)?.name || 'Location Set'
+                      ? locations.find(loc => loc._id === formData.location)?.area || 'Location Set'
                       : 'Set Location'}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-gray-500" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                  <Cake className="h-4 w-4" />
-                  <span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm transition-all duration-300 hover:shadow-sm" style={{
+                  backgroundColor: 'rgba(190, 24, 93, 0.05)',
+                  border: '1px solid rgba(190, 24, 93, 0.1)',
+                  borderRadius: '20px',
+                  color: '#BE185D',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>
+                  <Cake className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={1.5} />
+                  <span className="font-medium">
                     {formData.dob 
                       ? new Date(formData.dob).toLocaleDateString('en-US', { 
                           month: 'short', 
-                          day: 'numeric', 
-                          year: 'numeric' 
+                          day: 'numeric'
                         })
                       : 'Add Birthday'}
                   </span>
@@ -955,14 +990,28 @@ const Profile = () => {
               </div>
             </div>
             
-            {/* Edit Button - Header Style */}
+            {/* Edit Button - Refined Style */}
             {!isEditMode && (
               <button
                 onClick={handleEditProfile}
-                className="group relative px-8 py-3 bg-black text-white overflow-hidden shadow-sm hover:shadow-md transition-all duration-300" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                className="group relative px-6 sm:px-8 py-2.5 sm:py-3 overflow-hidden transition-all duration-300 hover:shadow-lg"
+                style={{
+                  backgroundColor: '#733857',
+                  color: 'white',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  border: '1px solid rgba(115, 56, 87, 0.2)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#5a2b43';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#733857';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
-                <span className="relative flex items-center gap-2 font-semibold">
-                  <Edit3 className="h-4 w-4" />
+                <span className="relative flex items-center gap-2 font-medium text-sm">
+                  <Edit3 className="h-4 w-4" strokeWidth={2} />
                   Edit Profile
                 </span>
               </button>
@@ -971,12 +1020,14 @@ const Profile = () => {
         </div>
       </div>
       
-      {/* Main content container - Reduced mobile padding: py-4 instead of py-8 for mobile */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 relative">
+      {/* Main content container - Elegant spacing */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 relative" style={{
+        background: 'linear-gradient(to bottom, #FDFBF9 0%, #FFFFFF 100%)'
+      }}>
 
       <form 
         onSubmit={handleSubmit} 
-        className="profile-form-mobile space-y-8 pb-20 md:pb-6"
+        className="profile-form-mobile space-y-6 sm:space-y-8 pb-20 md:pb-6"
         onFocus={(e) => {
           // Prevent any scroll when form elements get focus
           if (savingRef.current) {
@@ -1052,26 +1103,48 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Personal Information Section - Header Style */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
+        {/* Personal Information Section - Refined Dessert Shop Style */}
+        <div className="bg-white overflow-hidden transition-all duration-300 hover:shadow-lg" style={{
+          border: '1px solid rgba(115, 56, 87, 0.12)',
+          boxShadow: '0 2px 8px rgba(115, 56, 87, 0.04)'
+        }}>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b" style={{
+            background: 'linear-gradient(135deg, rgba(115, 56, 87, 0.03) 0%, rgba(115, 56, 87, 0.01) 100%)',
+            borderColor: 'rgba(115, 56, 87, 0.08)'
+          }}>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-white border border-gray-200 flex items-center justify-center">
-                <User className="h-5 w-5 text-black" style={{color: '#281c20'}} />
+              <div className="h-9 w-9 sm:h-10 sm:w-10 bg-white flex items-center justify-center transition-transform duration-300 hover:scale-110" style={{
+                border: '1px solid rgba(115, 56, 87, 0.15)',
+                boxShadow: '0 2px 4px rgba(115, 56, 87, 0.08)'
+              }}>
+                <User className="h-4 w-4 sm:h-5 sm:w-5" style={{color: '#733857'}} strokeWidth={1.5} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Personal Information</h2>
-                <p className="text-sm text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Your basic details</p>
+                <h2 className="text-base sm:text-lg font-semibold" style={{
+                  color: '#733857',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  letterSpacing: '0.01em'
+                }}>Personal Information</h2>
+                <p className="text-xs sm:text-sm" style={{
+                  color: 'rgba(115, 56, 87, 0.6)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>Your basic details</p>
               </div>
             </div>
           </div>
           
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" style={{
+            background: 'linear-gradient(to bottom, #FEFEFE 0%, #FCFCFC 100%)'
+          }}>
             {/* Name Field */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <User className="h-4 w-4 text-gray-500" />
-                Full Name <span className="text-black">*</span>
+              <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
+                color: '#733857',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                letterSpacing: '0.02em'
+              }}>
+                <User className="h-3 w-3 sm:h-4 sm:w-4" style={{color: 'rgba(115, 56, 87, 0.6)'}} strokeWidth={1.5} />
+                Full Name <span style={{color: '#733857'}}>*</span>
               </label>
               <div className="relative group">
                 <input
@@ -1083,23 +1156,28 @@ const Profile = () => {
                   required
                   readOnly={!isEditMode}
                   disabled={isSaving}
-                  className={`w-full px-4 py-3 border ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
                     isEditMode 
-                      ? 'border-gray-300 focus:border-black bg-white' 
+                      ? 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md' 
                       : 'border-gray-200 bg-gray-50'
-                  } focus:ring-2 focus:ring-black transition-all duration-300 outline-none ${
-                    !isEditMode ? 'text-gray-700' : 'text-black'
-                  }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                  } ${!isEditMode ? 'text-gray-700' : 'text-black'}`}
+                  style={{
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    borderRadius: '4px'
+                  }}
                 />
               </div>
             </div>
 
             {/* Gender Field */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <User className="h-4 w-4 text-gray-500" />
-                Gender <span className="text-black">*</span>
+              <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
+                color: '#733857',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                letterSpacing: '0.02em'
+              }}>
+                <User className="h-3 w-3 sm:h-4 sm:w-4" style={{color: 'rgba(115, 56, 87, 0.6)'}} strokeWidth={1.5} />
+                Gender <span style={{color: '#733857'}}>*</span>
               </label>
               <div className="relative">
                 <select
@@ -1107,41 +1185,60 @@ const Profile = () => {
                   value={formData.gender}
                   onChange={handleChange}
                   disabled={!isEditMode || isSaving}
-                  className={`w-full px-4 py-3 border ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none appearance-none ${
                     isEditMode 
-                      ? 'border-gray-300 focus:border-black bg-white' 
+                      ? 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md' 
                       : 'border-gray-200 bg-gray-50'
-                  } focus:ring-2 focus:ring-black transition-all duration-300 outline-none appearance-none ${
-                    !isEditMode ? 'text-gray-700' : 'text-black'
-                  }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                  } ${!isEditMode ? 'text-gray-700' : 'text-black'}`}
+                  style={{
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    borderRadius: '4px'
+                  }}
                 >
                   <option value="">Select Gender</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                   <option value="other">Other</option>
                 </select>
-                <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 pointer-events-none" strokeWidth={1.5} />
               </div>
             </div>
           </div>
         </div>
         
-        {/* Verification Section - Header Style */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
+        {/* Verification Section - Refined Style */}
+        <div className="bg-white overflow-hidden transition-all duration-300 hover:shadow-lg" style={{
+          border: '1px solid rgba(115, 56, 87, 0.12)',
+          boxShadow: '0 2px 8px rgba(115, 56, 87, 0.04)'
+        }}>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b" style={{
+            background: 'linear-gradient(135deg, rgba(115, 56, 87, 0.03) 0%, rgba(115, 56, 87, 0.01) 100%)',
+            borderColor: 'rgba(115, 56, 87, 0.08)'
+          }}>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-white border border-gray-200 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-black" style={{color: '#281c20'}} />
+              <div className="h-9 w-9 sm:h-10 sm:w-10 bg-white flex items-center justify-center transition-transform duration-300 hover:scale-110" style={{
+                border: '1px solid rgba(115, 56, 87, 0.15)',
+                boxShadow: '0 2px 4px rgba(115, 56, 87, 0.08)'
+              }}>
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5" style={{color: '#733857'}} strokeWidth={1.5} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-black" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Verification & Security</h2>
-                <p className="text-sm text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Verify your contact details</p>
+                <h2 className="text-base sm:text-lg font-semibold" style={{
+                  color: '#733857',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  letterSpacing: '0.01em'
+                }}>Verification & Security</h2>
+                <p className="text-xs sm:text-sm" style={{
+                  color: 'rgba(115, 56, 87, 0.6)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>Verify your contact details</p>
               </div>
             </div>
           </div>
           
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" style={{
+            background: 'linear-gradient(to bottom, #FEFEFE 0%, #FCFCFC 100%)'
+          }}>
             {/* Email verification section */}
             <EmailVerification />
             
@@ -1159,25 +1256,47 @@ const Profile = () => {
           </div>
         </div>
         
-        {/* Special Dates Section - Pink Shade */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200" style={{backgroundColor: '#FFF1F2'}}>
+        {/* Special Dates Section - Elegant Pink Theme */}
+        <div className="bg-white overflow-hidden transition-all duration-300 hover:shadow-lg" style={{
+          border: '1px solid rgba(190, 24, 93, 0.15)',
+          boxShadow: '0 2px 8px rgba(190, 24, 93, 0.06)'
+        }}>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b" style={{
+            background: 'linear-gradient(135deg, rgba(255, 241, 242, 0.6) 0%, rgba(255, 251, 252, 0.4) 100%)',
+            borderColor: 'rgba(190, 24, 93, 0.12)'
+          }}>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-white border border-pink-200 flex items-center justify-center">
-                <Cake className="h-5 w-5" style={{color: '#BE185D'}} />
+              <div className="h-9 w-9 sm:h-10 sm:w-10 bg-white flex items-center justify-center transition-transform duration-300 hover:scale-110" style={{
+                border: '1px solid rgba(190, 24, 93, 0.2)',
+                boxShadow: '0 2px 4px rgba(190, 24, 93, 0.1)'
+              }}>
+                <Cake className="h-4 w-4 sm:h-5 sm:w-5" style={{color: '#BE185D'}} strokeWidth={1.5} />
               </div>
               <div>
-                <h2 className="text-lg font-bold" style={{color: '#BE185D', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Special Dates</h2>
-                <p className="text-sm" style={{color: '#9F1239', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Get special treats on your special days!</p>
+                <h2 className="text-base sm:text-lg font-semibold" style={{
+                  color: '#BE185D',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  letterSpacing: '0.01em'
+                }}>Special Dates</h2>
+                <p className="text-xs sm:text-sm" style={{
+                  color: 'rgba(159, 18, 57, 0.7)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>Get special treats on your special days!</p>
               </div>
             </div>
           </div>
           
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6" style={{backgroundColor: '#FFFBFC'}}>
+          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" style={{
+            background: 'linear-gradient(to bottom, rgba(255, 251, 252, 0.3) 0%, #FFFFFF 100%)'
+          }}>
             {/* Date of Birth Field */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#BE185D', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <Calendar className="h-4 w-4" style={{color: '#EC4899'}} />
+              <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
+                color: '#BE185D',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                letterSpacing: '0.02em'
+              }}>
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" style={{color: '#EC4899'}} strokeWidth={1.5} />
                 Date of Birth <span style={{color: '#BE185D'}}>*</span>
               </label>
               <div className="relative">
@@ -1189,25 +1308,33 @@ const Profile = () => {
                   max={today}
                   readOnly={!isEditMode}
                   disabled={isSaving}
-                  className={`w-full px-4 py-3 border ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
                     isEditMode 
-                      ? 'border-pink-300 focus:border-pink-600 bg-white' 
+                      ? 'border-pink-300 focus:border-pink-600 bg-white shadow-sm focus:shadow-md' 
                       : 'border-pink-200 bg-pink-50'
-                  } focus:ring-2 transition-all duration-300 outline-none ${
-                    !isEditMode ? 'text-gray-700' : 'text-black'
-                  }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif', '--tw-ring-color': '#EC4899'}}
+                  } ${!isEditMode ? 'text-gray-700' : 'text-black'}`}
+                  style={{
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    borderRadius: '4px'
+                  }}
                 />
               </div>
-              <p className="text-xs" style={{color: '#9F1239', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+              <p className="text-[10px] sm:text-xs" style={{
+                color: '#9F1239',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+              }}>
                 We'll send you special birthday treats!
               </p>
             </div>
 
             {/* Date of Anniversary Field */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#BE185D', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                <Heart className="h-4 w-4" style={{color: '#EC4899'}} />
+              <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
+                color: '#BE185D',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                letterSpacing: '0.02em'
+              }}>
+                <Heart className="h-3 w-3 sm:h-4 sm:w-4" style={{color: '#EC4899'}} strokeWidth={1.5} />
                 Anniversary Date
               </label>
               <div className="relative">
@@ -1219,38 +1346,60 @@ const Profile = () => {
                   max={today}
                   readOnly={!isEditMode}
                   disabled={isSaving}
-                  className={`w-full px-4 py-3 border ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
                     isEditMode 
-                      ? 'border-pink-300 focus:border-pink-600 bg-white' 
+                      ? 'border-pink-300 focus:border-pink-600 bg-white shadow-sm focus:shadow-md' 
                       : 'border-pink-200 bg-pink-50'
-                  } focus:ring-2 transition-all duration-300 outline-none ${
-                    !isEditMode ? 'text-gray-700' : 'text-black'
-                  }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif', '--tw-ring-color': '#EC4899'}}
+                  } ${!isEditMode ? 'text-gray-700' : 'text-black'}`}
+                  style={{
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    borderRadius: '4px'
+                  }}
                 />
               </div>
-              <p className="text-xs" style={{color: '#9F1239', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+              <p className="text-[10px] sm:text-xs" style={{
+                color: '#9F1239',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+              }}>
                 Celebrate with special anniversary offers!
               </p>
             </div>
           </div>
         </div>
 
-        {/* Delivery Information Section - Chocolate Shade */}
-        <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200" style={{backgroundColor: '#F5F3F0'}}>
+        {/* Delivery Information Section - Elegant Chocolate Theme */}
+        <div className="bg-white overflow-hidden transition-all duration-300 hover:shadow-lg" style={{
+          border: '1px solid rgba(107, 68, 35, 0.15)',
+          boxShadow: '0 2px 8px rgba(107, 68, 35, 0.06)'
+        }}>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b" style={{
+            background: 'linear-gradient(135deg, rgba(245, 243, 240, 0.6) 0%, rgba(250, 250, 249, 0.4) 100%)',
+            borderColor: 'rgba(107, 68, 35, 0.12)'
+          }}>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-white border flex items-center justify-center" style={{borderColor: '#8B7355'}}>
-                <MapPin className="h-5 w-5" style={{color: '#6B4423'}} />
+              <div className="h-9 w-9 sm:h-10 sm:w-10 bg-white flex items-center justify-center transition-transform duration-300 hover:scale-110" style={{
+                border: '1px solid rgba(107, 68, 35, 0.2)',
+                boxShadow: '0 2px 4px rgba(107, 68, 35, 0.1)'
+              }}>
+                <MapPin className="h-4 w-4 sm:h-5 sm:w-5" style={{color: '#6B4423'}} strokeWidth={1.5} />
               </div>
               <div>
-                <h2 className="text-lg font-bold" style={{color: '#6B4423', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Delivery Information</h2>
-                <p className="text-sm" style={{color: '#8B7355', fontFamily: 'system-ui, -apple-system, sans-serif'}}>Where should we deliver your treats?</p>
+                <h2 className="text-base sm:text-lg font-semibold" style={{
+                  color: '#6B4423',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  letterSpacing: '0.01em'
+                }}>Delivery Information</h2>
+                <p className="text-xs sm:text-sm" style={{
+                  color: 'rgba(139, 115, 85, 0.8)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>Where should we deliver your treats?</p>
               </div>
             </div>
           </div>
           
-          <div className="p-6 space-y-6" style={{backgroundColor: '#FAFAF9'}}>
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" style={{
+            background: 'linear-gradient(to bottom, rgba(250, 250, 249, 0.3) 0%, #FFFFFF 100%)'
+          }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Delivery Location */}
               <div className="space-y-2">
@@ -1378,18 +1527,37 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Action Buttons - Header Style */}
+        {/* Action Buttons - Elegant Fixed Bar */}
         {isEditMode && (
-          <div className="profile-save-buttons sticky bottom-16 md:bottom-0 z-[60] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 bg-white border-t border-gray-200">
-            <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
+          <div className="profile-save-buttons sticky bottom-16 md:bottom-0 z-[60] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-white border-t" style={{
+            borderColor: 'rgba(115, 56, 87, 0.12)',
+            boxShadow: '0 -4px 16px rgba(115, 56, 87, 0.08)'
+          }}>
+            <div className="flex items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto">
               <button
                 type="button"
                 onClick={handleCancel}
                 disabled={isSaving}
-                className="flex-1 px-6 py-4 border-2 border-gray-300 hover:border-black transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md" style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                className="flex-1 px-4 sm:px-6 py-3 sm:py-4 border-2 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                style={{
+                  borderColor: 'rgba(115, 56, 87, 0.3)',
+                  color: '#733857',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  borderRadius: '4px'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSaving) {
+                    e.currentTarget.style.borderColor = '#733857';
+                    e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.05)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(115, 56, 87, 0.3)';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 <span className="flex items-center justify-center gap-2">
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} />
                   Cancel
                 </span>
               </button>
@@ -1401,18 +1569,35 @@ const Profile = () => {
                   const scrollY = window.scrollY;
                   setTimeout(() => window.scrollTo(0, scrollY), 0);
                 }}
-                className="flex-1 relative px-8 py-4 bg-black text-white overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                className="flex-1 relative px-6 sm:px-8 py-3 sm:py-4 text-white overflow-hidden transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                style={{
+                  backgroundColor: '#733857',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  borderRadius: '4px',
+                  boxShadow: '0 4px 12px rgba(115, 56, 87, 0.25)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSaving && formData.name.trim()) {
+                    e.currentTarget.style.backgroundColor = '#5a2b43';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(115, 56, 87, 0.35)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#733857';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(115, 56, 87, 0.25)';
+                }}
               >
                 <span className={`relative flex items-center justify-center gap-2 transition-opacity duration-300 ${isSaving ? 'opacity-0' : 'opacity-100'}`}>
-                  <Save className="h-5 w-5" />
+                  <Save className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} />
                   Save Profile
                 </span>
                 {isSaving && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="flex items-center gap-2">
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent animate-spin"></div>
-                      <span className="text-sm font-semibold">Saving...</span>
+                      <div className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-xs sm:text-sm font-semibold">Saving...</span>
                     </div>
                   </div>
                 )}

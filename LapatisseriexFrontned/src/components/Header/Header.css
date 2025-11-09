@@ -2,6 +2,13 @@
 
 /* Apply modern system font to all text elements */
 
+/* Space for fixed announcement banners on desktop */
+@media (min-width: 768px) {
+  .header-with-banner {
+    top: 5rem !important;
+  }
+}
+
 /* Unify font style for header, menu, location text */
 .category-swiper,
 .breadcrumb,

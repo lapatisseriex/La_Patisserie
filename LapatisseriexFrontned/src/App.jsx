@@ -17,6 +17,7 @@ import { initializeServiceWorker } from './utils/serviceWorker';
 import Layout from './components/Layout/Layout';
 import AdminLayout from './components/Layout/AdminLayout';
 import FooterOnlyLayout from './components/Layout/FooterOnlyLayout';
+import ProductLayout from './components/Layout/ProductLayout';
 
 // Pages
 import ProfilePage from './pages/Profile';
@@ -190,11 +191,6 @@ function App() {
                             <Route path="terms" element={<TermsAndConditions />} />
                             <Route path="faq" element={<FAQ />} />
                             <Route path="our-services" element={<OurServices />} />
-                            <Route path="product/:productId" element={
-                              <ProductErrorBoundary>
-                                <ProductDisplayPage />
-                              </ProductErrorBoundary>
-                            } />
                             <Route path="cart" element={<Cart />} />
                             <Route path="checkout" element={
                               <PrivateRoute>
@@ -202,8 +198,15 @@ function App() {
                               </PrivateRoute>
                             } />
                             <Route path="favorites" element={<Favorites />} />
-                            {/* Demo Analytics Dashboard - Public Route */}
-                            
+                          </Route>
+
+                          {/* Product Display with Product Layout (no header) */}
+                          <Route path="product/:productId" element={<ProductLayout />}>
+                            <Route index element={
+                              <ProductErrorBoundary>
+                                <ProductDisplayPage />
+                              </ProductErrorBoundary>
+                            } />
                           </Route>
                           {/* Payment with Footer Only Layout */}
                           <Route path="/" element={<FooterOnlyLayout />}>

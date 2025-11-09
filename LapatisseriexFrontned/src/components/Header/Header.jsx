@@ -17,6 +17,7 @@ import './hide-search.css';
 // Import UserMenu component
 import UserMenu from './UserMenu/UserMenu';
 import NotificationBell from '../Notifications/NotificationBell';
+import AnnouncementBanner from './AnnouncementBanner';
 
 // Import icons
 import { 
@@ -559,7 +560,10 @@ const Header = ({ isAdminView = false }) => {
 
   return (
     <>
-    <header className="md:fixed md:top-0 md:left-0 md:right-0 md:z-50 bg-white shadow-sm transition-all duration-300" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+    {/* Infinite Running Announcement Banner - Above Header */}
+    <AnnouncementBanner />
+    
+    <header className="md:fixed md:left-0 md:right-0 md:z-50 bg-white shadow-sm transition-all duration-300 header-with-banner" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
       
       {/* Mobile Top Header Bar - Shop Name and Logo */}
       <div className="block md:hidden py-2 px-3 bg-white border-b border-gray-100">

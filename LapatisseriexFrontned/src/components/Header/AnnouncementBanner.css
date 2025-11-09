@@ -1,0 +1,297 @@
+/* Fixed Contact Information Bar - Not Scrolling */
+.contact-info-bar {
+  width: 100%;
+  background: linear-gradient(135deg, #281c20 0%, #733857 100%);
+  padding: 0.4rem 1rem;
+  position: relative;
+  z-index: 62;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Make contact bar fixed on desktop */
+@media (min-width: 768px) {
+  .contact-info-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 62;
+  }
+}
+
+.contact-info-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.contact-info-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.contact-info-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.contact-icon {
+  font-size: 1rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.contact-text {
+  white-space: nowrap;
+}
+
+.contact-separator {
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 300;
+  margin: 0 0.3rem;
+}
+
+/* Mobile responsiveness for contact bar */
+@media (max-width: 768px) {
+  .contact-info-bar {
+    padding: 0.5rem 0.5rem;
+  }
+
+  .contact-info-container {
+    gap: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .contact-info-item {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.3rem;
+  }
+
+  .contact-icon {
+    font-size: 0.85rem;
+  }
+
+  .contact-text {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Tablet responsiveness */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .contact-info-item {
+    font-size: 0.7rem;
+  }
+}
+
+/* Announcement Banner - Infinite Running Ads */
+.announcement-banner {
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #733857 0%, #281c20 50%, #733857 100%);
+  background-size: 200% 200%;
+  animation: gradientFlow 8s ease infinite;
+  position: relative;
+  padding: 0.5rem 0;
+  box-shadow: 0 2px 8px rgba(40, 28, 32, 0.15);
+  z-index: 61;
+}
+
+/* Make banner fixed on desktop - positioned below contact bar */
+@media (min-width: 768px) {
+  .announcement-banner {
+    position: fixed;
+    top: 2.5rem; /* Below contact bar */
+    left: 0;
+    right: 0;
+    z-index: 61;
+  }
+}
+
+/* Animated gradient background */
+@keyframes gradientFlow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Shimmer overlay effect */
+.announcement-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Track container for infinite scroll */
+.announcement-track {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  animation: scroll 30s linear infinite;
+  gap: 3rem;
+}
+
+/* Infinite scroll animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Individual announcement item */
+.announcement-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  position: relative;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Icon styling with animation */
+.announcement-icon {
+  font-size: 1.25rem;
+  animation: bounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Gentle bounce animation for icons */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.1);
+  }
+}
+
+/* Text styling */
+.announcement-text {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Separator between items */
+.announcement-item:not(:last-child)::after {
+  content: '|';
+  position: absolute;
+  right: -1.5rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 300;
+}
+
+/* Hover effect - pause animation */
+.announcement-banner:hover .announcement-track {
+  animation-play-state: paused;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .announcement-banner {
+    padding: 0.4rem 0;
+  }
+
+  .announcement-item {
+    font-size: 0.75rem;
+    gap: 0.4rem;
+    padding: 0 1rem;
+  }
+
+  .announcement-icon {
+    font-size: 1rem;
+  }
+
+  .announcement-track {
+    gap: 2rem;
+    animation: scroll 25s linear infinite;
+  }
+
+  .announcement-item:not(:last-child)::after {
+    right: -1rem;
+  }
+}
+
+/* Tablet responsiveness */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .announcement-item {
+    font-size: 0.813rem;
+    padding: 0 1.25rem;
+  }
+
+  .announcement-track {
+    gap: 2.5rem;
+    animation: scroll 27s linear infinite;
+  }
+}
+
+/* Premium sparkle effects */
+.announcement-banner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 30%),
+    radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 30%);
+  animation: sparkle 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Smooth transitions */
+.announcement-banner * {
+  transition: all 0.3s ease;
+}
