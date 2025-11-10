@@ -29,17 +29,17 @@ export const normalizeImageUrl = (imageUrl, fallbackUrl = '/images/placeholder-i
     // Handle Cloudinary raw URLs that need to be converted to image URLs
     if (imageUrl.includes('/raw/upload/')) {
       // Convert raw URLs to image URLs and add .png extension
-      // Also add format_auto and quality_auto to ensure proper transparency
-      return imageUrl.replace('/raw/upload/', '/image/upload/f_auto,q_auto/') + '.png';
+      // Also add format_auto, quality_auto, and dpr_auto for responsive images
+      return imageUrl.replace('/raw/upload/', '/image/upload/f_auto,q_auto,dpr_auto/') + '.png';
     }
     
     // Add Cloudinary transformation parameters to normal image URLs (if Cloudinary URL)
     if (imageUrl.includes('cloudinary.com') && !imageUrl.includes('f_auto')) {
       // Check if URL already has parameters
       if (imageUrl.includes('/upload/v')) {
-        return imageUrl.replace('/upload/v', '/upload/f_auto,q_auto/v');
+        return imageUrl.replace('/upload/v', '/upload/f_auto,q_auto,dpr_auto/v');
       } else if (imageUrl.includes('/image/upload/')) {
-        return imageUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto/');
+        return imageUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto,dpr_auto/');
       }
     }
     

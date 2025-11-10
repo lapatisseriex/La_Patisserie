@@ -159,33 +159,32 @@ const MediaDisplay = ({
           Your browser does not support the video tag.
         </video>
       ) : (
-        <>
-          {/* Add an image preloader that doesn't affect layout */}
-          <img 
-            src={mediaSource}
-            style={{ display: 'none' }}
-            onLoad={() => {
-              // Pre-cache the image before showing it
-              setLoading(false);
-            }}
-            onError={handleError}
-            alt=""
-          />
-          <img
-            src={loading ? (fallbackSrc || '/images/placeholder-image.jpg') : mediaSource}
-            alt={alt}
-            style={mediaStyles}
-            className="w-full h-full"
-            loading={lazy ? "lazy" : "eager"}
-          />
-        </>
+        <img
+          src={mediaSource}
+          alt={alt}
+          style={mediaStyles}
+          className="w-full h-full"
+          loading={lazy ? "lazy" : "eager"}
+          fetchpriority={lazy ? "auto" : "high"}
+          decoding="async"
+          onLoad={() => setLoading(false)}
+          onError={handleError}
+        />
       )}
 
-      {/* Loading/Processing overlay */}
-      {loading && !isVideo && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/5">
+      {/* Loading/Processing overlay - only show after a delay to avoid flashing */}
+      {loading && !isVideo && retryCount === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+          <div className="h-5 w-5 rounded-full border-2 border-[#733857] border-t-transparent animate-spin" aria-label="Loading" />
+        </div>
+      )}
+      
+      {/* Show retry indicator */}
+      {loading && !isVideo && retryCount > 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <div className="flex flex-col items-center gap-2">
             <div className="h-6 w-6 rounded-full border-2 border-[#733857] border-t-transparent animate-spin" aria-label="Loading" />
+            <div className="text-xs text-gray-600">Retry {retryCount}/{MAX_RETRIES}</div>
           </div>
         </div>
       )}
