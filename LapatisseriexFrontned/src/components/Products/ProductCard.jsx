@@ -18,7 +18,7 @@ import OfferBadge from '../common/OfferBadge';
 import BlobButton from '../common/BlobButton';
 import { addFreeProductToCart } from '../../services/freeProductService';
 
-const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false, isSelectingFreeProduct = false }) => {
+const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false, isSelectingFreeProduct = false, imagePriority = false }) => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const [videoHasEnded, setVideoHasEnded] = useState(false);
@@ -32,6 +32,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   const { addToCart, getItemQuantity, updateQuantity, cartItems, refreshCart } = useCart();
 
   const { user, toggleAuthPanel, changeAuthType } = useAuth();
+  const isGuest = !user;
   const { trackProductView } = useRecentlyViewed();
   const { buttonRef: addToCartButtonRef } = useSparkToCart();
   const navigate = useNavigate();
@@ -72,15 +73,18 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   
   const mediaItems = useMemo(() => {
     const items = [];
-    // Combine images and videos into a single media items array
+    // Always include images
     imageUrls.forEach((url) => {
       if (url) items.push({ type: 'image', src: url });
     });
-    videoUrls.forEach((url) => {
-      if (url) items.push({ type: 'video', src: url });
-    });
+    // Only include videos for logged-in users to avoid heavy loads for guests
+    if (!isGuest) {
+      videoUrls.forEach((url) => {
+        if (url) items.push({ type: 'video', src: url });
+      });
+    }
     return items;
-  }, [imageUrls, videoUrls]);
+  }, [imageUrls, videoUrls, isGuest]);
 
   const mediaCount = mediaItems.length;
   const hasVideos = videoUrls.length > 0;
@@ -93,8 +97,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
   // Get category image as an additional fallback if available
   const categoryFallback = currentProduct?.category?.featuredImage || null;
   
-  const primaryMediaType = activeMedia?.type || (fallbackImage ? 'image' : fallbackVideo ? 'video' : 'image');
-  const primaryMediaSrc = activeMedia?.src || fallbackImage || fallbackVideo || categoryFallback || null;
+  // For guests, never prefer video as the primary media to avoid auto-loading videos
+  const primaryMediaType = isGuest
+    ? 'image'
+    : (activeMedia?.type || (fallbackImage ? 'image' : (fallbackVideo ? 'video' : 'image')));
+  const primaryMediaSrc = isGuest
+    ? (activeMedia?.src || fallbackImage || categoryFallback || null)
+    : (activeMedia?.src || fallbackImage || fallbackVideo || categoryFallback || null);
   const displayMediaSrc = primaryMediaSrc || '/images/cake1.png';
   const displayMediaType = primaryMediaSrc ? primaryMediaType : 'image';
   const isActiveVideo = displayMediaType === 'video';
@@ -500,12 +509,13 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
                     className="w-full h-full"
                     aspectRatio="auto"
                     objectFit="cover"
+                    lazy={!imagePriority}
                     videoProps={{
                       controls: false,
                       muted: true,
                       playsInline: true, // Ensure inline playback on mobile devices
-                      preload: 'metadata',
-                      autoPlay: true,
+                      preload: isGuest ? 'none' : 'metadata',
+                      autoPlay: isGuest ? false : true,
                       onPlay: handleVideoPlay,
                       onLoadedData: handleVideoPlay,
                       onEnded: handleVideoEnded,

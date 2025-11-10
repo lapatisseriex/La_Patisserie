@@ -51,7 +51,8 @@ const ProductDisplayPageNew = () => {
         }
       });
     }
-    if (Array.isArray(product?.videos)) {
+    // Only include videos for logged-in users to avoid heavy loads for guests
+    if (user && Array.isArray(product?.videos)) {
       product.videos.forEach((src, idx) => {
         if (src) {
           items.push({ type: 'video', src, key: `video-${idx}` });
@@ -59,7 +60,7 @@ const ProductDisplayPageNew = () => {
       });
     }
     return items;
-  }, [product?.images, product?.videos]);
+  }, [product?.images, product?.videos, user]);
 
   // IMMEDIATE scroll prevention
   React.useLayoutEffect(() => {
