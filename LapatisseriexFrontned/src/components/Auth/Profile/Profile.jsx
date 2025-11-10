@@ -1531,9 +1531,9 @@ const Profile = () => {
 
         {/* Action Buttons - Elegant Fixed Bar */}
         {isEditMode && (
-          <div className="profile-save-buttons sticky bottom-16 md:bottom-0 z-[60] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-white border-t" style={{
+          <div className="profile-save-buttons sticky top-0 z-[60] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-white border-b" style={{
             borderColor: 'rgba(115, 56, 87, 0.12)',
-            boxShadow: '0 -4px 16px rgba(115, 56, 87, 0.08)'
+            boxShadow: '0 4px 16px rgba(115, 56, 87, 0.08)'
           }}>
             <div className="flex items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto">
               <button

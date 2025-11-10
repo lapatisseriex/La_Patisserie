@@ -869,6 +869,9 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
     const deliveredItems = order.cartItems.filter(item => item.dispatchStatus === 'delivered').length;
     const totalItems = order.cartItems.length;
 
+    // Store previous status before updating
+    const previousStatus = order.orderStatus;
+    
     let newOrderStatus = order.orderStatus;
     if (deliveredItems === totalItems) {
       newOrderStatus = 'delivered';
@@ -955,6 +958,26 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
             timestamp: new Date().toISOString()
           });
         }
+        
+        // Emit to all admin clients for instant UI update
+        global.io.emit('orderStatusUpdated', {
+          orderId: order._id.toString(),
+          orderNumber: order.orderNumber,
+          status: newOrderStatus,
+          items: order.cartItems.map(item => ({
+            ...item.toObject(),
+            productId: item.productId ? {
+              _id: item.productId._id,
+              name: item.productId.name,
+              image: item.productId.image,
+              images: item.productId.images,
+              category: item.productId.category
+            } : item.productId
+          })),
+          deliveredItems: updatedItems,
+          deliveryProgress: deliveryProgress,
+          timestamp: new Date().toISOString()
+        });
       }
 
       // Create notification in database (non-blocking)
@@ -982,6 +1005,26 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
       deliveredItems: updatedItems,
       newOrderStatus: newOrderStatus,
       paymentStatus: order.paymentStatus,
+      order: {
+        _id: order._id,
+        orderNumber: order.orderNumber,
+        orderStatus: newOrderStatus,
+        paymentStatus: order.paymentStatus,
+        items: order.cartItems.map(item => {
+          const serializedItem = {
+            ...item.toObject(),
+            productId: item.productId ? {
+              _id: item.productId._id,
+              name: item.productId.name,
+              image: item.productId.image,
+              images: item.productId.images,
+              category: item.productId.category
+            } : item.productId
+          };
+          console.log('Serialized item:', serializedItem.productName, 'Image:', serializedItem.productId?.image || serializedItem.image);
+          return serializedItem;
+        })
+      },
       deliveryProgress: {
         total: totalItems,
         dispatched: dispatchedItems,

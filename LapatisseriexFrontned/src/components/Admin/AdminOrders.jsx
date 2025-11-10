@@ -69,6 +69,8 @@ const AdminOrders = () => {
       item.image,
       Array.isArray(item.images) && item.images[0],
       item.productImage,
+      item.productId?.image,
+      Array.isArray(item.productId?.images) && item.productId.images[0],
       item.product?.image,
       Array.isArray(item.product?.images) && item.product.images[0],
       item.productDetails?.image,
@@ -397,6 +399,39 @@ const AdminOrders = () => {
       });
     });
 
+    // Listen for order status updates
+    socket.on('orderStatusUpdated', (data) => {
+      console.log('%c📦 ORDER STATUS UPDATED!', 'color: blue; font-weight: bold; font-size: 16px; background: #e6f3ff; padding: 5px');
+      console.log('📦 Order ID:', data.orderId);
+      console.log('📝 New Status:', data.status);
+      console.log('⏰ Updated at:', new Date().toLocaleTimeString());
+      console.log('📋 Full Data:', data);
+      
+      // Update the orders list with the new status
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order._id === data.orderId 
+            ? { ...order, orderStatus: data.status, cartItems: data.items || order.cartItems }
+            : order
+        )
+      );
+      
+      // Update selected order if it's open
+      if (selectedOrder && selectedOrder._id === data.orderId) {
+        setSelectedOrder(prev => ({
+          ...prev,
+          orderStatus: data.status,
+          cartItems: data.items || prev.cartItems
+        }));
+      }
+      
+      // Show toast notification
+      toast.success(`Order status updated to ${data.status}`, {
+        duration: 3000,
+        icon: '✅',
+      });
+    });
+
     // Test event listener (for debugging)
     socket.onAny((eventName, ...args) => {
       console.log(`📡 Event received: ${eventName}`, args);
@@ -407,6 +442,7 @@ const AdminOrders = () => {
       console.log('%c🔌 Cleaning up WebSocket connection', 'color: gray; font-size: 12px');
       socket.offAny();
       socket.off('newOrderPlaced');
+      socket.off('orderStatusUpdated');
       socket.off('connect');
       socket.off('connect_error');
       socket.off('disconnect');
@@ -453,14 +489,31 @@ const AdminOrders = () => {
       
       const result = await response.json();
       console.log('Delivery successful:', result);
+      console.log('Result order items:', result.order?.items);
       
       // Show success state briefly
       setDeliverySuccess(prev => ({ ...prev, [deliveryKey]: true }));
       
-      // Refresh orders and order details
-      await fetchOrders(currentPage, filters);
-      if (selectedOrder && selectedOrder._id === orderId) {
-        await viewOrderDetails(selectedOrder.orderNumber);
+      // Immediately update local state for instant UI feedback
+      if (result.order) {
+        console.log('Updating orders state with cartItems:', result.order.items);
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order._id === orderId 
+              ? { ...order, orderStatus: result.order.orderStatus, cartItems: result.order.items }
+              : order
+          )
+        );
+        
+        // Update selected order if it's open
+        if (selectedOrder && selectedOrder._id === orderId) {
+          console.log('Updating selectedOrder with cartItems:', result.order.items);
+          setSelectedOrder(prev => ({
+            ...prev,
+            orderStatus: result.order.orderStatus,
+            cartItems: result.order.items
+          }));
+        }
       }
       
       if (deliverAll) {
