@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux';
+import { useRef } from 'react';
 import { makeSelectListByKey, makeSelectLoadingByKey, selectHasBestSellers } from '../../redux/productsSlice';
 import ProductCard from "../Products/ProductCard";
 import RollingGallery from "../common/RollingGallery";
@@ -12,6 +13,7 @@ const BestSellers = () => {
   const products = useSelector(selectProducts);
   const loading = useSelector(selectLoading);
   const hasBestSellers = useSelector(selectHasBestSellers);
+  const scrollContainerRef = useRef(null);
 
   // Show loading state
   if (loading) {
@@ -44,16 +46,42 @@ const BestSellers = () => {
           </p>
         </div>
         
-      <RollingGallery 
-          items={products.map(product => ({
-            key: product._id,
-            content: (
-              <div className="min-w-0 w-full flex transform transition-all duration-300 ease-out hover:scale-102 focus:scale-102 active:scale-98">
-                <ProductCard product={product} className="min-w-0 w-full  transition-shadow" />
+        {/* Desktop: Use RollingGallery with animations */}
+        <div className="hidden md:block">
+          <RollingGallery 
+            items={products.map(product => ({
+              key: product._id,
+              content: (
+                <div className="min-w-0 w-full flex transform transition-all duration-300 ease-out hover:scale-102 focus:scale-102 active:scale-98">
+                  <ProductCard product={product} className="min-w-0 w-full transition-shadow" />
+                </div>
+              )
+            }))}
+          />
+        </div>
+
+        {/* Mobile: Simple horizontal scroll without animations */}
+        <div className="block md:hidden">
+          <div 
+            ref={scrollContainerRef}
+            className="flex overflow-x-auto gap-3 pb-4 snap-x snap-mandatory scrollbar-hide"
+            style={{
+              scrollBehavior: 'smooth',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+          >
+            {products.map((product) => (
+              <div 
+                key={product._id}
+                className="flex-shrink-0 w-[85vw] max-w-[320px] snap-center"
+              >
+                <ProductCard product={product} className="w-full h-full" />
               </div>
-            )
-          }))}
-        />
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

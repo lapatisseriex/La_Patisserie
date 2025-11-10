@@ -101,12 +101,12 @@
 .announcement-banner {
   width: 100%;
   overflow: hidden;
-  background: linear-gradient(135deg, #733857 0%, #281c20 50%, #733857 100%);
+  background: linear-gradient(135deg, #3E2723 0%, #1B0000 50%, #4E342E 100%);
   background-size: 200% 200%;
   animation: gradientFlow 8s ease infinite;
   position: relative;
   padding: 0.5rem 0;
-  box-shadow: 0 2px 8px rgba(40, 28, 32, 0.15);
+  box-shadow: 0 2px 12px rgba(62, 39, 35, 0.4);
   z-index: 61;
 }
 
