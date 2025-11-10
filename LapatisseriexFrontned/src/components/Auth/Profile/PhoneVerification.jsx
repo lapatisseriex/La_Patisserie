@@ -14,13 +14,41 @@ const formatTime = (ms) => {
 
 const PhoneVerification = ({ onVerificationSuccess }) => {
   const { user, updateUser, updateProfile, getCurrentUser } = useAuth();
-  const [phone, setPhone] = useState(user?.phone || '');
+  
+  // Initialize phone state by extracting country code if present
+  const initializePhone = (userPhone) => {
+    if (!userPhone) return { code: '+91', number: '' };
+    
+    const countryCodes = ['+91'];
+    
+    for (const code of countryCodes) {
+      if (userPhone.startsWith(code)) {
+        return {
+          code: code,
+          number: userPhone.substring(code.length)
+        };
+      }
+    }
+    
+    // If no country code found, assume it's just the number
+    return { code: '+91', number: userPhone.replace(/^\+/, '') };
+  };
+  
+  const initialPhone = initializePhone(user?.phone);
+  const [phone, setPhone] = useState(initialPhone.number);
+  const [countryCode, setCountryCode] = useState(initialPhone.code);
   const [otp, setOtp] = useState('');
   const [status, setStatus] = useState('idle'); // idle|sending|sent|verifying|verified|error
   const [message, setMessage] = useState('');
   const [expiresAt, setExpiresAt] = useState(null); // timestamp
   const [verificationId, setVerificationId] = useState(null); // Store verification ID instead of confirmation
   const timerRef = useRef(null);
+
+  // Country codes with flags
+  const countryCodes = [
+    { code: '+91', flag: '🇮🇳', country: 'India' },
+  
+  ];
 
   // Cleanup reCAPTCHA on component unmount
   useEffect(() => {
@@ -45,12 +73,36 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       userPhone: user?.phone,
       phoneVerified: user?.phoneVerified,
       currentPhone: phone,
+      currentCountryCode: countryCode,
       currentStatus: status
     });
     
     // Update phone state whenever user.phone changes (including when it becomes available)
-    if (user?.phone !== phone) {
-      setPhone(user?.phone || '');
+    if (user?.phone) {
+      const fullPhone = user.phone;
+      const currentFullPhone = countryCode + phone;
+      
+      // Only update if the full phone number is different
+      if (fullPhone !== currentFullPhone) {
+        // Extract country code and phone number
+        let extractedCode = '+91'; // default
+        let extractedPhone = fullPhone;
+        
+        // Try to extract country code
+        if (fullPhone.startsWith('+91')) {
+          extractedCode = '+91';
+          extractedPhone = fullPhone.substring(3); // Remove +91
+        } else if (fullPhone.startsWith('91') && fullPhone.length > 10) {
+          extractedCode = '+91';
+          extractedPhone = fullPhone.substring(2); // Remove 91
+        } else {
+          // No country code, use as is
+          extractedPhone = fullPhone.replace(/^\+/, '');
+        }
+        
+        setCountryCode(extractedCode);
+        setPhone(extractedPhone);
+      }
     }
     
     // Reset verification status to idle if phone is verified to show verified state
@@ -142,11 +194,12 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
         throw new Error('reCAPTCHA not initialized');
       }
 
-      // Format phone number - ensure it has country code
+      // Format phone number - use selected country code
       let formattedPhoneNumber = phone.trim();
-      if (!formattedPhoneNumber.startsWith('+')) {
-        formattedPhoneNumber = '+91' + formattedPhoneNumber.replace(/^0/, '');
-      }
+      // Remove any leading zeros
+      formattedPhoneNumber = formattedPhoneNumber.replace(/^0+/, '');
+      // Add country code
+      formattedPhoneNumber = countryCode + formattedPhoneNumber;
       
       console.log('Sending verification code to:', formattedPhoneNumber);
       
@@ -230,11 +283,18 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
           await linkWithCredential(currentUser, credential);
           console.log('Phone credential linked to current user');
         } catch (linkError) {
-          // If credential is already in use or already linked, that's okay
-          // We just want to verify the phone number is valid
-          if (linkError.code === 'auth/credential-already-in-use' || 
-              linkError.code === 'auth/provider-already-linked') {
-            console.log('Phone already linked or in use, but OTP is valid');
+          // Check if phone is already in use by another account
+          if (linkError.code === 'auth/credential-already-in-use') {
+            console.error('Phone number is already registered to another account');
+            setStatus('error');
+            setMessage('This phone number is already registered to another account. Please use a different number.');
+            toast.error('Phone number already in use by another account');
+            return;
+          }
+          
+          // If provider already linked to this user, that's okay
+          if (linkError.code === 'auth/provider-already-linked') {
+            console.log('Phone already linked to this account');
           } else {
             throw linkError;
           }
@@ -251,9 +311,10 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       
       // Format phone number for storage
       let formattedPhoneNumber = phone.trim();
-      if (!formattedPhoneNumber.startsWith('+')) {
-        formattedPhoneNumber = '+91' + formattedPhoneNumber.replace(/^0/, '');
-      }
+      // Remove any leading zeros
+      formattedPhoneNumber = formattedPhoneNumber.replace(/^0+/, '');
+      // Add country code
+      formattedPhoneNumber = countryCode + formattedPhoneNumber;
       
       // Update the user's phone number in the database
       try {
@@ -269,8 +330,19 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
         console.log('Phone number updated in database successfully');
       } catch (updateError) {
         console.error('Failed to update phone number in database:', updateError);
+        
+        // Check if it's a duplicate phone error from backend
+        if (updateError.response?.data?.error === 'PHONE_ALREADY_IN_USE') {
+          setStatus('error');
+          setMessage('This phone number is already registered to another account.');
+          toast.error('Phone number already in use by another account');
+          return;
+        }
+        
+        setStatus('error');
         setMessage('Phone verified but failed to update in database. Please try refreshing the page.');
         toast.error('Failed to update phone in database');
+        return;
       }
       
       // Trigger edit mode so user can save their profile
@@ -310,7 +382,11 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
     }
   };
 
-  const phoneValid = useMemo(() => /^\+?[0-9]{10,15}$/.test(phone || ''), [phone]);
+  const phoneValid = useMemo(() => {
+    // Check if phone number has 10 digits (without country code)
+    const phoneDigits = phone.replace(/\D/g, '');
+    return phoneDigits.length >= 10 && phoneDigits.length <= 15;
+  }, [phone]);
   const otpValid = useMemo(() => /^(\d){6}$/.test(otp || ''), [otp]);
   
   // Effect to sync component state with user state changes
@@ -347,14 +423,43 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
       </label>
       <div className="space-y-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
         <div>
-          <div className="relative">
+          <div className="relative flex gap-2">
+            {/* Country Code Selector */}
+            <select
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              disabled={status === 'sending' || status === 'verifying' || user?.phoneVerified}
+              className={`px-2 sm:px-3 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
+                user?.phoneVerified || status === 'sending' || status === 'verifying'
+                  ? 'border-gray-200 bg-gray-50 text-gray-700' 
+                  : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black'
+              }`}
+              style={{
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                borderRadius: '4px',
+                minWidth: '100px',
+                cursor: user?.phoneVerified ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {countryCodes.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.flag} {country.code}
+                </option>
+              ))}
+            </select>
+            
+            {/* Phone Number Input */}
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                // Only allow digits
+                const value = e.target.value.replace(/\D/g, '');
+                setPhone(value);
+              }}
               placeholder="Enter phone number"
               disabled={status === 'sending' || status === 'verifying' || user?.phoneVerified}
-              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
+              className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
                 user?.phoneVerified || status === 'sending' || status === 'verifying'
                   ? 'border-gray-200 bg-gray-50 text-gray-700' 
                   : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black'

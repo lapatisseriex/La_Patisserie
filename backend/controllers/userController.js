@@ -155,6 +155,20 @@ export const updateUser = asyncHandler(async (req, res) => {
   
   // Handle phone updates
   if (phone !== undefined) {
+    // Check if phone is already in use by another user
+    if (phone) {
+      const existingUser = await User.findOne({ 
+        phone: phone, 
+        uid: { $ne: userId } // Exclude current user
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({
+          message: 'This phone number is already registered to another account',
+          error: 'PHONE_ALREADY_IN_USE'
+        });
+      }
+    }
     user.phone = phone;
   }
   

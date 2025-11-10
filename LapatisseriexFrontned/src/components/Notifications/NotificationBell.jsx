@@ -115,12 +115,7 @@ const NotificationBell = () => {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className="notification-bell-premium relative p-3 transition-all duration-300"
-          style={{
-            background: '#ffffff',
-            boxShadow: isHovered 
-              ? '0 4px 16px rgba(115, 56, 87, 0.1)' 
-              : '0 2px 8px rgba(40, 28, 32, 0.05)'
-          }}
+        
           whileHover={{ 
             scale: 1.05,
             y: -1
@@ -141,7 +136,7 @@ const NotificationBell = () => {
             <img 
               src="/birthday.png" 
               alt="Notification Bell" 
-              className="w-5 h-5 transition-all duration-300 filter drop-shadow-sm" 
+              className="w-5 h-5 transition-all duration-300 filter " 
               style={{
                 filter: isHovered 
                   ? 'drop-shadow(0 2px 4px rgba(115, 56, 87, 0.3)) brightness(1.1)' 
@@ -174,9 +169,7 @@ const NotificationBell = () => {
                 <div
                   className="premium-badge rounded-full bg-gradient-to-r from-[#733857] to-[#281c20] text-white text-xs h-5 w-5 flex items-center justify-center font-bold shadow-lg relative overflow-hidden"
                   style={{
-                 
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    boxShadow: '0 2px 8px rgba(115, 56, 87, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                    
                   }}
                 >
                   {unreadCount > 9 ? '9+' : unreadCount}

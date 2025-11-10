@@ -925,9 +925,9 @@ const ProductDisplayPageNew = () => {
             {/* Dietary Indicators */}
             <div className="flex items-center gap-2 mt-3">
               {product.hasEgg ? (
-                <div className="flex items-center gap-2 rounded-md px-3 py-1.5 border border-gray-200 bg-amber-50">
+                <div className="flex items-center gap-2 rounded-md px-3 py-1.5 border border-gray-200 bg-red-50">
                   <span className="w-5 h-5 grid place-items-center rounded-md border border-red-600 bg-red-50">
-                    <span className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[8px] border-l-transparent border-r-transparent border-b-orange-600"></span>
+                    <span className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[8px] border-l-transparent border-r-transparent border-b-red-600"></span>
                   </span>
                   <span className="text-xs tracking-wide" style={{ color: '#1a1a1a', letterSpacing: '0.05em' }}>WITH EGG</span>
                 </div>
@@ -1513,7 +1513,7 @@ const ProductDisplayPageNew = () => {
                 {/* Dietary Indicators */}
                 <div className="flex items-center gap-3 mt-4">
                   {product.hasEgg ? (
-                    <div className="flex items-center gap-2 rounded-md px-4 py-2 border border-gray-200 bg-amber-50">
+                    <div className="flex items-center gap-2 rounded-md px-4 py-2 border border-gray-200 bg-red-50">
                       <span className="w-5 h-5 grid place-items-center rounded-md border border-red-600 bg-red-50">
                         <span className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[9px] border-l-transparent border-r-transparent border-b-red-600"></span>
                       </span>

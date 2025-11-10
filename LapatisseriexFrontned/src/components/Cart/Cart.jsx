@@ -270,7 +270,11 @@ const Cart = () => {
 
   // Helper function to check if user can proceed to checkout
   const canProceedToCheckout = () => {
-    return user?.hostel && user.hostel._id && user.hostel.name;
+    const hasHostel = user?.hostel && user.hostel._id && user.hostel.name;
+    const hasLocation = user?.location && user.location._id;
+    const hasPhone = user?.phone && user?.phoneVerified;
+    
+    return hasHostel && hasLocation && hasPhone;
   };
 
   // Helper function to get checkout button text
@@ -278,7 +282,28 @@ const Cart = () => {
     if (!user?.hostel || !user.hostel._id || !user.hostel.name) {
       return 'Select Hostel';
     }
+    if (!user?.location || !user.location._id) {
+      return 'Select Location';
+    }
+    if (!user?.phone || !user?.phoneVerified) {
+      return 'Verify Phone';
+    }
     return 'Proceed to Checkout';
+  };
+  
+  // Helper function to get missing profile details message
+  const getMissingProfileDetails = () => {
+    const missing = [];
+    if (!user?.hostel || !user.hostel._id || !user.hostel.name) {
+      missing.push('Hostel');
+    }
+    if (!user?.location || !user.location._id) {
+      missing.push('Location');
+    }
+    if (!user?.phone || !user?.phoneVerified) {
+      missing.push('Phone Number');
+    }
+    return missing;
   };
 
   // Helper to derive availability from product data stored in cart item
@@ -413,9 +438,31 @@ const Cart = () => {
         return;
       }
       
+      // Validate all required profile fields
+      const missingDetails = getMissingProfileDetails();
+      if (missingDetails.length > 0) {
+        const missingText = missingDetails.join(', ');
+        toast.error(`Please complete your profile: Add ${missingText}`, {
+          duration: 5000
+        });
+        return;
+      }
+      
       // Validate hostel selection
       if (!user?.hostel || !user.hostel._id || !user.hostel.name) {
         toast.error('Please select your hostel from your profile before proceeding to checkout.');
+        return;
+      }
+      
+      // Validate location selection
+      if (!user?.location || !user.location._id) {
+        toast.error('Please select your delivery location from your profile before proceeding to checkout.');
+        return;
+      }
+      
+      // Validate phone verification
+      if (!user?.phone || !user?.phoneVerified) {
+        toast.error('Please verify your phone number in your profile before proceeding to checkout.');
         return;
       }
       
@@ -483,7 +530,7 @@ const Cart = () => {
       <div className="min-h-screen bg-white px-4 py-20 flex items-center justify-center">
         <div className="max-w-2xl w-full text-center space-y-10">
           <div className="flex flex-col items-center gap-6">
-            <div className="flex h-20 w-20 items-center justify-center border border-[#733857]/20">
+            <div className="flex h-20 w-20 items-center justify-center ">
               <FaShoppingCart className="text-3xl text-[#733857]" />
             </div>
             <div className="space-y-2">
@@ -965,6 +1012,31 @@ const Cart = () => {
                 </div>
               </div>
               
+              {/* Profile Completion Warning - Compact & Professional */}
+              {!canProceedToCheckout() && (
+                <div className="px-4 mt-4 mb-3">
+                  <div className="bg-pink-50 border border-pink-200 rounded-md p-3 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FaExclamationTriangle className="text-pink-600 text-sm flex-shrink-0" />
+                      <h3 className="text-sm font-semibold text-pink-900">
+                        Complete Profile to Checkout
+                      </h3>
+                    </div>
+                    <div className="ml-6 space-y-1 text-xs text-pink-800">
+                      {!user?.hostel && <div>• Add Hostel</div>}
+                      {!user?.location && <div>• Add Delivery Location</div>}
+                      {(!user?.phone || !user?.phoneVerified) && <div>• Verify Phone Number</div>}
+                    </div>
+                    <Link 
+                      to="/profile" 
+                      className="inline-block ml-6 mt-2 text-xs font-semibold text-pink-700 hover:text-pink-900 underline"
+                    >
+                      Update Profile →
+                    </Link>
+                  </div>
+                </div>
+              )}
+              
               {/* Checkout Button */}
               <div className="px-4 md:flex md:justify-center mt-6">
                 <AnimatedButton
@@ -977,7 +1049,7 @@ const Cart = () => {
                     margin: '0 auto'
                   }}
                 >
-                  {canProceedToCheckout() ? "CHECKOUT" : "SELECT HOSTEL"}
+                  {canProceedToCheckout() ? "CHECKOUT" : getCheckoutButtonText()}
                 </AnimatedButton>
               </div>
 
