@@ -387,21 +387,42 @@ export const updateSpecialImage = asyncHandler(async (req, res) => {
 
   console.log(`Admin updating special image - Type: ${type}, URL: ${imageUrl}`);
 
+  // Validate type parameter
   if (!['bestSeller', 'newlyLaunched'].includes(type)) {
     res.status(400);
     throw new Error('Invalid special image type. Must be "bestSeller" or "newlyLaunched"');
   }
 
+  // Validate imageUrl
   if (!imageUrl) {
     res.status(400);
     throw new Error('Image URL is required');
   }
 
+  // Validate imageUrl format
+  if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+    res.status(400);
+    throw new Error('Invalid image URL format. Must be a valid HTTP/HTTPS URL');
+  }
+
   try {
     // Process image with background removal
     console.log(`Processing special image for ${type}: ${imageUrl}`);
-    const processedImageUrl = await removeBackground(imageUrl);
-    console.log(`Processed image URL: ${processedImageUrl}`);
+    let processedImageUrl;
+    
+    try {
+      processedImageUrl = await removeBackground(imageUrl);
+      console.log(`Processed image URL: ${processedImageUrl}`);
+    } catch (bgError) {
+      console.error(`Background removal failed: ${bgError.message}`);
+      console.log('Using original image URL as fallback');
+      processedImageUrl = imageUrl;
+    }
+
+    // Validate processed image URL
+    if (!processedImageUrl) {
+      throw new Error('Failed to process image - no URL returned');
+    }
     
     // Create or find a special categories document to store these images
     // We'll use a special category with a reserved name for this purpose
@@ -430,31 +451,34 @@ export const updateSpecialImage = asyncHandler(async (req, res) => {
     console.log(`Special category updated with ${type} image: ${processedImageUrl}`);
 
     // Clear the special images cache
-    cache.del('special-images');
+    cache.delete('special-images');
     console.log('📸 Cleared special images cache after update');
 
-    // Delete the old image from Cloudinary if it exists
-    if (currentImage) {
+    // Delete the old image from Cloudinary if it exists and is different from new one
+    if (currentImage && currentImage !== processedImageUrl) {
       const publicId = getPublicIdFromUrl(currentImage);
       if (publicId) {
         try {
           await deleteFromCloudinary(publicId);
           console.log(`Deleted old image: ${publicId}`);
-        } catch (error) {
-          console.error(`Failed to delete old special image ${publicId}:`, error);
+        } catch (deleteError) {
+          console.error(`Failed to delete old special image ${publicId}:`, deleteError.message);
+          // Don't throw error here, image was already updated successfully
         }
       }
     }
 
     res.status(200).json({
+      success: true,
       message: `${type} image updated successfully`,
       imageUrl: processedImageUrl,
       type
     });
   } catch (error) {
     console.error(`Error updating special image for ${type}:`, error);
+    console.error('Error stack:', error.stack);
     res.status(500);
-    throw new Error(`Failed to update ${type} image`);
+    throw new Error(`Failed to update ${type} image: ${error.message}`);
   }
 });
 
@@ -570,7 +594,7 @@ export const deleteSpecialImage = asyncHandler(async (req, res) => {
     await specialCategory.save();
 
     // Clear the special images cache
-    cache.del('special-images');
+    cache.delete('special-images');
     console.log('📸 Cleared special images cache after deletion');
 
     res.status(200).json({
