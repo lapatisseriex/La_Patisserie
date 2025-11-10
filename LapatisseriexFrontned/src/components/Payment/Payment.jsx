@@ -1172,34 +1172,21 @@ if (isOrderComplete) {
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="relative border-2 border-[#733857]/30 bg-gradient-to-br from-amber-50 to-yellow-50 p-3 rounded-xl shadow-lg overflow-hidden"
-                      style={{ 
-                        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 30%, #f7eef3 70%, #733857 100%)',
-                        borderImage: 'linear-gradient(45deg, #f59e0b, #733857, #000000) 1'
+                      className="relative bg-gradient-to-br from-amber-50 to-yellow-50 p-3 rounded-lg border-2"
+                      style={{
+                        borderColor: '#D4AF37',
+                        boxShadow: '0 2px 8px rgba(212, 175, 55, 0.2)'
                       }}
                     >
-                      {/* Animated background on check */}
-                      <motion.div
-                        className="absolute inset-0"
-                        style={{
-                          background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(115, 56, 87, 0.2) 50%, rgba(0, 0, 0, 0.1) 100%)'
-                        }}
-                        initial={{ opacity: 0, x: '-100%' }}
-                        animate={{ 
-                          opacity: useFreeCash ? 1 : 0,
-                          x: useFreeCash ? '0%' : '-100%'
-                        }}
-                        transition={{ duration: 0.5, ease: 'easeInOut' }}
-                      />
-                      
-                      <label className="relative flex items-center justify-between text-sm font-semibold cursor-pointer">
+                      <label className="relative flex items-center justify-between text-sm cursor-pointer">
                         <div className="flex items-center gap-2.5">
                           <motion.div 
-                            className="w-6 h-6 rounded-lg flex items-center justify-center shadow-lg border border-[#733857]/40"
+                            className="w-6 h-6 rounded-full flex items-center justify-center"
                             style={{
-                              background: 'linear-gradient(135deg, #f59e0b 0%, #733857 50%, #1f2937 100%)'
+                              background: 'linear-gradient(135deg, #3E2723 0%, #5D4037 100%)',
+                              boxShadow: '0 2px 4px rgba(62, 39, 35, 0.3)'
                             }}
-                            whileHover={{ scale: 1.1 }}
+                            whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
                             <motion.div
@@ -1207,53 +1194,28 @@ if (isOrderComplete) {
                               animate={{ rotate: useFreeCash ? 360 : 0 }}
                               transition={{ duration: 0.6, ease: 'easeInOut' }}
                             >
+                              <svg className="w-4 h-4" style={{ color: '#D4AF37' }} fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/>
+                              </svg>
                             </motion.div>
                           </motion.div>
                           <div>
-                            <motion.span 
-                              className="font-bold text-transparent bg-clip-text"
-                              style={{
-                                backgroundImage: 'linear-gradient(90deg, #b45309 0%, #733857 50%, #1f2937 100%)',
-                                backgroundSize: '200% 100%'
-                              }}
-                              animate={{ 
-                                backgroundPosition: useFreeCash ? '100% 0%' : '0% 0%'
-                              }}
-                              transition={{ duration: 0.6 }}
-                            >
+                            <span className="font-semibold" style={{ color: '#3E2723' }}>
                               Apply Free Cash
-                            </motion.span>
-                            <motion.div 
-                              className="text-xs font-normal"
-                              animate={{ 
-                                color: useFreeCash ? '#733857' : '#8d4466'
-                              }}
-                            >
+                            </span>
+                            <div className="text-xs" style={{ color: '#D4AF37' }}>
                               Save {formatCurrency(totalFreeCashAvailable)} instantly
-                            </motion.div>
+                            </div>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-2.5">
-                          <motion.div 
-                            className="text-right"
-                            animate={{ scale: useFreeCash ? 1.05 : 1 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <motion.div 
-                              className="text-sm font-bold text-transparent bg-clip-text"
-                              style={{
-                                backgroundImage: 'linear-gradient(90deg, #d97706 0%, #733857 100%)',
-                                backgroundSize: '200% 100%'
-                              }}
-                              animate={{ 
-                                backgroundPosition: useFreeCash ? '100% 0%' : '0% 0%'
-                              }}
-                            >
+                          <div className="text-right">
+                            <div className="text-sm font-bold" style={{ color: '#D4AF37' }}>
                               {formatCurrency(totalFreeCashAvailable)}
-                            </motion.div>
-                            <div className="text-xs text-[#8d4466]">Available</div>
-                          </motion.div>
+                            </div>
+                            <div className="text-xs" style={{ color: '#5D4037' }}>Available</div>
+                          </div>
                           
                           <motion.div
                             whileHover={{ scale: 1.1 }}
@@ -1261,8 +1223,11 @@ if (isOrderComplete) {
                           >
                             <input
                               type="checkbox"
-                              className="h-4 w-4 border-2 border-[#733857] bg-white focus:ring-[#733857] focus:ring-2 rounded transition-all duration-300"
-                              style={{ accentColor: '#733857' }}
+                              className="h-4 w-4 border-2 bg-white focus:ring-2 rounded transition-all duration-300"
+                              style={{ 
+                                accentColor: '#D4AF37',
+                                borderColor: '#D4AF37'
+                              }}
                               checked={useFreeCash}
                               onChange={(e) => setUseFreeCash(e.target.checked)}
                             />
@@ -1276,44 +1241,24 @@ if (isOrderComplete) {
                           height: useFreeCash ? 'auto' : 0,
                           opacity: useFreeCash ? 1 : 0
                         }}
-                        transition={{ duration: 0.4, ease: 'easeInOut' }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-2.5 pt-2.5 border-t border-[#733857]/30">
-                          <motion.div 
-                            className="flex justify-between items-center rounded-lg p-2 border border-[#733857]/20 shadow-md"
-                            style={{
-                              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(247, 238, 243, 0.6) 50%, rgba(115, 56, 87, 0.1) 100%)',
-                              backdropFilter: 'blur(10px)'
-                            }}
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.2, duration: 0.3 }}
-                          >
+                        <div className="mt-2 pt-2" style={{ borderTop: '1px solid #D4AF37' }}>
+                          <div className="flex justify-between items-center p-2 rounded-lg" style={{ 
+                            background: 'linear-gradient(135deg, #3E2723 0%, #5D4037 100%)',
+                            boxShadow: '0 2px 6px rgba(212, 175, 55, 0.2)'
+                          }}>
                             <div className="flex items-center gap-1.5">
-                              <motion.div
-                                initial={{ scale: 0, rotate: -180 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                transition={{ delay: 0.3, duration: 0.5, type: 'spring', stiffness: 300 }}
-                              >
-                                <svg className="w-3.5 h-3.5 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                                </svg>
-                              </motion.div>
-                              <span className="font-semibold text-sm text-[#412434]">Free Cash Applied</span>
+                              <svg className="w-4 h-4" style={{ color: '#D4AF37' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="font-medium text-sm" style={{ color: '#FFD700' }}>Free Cash Applied</span>
                             </div>
-                            <motion.span 
-                              className="font-bold text-transparent bg-clip-text"
-                              style={{
-                                backgroundImage: 'linear-gradient(90deg, #d97706 0%, #733857 100%)'
-                              }}
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: 0.4, duration: 0.3, type: 'spring' }}
-                            >
+                            <span className="font-bold text-sm" style={{ color: '#D4AF37' }}>
                               -{formatCurrency(appliedFreeCash)}
-                            </motion.span>
-                          </motion.div>
+                            </span>
+                          </div>
                         </div>
                       </motion.div>
                       
@@ -1326,21 +1271,13 @@ if (isOrderComplete) {
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-2.5 pt-2.5 border-t border-[#733857]/30">
-                          <motion.div 
-                            className="flex items-center gap-1.5 text-[#8d4466] text-xs"
-                            animate={{ opacity: useFreeCash ? 0 : 1 }}
-                          >
-                            <motion.div
-                              animate={{ rotate: [0, 10, -10, 0] }}
-                              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                            >
-                              <svg className="w-3.5 h-3.5 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </motion.div>
+                        <div className="mt-2 pt-2" style={{ borderTop: '1px solid #D4AF37' }}>
+                          <div className="flex items-center gap-1.5 text-xs" style={{ color: '#5D4037' }}>
+                            <svg className="w-3.5 h-3.5" style={{ color: '#D4AF37' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                             <span>Check the box above to apply your free cash and save money!</span>
-                          </motion.div>
+                          </div>
                         </div>
                       </motion.div>
                     </motion.div>
@@ -1372,11 +1309,16 @@ if (isOrderComplete) {
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between py-3 px-4  transition-all duration-300"
+                    className="flex items-center justify-between py-3 px-4 transition-all duration-300 relative"
+                    style={{
+                      background: 'linear-gradient(90deg, #dec4d7 0%, #f4e6f1 60%, rgba(255,255,255,0.95) 100%)',
+                      clipPath: 'polygon(2% 0, 100% 0, 100% 100%, 0% 100%)',
+                      boxShadow: '0 2px 4px rgba(115, 56, 87, 0.12)'
+                    }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1">
-                        <span className="text-sm font-semibold text-[#412434]">Donate to கற்பிப்போம் பயிலகம்</span>
+                        <span className="text-sm font-semibold text-[#733857]">Donate to கற்பிப்போம் பயிலகம்</span>
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -1389,8 +1331,8 @@ if (isOrderComplete) {
                           </svg>
                         </motion.button>
                       </div>
-                      <div className="flex items-center gap-1   px-2 py-1   hover:border-[#733857]/40 transition-colors">
-                        <span className="text-sm text-[#8d4466] font-medium">₹</span>
+                      <div className="flex items-center gap-1 px-2 py-1 hover:border-[#733857]/40 transition-colors">
+                        <span className="text-sm text-[#733857] font-medium">₹</span>
                         {isEditingDonation ? (
                           <motion.input
                             type="number"
@@ -1470,6 +1412,24 @@ if (isOrderComplete) {
                       </motion.span>
                     </motion.button>
                   </motion.div>
+
+                  {/* Message when amount is selected but not added */}
+                  {!donationAmount && selectedDonation > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-2"
+                    >
+                      <div className="flex items-center gap-2 text-xs p-2 bg-purple-50/50 border-l-2 border-purple-300 rounded">
+                        <svg className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        <span className="text-gray-600 italic">
+                          Optional: Click <strong className="text-purple-600">ADD</strong> if you wish to contribute ₹{selectedDonation} to help students
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
 
                   {/* Dynamic total update with enhanced styling */}
                   {donationAmount > 0 && (
