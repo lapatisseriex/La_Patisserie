@@ -462,7 +462,7 @@ const startServer = async () => {
     // Run every 5 seconds for near-real-time UX without excessive load
     setInterval(broadcastShopStatus, 5000);
 
-    // Health check endpoint
+    // Health check endpoint (simple, for keep-alive pings)
     app.get('/health', (req, res) => {
       const dbStatus = dbConnection.getConnectionStatus();
       res.status(200).json({
@@ -474,6 +474,29 @@ const startServer = async () => {
           memory: process.memoryUsage(),
           pid: process.pid
         }
+      });
+    });
+
+    // API health check endpoint (more detailed, for monitoring)
+    app.get('/api/health', (req, res) => {
+      const dbStatus = dbConnection.getConnectionStatus();
+      const memUsage = process.memoryUsage();
+      const isHealthy = dbStatus.isConnected && memUsage.heapUsed < memUsage.heapTotal * 0.9;
+      
+      res.status(isHealthy ? 200 : 503).json({
+        status: isHealthy ? 'healthy' : 'degraded',
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(process.uptime()),
+        database: {
+          connected: dbStatus.isConnected,
+          status: dbStatus.state
+        },
+        memory: {
+          used: Math.floor(memUsage.heapUsed / 1024 / 1024),
+          total: Math.floor(memUsage.heapTotal / 1024 / 1024),
+          percentage: Math.floor((memUsage.heapUsed / memUsage.heapTotal) * 100)
+        },
+        environment: process.env.NODE_ENV || 'production'
       });
     });
 

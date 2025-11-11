@@ -1,0 +1,40 @@
+name: Keep Backend Alive on Render
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render cold starts
+    - cron: '*/10 * * * *'
+  
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🏓 Ping Backend Health Endpoint
+        run: |
+          echo "Pinging backend at $(date)"
+          
+          # Replace with your actual Render backend URL
+          BACKEND_URL="${{ secrets.BACKEND_URL || 'https://your-backend.onrender.com' }}"
+          
+          # Ping with timeout and retry
+          for i in 1 2 3; do
+            if curl -f -m 15 "$BACKEND_URL/api/health"; then
+              echo "✅ Backend is alive (attempt $i)"
+              exit 0
+            else
+              echo "⚠️ Ping attempt $i failed, retrying..."
+              sleep 5
+            fi
+          done
+          
+          echo "❌ All ping attempts failed"
+          exit 1
+      
+      - name: 📊 Log Response Time
+        if: success()
+        run: |
+          echo "Backend responded successfully at $(date)"
+          echo "Next ping in 10 minutes"

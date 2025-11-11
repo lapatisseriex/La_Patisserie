@@ -5,11 +5,17 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import './styles/network-status.css';
 import App from './App.jsx';
+import { startKeepAlive } from './utils/keepAlive.js';
 
 
 createRoot(document.getElementById('root')).render(
   <App />
 );
+
+// Start keep-alive service to prevent Render cold starts
+if (import.meta.env.PROD) {
+  startKeepAlive();
+}
 
 
 
