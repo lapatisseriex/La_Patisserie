@@ -16,8 +16,8 @@ jobs:
         run: |
           echo "Pinging backend at $(date)"
           
-          # Replace with your actual Render backend URL
-          BACKEND_URL="${{ secrets.BACKEND_URL || 'https://your-backend.onrender.com' }}"
+          # Backend URL - uses secret if set, otherwise uses your Render URL
+          BACKEND_URL="${{ secrets.BACKEND_URL || 'https://la-patisserie-1.onrender.com' }}"
           
           # Ping with timeout and retry
           for i in 1 2 3; do
