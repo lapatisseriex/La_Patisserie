@@ -12,7 +12,7 @@ const formatTime = (ms) => {
   return `${m}:${s}`;
 };
 
-const PhoneVerification = ({ onVerificationSuccess }) => {
+const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
   const { user, updateUser, updateProfile, getCurrentUser } = useAuth();
   
   // Initialize phone state by extracting country code if present
@@ -428,9 +428,9 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
             <select
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
-              disabled={status === 'sending' || status === 'verifying' || user?.phoneVerified}
+              disabled={lockPhone || status === 'sending' || status === 'verifying' || user?.phoneVerified}
               className={`px-2 sm:px-3 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
-                user?.phoneVerified || status === 'sending' || status === 'verifying'
+                lockPhone || user?.phoneVerified || status === 'sending' || status === 'verifying'
                   ? 'border-gray-200 bg-gray-50 text-gray-700' 
                   : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black'
               }`}
@@ -458,9 +458,9 @@ const PhoneVerification = ({ onVerificationSuccess }) => {
                 setPhone(value);
               }}
               placeholder="Enter phone number"
-              disabled={status === 'sending' || status === 'verifying' || user?.phoneVerified}
+              disabled={lockPhone || status === 'sending' || status === 'verifying' || user?.phoneVerified}
               className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
-                user?.phoneVerified || status === 'sending' || status === 'verifying'
+                lockPhone || user?.phoneVerified || status === 'sending' || status === 'verifying'
                   ? 'border-gray-200 bg-gray-50 text-gray-700' 
                   : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black'
               }`}

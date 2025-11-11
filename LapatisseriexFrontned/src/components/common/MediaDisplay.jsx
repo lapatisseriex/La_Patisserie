@@ -37,6 +37,7 @@ const MediaDisplay = ({
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [hideSpinner, setHideSpinner] = useState(false); // prevent perpetual spinner overlay
   const [cacheBuster, setCacheBuster] = useState('');
   const isVideo = type === 'video';
   // Reduce retries for guests to prevent constant loading appearance
@@ -162,7 +163,28 @@ const MediaDisplay = ({
     setError(false);
     setRetryCount(0);
     setCacheBuster('');
+    setHideSpinner(false);
   }, [src, type]);
+
+  // Soft cap the spinner visibility so it never feels stuck
+  useEffect(() => {
+    if (!loading || isVideo) return;
+    setHideSpinner(false);
+    const t = setTimeout(() => setHideSpinner(true), 2500); // hide overlay after 2.5s
+    return () => clearTimeout(t);
+  }, [loading, isVideo]);
+
+  // Hard timeout: if image hasn't loaded after some time and retries exhausted, fall back
+  useEffect(() => {
+    if (!loading || isVideo) return;
+    const timeout = setTimeout(() => {
+      if (loading && (retryCount >= MAX_RETRIES)) {
+        setError(true);
+        setLoading(false);
+      }
+    }, 7000);
+    return () => clearTimeout(timeout);
+  }, [loading, isVideo, retryCount, MAX_RETRIES]);
   
   return (
     <div className={`media-display ${className}`} style={{ aspectRatio }}>
@@ -198,7 +220,7 @@ const MediaDisplay = ({
           style={mediaStyles}
           className="w-full h-full"
           loading={lazy ? "lazy" : "eager"}
-          fetchpriority={lazy ? "auto" : "high"}
+          fetchPriority={lazy ? "auto" : "high"}
           decoding="async"
           onLoad={() => setLoading(false)}
           onError={handleError}
@@ -206,14 +228,14 @@ const MediaDisplay = ({
       )}
 
       {/* Loading/Processing overlay - only show after a delay to avoid flashing */}
-      {loading && !isVideo && retryCount === 0 && !isGuest && (
+      {loading && !isVideo && retryCount === 0 && !isGuest && !hideSpinner && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
           <div className="h-5 w-5 rounded-full border-2 border-[#733857] border-t-transparent animate-spin" aria-label="Loading" />
         </div>
       )}
 
       {/* Show retry indicator - only for authenticated users */}
-      {loading && !isVideo && retryCount > 0 && !isGuest && (
+      {loading && !isVideo && retryCount > 0 && !isGuest && !hideSpinner && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <div className="flex flex-col items-center gap-2">
             <div className="h-6 w-6 rounded-full border-2 border-[#733857] border-t-transparent animate-spin" aria-label="Loading" />

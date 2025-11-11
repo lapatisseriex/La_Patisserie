@@ -32,15 +32,19 @@ import {
   ExternalLink,
   LayoutDashboard,
   GraduationCap,
+  AlertTriangle,
 } from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';
 import OrderCard from '../components/Orders/OrderCard';
+import { Toaster, toast } from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('main');
+  const [profileDirty, setProfileDirty] = useState(false);
+  const [unsavedBlockNotice, setUnsavedBlockNotice] = useState(false); // now used as a modal open flag
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -60,6 +64,13 @@ const ProfilePage = () => {
   const [donationStats, setDonationStats] = useState(null);
   const [donationsLoading, setDonationsLoading] = useState(false);
   const [donationsError, setDonationsError] = useState(null);
+  // Delete account modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [ackPersonal, setAckPersonal] = useState(false);
+  const [ackOrders, setAckOrders] = useState(false);
+  const [ackStreak, setAckStreak] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   
   // Recently viewed context
   const { recentlyViewed, loading: recentlyViewedLoading, fetchRecentlyViewed } = useRecentlyViewed();
@@ -98,7 +109,7 @@ const ProfilePage = () => {
     // Fire-and-forget for instant UI updates
     updateQuantity(productId, currentQuantity + 1).catch(error => {
       console.error('Error increasing quantity:', error);
-      alert('Failed to update quantity. Please try again.');
+      toast.error('Failed to update quantity. Please try again.');
     });
   };
 
@@ -110,7 +121,7 @@ const ProfilePage = () => {
     // Fire-and-forget for instant UI updates
     updateQuantity(productId, currentQuantity - 1).catch(error => {
       console.error('Error decreasing quantity:', error);
-      alert('Failed to update quantity. Please try again.');
+      toast.error('Failed to update quantity. Please try again.');
     });
   };
 
@@ -122,7 +133,7 @@ const ProfilePage = () => {
       await removeFromCart(productId);
     } catch (error) {
       console.error('Error removing from cart:', error);
-      alert('Failed to remove item. Please try again.');
+      toast.error('Failed to remove item. Please try again.');
     }
   };
 
@@ -240,6 +251,62 @@ const ProfilePage = () => {
     }
   }, [user]);
 
+  // Warn on browser/tab close when there are unsaved changes in profile
+  useEffect(() => {
+    const handler = (e) => {
+      if (profileDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [profileDirty]);
+
+  // Block in-app navigation clicks and back/forward while editing profile with unsaved changes (use toast, not alerts)
+  useEffect(() => {
+    if (!(profileDirty && activeTab === 'profile')) return;
+
+    let lastToast = 0;
+    const minGap = 1500;
+    const showUnsavedToast = () => {
+      const now = Date.now();
+      if (now - lastToast > minGap) {
+        lastToast = now;
+  toast('You have unsaved profile changes. Save or cancel before leaving.', { icon: '⚠️' });
+        setUnsavedBlockNotice(true);
+      }
+    };
+
+    const clickHandler = (e) => {
+      const el = e.target.closest ? e.target.closest('a[href]') : null;
+      if (el) {
+        const href = el.getAttribute('href') || '';
+        if (href && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+          e.preventDefault();
+          showUnsavedToast();
+        }
+      }
+    };
+    const popHandler = (e) => {
+      showUnsavedToast();
+      history.pushState(null, '', location.href);
+    };
+
+    document.addEventListener('click', clickHandler, true);
+    window.addEventListener('popstate', popHandler);
+    // Push a state so that back will hit our handler first
+    history.pushState(null, '', location.href);
+
+    return () => {
+      document.removeEventListener('click', clickHandler, true);
+      window.removeEventListener('popstate', popHandler);
+    };
+  }, [profileDirty, activeTab, location.href]);
+
+  // For modal UX, don't auto-close; users dismiss explicitly
+
   useEffect(() => {
     if (user && activeTab === 'transactions') {
       dispatch(fetchUserPayments());
@@ -323,6 +390,7 @@ const ProfilePage = () => {
         >
           Sign In
         </button>
+        <Toaster position="top-center" gutter={8} />
       </div>
     );
   }
@@ -336,6 +404,16 @@ const ProfilePage = () => {
     ...(donationStats?.donationCount > 0 ? [{ id: 'donations', label: 'My Contributions', icon: GraduationCap }] : []),
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
   ];
+
+  // Prevent navigation between tabs if profile has unsaved changes
+  const guardedSetActiveTab = (nextTab) => {
+    if (profileDirty && activeTab === 'profile' && nextTab !== 'profile') {
+  toast('Unsaved profile changes. Save or cancel first.', { icon: '⚠️' });
+      setUnsavedBlockNotice(true);
+      return;
+    }
+    setActiveTab(nextTab);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -364,7 +442,7 @@ const ProfilePage = () => {
               ].map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => guardedSetActiveTab(item.id)}
                   className="relative group overflow-hidden transition-all duration-300 aspect-square"
                   style={{
                     border: '1px solid rgba(115, 56, 87, 0.15)',
@@ -419,7 +497,7 @@ const ProfilePage = () => {
               ].map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => guardedSetActiveTab(item.id)}
                   className="relative group overflow-hidden transition-all duration-300"
                   style={{
                     border: '1px solid rgba(115, 56, 87, 0.15)',
@@ -489,10 +567,140 @@ const ProfilePage = () => {
       case 'profile':
         return (
           <div className="space-y-6">
+            {unsavedBlockNotice && profileDirty && (
+              <div className="fixed inset-0 z-[10000]" role="dialog" aria-modal="true" aria-labelledby="unsaved-modal-title">
+                {/* Backdrop */}
+                <div className="absolute inset-0 bg-black/40" onClick={() => setUnsavedBlockNotice(false)}></div>
+                {/* Modal */}
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border" style={{ borderColor: '#EF4444', background: 'white' }}>
+                    <div className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: '#EF4444' }}>
+                            <AlertTriangle className="h-7 w-7 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 id="unsaved-modal-title" className="text-xl md:text-2xl font-bold mb-1" style={{ color: '#991B1B' }}>Unsaved changes</h3>
+                          <p className="text-sm md:text-base" style={{ color: '#7F1D1D' }}>Save or cancel your edits before leaving this section.</p>
+                        </div>
+                      </div>
+                      <div className="mt-6 flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setUnsavedBlockNotice(false)}
+                          className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-gray-50"
+                          style={{ borderColor: 'rgba(0,0,0,0.1)', color: '#1F2937' }}
+                        >Close</button>
+                      </div>
+                    </div>
+                    <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #fecaca, #ef4444, #fecaca)' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="mb-4">
               <h3 className="text-2xl font-light tracking-wide text-black border-b border-gray-200 pb-3" style={{ letterSpacing: '0.02em' }}>Profile Information</h3>
             </div>
-            <Profile />
+            <Profile onDirtyChange={setProfileDirty} />
+
+            {/* Danger Zone */}
+            <div className="mt-8 border rounded-md bg-white">
+              <div className="p-4 md:p-6">
+                <h4 className="text-lg font-semibold mb-2" style={{ color: '#991B1B' }}>Danger Zone</h4>
+                <p className="text-sm mb-4" style={{ color: 'rgba(153,27,27,0.85)' }}>
+                  Deleting your account is permanent and cannot be undone.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setShowDeleteModal(true); setAckPersonal(false); setAckOrders(false); setAckStreak(false); setDeleteError(''); }}
+                  className="px-5 py-3 font-semibold rounded-md border transition-colors"
+                  style={{ background: '#DC2626', color: 'white', borderColor: '#DC2626' }}
+                  onMouseEnter={(e)=>{ e.currentTarget.style.background='#B91C1C'; e.currentTarget.style.borderColor='#B91C1C'; }}
+                  onMouseLeave={(e)=>{ e.currentTarget.style.background='#DC2626'; e.currentTarget.style.borderColor='#DC2626'; }}
+                >
+                  Delete Account
+                </button>
+              </div>
+            </div>
+
+            {/* Delete Account Modal */}
+            {showDeleteModal && (
+              <div className="fixed inset-0 z-[10010]" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+                <div className="absolute inset-0 bg-black/50" onClick={() => !deleting && setShowDeleteModal(false)}></div>
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <div className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl bg-white">
+                    <div className="p-6 md:p-8">
+                      <h3 id="delete-modal-title" className="text-xl md:text-2xl font-bold mb-2" style={{ color: '#111827' }}>Delete your account?</h3>
+                      <p className="text-sm md:text-base mb-4" style={{ color: '#374151' }}>To proceed, please acknowledge all of the following:</p>
+
+                      <div className="space-y-3 md:space-y-4 mb-4">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input type="checkbox" className="mt-1" checked={ackPersonal} onChange={(e)=>setAckPersonal(e.target.checked)} />
+                          <span className="text-sm md:text-base">I understand my personal data will be deleted.</span>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input type="checkbox" className="mt-1" checked={ackOrders} onChange={(e)=>setAckOrders(e.target.checked)} />
+                          <span className="text-sm md:text-base">I understand my orders and transactions data will be deleted.</span>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input type="checkbox" className="mt-1" checked={ackStreak} onChange={(e)=>setAckStreak(e.target.checked)} />
+                          <span className="text-sm md:text-base">I understand my order streak and offer/coupon codes will be deleted.</span>
+                        </label>
+                      </div>
+
+                      {deleteError && (
+                        <div className="mb-4 text-sm p-3 rounded-md" style={{ background:'#FEF2F2', color:'#991B1B', border:'1px solid #FCA5A5' }}>
+                          {deleteError}
+                        </div>
+                      )}
+
+                      <div className="mt-2 flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          disabled={deleting}
+                          onClick={() => setShowDeleteModal(false)}
+                          className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ borderColor: 'rgba(0,0,0,0.1)', color: '#1F2937' }}
+                        >Cancel</button>
+                        <button
+                          type="button"
+                          disabled={!(ackPersonal && ackOrders && ackStreak) || deleting}
+                          onClick={async ()=>{
+                            setDeleteError('');
+                            setDeleting(true);
+                            try {
+                              const token = localStorage.getItem('authToken');
+                              if (!token) throw new Error('Authentication required');
+                              const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${user.uid}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                              });
+                              if (!res.ok) {
+                                const data = await res.json().catch(()=>({message:'Failed to delete account'}));
+                                throw new Error(data.message || 'Failed to delete account');
+                              }
+                              toast.success('Your account and related data were deleted.');
+                              await logout();
+                              navigate('/');
+                            } catch (err) {
+                              console.error('Delete account error:', err);
+                              setDeleteError(err.message || 'Failed to delete account. Please try again.');
+                            } finally {
+                              setDeleting(false);
+                            }
+                          }}
+                          className="px-5 py-2.5 text-sm font-semibold rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ background: '#DC2626', color: 'white' }}
+                        >{deleting ? 'Deleting…' : 'Delete Account'}</button>
+                      </div>
+                    </div>
+                    <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #fecaca, #ef4444, #fecaca)' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       
@@ -1743,7 +1951,7 @@ const ProfilePage = () => {
         <div className="bg-white border-b border-gray-200 py-3 md:py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <button 
-              onClick={() => setActiveTab('main')}
+              onClick={() => guardedSetActiveTab('main')}
               className="flex items-center gap-2 text-gray-500 hover:text-[#733857] transition-colors duration-200"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -1783,7 +1991,7 @@ const ProfilePage = () => {
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => guardedSetActiveTab(tab.id)}
                         className="w-full group relative overflow-hidden transition-all duration-300"
                       >
                         <div className="flex items-center gap-3 px-4 py-3 relative z-10 transition-all duration-300" style={{
@@ -1936,7 +2144,7 @@ const ProfilePage = () => {
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => guardedSetActiveTab(tab.id)}
                         className="w-full group relative overflow-hidden transition-all duration-300"
                       >
                         <div className="flex items-center gap-3 px-4 py-3 relative z-10 transition-all duration-300" style={{
@@ -2066,7 +2274,7 @@ const ProfilePage = () => {
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => guardedSetActiveTab(tab.id)}
                       className="relative group overflow-hidden transition-all duration-300"
                       style={{
                         border: '1px solid rgba(115, 56, 87, 0.2)',
@@ -2141,6 +2349,11 @@ const ProfilePage = () => {
           </div>
         )}
       </div>
+      {/* Page-level toaster for consistent notifications */}
+      <Toaster position="top-center" gutter={10} toastOptions={{
+        style: { fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: '0.9rem' },
+        duration: 4000
+      }} />
     </div>
   );
 };

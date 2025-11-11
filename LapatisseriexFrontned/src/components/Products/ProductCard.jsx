@@ -18,7 +18,7 @@ import OfferBadge from '../common/OfferBadge';
 import BlobButton from '../common/BlobButton';
 import { addFreeProductToCart } from '../../services/freeProductService';
 
-const ProductCard = ({ product, className = '', compact = false, featured = false, hideCartButton = false, isSelectingFreeProduct = false, imagePriority = false }) => {
+const ProductCard = React.memo(({ product, className = '', compact = false, featured = false, hideCartButton = false, isSelectingFreeProduct = false, imagePriority = false }) => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
   const [videoHasEnded, setVideoHasEnded] = useState(false);
@@ -831,7 +831,7 @@ const ProductCard = ({ product, className = '', compact = false, featured = fals
 
     </div>
   );
-};
+});
 
 ProductCard.propTypes = {
   product: PropTypes.shape({

@@ -477,27 +477,62 @@ export const deleteUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
   
+  // Cascade delete related data (orders, notifications, favorites, payments, etc.)
+  const session = await User.startSession();
+  session.startTransaction();
   try {
-    // Delete from Firebase Auth
-    await firebaseAdmin.auth().deleteUser(userId);
-    
-    // Delete from MongoDB
-    await User.deleteOne({ uid: userId });
-    
+    const mongoUser = await User.findOne({ uid: userId }).session(session);
+    const userObjectId = mongoUser?._id;
+
+    // Delete related collections where userId or uid referenced
+    const models = {};
+    try { models.Order = (await import('../models/orderModel.js')).default; } catch {}
+    try { models.Notification = (await import('../models/notificationModel.js')).default; } catch {}
+    try { models.Favorite = (await import('../models/favoriteModel.js')).default; } catch {}
+    try { models.Payment = (await import('../models/paymentModel.js')).default; } catch {}
+    try { models.LoyaltyProgram = (await import('../models/loyaltyProgramModel.js')).default; } catch {}
+    try { models.Newsletter = (await import('../models/newsletterModel.js')).default; } catch {}
+    try { models.Donation = (await import('../models/donationModel.js')).default; } catch {}
+    try { models.NewCart = (await import('../models/newCartModel.js')).default; } catch {}
+    // Add others as needed
+
+    const deletionSummary = {};
+    for (const [name, Model] of Object.entries(models)) {
+      if (!Model) continue;
+      let filter = {};
+      // Attempt common field names
+      if (Model.schema.paths.userId) filter.userId = userObjectId;
+      else if (Model.schema.paths.uid) filter.uid = userId;
+      else if (Model.schema.paths.user) filter.user = userObjectId;
+      else continue; // Skip if no direct user reference
+      const result = await Model.deleteMany(filter).session(session);
+      deletionSummary[name] = result.deletedCount;
+    }
+
+    // Delete user document
+    await User.deleteOne({ uid: userId }).session(session);
+
+    // Delete from Firebase Auth (after DB cleanup for consistency)
+    try {
+      await firebaseAdmin.auth().deleteUser(userId);
+    } catch (fbErr) {
+      console.error('Firebase user deletion error (continuing):', fbErr.message);
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
     res.status(200).json({
       success: true,
-      message: 'User deleted successfully from both Firebase and database'
+      message: 'User and related data deleted successfully',
+      deleted: deletionSummary
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    await session.abortTransaction();
+    session.endSession();
+    console.error('Error cascading delete:', error);
     res.status(500);
-    
-    // Provide specific error message based on error type
-    if (error.code === 'auth/user-not-found') {
-      throw new Error('User not found in Firebase Auth but removed from database');
-    } else {
-      throw new Error(`Failed to delete user: ${error.message}`);
-    }
+    throw new Error(`Failed to fully delete user: ${error.message}`);
   }
 });
 

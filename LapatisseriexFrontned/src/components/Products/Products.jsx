@@ -171,73 +171,57 @@ const Products = () => {
     }
   }, [reduxProductsCache, filterProductsForFreeSelection]);
 
-  // Measure actual header height dynamically
+  // Measure actual header height dynamically (use ResizeObserver for stability)
   useEffect(() => {
     const measureHeaderHeight = () => {
       const header = document.querySelector('header') || document.querySelector('[role="banner"]');
       if (header) {
         const newHeight = header.offsetHeight;
-        
-        // If height is changing, show transition overlay
         if (newHeight !== headerHeight) {
           setIsHeaderTransitioning(true);
-          
-          // Hide overlay after transition completes
-          setTimeout(() => {
-            setIsHeaderTransitioning(false);
-          }, 300); // Match typical CSS transition duration
+          setTimeout(() => setIsHeaderTransitioning(false), 300);
         }
-        
         setHeaderHeight(newHeight);
-      } else {
-        // Fallback to default values
-        setHeaderHeight(window.innerWidth < 768 ? 75 : 130);
+        return;
       }
+      setHeaderHeight(window.innerWidth < 768 ? 75 : 130);
     };
 
-    // Measure on mount
     measureHeaderHeight();
 
-    // Re-measure on window resize
-    const handleResize = () => {
-      measureHeaderHeight();
-    };
-
-    window.addEventListener('resize', handleResize);
-    
-    // Also listen for any potential header changes (location bar toggle)
-    const observer = new MutationObserver(() => {
-      // Use setTimeout to ensure DOM has updated
-      setTimeout(measureHeaderHeight, 10);
-    });
-    
-    const header = document.querySelector('header') || document.querySelector('[role="banner"]');
-    if (header) {
-      observer.observe(header, { childList: true, subtree: true, attributes: true });
-    }
-
+    const resizeObserver = new ResizeObserver(() => requestAnimationFrame(measureHeaderHeight));
+    const headerEl = document.querySelector('header') || document.querySelector('[role="banner"]');
+    if (headerEl) resizeObserver.observe(headerEl);
+    window.addEventListener('resize', measureHeaderHeight);
     return () => {
-      window.removeEventListener('resize', handleResize);
-      observer.disconnect();
+      window.removeEventListener('resize', measureHeaderHeight);
+      resizeObserver.disconnect();
     };
   }, [headerHeight]);
 
-  // Measure category bar height dynamically to avoid extra space
+  // Measure category bar height dynamically (no polling) using ResizeObserver for better performance
   useEffect(() => {
     const measure = () => {
       const textBar = textBarRef.current;
-  const swiperBar = swiperBarRef.current;
-      let h1 = 0;
-      let h2 = 0;
-      if (textBar) h1 = textBar.getBoundingClientRect().height;
-      if (swiperBar) h2 = swiperBar.getBoundingClientRect().height;
+      const swiperBar = swiperBarRef.current;
+      let h1 = textBar ? textBar.getBoundingClientRect().height : 0;
+      let h2 = swiperBar ? swiperBar.getBoundingClientRect().height : 0;
       const newH = Math.max(h1, h2) || 48;
       if (newH !== categoryBarHeight) setCategoryBarHeight(newH);
     };
     measure();
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Batch with rAF to avoid layout thrash on rapid changes
+      requestAnimationFrame(measure);
+    });
+    if (textBarRef.current) resizeObserver.observe(textBarRef.current);
+    if (swiperBarRef.current) resizeObserver.observe(swiperBarRef.current);
     window.addEventListener('resize', measure);
-    const id = setInterval(measure, 500); // guard for late font/layout
-    return () => { window.removeEventListener('resize', measure); clearInterval(id); };
+    return () => {
+      window.removeEventListener('resize', measure);
+      resizeObserver.disconnect();
+    };
   }, [showTextCategoryBar, categoryBarHeight]);
 
   // Initialize Intersection Observer with lazy loading
@@ -275,7 +259,9 @@ const Products = () => {
       if (mostVisibleEntry) {
         // Extract category ID from element id
         const categoryId = mostVisibleEntry.target.id.replace('category-section-', '');
-        setActiveViewCategory(categoryId === 'all' ? null : categoryId);
+        // Avoid redundant state updates to reduce re-renders
+        const next = categoryId === 'all' ? null : categoryId;
+        setActiveViewCategory((prev) => (prev === next ? prev : next));
       }
     }, options);
     
@@ -449,7 +435,8 @@ const Products = () => {
             if (selectedCategoryRef) {
               isScrollingRef.current = true;
               const elementPosition = selectedCategoryRef.getBoundingClientRect().top + window.pageYOffset;
-              const offsetPosition = elementPosition - headerHeight - 20;
+              const stickyOffset = (headerHeight || 0) + (categoryBarHeight || 0) + 8;
+              const offsetPosition = Math.max(0, elementPosition - stickyOffset);
               window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
               setTimeout(() => { isScrollingRef.current = false; }, 1000);
             }
@@ -492,9 +479,8 @@ const Products = () => {
     // Set scrolling flag to prevent observer from firing
     isScrollingRef.current = true;
     
-    // Only auto-scroll on larger screens to avoid interfering with mobile touch scrolling
-    if (window.innerWidth >= 768 && !userInteractingRef.current) {
-      // Scroll to the selected category section
+    // Auto-scroll to the selected category on all screens, accounting for sticky headers
+    if (!userInteractingRef.current) {
       setTimeout(() => {
         const targetRef = categoryId 
           ? categoryRefs.current[categoryId]
@@ -502,7 +488,8 @@ const Products = () => {
           
         if (targetRef) {
           const elementPosition = targetRef.getBoundingClientRect().top + window.pageYOffset;
-          const offsetPosition = elementPosition - headerHeight - 20;
+          const stickyOffset = (headerHeight || 0) + (categoryBarHeight || 0) + 8; // small breathing room
+          const offsetPosition = Math.max(0, elementPosition - stickyOffset);
           
           window.scrollTo({
             top: offsetPosition,
@@ -514,11 +501,6 @@ const Products = () => {
         setTimeout(() => {
           isScrollingRef.current = false;
         }, 1000);
-      }, 100);
-    } else {
-      // On mobile, just reset the scrolling flag without auto-scrolling
-      setTimeout(() => {
-        isScrollingRef.current = false;
       }, 100);
     }
   };

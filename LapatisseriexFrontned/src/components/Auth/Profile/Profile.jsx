@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import EmailVerification from './EmailVerification';
 import PhoneVerification from './PhoneVerification';
+import { toast } from 'react-hot-toast';
 
 // A portal-based overlay that renders at the document.body level so it always sits on top
 const LoadingOverlayPortal = ({ show }) => {
@@ -132,7 +133,7 @@ const LoadingOverlayPortal = ({ show }) => {
   );
 };
 
-const Profile = () => {
+const Profile = ({ onDirtyChange }) => {
   const { user, updateProfile, authError, loading, isNewUser, updateUser, getCurrentUser } = useAuth();
   const { locations, loading: locationsLoading, fetchLocations } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
@@ -140,9 +141,11 @@ const Profile = () => {
   const currentUser = useSelector(state => state.auth.user);
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(true);
   const [isSaving, setIsSaving] = useState(false); // Local saving state for more control
   const savingRef = useRef(false); // Ref to track saving state across re-renders
+  const baselineRef = useRef(null); // Baseline snapshot for dirty tracking
+  const [isDirty, setIsDirty] = useState(false);
   
   // Common CSS classes for form fields
   const inputClasses = `w-full pl-10 pr-4 py-3 border border-gray-300 rounded-none 
@@ -336,70 +339,16 @@ const Profile = () => {
   // Format today's date for max value in date inputs
   const today = new Date().toISOString().split('T')[0];
   
-  // Restore edit mode state from localStorage if available
+  // Always editable; no need to restore edit mode from localStorage
   useEffect(() => {
-    const savedEditMode = localStorage.getItem('profileEditMode');
-    if (savedEditMode === 'true') {
-      setIsEditMode(true);
-      
-      // If in edit mode, try to recover form data from localStorage
-      try {
-        const savedFormData = localStorage.getItem('profileFormData');
-        if (savedFormData) {
-          const parsedFormData = JSON.parse(savedFormData);
-          console.log('Recovering form data after refresh:', parsedFormData);
-          
-          // First get cached user data for fallback
-          let cachedUserData = {};
-          try {
-            const cachedUser = localStorage.getItem('cachedUser');
-            if (cachedUser) {
-              cachedUserData = JSON.parse(cachedUser);
-            }
-          } catch (err) {
-            console.error('Error parsing cached user:', err);
-          }
-          
-          // Make sure email is always available
-          if (!parsedFormData.email) {
-            if (cachedUserData.email) {
-              parsedFormData.email = cachedUserData.email;
-            } else if (user?.email) {
-              parsedFormData.email = user.email;
-            }
-            console.log('Email missing in saved form data, using fallback email:', parsedFormData.email);
-          }
-          
-          // Make sure all date fields are correctly formatted
-          if (parsedFormData.dob && !(parsedFormData.dob instanceof String) && typeof parsedFormData.dob !== 'string') {
-            parsedFormData.dob = formatDate(parsedFormData.dob);
-          }
-          
-          if (parsedFormData.anniversary && !(parsedFormData.anniversary instanceof String) && typeof parsedFormData.anniversary !== 'string') {
-            parsedFormData.anniversary = formatDate(parsedFormData.anniversary);
-          }
-          
-          // Use our helper function for consistent form data recovery
-          const mergedUserData = {
-            ...user,
-            ...cachedUserData,
-            location: typeof user?.location === 'object' ? user?.location?._id || '' : user?.location || '',
-            hostel: typeof user?.hostel === 'object' ? user?.hostel?._id || '' : user?.hostel || '',
-          };
-          
-          const restoredForm = createInitialFormData(mergedUserData, parsedFormData);
-          console.log('Restored form data with anniversary:', restoredForm);
-          setFormData(restoredForm);
-          
-          // Re-save the complete form data to localStorage to ensure consistency
-          const dataToCache = {
-            ...restoredForm
-          };
-          localStorage.setItem('profileFormData', JSON.stringify(dataToCache));
-        }
-      } catch (error) {
-        console.error('Error recovering form data:', error);
+    try {
+      const savedFormData = localStorage.getItem('profileFormData');
+      if (savedFormData) {
+        const parsedFormData = JSON.parse(savedFormData);
+        setFormData(prev => ({ ...prev, ...parsedFormData }));
       }
+    } catch (error) {
+      console.error('Error recovering form data:', error);
     }
   }, []);
 
@@ -437,30 +386,13 @@ const Profile = () => {
     }
   }, [formData, isEditMode]);
 
-  // Cleanup effect to reset edit mode when component unmounts
+  // Cleanup effect on unmount (just clear persisted form snapshot)
   useEffect(() => {
     return () => {
-      // Reset edit mode in localStorage when component unmounts
-      localStorage.removeItem('profileEditMode');
       localStorage.removeItem('profileFormData');
-      console.log('Profile component cleanup: Reset edit mode and cleared form data');
+      console.log('Profile component cleanup: cleared persisted form data');
     };
   }, []);
-
-  // Effect to reset edit mode when navigating away from profile section
-  useEffect(() => {
-    const currentPath = routerLocation.pathname;
-    
-    // Check if user navigated away from profile-related pages
-    if (!currentPath.includes('/profile')) {
-      if (isEditMode) {
-        console.log('User navigated away from profile, resetting edit mode');
-        setIsEditMode(false);
-        localStorage.removeItem('profileEditMode');
-        localStorage.removeItem('profileFormData');
-      }
-    }
-  }, [routerLocation.pathname, isEditMode]);
   
   // useEffect to handle user state changes (like phone verification)
   useEffect(() => {
@@ -556,6 +488,18 @@ const Profile = () => {
       
       // Update form data state
       setFormData(initialFormData);
+      // Initialize dirty baseline
+      baselineRef.current = {
+        name: initialFormData.name || '',
+        gender: initialFormData.gender || '',
+        dob: initialFormData.dob || '',
+        anniversary: initialFormData.anniversary || '',
+        country: initialFormData.country || 'India',
+        location: initialFormData.location || '',
+        hostel: initialFormData.hostel || ''
+      };
+      setIsDirty(false);
+      if (onDirtyChange) onDirtyChange(false);
       
       // Save the complete form data to localStorage for refresh protection
       const dataToCache = {
@@ -602,15 +546,32 @@ const Profile = () => {
       }));
     }
     
-    // If we're in edit mode, immediately update localStorage for persistence
-    // This ensures even partial changes are saved during editing
-    if (isEditMode && (name === 'anniversary' || name === 'dob')) {
+    // Persist partial changes for dates
+    if (name === 'anniversary' || name === 'dob') {
       const currentData = {
         ...formData,
         [name]: processedValue
       };
       localStorage.setItem('profileFormData', JSON.stringify(currentData));
       console.log(`Updated ${name} in localStorage:`, processedValue);
+    }
+
+    // Dirty tracking vs baseline
+    if (baselineRef.current) {
+      const comparable = {
+        name: name === 'name' ? processedValue : formData.name,
+        gender: name === 'gender' ? processedValue : formData.gender,
+        dob: name === 'dob' ? processedValue : formData.dob,
+        anniversary: name === 'anniversary' ? processedValue : formData.anniversary,
+        country: name === 'country' ? processedValue : formData.country,
+        location: name === 'location' ? processedValue : formData.location,
+        hostel: name === 'hostel' ? processedValue : formData.hostel,
+      };
+      const dirtyNow = JSON.stringify(comparable) !== JSON.stringify(baselineRef.current);
+      if (dirtyNow !== isDirty) {
+        setIsDirty(dirtyNow);
+        if (onDirtyChange) onDirtyChange(dirtyNow);
+      }
     }
   };
 
@@ -713,9 +674,19 @@ const Profile = () => {
         }, 400);
         // Wait a moment to show success, then exit edit mode and scroll to bottom
         setTimeout(() => {
-          setIsEditMode(false);
-          localStorage.removeItem('profileEditMode');
-        }, 2500); // Increased to 2.5 seconds to show success message longer
+          // Update baseline after successful save for dirty tracking
+          baselineRef.current = {
+            name: formData.name || '',
+            gender: formData.gender || '',
+            dob: typeof formData.dob === 'string' ? formData.dob : formatDate(formData.dob),
+            anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary),
+            country: formData.country || 'India',
+            location: formData.location || '',
+            hostel: formData.hostel || ''
+          };
+          setIsDirty(false);
+          if (onDirtyChange) onDirtyChange(false);
+        }, 2500); // Keep success message visible before clearing dirty state
 
         // Save user data to localStorage
         const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
@@ -804,89 +775,35 @@ const Profile = () => {
   };
 
   const handleCancel = () => {
-    if (user) {
-      // IMPORTANT: Instead of resetting to user values completely, we need to preserve
-      // certain fields like email and anniversary from the current form data
-      
-      // Get the current form data values we want to preserve
-  const currentEmail = user.email || '';
-      const currentAnniversary = formData.anniversary || formatDate(user.anniversary) || '';
-  // Email verification flow removed; preserve existing form values only
-      
-      // Log current values to verify we're preserving them
-      console.log('Preserving current values on cancel:', {
-  // email removed from UI; do not bind to form state
-        anniversary: currentAnniversary,
-  // email verification removed
-      });
-      
-      // Create form data while keeping the existing values
+    // Revert form to original baseline snapshot if available
+    if (baselineRef.current) {
+      setFormData({ ...baselineRef.current });
+    } else if (user) {
+      // Fallback: reconstruct from user
       setFormData({
         name: user.name || '',
         phone: user.phone || '',
-        email: currentEmail, // Keep the existing email
+        email: user.email || '',
         dob: formatDate(user.dob) || '',
         gender: user.gender || '',
-        anniversary: currentAnniversary, // Keep the existing anniversary
+        anniversary: formatDate(user.anniversary) || '',
         country: user.country || 'India',
         location: typeof user.location === 'object' ? user.location?._id || '' : user.location || '',
         hostel: typeof user.hostel === 'object' ? user.hostel?._id || '' : user.hostel || ''
       });
-      
-  // email verification removed
     }
-    
-    setIsEditMode(false);
-    localStorage.removeItem('profileEditMode');
-    
-  // email verification removed
-    
-    // Update the cached user data to include preserved values
-    if (user) {
-      const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
-      
-  // email verification removed
-      
-      // Keep email and anniversary from the form data
-  // do not modify cached email here
-      cachedUser.anniversary = formData.anniversary || user.anniversary || '';
-      
-      // Keep other fields
-      if (user.dob) {
-        cachedUser.dob = user.dob;
-      }
-      
-      localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
-      console.log('Updated cached user data with preserved email and anniversary:', cachedUser);
-    }
-    
-    // Clear error and success messages
+    // Reset dirty state and notify parent so buttons disappear
+    setIsDirty(false);
+    if (onDirtyChange) onDirtyChange(false);
     setLocalError('');
     setSuccessMessage('');
+    toast('Changes discarded.', {
+      icon: '↩️',
+      duration: 3000
+    });
   };
 
-  const handleEditProfile = () => {
-    setIsEditMode(true);
-    localStorage.setItem('profileEditMode', 'true');
-    setLocalError('');
-    setSuccessMessage('');
-    
-    // email verification removed
-    
-    // Ensure all date fields are properly formatted strings before saving
-    const formDataToSave = {
-      ...formData,
-      // Explicitly format date fields to ensure consistency
-      dob: typeof formData.dob === 'string' ? formData.dob : formatDate(formData.dob),
-  anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary)
-    };
-    
-    // Always save the complete current form data to localStorage for consistency
-    // This ensures we have a backup of all fields even after multiple refreshes
-    localStorage.setItem('profileFormData', JSON.stringify(formDataToSave));
-    
-    console.log('Entering edit mode with complete form data:', formDataToSave);
-  };
+  const handleEditProfile = () => { /* no-op: always editable */ };
 
 
 
@@ -930,7 +847,7 @@ const Profile = () => {
                 <div className="absolute -bottom-2 -right-2 w-16 h-16 border-r-2 border-b-2 opacity-20 transition-opacity duration-300 group-hover:opacity-40" style={{borderColor: '#733857'}}></div>
                 
                 <div className="relative">
-                  <ProfileImageUpload isEditMode={isEditMode} />
+                  <ProfileImageUpload isEditMode={true} />
                 </div>
               </div>
             </div>
@@ -1071,33 +988,37 @@ const Profile = () => {
           </div>
         )}
         
-        {/* Error Message - Fixed Position at Top */}
+        {/* Error Message - High-Visibility Banner */}
         {localError && !isSaving && (
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998] w-full max-w-md mx-4 animate-slideDown">
-            <div className="bg-white border-2 border-red-500 rounded-lg shadow-2xl p-6 transform transition-all duration-300">
-              <div className="flex items-start space-x-4">
-                {/* Error Icon */}
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
-                    <X className="h-7 w-7 text-white" />
+          <div className="fixed top-0 left-0 right-0 z-[9998] px-4 sm:px-6 lg:px-8 py-4 shadow-lg animate-slideDown">
+            <div className="max-w-3xl mx-auto">
+              <div className="relative overflow-hidden rounded-xl border-2 bg-gradient-to-r from-red-600 via-red-500 to-red-600">
+                {/* Decorative sheen */}
+                <div className="absolute inset-0 opacity-20" style={{background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), transparent 70%)'}}></div>
+                <div className="relative flex items-start gap-4 p-5 sm:p-6">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center ring-4 ring-white/30 bg-white/10 backdrop-blur-sm">
+                      <X className="h-8 w-8 text-white" strokeWidth={2.5} />
+                    </div>
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl sm:text-2xl font-bold tracking-wide mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: '0.03em', color: '#ffffff'}}>
+                      Something went wrong
+                    </h3>
+                    <p className="text-sm sm:text-base font-medium leading-relaxed" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: 'rgba(255,255,255,0.92)'}}>
+                      {localError}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setLocalError('')}
+                    className="ml-2 flex-shrink-0 text-white/80 hover:text-white transition-colors"
+                    aria-label="Dismiss error"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
                 </div>
-                {/* Error Text */}
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                    Error
-                  </h3>
-                  <p className="text-gray-600 text-sm" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
-                    {localError}
-                  </p>
-                </div>
-                {/* Close Button */}
-                <button
-                  onClick={() => setLocalError('')}
-                  className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                {/* Bottom accent bar */}
+                <div className="h-1 w-full bg-gradient-to-r from-red-300 via-white/60 to-red-300"></div>
               </div>
             </div>
           </div>
@@ -1154,13 +1075,9 @@ const Profile = () => {
                   onChange={handleChange}
                   placeholder="Enter your full name"
                   required
-                  readOnly={!isEditMode}
+                  readOnly={false}
                   disabled={isSaving}
-                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
-                    isEditMode 
-                      ? 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md' 
-                      : 'border-gray-200 bg-gray-50'
-                  } ${!isEditMode ? 'text-gray-700' : 'text-black'}`}
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black`}
                   style={{
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                     borderRadius: '4px'
@@ -1184,12 +1101,8 @@ const Profile = () => {
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  disabled={!isEditMode || isSaving}
-                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none appearance-none ${
-                    isEditMode 
-                      ? 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md' 
-                      : 'border-gray-200 bg-gray-50'
-                  } ${!isEditMode ? 'text-gray-700' : 'text-black'}`}
+                  disabled={isSaving}
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none appearance-none border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black`}
                   style={{
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                     borderRadius: '4px'
@@ -1240,19 +1153,18 @@ const Profile = () => {
             background: 'linear-gradient(to bottom, #FEFEFE 0%, #FCFCFC 100%)'
           }}>
             {/* Email verification section */}
-            <EmailVerification />
+            <EmailVerification lockEmail={true} />
             
             {/* Phone verification section */}
             <PhoneVerification 
               key={`phone-${user?.phoneVerified}-${user?.phoneVerifiedAt}`}
+              lockPhone={true}
               onVerificationSuccess={() => {
                 console.log('Phone verified and saved automatically - staying in view mode');
                 // Don't enter edit mode - phone is already saved
                 setLocalError('');
                 setSuccessMessage('Phone verified and saved successfully!');
-                // Keep edit mode OFF so user doesn't see Save/Cancel buttons
-                setIsEditMode(false);
-                localStorage.removeItem('profileEditMode');
+                // Always-edit mode: do not toggle edit mode
               }}
             />
           </div>
@@ -1529,11 +1441,14 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Action Buttons - Elegant Fixed Bar */}
-        {isEditMode && (
-          <div className="profile-save-buttons sticky top-0 z-[60] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-white border-b" style={{
-            borderColor: 'rgba(115, 56, 87, 0.12)',
-            boxShadow: '0 4px 16px rgba(115, 56, 87, 0.08)'
+  {/* Spacer to avoid content being hidden by fixed bar */}
+  {isDirty && (<div className="h-24" />)}
+
+  {/* Action Buttons - Fixed Bottom Bar (only when form is dirty) */}
+        {isDirty && (
+          <div className="profile-save-buttons fixed bottom-0 left-0 right-0 z-[200] px-4 sm:px-6 lg:px-8 py-3 sm:py-4 bg-white/95 backdrop-blur border-t" style={{
+            borderColor: 'rgba(115, 56, 87, 0.18)',
+            boxShadow: '0 -4px 16px rgba(115, 56, 87, 0.12)'
           }}>
             <div className="flex items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto">
               <button

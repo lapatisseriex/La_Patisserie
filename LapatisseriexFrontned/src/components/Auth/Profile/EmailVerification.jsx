@@ -10,7 +10,7 @@ const formatTime = (ms) => {
   return `${m}:${s}`;
 };
 
-const EmailVerification = () => {
+const EmailVerification = ({ lockEmail = false }) => {
   const { user, updateUser } = useAuth();
   const [email, setEmail] = useState(user?.email || '');
   const [otp, setOtp] = useState('');
@@ -167,9 +167,9 @@ const EmailVerification = () => {
                   value={email}
                   onChange={(e)=>setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  disabled={status==='sending' || status==='verifying'}
+                  disabled={lockEmail || status==='sending' || status==='verifying'}
                   className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none ${
-                    status === 'sending' || status === 'verifying'
+                    lockEmail || status === 'sending' || status === 'verifying'
                       ? 'border-gray-200 bg-gray-50 opacity-60' 
                       : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md'
                   }`}
@@ -310,28 +310,30 @@ const EmailVerification = () => {
                   <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} /> 
                   <span className="font-semibold">Email verification completed successfully!</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={()=>{ setStatus('idle'); setMessage(''); setOtp(''); setExpiresAt(null);} }
-                  className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border text-xs sm:text-sm font-medium transition-all duration-300"
-                  style={{ 
-                    borderColor: 'rgba(16, 185, 129, 0.3)', 
-                    color: '#166534',
-                    borderRadius: '4px',
-                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(220, 252, 231, 0.5)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <RefreshCcw className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> 
-                  Verify another email
-                </button>
+                {!lockEmail && (
+                  <button
+                    type="button"
+                    onClick={()=>{ setStatus('idle'); setMessage(''); setOtp(''); setExpiresAt(null);} }
+                    className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border text-xs sm:text-sm font-medium transition-all duration-300"
+                    style={{ 
+                      borderColor: 'rgba(16, 185, 129, 0.3)', 
+                      color: '#166534',
+                      borderRadius: '4px',
+                      fontFamily: 'system-ui, -apple-system, sans-serif'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(220, 252, 231, 0.5)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    <RefreshCcw className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> 
+                    Verify another email
+                  </button>
+                )}
               </div>
             )}
           </>
