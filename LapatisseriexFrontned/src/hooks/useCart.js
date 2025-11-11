@@ -177,14 +177,15 @@ export const useCart = () => {
         return total + (item.quantity || 0);
       }, 0);
       
-      console.log('🛒 Cart Count Calculation:', {
-        actualCount,
-        backendCount: backendCartCount,
-        cartItems: cartItems.map(item => ({ 
-          name: item?.name || 'Unknown', 
-          quantity: item?.quantity || 0 
-        }))
-      });
+      // Removed debug logging to reduce console noise
+      // console.log('🛒 Cart Count Calculation:', {
+      //   actualCount,
+      //   backendCount: backendCartCount,
+      //   cartItems: cartItems.map(item => ({ 
+      //     name: item?.name || 'Unknown', 
+      //     quantity: item?.quantity || 0 
+      //   }))
+      // });
       
       return actualCount;
     } catch (error) {

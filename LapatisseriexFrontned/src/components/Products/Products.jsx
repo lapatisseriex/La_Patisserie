@@ -16,6 +16,8 @@ const Products = () => {
   const dispatch = useDispatch();
   
   const reduxCartItems = useSelector(selectCartItems);
+  // Get Redux products cache to prevent loading state on page refresh
+  const reduxProductsCache = useSelector((state) => state.products.listsByKey || {});
   const { categories, fetchCategories, loading: loadingCategories, error: categoryError } = useCategory();
   const { cartItems, refreshCart } = useCart();
   const { user } = useAuth();
@@ -110,11 +112,8 @@ const Products = () => {
       return;
     }
 
-    // Set loading state
-    setProductsByCategory(prev => ({
-      ...prev,
-      [categoryId]: null // null indicates loading
-    }));
+    // Don't set to null (loading state) - let fallback from allProducts show instead
+    // This prevents loading skeleton flicker since renderProductRow will use allProducts as fallback
 
     try {
       // Use Redux action to fetch products
@@ -140,6 +139,37 @@ const Products = () => {
       }));
     }
   }, [dispatch, filterProductsForFreeSelection]);
+
+  // Initialize productsByCategory from Redux cache on mount (prevents loading state on refresh)
+  useEffect(() => {
+    if (!initialLoadRef.current && reduxProductsCache && Object.keys(reduxProductsCache).length > 0) {
+      const cachedProducts = {};
+      let hasAnyCache = false;
+      
+      // Check if we have 'allProducts' cache
+      if (reduxProductsCache['allProducts'] && reduxProductsCache['allProducts'].length > 0) {
+        setAllProducts(filterProductsForFreeSelection(reduxProductsCache['allProducts']));
+        hasAnyCache = true;
+      }
+      
+      // Check for category-specific caches
+      Object.keys(reduxProductsCache).forEach(key => {
+        if (key.startsWith('category_')) {
+          const categoryId = key.replace('category_', '');
+          const products = reduxProductsCache[key];
+          if (products && products.length > 0) {
+            cachedProducts[categoryId] = filterProductsForFreeSelection(products);
+            hasAnyCache = true;
+          }
+        }
+      });
+      
+      if (hasAnyCache && Object.keys(cachedProducts).length > 0) {
+        setProductsByCategory(cachedProducts);
+        console.log('✅ Initialized from Redux cache:', Object.keys(cachedProducts));
+      }
+    }
+  }, [reduxProductsCache, filterProductsForFreeSelection]);
 
   // Measure actual header height dynamically
   useEffect(() => {
@@ -262,16 +292,13 @@ const Products = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const categoryId = params.get('category');
-    console.log('URL changed, categoryId:', categoryId, 'previousCategory:', previousCategoryRef.current);
     
     // Check if this is a category change (different from previous selection)
     const isCategoryChange = categoryId && categoryId !== previousCategoryRef.current;
-    console.log('Is category change:', isCategoryChange, 'from:', previousCategoryRef.current, 'to:', categoryId);
     
     if (categoryId) {
       // If this is category change, show non-sticky for 10 seconds
       if (isCategoryChange) {
-        console.log('Setting initial non-sticky for 10 seconds');
         
     // Only auto-scroll on larger screens or if coming from a different page
         // Avoid aggressive auto-scroll on mobile that interferes with user scrolling
@@ -292,7 +319,6 @@ const Products = () => {
         
         // After 10 seconds, make it sticky
         stickyTimeoutRef.current = setTimeout(() => {
-          console.log('10 seconds passed, making sticky again');
           setShowInitialNonSticky(false);
           setIsCategoryStickyActive(true);
         }, 10000);
@@ -337,7 +363,8 @@ const Products = () => {
         }
       });
       
-      console.log('Observers set up for categories:', Object.keys(categoryRefs.current));
+      // Removed debug logging to reduce console noise
+      // console.log('Observers set up for categories:', Object.keys(categoryRefs.current));
     }
   }, [productsByCategory, allProducts]);
 
@@ -368,8 +395,36 @@ const Products = () => {
         // Preserve previously cached category products unless we need to add new ones
         const productsByCat = initialLoadRef.current ? { ...productsByCategory } : {};
 
-        // If we have a newly selected category, pre-load it
-        if (selectedCategory && selectedChanged) {
+        // Preload first 3 categories immediately to avoid loading state on initial page load
+        if (!initialLoadRef.current && (categories || []).length > 0) {
+          try {
+            const candidateCategories = (categories || [])
+              .filter(c => c && c._id && c.name !== '__SPECIAL_IMAGES__' && !c.name?.includes('__SPECIAL_IMAGES__') && !c.name?.includes('_SPEC'))
+              .map(c => c._id)
+              .slice(0, 3); // Load first 3 categories
+
+            await Promise.all(candidateCategories.map(async (catId) => {
+              try {
+                const res = await dispatch(fetchProducts({
+                  key: `category_${catId}`,
+                  limit: 20,
+                  category: catId,
+                  sort: 'createdAt:-1',
+                })).unwrap();
+                const filteredCatProducts = filterProductsForFreeSelection(res.products || []);
+                productsByCat[catId] = filteredCatProducts;
+              } catch (e) {
+                console.warn('Prefetch category failed:', catId, e?.message || e);
+                productsByCat[catId] = []; // Set empty array to prevent loading state
+              }
+            }));
+          } catch (e) {
+            console.warn('Category prefetch skipped due to error:', e?.message || e);
+          }
+        }
+
+        // If we have a newly selected category and it wasn't preloaded, load it now
+        if (selectedCategory && selectedChanged && !productsByCat[selectedCategory]) {
           try {
             const result = await dispatch(fetchProducts({
               key: `category_${selectedCategory}`,
@@ -381,39 +436,9 @@ const Products = () => {
             productsByCat[selectedCategory] = filteredCategoryProducts;
           } catch (e) {
             console.warn('Preload selected category failed:', selectedCategory, e?.message || e);
+            productsByCat[selectedCategory] = []; // Set empty array to prevent loading state
           }
         }
-
-        // Temporarily disable prefetching to reduce API calls and prevent flickering
-        // Prefetch first few categories only if categories are available and it's truly the first load
-        // if (!initialLoadRef.current && (categories || []).length > 0) {
-        //   try {
-        //     const candidateCategories = (categories || [])
-        //       .filter(c => c && c._id && c.name !== '__SPECIAL_IMAGES__' && !c.name?.includes('__SPECIAL_IMAGES__') && !c.name?.includes('_SPEC'))
-        //       .map(c => c._id);
-
-        //     const toPrefetch = candidateCategories
-        //       .filter(id => id !== selectedCategory)
-        //       .slice(0, 2);
-
-        //     await Promise.all(toPrefetch.map(async (catId) => {
-        //       try {
-        //         const res = await dispatch(fetchProducts({
-        //           key: `category_${catId}`,
-        //           limit: 20,
-        //           category: catId,
-        //           sort: 'createdAt:-1',
-        //         })).unwrap();
-        //         const filteredCatProducts = filterProductsForFreeSelection(res.products || []);
-        //         productsByCat[catId] = filteredCategoryProducts;
-        //       } catch (e) {
-        //         console.warn('Prefetch category failed:', catId, e?.message || e);
-        //       }
-        //     }));
-        //   } catch (e) {
-        //     console.warn('Category prefetch skipped due to error:', e?.message || e);
-        //   }
-        // }
 
         setProductsByCategory(productsByCat);
 
@@ -461,7 +486,6 @@ const Products = () => {
   // Scroll handling effect kept intact (was above; ensure not accidentally removed)
 
   const handleSelectCategory = (categoryId) => {
-    console.log('Category selected:', categoryId);
     setSelectedCategory(categoryId);
     setActiveViewCategory(categoryId);
     
@@ -513,11 +537,21 @@ const Products = () => {
 
   // Function to render product row (responsive: vertical on mobile, horizontal on desktop)
   const renderProductRow = (products, title, categoryId) => {
-    // If there's no products array yet for this category, it's still loading
-    const isLoading = !products;
+    // Use fallback products from allProducts filtered by category if specific category products aren't loaded yet
+    let displayProducts = products;
+    let isUsingFallback = false;
+    
+    // If category-specific products aren't loaded yet, use filtered allProducts as fallback
+    if (!products && allProducts && allProducts.length > 0 && categoryId !== 'all') {
+      displayProducts = allProducts.filter(p => p.category === categoryId).slice(0, 20);
+      isUsingFallback = true;
+    }
+    
+    // Only show loading skeleton if we have no products AND no fallback
+    const isLoading = !displayProducts || displayProducts.length === 0;
     
     // If there are no products and we're not loading, don't render anything
-    if (!isLoading && (!products || products.length === 0)) return null;
+    if (!isLoading && (!displayProducts || displayProducts.length === 0)) return null;
     
     // Create placeholder skeletons for loading state
     const skeletons = Array(4).fill(0).map((_, i) => i);
@@ -541,8 +575,8 @@ const Products = () => {
                 </div>
               ))
             ) : (
-              // Show actual products when loaded
-              products.map((product, index) => (
+              // Show actual products when loaded (either category-specific or fallback from allProducts)
+              displayProducts.map((product, index) => (
                 <motion.div
                   key={product._id}
                   initial={{ opacity: 0, y: 20 }}
@@ -576,8 +610,8 @@ const Products = () => {
                   </div>
                 ))
               ) : (
-                // Show actual products when loaded
-                products.map((product, index) => (
+                // Show actual products when loaded (either category-specific or fallback from allProducts)
+                displayProducts.map((product, index) => (
                   <motion.div
                     key={product._id}
                     initial={{ opacity: 0, scale: 0.9 }}
