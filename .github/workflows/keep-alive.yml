@@ -19,19 +19,30 @@ jobs:
           # Backend URL - uses secret if set, otherwise uses your Render URL
           BACKEND_URL="${{ secrets.BACKEND_URL || 'https://la-patisserie-1.onrender.com' }}"
           
-          # Ping with timeout and retry
-          for i in 1 2 3; do
-            if curl -f -m 15 "$BACKEND_URL/api/health"; then
-              echo "✅ Backend is alive (attempt $i)"
+          # Ping with longer timeout and more retries (cold start can take 30+ seconds)
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i of 5..."
+            
+            # Use longer timeout for cold starts (up to 45 seconds)
+            if curl -f -m 45 --connect-timeout 45 "$BACKEND_URL/api/health"; then
+              echo "✅ Backend is alive! (attempt $i)"
               exit 0
             else
-              echo "⚠️ Ping attempt $i failed, retrying..."
-              sleep 5
+              CURL_EXIT=$?
+              echo "⚠️ Ping attempt $i failed (exit code: $CURL_EXIT)"
+              
+              # If this isn't the last attempt, wait longer before retry
+              if [ $i -lt 5 ]; then
+                echo "Waiting 10 seconds before retry..."
+                sleep 10
+              fi
             fi
           done
           
-          echo "❌ All ping attempts failed"
-          exit 1
+          # If all attempts failed, log but don't fail the workflow (backend might be deploying)
+          echo "⚠️ All 5 ping attempts failed - backend may be sleeping or restarting"
+          echo "This is normal on first run. Next ping in 10 minutes will wake it up."
+          exit 0
       
       - name: 📊 Log Response Time
         if: success()

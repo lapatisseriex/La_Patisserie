@@ -13,9 +13,6 @@ import OfflinePage from './components/common/OfflinePage';
 import useNetworkStatus from './hooks/useNetworkStatus';
 import { initializeServiceWorker } from './utils/serviceWorker';
 
-// Cold Start Loader
-import ColdStartLoader from './components/ColdStartLoader/ColdStartLoader';
-
 // Layout
 import Layout from './components/Layout/Layout';
 import AdminLayout from './components/Layout/AdminLayout';
@@ -144,54 +141,16 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
   const { isOnline } = useNetworkStatus();
-  const [isColdStart, setIsColdStart] = useState(false);
 
   // Initialize service worker on app load
   useEffect(() => {
     initializeServiceWorker();
   }, []);
 
-  // Detect cold start on initial load
-  useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL;
-    if (!API_URL) return;
-
-    const startTime = Date.now();
-    setIsColdStart(true);
-    
-    // Ping backend to check if it's a cold start
-    fetch(`${API_URL}/api/health`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(20000), // 20 second timeout
-    })
-      .then(() => {
-        const loadTime = Date.now() - startTime;
-        
-        // If load time is > 3 seconds, it was likely a cold start
-        if (loadTime > 3000) {
-          console.log(`🧊 Cold start detected: ${loadTime}ms`);
-          // Keep loader visible for smooth transition
-          setTimeout(() => setIsColdStart(false), 500);
-        } else {
-          setIsColdStart(false);
-        }
-      })
-      .catch((error) => {
-        console.warn('Health check failed:', error);
-        setIsColdStart(false); // Hide loader on error
-      });
-  }, []);
-
   return (
     <ReduxProvider>
       <AuthInitializer />
       <WebSocketInitializer />
-      
-      {/* Cold Start Loader - Shows when backend is waking up */}
-      <ColdStartLoader 
-        isLoading={isColdStart} 
-        onClose={() => setIsColdStart(false)}
-      />
       
         <ShopStatusProvider>
           <LocationProvider>
