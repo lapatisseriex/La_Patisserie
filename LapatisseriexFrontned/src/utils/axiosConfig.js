@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 // Set default timeout to 15 seconds (higher than default)
 axios.defaults.timeout = 15000;
@@ -7,17 +7,13 @@ axios.defaults.timeout = 15000;
 const axiosInstance = axios.create({
   timeout: 15000, // 15 seconds
   headers: {
-    'Content-Type': 'application/json',
-  },
-});
+    'Content-Type': 'application/json'}});
 
 // Create extended timeout instance for long-running operations
 const longTimeoutAxiosInstance = axios.create({
   timeout: 45000, // 45 seconds for operations like order cancellation
   headers: {
-    'Content-Type': 'application/json',
-  },
-});
+    'Content-Type': 'application/json'}});
 
 // Add response interceptor for default instance
 axiosInstance.interceptors.response.use(

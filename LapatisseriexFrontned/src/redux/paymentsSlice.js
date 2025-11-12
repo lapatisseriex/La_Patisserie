@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+﻿import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 // Async thunk for fetching user payments
 export const fetchUserPayments = createAsyncThunk(
@@ -12,8 +12,7 @@ export const fetchUserPayments = createAsyncThunk(
 
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString(),
-      });
+        limit: limit.toString()});
       
       if (status) params.append('status', status);
       if (method) params.append('method', method);
@@ -25,9 +24,7 @@ export const fetchUserPayments = createAsyncThunk(
         {
           headers: {
             'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
+            'Content-Type': 'application/json'}}
       );
 
       if (!response.ok) {
@@ -61,16 +58,13 @@ const paymentsSlice = createSlice({
       page: 1,
       limit: 20,
       total: 0,
-      pages: 0,
-    },
+      pages: 0},
     filters: {
       status: null,
       method: null,
       startDate: null,
-      endDate: null,
-    },
-    lastFetch: null,
-  },
+      endDate: null},
+    lastFetch: null},
   reducers: {
     clearPayments: (state) => {
       state.payments = [];
@@ -79,8 +73,7 @@ const paymentsSlice = createSlice({
         page: 1,
         limit: 20,
         total: 0,
-        pages: 0,
-      };
+        pages: 0};
     },
     clearPaymentsError: (state) => {
       state.error = null;
@@ -93,10 +86,8 @@ const paymentsSlice = createSlice({
         status: null,
         method: null,
         startDate: null,
-        endDate: null,
-      };
-    },
-  },
+        endDate: null};
+    }},
   extraReducers: (builder) => {
     builder
       // Fetch user payments
@@ -132,8 +123,7 @@ const paymentsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-  },
-});
+  }});
 
 export const { 
   clearPayments, 

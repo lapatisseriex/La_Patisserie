@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -282,8 +282,7 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
             
             toast.success('🎁 Free product added to cart!', {
               position: 'top-center',
-              autoClose: 2000,
-            });
+              autoClose: 2000});
             
             // Dispatch event for other components
             if (typeof window !== 'undefined' && window.dispatchEvent) {
@@ -597,7 +596,6 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                   disabled={!isActive || isOutOfStockTracked || !isProductAvailable}
                   className="px-4 py-2 text-xs font-light"
                   style={{
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
                     ...(isSelectingFreeProduct ? { backgroundColor: '#10b981', borderColor: '#10b981' } : {})
                   }}
                 >
@@ -624,7 +622,6 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-[#733857] hover:bg-[#733857]/10'
                   }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   −
                 </button>
@@ -664,7 +661,6 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                     ? 'text-gray-400 border-gray-300'
                     : 'text-[#733857] border-[#733857]'
                 }`}
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   {currentQuantity}
                 </motion.span>
@@ -679,7 +675,6 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-[#733857] hover:bg-[#733857]/10'
                   }`}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   +
                 </button>
@@ -704,7 +699,6 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                 ? 'text-sm' 
                 : 'text-xs sm:text-sm md:text-base'
             } cursor-pointer mb-1 hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-all duration-300`}
-            style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
             onClick={handleCardClick}
           >
             {currentProduct.name}
@@ -716,9 +710,9 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 bg-white border border-[#733857]/30 rounded-full px-2 py-0.5 shadow-sm">
                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 text-white text-[9px] leading-none">★</span>
-                <span className="text-xs font-light bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{productRating.rating}</span>
+                <span className="text-xs font-light bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{productRating.rating}</span>
                 <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">|</span>
-                <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>{ratingCountDisplay}</span>
+                <span className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent">{ratingCountDisplay}</span>
               </div>
             </div>
 
@@ -726,7 +720,7 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
             <div className="text-xs flex-shrink-0">
               <span
                 className="font-bold"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: orderExperience.color }}
+                style={{ color: orderExperience.color }}
               >
                 {orderExperience.label}
               </span>
@@ -734,14 +728,14 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
           </div>
 
           {/* One-line product description */}
-          <p className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2 line-clamp-1 font-medium" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+          <p className="text-xs bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mb-2 line-clamp-1 font-medium">
             {currentProduct.description || 'Delicious handcrafted treat made with premium ingredients.'}
           </p>
 
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-baseline gap-1">
               {discountPercentage > 0 && (
-                <span className="text-gray-500 line-through text-xs font-medium" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <span className="text-gray-500 line-through text-xs font-medium">
                   {formatCurrency(originalPrice)}
                 </span>
               )}
@@ -749,7 +743,6 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                 className={`font-light bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent ${
                   featured || compact ? 'text-sm' : 'text-sm sm:text-base'
                 }`}
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               >
                 {formatCurrency(sellingPrice)}
               </span>
@@ -770,7 +763,6 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                 ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
                 : 'bg-white text-gray-900 border-2 border-[#733857] hover:text-white active:text-white touch-manipulation'
             }`}
-            style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
           >
             {/* Animated background fill - works on both hover and active (touch) */}
             {isActive && totalStock > 0 && isProductAvailable && (
@@ -844,19 +836,15 @@ ProductCard.propTypes = {
         quantity: PropTypes.number,
         measuringUnit: PropTypes.string,
         discount: PropTypes.shape({
-          value: PropTypes.number,
-        }),
-      })
+          value: PropTypes.number})})
     ).isRequired,
     images: PropTypes.arrayOf(PropTypes.string),
     isActive: PropTypes.bool,
     stock: PropTypes.number,
-    hasEgg: PropTypes.bool,
-  }).isRequired,
+    hasEgg: PropTypes.bool}).isRequired,
   className: PropTypes.string,
   compact: PropTypes.bool,
   featured: PropTypes.bool,
-  hideCartButton: PropTypes.bool,
-};
+  hideCartButton: PropTypes.bool};
 
 export default ProductCard;

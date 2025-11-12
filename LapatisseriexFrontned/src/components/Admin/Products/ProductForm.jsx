@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { FaLeaf, FaEgg, FaCheckCircle, FaImage, FaVideo, FaMoneyBillAlt, FaCog, FaPen, FaBox } from 'react-icons/fa';
 import { GripVertical } from 'lucide-react';
 import { useProduct } from '../../../context/ProductContext/ProductContext';
@@ -14,16 +14,14 @@ import {
   KeyboardSensor,
   PointerSensor,
   useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+  useSensors} from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
+  rectSortingStrategy} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 // Sortable Media Item Component
@@ -34,14 +32,12 @@ const SortableMediaItem = ({ id, url, type, onRemove, index }) => {
     setNodeRef,
     transform,
     transition,
-    isDragging,
-  } = useSortable({ id });
+    isDragging} = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+    opacity: isDragging ? 0.5 : 1};
 
   return (
     <div
@@ -345,8 +341,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+      coordinateGetter: sortableKeyboardCoordinates})
   );
 
   // Extra fields

@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+﻿import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -15,8 +15,7 @@ const initialState = {
   confirmationResult: null,
   isAuthPanelOpen: false,
   profileUpdateLoading: false,
-  profileUpdateError: null,
-};
+  profileUpdateError: null};
 
 // Async thunks
 export const verifyToken = createAsyncThunk(
@@ -197,8 +196,7 @@ const userSlice = createSlice({
           localStorage.removeItem('cachedUser');
         }
       }
-    },
-  },
+    }},
   extraReducers: (builder) => {
     builder
       // Verify token
@@ -288,8 +286,7 @@ const userSlice = createSlice({
         state.profileUpdateLoading = false;
         state.profileUpdateError = action.payload;
       });
-  },
-});
+  }});
 
 export const {
   setUser,
@@ -304,7 +301,6 @@ export const {
   clearError,
   logout,
   updateUserField,
-  initializeFromStorage,
-} = userSlice.actions;
+  initializeFromStorage} = userSlice.actions;
 
 export default userSlice.reducer;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   GraduationCap, 
@@ -50,9 +50,7 @@ const AdminDonations = () => {
         `${import.meta.env.VITE_API_URL}/donations/admin/all?${queryParams}`,
         {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
+            'Authorization': `Bearer ${authToken}`}}
       );
 
       if (!response.ok) {
@@ -88,9 +86,7 @@ const AdminDonations = () => {
         `${import.meta.env.VITE_API_URL}/donations/admin/stats?${queryParams}`,
         {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
+            'Authorization': `Bearer ${authToken}`}}
       );
 
       if (response.ok) {
@@ -115,9 +111,7 @@ const AdminDonations = () => {
         `${import.meta.env.VITE_API_URL}/donations/admin/export?${queryParams}`,
         {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
+            'Authorization': `Bearer ${authToken}`}}
       );
 
       if (response.ok) {

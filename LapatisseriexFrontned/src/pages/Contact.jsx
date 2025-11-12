@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { FiMail, FiUser, FiMessageSquare, FiSend, FiCheck, FiPhone } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
@@ -54,10 +54,8 @@ const Contact = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/contact`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+          'Content-Type': 'application/json'},
+        body: JSON.stringify(formData)});
 
       const result = await response.json();
 

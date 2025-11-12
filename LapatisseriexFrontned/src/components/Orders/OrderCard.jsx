@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+﻿import React, { useRef, useState } from 'react';
 import { 
   Package, 
   Clock, 
@@ -157,8 +157,7 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
       // Show success message
       toast.success('Order cancelled successfully!', {
         position: "top-center",
-        autoClose: 3000,
-      });
+        autoClose: 3000});
 
       if (onOrderCancelled) {
         onOrderCancelled(order.orderNumber);
@@ -186,8 +185,7 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
       // Use toast for better user experience
       toast.error(errorMessage, {
         position: "top-center",
-        autoClose: 5000,
-      });
+        autoClose: 5000});
     } finally {
       setIsCancelling(false);
     }

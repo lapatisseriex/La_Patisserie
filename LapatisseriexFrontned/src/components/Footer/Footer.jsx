@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
@@ -81,11 +81,11 @@ const Footer = () => {
                 className="w-full h-full object-contain brightness-0 invert opacity-90" 
               />
             </div>
-            <h2 className="text-lg sm:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.3em] text-white uppercase" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h2 className="text-lg sm:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.3em] text-white uppercase" style={{  }}>
               La Pâtisserie
             </h2>
           </div>
-          <p className="text-[#f5f5f5]/60 text-[10px] sm:text-sm font-light tracking-[0.08em] sm:tracking-[0.15em] max-w-2xl mx-auto" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <p className="text-[#f5f5f5]/60 text-[10px] sm:text-sm font-light tracking-[0.08em] sm:tracking-[0.15em] max-w-2xl mx-auto" style={{  }}>
             The Authentic Tiramisu
           </p>
         </div>
@@ -101,7 +101,7 @@ const Footer = () => {
               <button 
                 onClick={() => toggleSection('navigate')}
                 className="w-full px-2 py-1.5 flex items-center justify-between text-[#733857] text-[9px] font-medium tracking-[0.2em] uppercase"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 <span>Navigate</span>
                 <svg 
@@ -115,10 +115,10 @@ const Footer = () => {
               </button>
               {openSection === 'navigate' && (
                 <nav className="px-2 pb-2 space-y-0.5">
-                  <Link to="/" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Home
                   </Link>
-                  <Link to="/products" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/products" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Products
                   </Link>
                 </nav>
@@ -130,7 +130,7 @@ const Footer = () => {
               <button 
                 onClick={() => toggleSection('account')}
                 className="w-full px-2 py-1.5 flex items-center justify-between text-[#733857] text-[9px] font-medium tracking-[0.2em] uppercase"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 <span>Account</span>
                 <svg 
@@ -144,19 +144,19 @@ const Footer = () => {
               </button>
               {openSection === 'account' && (
                 <nav className="px-2 pb-2 space-y-0.5">
-                  <Link to="/profile" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/profile" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Account Info
                   </Link>
-                  <Link to="/orders" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/orders" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     My Orders
                   </Link>
-                  <Link to="/about" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/about" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     About Us
                   </Link>
-                  <Link to="/contact" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/contact" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Contact Us
                   </Link>
-                  <Link to="/faq" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/faq" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     FAQ
                   </Link>
                 </nav>
@@ -168,7 +168,7 @@ const Footer = () => {
               <button 
                 onClick={() => toggleSection('legal')}
                 className="w-full px-2 py-1.5 flex items-center justify-between text-[#733857] text-[9px] font-medium tracking-[0.2em] uppercase"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 <span>Legal</span>
                 <svg 
@@ -182,19 +182,19 @@ const Footer = () => {
               </button>
               {openSection === 'legal' && (
                 <nav className="px-2 pb-2 space-y-0.5">
-                  <Link to="/privacy-policy" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/privacy-policy" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Privacy Policy
                   </Link>
-                  <Link to="/shipping-policy" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/shipping-policy" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Shipping Policy
                   </Link>
-                  <Link to="/refund-policy" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/refund-policy" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Refund Policy
                   </Link>
-                  <Link to="/terms" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/terms" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Terms & Conditions
                   </Link>
-                  <Link to="/our-services" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <Link to="/our-services" className="block text-white hover:text-[#733857] text-[10px] font-light" style={{  }}>
                     Our Services
                   </Link>
                 </nav>
@@ -206,7 +206,7 @@ const Footer = () => {
               <button 
                 onClick={() => toggleSection('connect')}
                 className="w-full px-2 py-1.5 flex items-center justify-between text-[#733857] text-[9px] font-medium tracking-[0.2em] uppercase"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 <span>Connect</span>
                 <svg 
@@ -220,25 +220,25 @@ const Footer = () => {
               </button>
               {openSection === 'connect' && (
                 <div className="px-2 pb-2 space-y-0.5">
-                  <a href="tel:+917845712388" className="flex items-center space-x-1 text-white hover:text-[#733857] text-[9px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <a href="tel:+917845712388" className="flex items-center space-x-1 text-white hover:text-[#733857] text-[9px] font-light" style={{  }}>
                     <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                     <span>+91 7845712388</span>
                   </a>
-                  <a href="tel:+919362166816" className="flex items-center space-x-1 text-white hover:text-[#733857] text-[9px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <a href="tel:+919362166816" className="flex items-center space-x-1 text-white hover:text-[#733857] text-[9px] font-light" style={{  }}>
                     <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                     <span>+91 9362166816</span>
                   </a>
-                  <a href="mailto:lapatisserielapatisserie@gmail.com" className="flex items-center space-x-1 text-white hover:text-[#733857] text-[8px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <a href="mailto:lapatisserielapatisserie@gmail.com" className="flex items-center space-x-1 text-white hover:text-[#733857] text-[8px] font-light" style={{  }}>
                     <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
                     </svg>
                     <span className="truncate">lapatisserielapatisserie@gmail.com</span>
                   </a>
-                  <div className="flex items-start space-x-1 text-white text-[9px] font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <div className="flex items-start space-x-1 text-white text-[9px] font-light" style={{  }}>
                     <svg className="w-2 h-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -255,21 +255,21 @@ const Footer = () => {
           
           {/* Navigate */}
           <div className="text-left">
-            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{  }}>
               Navigate
             </h3>
             <nav className="space-y-2">
               <Link 
                 to="/" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Home
               </Link>
               <Link 
                 to="/products" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Products
               </Link>
@@ -278,42 +278,42 @@ const Footer = () => {
 
           {/* Account */}
           <div className="text-left">
-            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{  }}>
               Account
             </h3>
             <nav className="space-y-2">
               <Link 
                 to="/profile" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Account Info
               </Link>
               <Link 
                 to="/orders" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 My Orders
               </Link>
               <Link 
                 to="/about" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 About Us
               </Link>
               <Link 
                 to="/contact" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Contact Us
               </Link>
               <Link 
                 to="/faq" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 FAQ
               </Link>
@@ -322,42 +322,42 @@ const Footer = () => {
 
           {/* Legal */}
           <div className="text-left">
-            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{  }}>
               Legal
             </h3>
             <nav className="space-y-2">
               <Link 
                 to="/privacy-policy" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Privacy Policy
               </Link>
               <Link 
                 to="/shipping-policy" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Shipping Policy
               </Link>
               <Link 
                 to="/refund-policy" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Refund Policy
               </Link>
               <Link 
                 to="/terms" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Terms & Conditions
               </Link>
               <Link 
                 to="/our-services" 
                 className="block text-white hover:text-[#733857] text-sm font-light transition-all duration-300 hover:translate-x-1"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 Our Services
               </Link>
@@ -366,14 +366,14 @@ const Footer = () => {
 
           {/* Contact */}
           <div className="text-left">
-            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{  }}>
               Connect
             </h3>
             <div className="space-y-2">
               <a 
                 href="tel:+917845712388" 
                 className="flex items-center space-x-3 text-white hover:text-[#733857] text-sm font-light transition-colors duration-300 group"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 <div className="w-7 h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#733857]/50 transition-colors duration-300">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,7 +386,7 @@ const Footer = () => {
               <a 
                 href="tel:+919362166816" 
                 className="flex items-center space-x-3 text-white hover:text-[#733857] text-sm font-light transition-colors duration-300 group"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 <div className="w-7 h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#733857]/50 transition-colors duration-300">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,7 +399,7 @@ const Footer = () => {
               <a 
                 href="mailto:lapatisserielapatisserie@gmail.com" 
                 className="flex items-center space-x-3 text-white hover:text-[#733857] text-sm font-light transition-colors duration-300 group"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 <div className="w-7 h-7 rounded border border-white/10 flex items-center justify-center group-hover:border-[#733857]/50 transition-colors duration-300">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,7 +409,7 @@ const Footer = () => {
                 <span className="truncate text-sm">lapatisserielapatisserie@gmail.com</span>
               </a>
               
-              <div className="flex items-start space-x-3 text-white text-sm font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <div className="flex items-start space-x-3 text-white text-sm font-light" style={{  }}>
                 <div className="w-7 h-7 rounded border border-white/10 flex items-center justify-center flex-shrink-0">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -426,7 +426,7 @@ const Footer = () => {
 
           {/* Newsletter & Stores */}
           <div className="text-left col-span-2 lg:col-span-1">
-            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-xs font-medium tracking-[0.25em] uppercase mb-3" style={{  }}>
               Sign up for updates
             </h3>
             
@@ -441,7 +441,7 @@ const Footer = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
                     className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded text-white text-sm font-light placeholder-white/40 focus:outline-none focus:border-[#733857]/50 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                    style={{  }}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     <svg className="w-4 h-4 text-[#733857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -453,7 +453,7 @@ const Footer = () => {
                   type="submit"
                   disabled={loading}
                   className="w-full px-6 py-2.5 bg-transparent border border-[#733857] text-[#733857] text-sm font-medium tracking-[0.15em] uppercase rounded hover:bg-[#733857] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  style={{  }}
                 >
                   {loading ? 'Subscribing...' : 'Sign Up'}
                 </button>
@@ -463,7 +463,7 @@ const Footer = () => {
               {message.text && (
                 <div className={`text-sm text-center mb-3 ${
                   message.type === 'success' ? 'text-green-400' : 'text-red-400'
-                }`} style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                }`} style={{  }}>
                   {message.text}
                 </div>
               )}
@@ -471,10 +471,10 @@ const Footer = () => {
 
             {/* Our Stores */}
             <div>
-              <h4 className="text-white/60 text-xs font-medium tracking-[0.25em] uppercase mb-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <h4 className="text-white/60 text-xs font-medium tracking-[0.25em] uppercase mb-4" style={{  }}>
                 Our Stores
               </h4>
-              <div className="text-white/50 text-xs leading-relaxed font-light" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <div className="text-white/50 text-xs leading-relaxed font-light" style={{  }}>
                 <p>Coimbatore</p>
               </div>
             </div>
@@ -522,7 +522,7 @@ const Footer = () => {
         {/* Developers Section */}
         <div className="mb-2 sm:mb-6 pb-2 sm:pb-6 border-b border-[#733857]/20">
           <div className="text-center mb-1.5 sm:mb-3">
-            <h3 className="text-[#733857] text-[9px] sm:text-xs font-medium tracking-[0.2em] sm:tracking-[0.25em] uppercase" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h3 className="text-[#733857] text-[9px] sm:text-xs font-medium tracking-[0.2em] sm:tracking-[0.25em] uppercase" style={{  }}>
               Developed By
             </h3>
           </div>
@@ -531,10 +531,10 @@ const Footer = () => {
             {/* Arun A - MERN Stack Developer */}
             <div className="group bg-[#1a1a1a]/80 rounded p-1.5 sm:p-3 border border-white/10 hover:border-[#733857]/50 transition-all duration-300">
               <div className="text-center">
-                <h4 className="text-white text-[9px] sm:text-sm font-medium mb-0.5 sm:mb-1" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <h4 className="text-white text-[9px] sm:text-sm font-medium mb-0.5 sm:mb-1" style={{  }}>
                   Arun A
                 </h4>
-                <p className="text-[#733857]/80 text-[7px] sm:text-xs font-light mb-1 sm:mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <p className="text-[#733857]/80 text-[7px] sm:text-xs font-light mb-1 sm:mb-2" style={{  }}>
                   MERN Stack Developer
                 </p>
                 <div className="flex items-center justify-center space-x-1.5 sm:space-x-2">
@@ -567,10 +567,10 @@ const Footer = () => {
             {/* Gokulan V - Full Stack Developer */}
             <div className="group bg-[#1a1a1a]/80 rounded p-1.5 sm:p-3 border border-white/10 hover:border-[#733857]/50 transition-all duration-300">
               <div className="text-center">
-                <h4 className="text-white text-[9px] sm:text-sm font-medium mb-0.5 sm:mb-1" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <h4 className="text-white text-[9px] sm:text-sm font-medium mb-0.5 sm:mb-1" style={{  }}>
                   Gokulan V
                 </h4>
-                <p className="text-[#733857]/80 text-[7px] sm:text-xs font-light mb-1 sm:mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <p className="text-[#733857]/80 text-[7px] sm:text-xs font-light mb-1 sm:mb-2" style={{  }}>
                   Full Stack Developer
                 </p>
                 <div className="flex items-center justify-center space-x-1.5 sm:space-x-2">
@@ -603,10 +603,10 @@ const Footer = () => {
             {/* Sanjay Nithin S - Full Stack Developer */}
             <div className="group bg-[#1a1a1a]/80 rounded p-1.5 sm:p-3 border border-white/10 hover:border-[#733857]/50 transition-all duration-300">
               <div className="text-center">
-                <h4 className="text-white text-[9px] sm:text-sm font-medium mb-0.5 sm:mb-1" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <h4 className="text-white text-[9px] sm:text-sm font-medium mb-0.5 sm:mb-1" style={{  }}>
                   Sanjay Nithin S
                 </h4>
-                <p className="text-[#733857]/80 text-[7px] sm:text-xs font-light mb-1 sm:mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <p className="text-[#733857]/80 text-[7px] sm:text-xs font-light mb-1 sm:mb-2" style={{  }}>
                   Full Stack Developer
                 </p>
                 <div className="flex items-center justify-center space-x-1.5 sm:space-x-2">
@@ -640,7 +640,7 @@ const Footer = () => {
 
         {/* Bottom Copyright */}
         <div className="text-center px-2 sm:px-4">
-          <p className="text-white/40 text-[9px] sm:text-xs font-light tracking-wider mb-1 sm:mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <p className="text-white/40 text-[9px] sm:text-xs font-light tracking-wider mb-1 sm:mb-2" style={{  }}>
             © {new Date().getFullYear()} La Pâtisserie. All rights reserved.
           </p>
           

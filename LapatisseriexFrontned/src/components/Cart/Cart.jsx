@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+﻿import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaArrowLeft, FaMapMarkerAlt, FaShoppingCart, FaExclamationTriangle, FaBuilding } from 'react-icons/fa';
 import { motion } from 'framer-motion';
@@ -560,7 +560,7 @@ const Cart = () => {
         <div className="w-full px-4 md:px-6 py-6 md:py-8">
           {/* Header */}
           <div className="mb-6 md:mb-8">
-            <h1 className="text-xl font-medium text-gray-900 mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+            <h1 className="text-xl font-medium text-gray-900 mb-1">
               Your Cart
             </h1>
             <div className="flex items-center gap-3">
@@ -569,7 +569,7 @@ const Cart = () => {
               </p>
               <span
                 className="text-sm font-semibold"
-                style={{ color: orderExperience.color, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{ color: orderExperience.color}}
               >
                 {orderExperience.label}
               </span>
@@ -678,7 +678,7 @@ const Cart = () => {
                           {/* Product Name & Price */}
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <h3 className="font-medium text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                              <h3 className="font-medium text-[#733857]">
                                 {item.name || 'Product'}
                               </h3>
                               {item.isFreeProduct && (
@@ -741,7 +741,7 @@ const Cart = () => {
                                   : 'text-[#733857] hover:bg-[#733857]/10'
                               }`}
                               disabled={item.quantity <= 1}
-                              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
+                              style={{ userSelect: 'none' }}
                               title={item.quantity <= 1 ? "Use trash icon to remove item" : "Decrease quantity"}
                             >
                               −
@@ -778,7 +778,7 @@ const Cart = () => {
                                 ease: "easeInOut"
                               }}
                               className="px-3 py-1 font-light text-sm min-w-[2.5rem] text-center border-l border-r border-[#733857] text-[#733857] inline-block select-none"
-                              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
+                              style={{ userSelect: 'none' }}
                             >
                               {item.quantity}
                             </motion.span>
@@ -790,7 +790,7 @@ const Cart = () => {
                               }}
                               className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light select-none"
                               disabled={!canIncrease}
-                              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
+                              style={{ userSelect: 'none' }}
                             >
                               +
                             </button>
@@ -836,7 +836,7 @@ const Cart = () => {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                            <h3 className="font-medium text-[#733857]">
                               {item.name || 'Product'}
                             </h3>
                             {item.isFreeProduct && (
@@ -890,7 +890,7 @@ const Cart = () => {
                                 : 'text-[#733857] hover:bg-[#733857]/10'
                             }`}
                             disabled={item.quantity <= 1}
-                            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
+                            style={{ userSelect: 'none' }}
                             title={item.quantity <= 1 ? "Use trash icon to remove item" : "Decrease quantity"}
                           >
                             −
@@ -927,7 +927,7 @@ const Cart = () => {
                               ease: "easeInOut"
                             }}
                             className="px-3 py-1 font-light text-sm min-w-[2.5rem] text-center border-l border-r border-[#733857] text-[#733857] inline-block select-none"
-                            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
+                            style={{ userSelect: 'none' }}
                           >
                             {item.quantity}
                           </motion.span>
@@ -939,7 +939,7 @@ const Cart = () => {
                             }}
                             className="w-8 h-8 flex items-center justify-center text-[#733857] hover:bg-[#733857]/10 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light select-none"
                             disabled={!canIncrease}
-                            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', userSelect: 'none' }}
+                            style={{ userSelect: 'none' }}
                           >
                             +
                           </button>
@@ -1005,7 +1005,7 @@ const Cart = () => {
                 {/* Desktop Total */}
                 <div className="hidden md:flex justify-end pr-4">
                   <div className="w-64 border-t border-b border-brown-300 py-4 flex justify-end">
-                    <span className="text-xl font-bold text-black pr-2" style={{fontFamily: 'Montserrat, Arial, sans-serif'}}>
+                    <span className="text-xl font-bold text-black pr-2">
                       Total : {formatCurrency(discountedCartTotal)}
                     </span>
                   </div>

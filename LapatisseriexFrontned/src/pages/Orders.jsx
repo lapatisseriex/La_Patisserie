@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle, XCircle, Eye, Calendar, MapPin, ShoppingBag, ChevronRight, CreditCard, Banknote, Menu, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -81,9 +81,7 @@ const Orders = () => {
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/orders/user`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
+          'Authorization': `Bearer ${authToken}`}});
 
       if (!response.ok) {
         throw new Error('Failed to fetch orders');
@@ -200,8 +198,7 @@ const Orders = () => {
   // Main container style for mobile: prevent unwanted horizontal scroll/space
   const mainContainerStyle = {
     width: '100vw',
-    overflowX: 'hidden',
-  };
+    overflowX: 'hidden'};
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -330,7 +327,8 @@ const Orders = () => {
       <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="py-3 sm:py-4">
-            <div className="flex items-center justify-between">
+            {/* Mobile Filter Toggle */}
+            <div className="flex items-center justify-between lg:hidden">
               <button
                 type="button"
                 onClick={handleToggleMobileFilters}
@@ -345,55 +343,77 @@ const Orders = () => {
                 {activeFilterConfig.label}
               </span>
             </div>
+
+            {/* Desktop Horizontal Filters */}
+            <div className="hidden lg:flex lg:items-center lg:justify-center lg:gap-4">
+              {ORDER_FILTERS.map((filter) => {
+                const isActive = activeFilter === filter.key;
+                return (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    onClick={() => handleFilterChange(filter.key)}
+                    className={`inline-flex items-center justify-center gap-2 rounded-full border px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.28em] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#733857]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${isActive ? 'border-[#733857] bg-[#733857] text-white shadow-md' : 'border-gray-300 text-gray-600 hover:border-[#733857] hover:text-[#733857]'}`}
+                  >
+                    <span>{filter.label}</span>
+                    {filter.key === 'cancelled' && cancelledOrdersCount > 0 && (
+                      <span
+                        className={`inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[0.65rem] font-bold ${isActive ? 'bg-white text-[#733857]' : 'bg-gray-200 text-gray-700'}`}
+                      >
+                        {cancelledOrdersCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
       {isMobileFiltersOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[#1f2029]/95 backdrop-blur-md"
+          className="fixed inset-0 z-40 bg-[#1f2029]/95 backdrop-blur-md flex flex-col"
           role="dialog"
           aria-modal="true"
           aria-label="Order filters"
           onClick={closeMobileFilters}
         >
-          <div className="flex h-full flex-col" onClick={(event) => event.stopPropagation()}>
-            <div className="flex justify-end p-6">
-              <button
-                type="button"
-                onClick={closeMobileFilters}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white/70 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f2029]"
-                aria-label="Close filter menu"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <nav id="mobile-order-filter-menu" className="flex flex-1 items-center justify-center px-8 pb-12">
-              <ul className="w-full max-w-xs space-y-5 text-center">
-                {ORDER_FILTERS.map((filter) => {
-                  const isActive = activeFilter === filter.key;
-                  return (
-                    <li key={filter.key}>
-                      <button
-                        type="button"
-                        onClick={() => handleFilterChange(filter.key)}
-                        className={`flex w-full items-center justify-center gap-3 rounded-full border px-6 py-3 text-sm font-semibold uppercase transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ffeba7]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f2029] ${isActive ? 'border-white bg-white text-[#733857] shadow-[0_18px_45px_rgba(255,235,167,0.28)]' : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'}`}
-                      >
-                        <span className="tracking-[0.32em]">{filter.label}</span>
-                        {filter.key === 'cancelled' && cancelledOrdersCount > 0 && (
-                          <span
-                            className={`inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full border px-2 text-[0.68rem] font-bold tracking-normal ${isActive ? 'border-[#733857] text-[#733857]' : 'border-white/40 text-white/80'}`}
-                          >
-                            {cancelledOrdersCount}
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+          <div className="flex justify-end p-6">
+            <button
+              type="button"
+              onClick={closeMobileFilters}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white/70 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f2029]"
+              aria-label="Close filter menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
+          <nav id="mobile-order-filter-menu" className="flex flex-1 items-center justify-center px-8 pb-12">
+            <ul className="w-full max-w-xs space-y-5 text-center" onClick={(event) => event.stopPropagation()}>
+              {ORDER_FILTERS.map((filter) => {
+                const isActive = activeFilter === filter.key;
+                return (
+                  <li key={filter.key}>
+                    <button
+                      type="button"
+                      onClick={() => handleFilterChange(filter.key)}
+                      className={`flex w-full items-center justify-center gap-3 rounded-full border px-6 py-3 text-sm font-semibold uppercase transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ffeba7]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f2029] ${isActive ? 'border-white bg-white text-[#733857] shadow-[0_18px_45px_rgba(255,235,167,0.28)]' : 'border-white/20 text-white/70 hover:border-white/40 hover:text-white'}`}
+                    >
+                      <span className="tracking-[0.32em]">{filter.label}</span>
+                      {filter.key === 'cancelled' && cancelledOrdersCount > 0 && (
+                        <span
+                          className={`inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full border px-2 text-[0.68rem] font-bold tracking-normal ${isActive ? 'border-[#733857] text-[#733857]' : 'border-white/40 text-white/80'}`}
+                        >
+                          {cancelledOrdersCount}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
         </div>
       )}
 
@@ -416,7 +436,7 @@ const Orders = () => {
 
         {filteredOrders.length === 0 ? (
           <div className="text-center py-16 sm:py-20" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center border border-[#733857]/20">
+            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center ">
               <ShoppingBag className="w-10 h-10 text-[#733857]" />
             </div>
             <h2 className="text-3xl font-light tracking-wide text-[#1a1a1a] mb-3">

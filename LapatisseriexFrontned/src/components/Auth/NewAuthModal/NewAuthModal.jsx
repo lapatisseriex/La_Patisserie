@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
 import GoogleSignIn from '../GoogleSignIn/GoogleSignIn';
@@ -227,13 +227,12 @@ const NewAuthModal = () => {
                 </div>
                 <h3 
                   className="text-sm font-bold mb-2 tracking-wide uppercase" 
-                  style={{color: '#281c20', fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                  style={{color: '#281c20'}}
                 >
                   FORGOT PASSWORD?
                 </h3>
                 <p 
-                  className="text-gray-600 text-xs leading-relaxed font-medium" 
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
+                  className="text-gray-600 text-xs leading-relaxed font-medium"
                 >
                   Enter email for reset instructions.
                 </p>
@@ -309,9 +308,7 @@ const NewAuthModal = () => {
                   <span 
                     className="px-4 py-1 bg-white font-bold text-xs tracking-wide uppercase"
                     style={{
-                      color: '#733857',
-                      fontFamily: 'system-ui, -apple-system, sans-serif'
-                    }}
+                      color: '#733857'}}
                   >
                     OR
                   </span>

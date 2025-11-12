@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import '../auth.css';
 
@@ -52,8 +52,7 @@ const GoogleSignIn = () => {
       ) {
         console.log('🌐 Network issue during Google sign in.');
         window.dispatchEvent(new CustomEvent('network:error', {
-          detail: { message: 'Network connection issue', critical: false },
-        }));
+          detail: { message: 'Network connection issue', critical: false }}));
       } else if (err.message === 'timeout') {
         console.log('⏳ Google sign-in timed out.');
         cancelled = true;

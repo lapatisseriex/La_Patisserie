@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
+﻿import React, { memo, useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../../hooks/useAuth';
@@ -137,8 +137,7 @@ const UserMenu = memo(() => {
                 <div 
                   className="absolute inset-0 rounded-full opacity-70 animate-pulse"
                   style={{
-                    background: 'radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, transparent 70%)',
-                  }}
+                    background: 'radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, transparent 70%)'}}
                 />
                 {/* Exclamation mark */}
                 <div 
@@ -182,9 +181,7 @@ const UserMenu = memo(() => {
           style={{ 
             animation: 'fadeIn 0.3s ease-out forwards',
             maxWidth: 'calc(100vw - 20px)',
-            boxShadow: '0 8px 32px rgba(40, 28, 32, 0.15), 0 4px 16px rgba(40, 28, 32, 0.1)',
-            fontFamily: 'system-ui, -apple-system, sans-serif'
-          }}
+            boxShadow: '0 8px 32px rgba(40, 28, 32, 0.15), 0 4px 16px rgba(40, 28, 32, 0.1)'}}
           onMouseEnter={() => {
             // Clear timeout when user mouses over the menu
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -197,14 +194,14 @@ const UserMenu = memo(() => {
           }}
         >
           <div className="p-3 border-b border-gray-100">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20', opacity: 0.7 }}>MY ACCOUNT</p>
+            <p className="text-xs font-medium tracking-[0.25em] uppercase" style={{ color: '#281c20', opacity: 0.7 }}>MY ACCOUNT</p>
           </div>
           
           <div className="py-1">
             <Link 
               to="/profile" 
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20' }}
+              style={{ color: '#281c20' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling
@@ -227,7 +224,7 @@ const UserMenu = memo(() => {
             <Link 
               to="/orders" 
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20' }}
+              style={{ color: '#281c20' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling
@@ -250,7 +247,7 @@ const UserMenu = memo(() => {
             <Link 
               to="/favorites" 
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20' }}
+              style={{ color: '#281c20' }}
               onClick={(e) => {
                 // Don't close the menu immediately on click to prevent accidental misclicks
                 e.stopPropagation(); // Prevent event bubbling

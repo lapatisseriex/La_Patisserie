@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -9,13 +9,15 @@ import {
   Utensils, 
   ShoppingCart, 
   Package, 
-  User,Cake 
+  User,
+  Cake 
 } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
   const { user, toggleAuthPanel } = useAuth();
   const { cartCount } = useCart();
+  const [imageErrors, setImageErrors] = useState({});
 
   // Don't show on admin, profile, or payment pages
   if (location.pathname.startsWith('/admin') || 
@@ -29,6 +31,10 @@ const BottomNavigation = () => {
       e.preventDefault();
       toggleAuthPanel();
     }
+  };
+
+  const handleImageError = (itemId) => {
+    setImageErrors(prev => ({ ...prev, [itemId]: true }));
   };
 
   const navItems = [
@@ -98,16 +104,17 @@ const BottomNavigation = () => {
                   ? 'text-[#733857]' 
                   : 'text-gray-600 hover:text-gray-800'
               }`}
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              style={{  }}
             >
               <div className="relative">
-                {item.imageSrc ? (
+                {!imageErrors[item.id] && item.imageSrc ? (
                   <img 
                     src={item.imageSrc} 
                     alt={item.label}
                     className={`h-5 w-5 transition-all duration-200 ${
                       item.isActive ? 'opacity-100' : 'opacity-60'
                     }`}
+                    onError={() => handleImageError(item.id)}
                   />
                 ) : (
                   <IconComponent 

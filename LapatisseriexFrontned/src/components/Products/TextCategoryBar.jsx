@@ -1,12 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+﻿import React, { useRef, useEffect, useState } from 'react';
 
 const TextCategoryBar = ({
   categories = [],
   loading = false,
   error = null,
   selectedCategory = null,
-  onSelectCategory = () => {},
-}) => {
+  onSelectCategory = () => {}}) => {
   const containerRef = useRef(null);
   const categoryRefs = useRef({});
   const isScrollingRef = useRef(false);

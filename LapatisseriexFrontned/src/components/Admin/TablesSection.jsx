@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
   Package, 
   Grid3x3, 
@@ -30,8 +30,7 @@ const TopProductsTable = ({ data, loading }) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount);
+      minimumFractionDigits: 0}).format(amount);
   };
 
   if (loading) {
@@ -101,8 +100,7 @@ const TopCategoriesTable = ({ data, loading }) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount);
+      minimumFractionDigits: 0}).format(amount);
   };
 
   if (loading) {
@@ -172,8 +170,7 @@ const TopLocationsTable = ({ data, loading }) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount);
+      minimumFractionDigits: 0}).format(amount);
   };
 
   if (loading) {
@@ -245,8 +242,7 @@ const RecentOrdersTable = ({ data, loading }) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount);
+      minimumFractionDigits: 0}).format(amount);
   };
 
   const getStatusColor = (status) => {

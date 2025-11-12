@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+﻿import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../services/apiService';
 
 // Async thunks for user profile actions
@@ -8,9 +8,7 @@ export const uploadProfilePhoto = createAsyncThunk(
     try {
       const response = await api.post('/upload/profile', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+          'Content-Type': 'multipart/form-data'}});
       
       if (response.data.success) {
         return response.data.profilePhoto;
@@ -85,11 +83,9 @@ const initialState = {
       push: true,
       sms: false,
       orderUpdates: true,
-      promotions: true,
-    },
+      promotions: true},
     language: 'en',
-    currency: 'INR',
-  },
+    currency: 'INR'},
   recentlyViewed: [],
   addresses: [],
   orders: [],
@@ -97,10 +93,8 @@ const initialState = {
     profilePhoto: false,
     preferences: false,
     addresses: false,
-    orders: false,
-  },
-  error: null,
-};
+    orders: false},
+  error: null};
 
 // User profile slice
 const userProfileSlice = createSlice({
@@ -163,8 +157,7 @@ const userProfileSlice = createSlice({
         ...initialState,
         preferences: state.preferences, // Keep preferences
       };
-    },
-  },
+    }},
   extraReducers: (builder) => {
     builder
       // Upload profile photo
@@ -215,8 +208,7 @@ const userProfileSlice = createSlice({
           state.preferences = { ...state.preferences, ...action.payload };
         }
       });
-  },
-});
+  }});
 
 export const {
   addToRecentlyViewed,
@@ -226,7 +218,6 @@ export const {
   deleteAddress,
   setDefaultAddress,
   clearError,
-  resetUserProfile,
-} = userProfileSlice.actions;
+  resetUserProfile} = userProfileSlice.actions;
 
 export default userProfileSlice.reducer;

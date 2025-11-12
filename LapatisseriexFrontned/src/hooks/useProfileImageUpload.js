@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+﻿import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from './useAuth';
 
 import axios from 'axios';
@@ -27,8 +27,7 @@ export const useProfileImageUpload = () => {
   const config = {
     maxSize: UPLOAD_CONFIG.FILE_SIZE_LIMITS.PROFILE_IMAGE,
     supportedFormats: UPLOAD_CONFIG.SUPPORTED_FORMATS.PROFILE_IMAGE,
-    timeout: UPLOAD_CONFIG.TIMEOUTS.PROFILE_IMAGE,
-  };
+    timeout: UPLOAD_CONFIG.TIMEOUTS.PROFILE_IMAGE};
 
   // Validate file function
   const validateFile = useCallback((file) => {
@@ -347,6 +346,5 @@ export const useProfileImageUpload = () => {
     deleteProfileImage,
     cancelUpload,
     resetUpload,
-    config,
-  };
+    config};
 };

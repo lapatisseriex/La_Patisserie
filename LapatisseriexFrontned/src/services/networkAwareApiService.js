@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Enhanced API Service with Network Error Handling
  * Extends the existing apiService with offline support and retry logic
  */
@@ -45,8 +45,7 @@ class NetworkAwareApiService {
   handleConnectionRestored() {
     toast.success('Connection restored! Processing queued requests...', {
       position: "top-center",
-      autoClose: 3000,
-    });
+      autoClose: 3000});
     
     // Process any queued offline requests
     offlineRequestQueue.processQueue();
@@ -56,8 +55,7 @@ class NetworkAwareApiService {
     toast.error('Internet connection lost. Some features may be limited.', {
       position: "top-center",
       autoClose: false,
-      toastId: 'connection-lost',
-    });
+      toastId: 'connection-lost'});
   }
 
   /**
@@ -81,16 +79,14 @@ class NetworkAwareApiService {
         options: {
           method,
           headers: options.headers || {},
-          body: data ? JSON.stringify(data) : undefined,
-        }
+          body: data ? JSON.stringify(data) : undefined}
       };
       
       offlineRequestQueue.addRequest(requestData);
       
       toast.info('Request queued. Will be sent when connection is restored.', {
         position: "bottom-right",
-        autoClose: 3000,
-      });
+        autoClose: 3000});
       
       throw new Error('Offline - request queued');
     }

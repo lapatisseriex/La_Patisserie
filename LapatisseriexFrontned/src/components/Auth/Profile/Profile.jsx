@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { useSelector } from 'react-redux';
@@ -73,8 +73,7 @@ const LoadingOverlayPortal = ({ show }) => {
           zIndex: 999999,
           pointerEvents: isVisible ? 'all' : 'none',
           backgroundColor: isVisible ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
-          backdropFilter: isVisible ? 'blur(4px)' : 'none',
-        }}
+          backdropFilter: isVisible ? 'blur(4px)' : 'none'}}
       >
         <div className={`bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm mx-4 transform transition-all duration-300 ${
           isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
@@ -100,21 +99,20 @@ const LoadingOverlayPortal = ({ show }) => {
                   borderTopColor: 'transparent',
                   position: 'absolute',
                   top: 0,
-                  left: 0,
-                }}
+                  left: 0}}
               />
             </div>
             {/* Loading Text */}
             <div className="text-center w-full">
               <h3
                 className="text-xl font-bold text-black mb-2 text-center"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif', textAlign: 'center' }}
+                style={{ textAlign: 'center' }}
               >
                 Updating Your Profile
               </h3>
               <p
                 className="text-gray-600 text-sm text-center"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif', textAlign: 'center' }}
+                style={{ textAlign: 'center' }}
               >
                 Please wait while we save your changes...
               </p>
@@ -479,8 +477,7 @@ const Profile = ({ onDirtyChange }) => {
         ...cachedUserData,
         // Keep the nested objects properly formatted
         location: currentLocationId || '',
-        hostel: currentHostelId || '',
-      };
+        hostel: currentHostelId || ''};
       
       // Then create the form data with proper precedence
       const initialFormData = createInitialFormData(mergedUserData, savedFormData);
@@ -565,8 +562,7 @@ const Profile = ({ onDirtyChange }) => {
         anniversary: name === 'anniversary' ? processedValue : formData.anniversary,
         country: name === 'country' ? processedValue : formData.country,
         location: name === 'location' ? processedValue : formData.location,
-        hostel: name === 'hostel' ? processedValue : formData.hostel,
-      };
+        hostel: name === 'hostel' ? processedValue : formData.hostel};
       const dirtyNow = JSON.stringify(comparable) !== JSON.stringify(baselineRef.current);
       if (dirtyNow !== isDirty) {
         setIsDirty(dirtyNow);
@@ -831,11 +827,9 @@ const Profile = ({ onDirtyChange }) => {
       }}>
         {/* Decorative Elements */}
         <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 opacity-[0.03]" style={{
-          background: 'radial-gradient(circle, #733857 0%, transparent 70%)',
-        }}></div>
+          background: 'radial-gradient(circle, #733857 0%, transparent 70%)'}}></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-32 sm:h-32 opacity-[0.03]" style={{
-          background: 'radial-gradient(circle, #8d4466 0%, transparent 70%)',
-        }}></div>
+          background: 'radial-gradient(circle, #8d4466 0%, transparent 70%)'}}></div>
         
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 lg:gap-8">
@@ -857,14 +851,12 @@ const Profile = ({ onDirtyChange }) => {
               <div className="mb-2">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight mb-1" style={{
                   color: '#281c20',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   letterSpacing: '0.01em'
                 }}>
                   {formData.name || 'Welcome Back'}
                 </h1>
                 <p className="text-xs sm:text-sm" style={{
                   color: 'rgba(40, 28, 32, 0.6)',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   letterSpacing: '0.03em'
                 }}>
                   Manage your sweet preferences & delivery details
@@ -877,9 +869,7 @@ const Profile = ({ onDirtyChange }) => {
                   backgroundColor: 'rgba(115, 56, 87, 0.05)',
                   border: '1px solid rgba(115, 56, 87, 0.1)',
                   borderRadius: '20px',
-                  color: '#733857',
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                }}>
+                  color: '#733857'}}>
                   <MapPinned className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={1.5} />
                   <span className="font-medium">
                     {formData.location 
@@ -891,9 +881,7 @@ const Profile = ({ onDirtyChange }) => {
                   backgroundColor: 'rgba(190, 24, 93, 0.05)',
                   border: '1px solid rgba(190, 24, 93, 0.1)',
                   borderRadius: '20px',
-                  color: '#BE185D',
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                }}>
+                  color: '#BE185D'}}>
                   <Cake className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={1.5} />
                   <span className="font-medium">
                     {formData.dob 
@@ -915,7 +903,6 @@ const Profile = ({ onDirtyChange }) => {
                 style={{
                   backgroundColor: '#733857',
                   color: 'white',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   border: '1px solid rgba(115, 56, 87, 0.2)'
                 }}
                 onMouseEnter={(e) => {
@@ -969,10 +956,10 @@ const Profile = ({ onDirtyChange }) => {
                 </div>
                 {/* Success Text */}
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">
                     {successMessage}
                   </h3>
-                  <p className="text-gray-600 text-sm" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                  <p className="text-gray-600 text-sm">
                     Your profile has been updated successfully!
                   </p>
                 </div>
@@ -1002,10 +989,10 @@ const Profile = ({ onDirtyChange }) => {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl sm:text-2xl font-bold tracking-wide mb-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: '0.03em', color: '#ffffff'}}>
+                    <h3 className="text-xl sm:text-2xl font-bold tracking-wide mb-1" style={{ letterSpacing: '0.03em', color: '#ffffff'}}>
                       Something went wrong
                     </h3>
-                    <p className="text-sm sm:text-base font-medium leading-relaxed" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: 'rgba(255,255,255,0.92)'}}>
+                    <p className="text-sm sm:text-base font-medium leading-relaxed" style={{ color: 'rgba(255,255,255,0.92)'}}>
                       {localError}
                     </p>
                   </div>
@@ -1043,13 +1030,10 @@ const Profile = ({ onDirtyChange }) => {
               <div>
                 <h2 className="text-base sm:text-lg font-semibold" style={{
                   color: '#733857',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   letterSpacing: '0.01em'
                 }}>Personal Information</h2>
                 <p className="text-xs sm:text-sm" style={{
-                  color: 'rgba(115, 56, 87, 0.6)',
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                }}>Your basic details</p>
+                  color: 'rgba(115, 56, 87, 0.6)'}}>Your basic details</p>
               </div>
             </div>
           </div>
@@ -1061,7 +1045,6 @@ const Profile = ({ onDirtyChange }) => {
             <div className="space-y-2">
               <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
                 color: '#733857',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
                 letterSpacing: '0.02em'
               }}>
                 <User className="h-3 w-3 sm:h-4 sm:w-4" style={{color: 'rgba(115, 56, 87, 0.6)'}} strokeWidth={1.5} />
@@ -1079,7 +1062,6 @@ const Profile = ({ onDirtyChange }) => {
                   disabled={isSaving}
                   className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black`}
                   style={{
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
                     borderRadius: '4px'
                   }}
                 />
@@ -1090,7 +1072,6 @@ const Profile = ({ onDirtyChange }) => {
             <div className="space-y-2">
               <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
                 color: '#733857',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
                 letterSpacing: '0.02em'
               }}>
                 <User className="h-3 w-3 sm:h-4 sm:w-4" style={{color: 'rgba(115, 56, 87, 0.6)'}} strokeWidth={1.5} />
@@ -1104,7 +1085,6 @@ const Profile = ({ onDirtyChange }) => {
                   disabled={isSaving}
                   className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none appearance-none border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black`}
                   style={{
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
                     borderRadius: '4px'
                   }}
                 >
@@ -1138,13 +1118,10 @@ const Profile = ({ onDirtyChange }) => {
               <div>
                 <h2 className="text-base sm:text-lg font-semibold" style={{
                   color: '#733857',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   letterSpacing: '0.01em'
                 }}>Verification & Security</h2>
                 <p className="text-xs sm:text-sm" style={{
-                  color: 'rgba(115, 56, 87, 0.6)',
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                }}>Verify your contact details</p>
+                  color: 'rgba(115, 56, 87, 0.6)'}}>Verify your contact details</p>
               </div>
             </div>
           </div>
@@ -1189,13 +1166,10 @@ const Profile = ({ onDirtyChange }) => {
               <div>
                 <h2 className="text-base sm:text-lg font-semibold" style={{
                   color: '#BE185D',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   letterSpacing: '0.01em'
                 }}>Special Dates</h2>
                 <p className="text-xs sm:text-sm" style={{
-                  color: 'rgba(159, 18, 57, 0.7)',
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                }}>Get special treats on your special days!</p>
+                  color: 'rgba(159, 18, 57, 0.7)'}}>Get special treats on your special days!</p>
               </div>
             </div>
           </div>
@@ -1207,7 +1181,6 @@ const Profile = ({ onDirtyChange }) => {
             <div className="space-y-2">
               <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
                 color: '#BE185D',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
                 letterSpacing: '0.02em'
               }}>
                 <Calendar className="h-3 w-3 sm:h-4 sm:w-4" style={{color: '#EC4899'}} strokeWidth={1.5} />
@@ -1228,15 +1201,12 @@ const Profile = ({ onDirtyChange }) => {
                       : 'border-pink-200 bg-pink-50'
                   } ${!isEditMode ? 'text-gray-700' : 'text-black'}`}
                   style={{
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
                     borderRadius: '4px'
                   }}
                 />
               </div>
               <p className="text-[10px] sm:text-xs" style={{
-                color: '#9F1239',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>
+                color: '#9F1239'}}>
                 We'll send you special birthday treats!
               </p>
             </div>
@@ -1245,7 +1215,6 @@ const Profile = ({ onDirtyChange }) => {
             <div className="space-y-2">
               <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
                 color: '#BE185D',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
                 letterSpacing: '0.02em'
               }}>
                 <Heart className="h-3 w-3 sm:h-4 sm:w-4" style={{color: '#EC4899'}} strokeWidth={1.5} />
@@ -1266,15 +1235,12 @@ const Profile = ({ onDirtyChange }) => {
                       : 'border-pink-200 bg-pink-50'
                   } ${!isEditMode ? 'text-gray-700' : 'text-black'}`}
                   style={{
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
                     borderRadius: '4px'
                   }}
                 />
               </div>
               <p className="text-[10px] sm:text-xs" style={{
-                color: '#9F1239',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>
+                color: '#9F1239'}}>
                 Celebrate with special anniversary offers!
               </p>
             </div>
@@ -1300,13 +1266,10 @@ const Profile = ({ onDirtyChange }) => {
               <div>
                 <h2 className="text-base sm:text-lg font-semibold" style={{
                   color: '#6B4423',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   letterSpacing: '0.01em'
                 }}>Delivery Information</h2>
                 <p className="text-xs sm:text-sm" style={{
-                  color: 'rgba(139, 115, 85, 0.8)',
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                }}>Where should we deliver your treats?</p>
+                  color: 'rgba(139, 115, 85, 0.8)'}}>Where should we deliver your treats?</p>
               </div>
             </div>
           </div>
@@ -1317,7 +1280,7 @@ const Profile = ({ onDirtyChange }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Delivery Location */}
               <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423'}}>
                   <MapPinned className="h-4 w-4" style={{color: '#8B7355'}} />
                   Delivery Location <span style={{color: '#6B4423'}}>*</span>
                 </label>
@@ -1335,7 +1298,7 @@ const Profile = ({ onDirtyChange }) => {
                     } focus:ring-2 transition-all duration-300 outline-none appearance-none ${
                       !isEditMode ? 'text-gray-700' : 'text-black'
                     }`}
-                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
+                    style={{ borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
                   >
                     <option value="">Select delivery location</option>
                     {locations && locations.length > 0 ? (
@@ -1354,7 +1317,7 @@ const Profile = ({ onDirtyChange }) => {
 
               {/* Country Field */}
               <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423'}}>
                   <Flag className="h-4 w-4" style={{color: '#8B7355'}} />
                   Country <span style={{color: '#6B4423'}}>*</span>
                 </label>
@@ -1371,7 +1334,7 @@ const Profile = ({ onDirtyChange }) => {
                     } focus:ring-2 transition-all duration-300 outline-none appearance-none ${
                       !isEditMode ? 'text-gray-700' : 'text-black'
                     }`}
-                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
+                    style={{ borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
                   >
                     <option value="India">India</option>
                     <option value="USA">USA</option>
@@ -1386,14 +1349,14 @@ const Profile = ({ onDirtyChange }) => {
             {/* Hostel Selection */}
             {formData.location && (
               <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423'}}>
                   <Building className="h-4 w-4" style={{color: '#8B7355'}} />
                   Hostel/Residence
                   <span className="text-xs font-normal ml-2" style={{color: '#8B7355'}}>(Optional)</span>
                 </label>
                 <div className="relative">
                   {!isEditMode ? (
-                    <div className={`w-full px-4 py-3 border bg-stone-50 text-gray-700`} style={{fontFamily: 'system-ui, -apple-system, sans-serif', borderColor: '#8B7355'}}>
+                    <div className={`w-full px-4 py-3 border bg-stone-50 text-gray-700`} style={{ borderColor: '#8B7355'}}>
                       {(() => {
                         if (!formData.hostel) return 'No hostel selected';
                         if (user?.hostel && typeof user.hostel === 'object' && user.hostel._id === formData.hostel) {
@@ -1413,7 +1376,7 @@ const Profile = ({ onDirtyChange }) => {
                       onChange={handleChange}
                       disabled={isSaving || hostelsLoading}
                       className={`w-full px-4 py-3 border bg-white focus:border-black focus:ring-2 transition-all duration-300 outline-none appearance-none text-black`}
-                      style={{fontFamily: 'system-ui, -apple-system, sans-serif', borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
+                      style={{ borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
                     >
                       <option value="">Select hostel/residence (Optional)</option>
                       {hostels && hostels.length > 0 ? (
@@ -1433,7 +1396,7 @@ const Profile = ({ onDirtyChange }) => {
                     <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{color: '#8B7355'}} />
                   )}
                 </div>
-                <p className="text-xs" style={{color: '#8B7355', fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                <p className="text-xs" style={{color: '#8B7355'}}>
                   Help us deliver faster
                 </p>
               </div>
@@ -1459,7 +1422,6 @@ const Profile = ({ onDirtyChange }) => {
                 style={{
                   borderColor: 'rgba(115, 56, 87, 0.3)',
                   color: '#733857',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   borderRadius: '4px'
                 }}
                 onMouseEnter={(e) => {
@@ -1489,7 +1451,6 @@ const Profile = ({ onDirtyChange }) => {
                 className="flex-1 relative px-6 sm:px-8 py-3 sm:py-4 text-white overflow-hidden transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 style={{
                   backgroundColor: '#733857',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   borderRadius: '4px',
                   boxShadow: '0 4px 12px rgba(115, 56, 87, 0.25)'
                 }}

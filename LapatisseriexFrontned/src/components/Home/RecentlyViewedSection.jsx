@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext/RecentlyViewedContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useShopStatus } from '../../context/ShopStatusContext';
@@ -37,7 +37,7 @@ const RecentlyViewedSection = () => {
   }
 
   return (
-    <section className="w-full py-0 md:py-6 bg-white" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <section className="w-full py-0 md:py-6 bg-white" style={{  }}>
       <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
         {/* Loading State */}
         {loading && (

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+﻿import { useState, useRef, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { UPLOAD_CONFIG, formatFileSize, validateFileSize, validateFileFormat } from '../config/uploadConfig';
 
@@ -24,13 +24,11 @@ export const useUpload = (uploadType = 'PROFILE_IMAGE') => {
     ? {
         maxSize: UPLOAD_CONFIG.FILE_SIZE_LIMITS[uploadType],
         supportedFormats: UPLOAD_CONFIG.SUPPORTED_FORMATS[uploadType],
-        timeout: UPLOAD_CONFIG.TIMEOUTS[uploadType] || UPLOAD_CONFIG.TIMEOUTS.GENERAL_UPLOAD,
-      }
+        timeout: UPLOAD_CONFIG.TIMEOUTS[uploadType] || UPLOAD_CONFIG.TIMEOUTS.GENERAL_UPLOAD}
     : {
         maxSize: UPLOAD_CONFIG.FILE_SIZE_LIMITS.GENERAL_IMAGE,
         supportedFormats: UPLOAD_CONFIG.SUPPORTED_FORMATS.GENERAL_IMAGE,
-        timeout: UPLOAD_CONFIG.TIMEOUTS.GENERAL_UPLOAD,
-      };
+        timeout: UPLOAD_CONFIG.TIMEOUTS.GENERAL_UPLOAD};
 
   // Validate file
   const validateFile = useCallback((file) => {
@@ -279,6 +277,5 @@ export const useUpload = (uploadType = 'PROFILE_IMAGE') => {
     setError,
     setSuccess,
     formatFileSize,
-    config,
-  };
+    config};
 };

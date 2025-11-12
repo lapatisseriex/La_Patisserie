@@ -27,7 +27,7 @@ const dynamicCachePatterns = [
 
 // External resources to cache (CSS only; font files fetched by browser with proper CORS)
 const externalResources = [
-  'https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap'
 ];
 
 // Message event - handle skip waiting

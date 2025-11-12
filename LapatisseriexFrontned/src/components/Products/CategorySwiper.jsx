@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+﻿import React, { useRef, useEffect, useState } from 'react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 
 const CategorySwiper = ({
@@ -6,8 +6,7 @@ const CategorySwiper = ({
   loading = false,
   error = null,
   selectedCategory = null,
-  onSelectCategory = () => {},
-}) => {
+  onSelectCategory = () => {}}) => {
   const containerRef = useRef(null);
   const categoryRefs = useRef({});
   const isScrollingRef = useRef(false);

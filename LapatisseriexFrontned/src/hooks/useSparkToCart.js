@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+﻿import { useCallback, useRef } from 'react';
 import { useSparkAnimationContext } from '../context/SparkAnimationContext/SparkAnimationContext';
 import { useCart } from './useCart';
 
@@ -40,8 +40,7 @@ export const useSparkToCart = () => {
   return {
     buttonRef,
     addToCartWithSpark,
-    triggerSpark,
-  };
+    triggerSpark};
 };
 
 export default useSparkToCart;

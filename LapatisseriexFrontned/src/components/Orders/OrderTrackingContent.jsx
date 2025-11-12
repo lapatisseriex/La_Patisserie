@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+﻿import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, X, BadgeCheck, ChefHat, Home } from 'lucide-react';
 import { calculatePricing } from '../../utils/pricingUtils';
@@ -105,8 +105,7 @@ const OrderTrackingContent = ({ order }) => {
       discountTotal,
       deliveryCharge,
       freeCashUsed,
-      grandTotal,
-    };
+      grandTotal};
   }, [order, cartItemsWithPricing]);
   
   if (!order) return null;
@@ -231,8 +230,7 @@ const OrderTrackingContent = ({ order }) => {
       // Show success message
       toast.success('Order cancelled successfully! Redirecting to orders page...', {
         position: "top-center",
-        autoClose: 3000,
-      });
+        autoClose: 3000});
 
       // Delay navigation to show the success message
       setTimeout(() => {
@@ -259,8 +257,7 @@ const OrderTrackingContent = ({ order }) => {
       // Use toast for better user experience
       toast.error(errorMessage, {
         position: "top-center",
-        autoClose: 5000,
-      });
+        autoClose: 5000});
     } finally {
       setIsCancelling(false);
       setCancelReason('');

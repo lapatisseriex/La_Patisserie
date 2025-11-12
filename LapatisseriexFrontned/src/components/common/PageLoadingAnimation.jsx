@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 
 // Elegant pastel version for La Patisserie aesthetic
 const PageLoadingAnimation = ({
@@ -38,8 +38,7 @@ const PageLoadingAnimation = ({
           background:
             'linear-gradient(to right, #b86b77, #d98fa5, #b86b77)',
           WebkitBackgroundClip: 'text',
-          color: 'transparent',
-        }}
+          color: 'transparent'}}
       >
         {title}
       </h2>

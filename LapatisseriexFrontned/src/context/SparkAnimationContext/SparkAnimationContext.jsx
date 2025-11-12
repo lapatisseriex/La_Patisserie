@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+﻿import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 const SparkAnimationContext = createContext();
 
@@ -23,8 +23,7 @@ export const SparkAnimationProvider = ({ children }) => {
     
     return {
       x: rect.left + scrollLeft + rect.width / 2,
-      y: rect.top + scrollTop + rect.height / 2,
-    };
+      y: rect.top + scrollTop + rect.height / 2};
   }, []);
 
   const getCartIconPosition = useCallback(() => {
@@ -42,8 +41,7 @@ export const SparkAnimationProvider = ({ children }) => {
     const isMobile = window.innerWidth <= 768;
     return {
       x: isMobile ? window.innerWidth - 60 : window.innerWidth - 100,
-      y: isMobile ? 60 : 80,
-    };
+      y: isMobile ? 60 : 80};
   }, [getElementPosition]);
 
     const triggerSparkAnimation = useCallback((startElement) => {
@@ -71,8 +69,7 @@ export const SparkAnimationProvider = ({ children }) => {
       startX: startPos.x,
       startY: startPos.y,
       endX: endPos.x,
-      endY: endPos.y,
-    };
+      endY: endPos.y};
 
     console.log('✨ Creating spark:', newSpark);
     setSparks(prev => [...prev, newSpark]);
@@ -91,8 +88,7 @@ export const SparkAnimationProvider = ({ children }) => {
     <SparkAnimationContext.Provider value={{
       sparks,
       triggerSparkAnimation,
-      clearAnimation,
-    }}>
+      clearAnimation}}>
       {children}
     </SparkAnimationContext.Provider>
   );

@@ -101,7 +101,7 @@ const HeroVideo = () => {
           {/* Brand Logo */}
           <div className="mb-6">
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-2 tracking-wider" 
-                style={{ fontFamily: 'Playfair Display, serif' }}>
+                style={{ fontFamily: "'Dancing Script', cursive" }}>
               La Patisserie
             </h1>
             <div className="w-32 h-1 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full"></div>

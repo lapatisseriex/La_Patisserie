@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -32,8 +32,7 @@ const throttleRequest = (key, requestFn) => {
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: API_BASE_URL,
-});
+  baseURL: API_BASE_URL});
 
 // Add auth token to requests
 api.interceptors.request.use(

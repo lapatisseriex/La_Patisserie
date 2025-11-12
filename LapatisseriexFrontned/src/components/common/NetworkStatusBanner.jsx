@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff, X } from 'lucide-react';
 import useNetworkStatus from '../../hooks/useNetworkStatus';
 
@@ -38,9 +38,7 @@ const NetworkStatusBanner = () => {
     <div 
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 text-white`}
       style={{
-        backgroundColor: bannerType === 'offline' ? '#dc2626' : '#16a34a',
-        fontFamily: 'system-ui, -apple-system, sans-serif'
-      }}
+        backgroundColor: bannerType === 'offline' ? '#dc2626' : '#16a34a'}}
     >
       <div className="flex items-center justify-between px-4 py-2 max-w-7xl mx-auto">
         <div className="flex items-center space-x-3">

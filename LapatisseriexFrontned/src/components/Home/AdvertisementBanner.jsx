@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const AdvertisementBanner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -89,8 +89,7 @@ const AdvertisementBanner = () => {
         className="flex transition-transform duration-700 ease-in-out"
         style={{
           transform: `translateX(-${currentSlide * 100}%)`,
-          cursor: isDragging ? 'grabbing' : 'grab',
-        }}
+          cursor: isDragging ? 'grabbing' : 'grab'}}
       >
         {advertisements.map((ad, index) => (
           <div key={ad.id} className="w-full flex-shrink-0 relative">

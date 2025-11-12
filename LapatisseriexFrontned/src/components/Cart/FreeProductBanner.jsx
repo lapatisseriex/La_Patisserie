@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import { checkFreeProductEligibility, getFreeProductProgress } from '../../services/freeProductService';
@@ -273,8 +273,7 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
                           : 'bg-gray-200'
                       }`}
                       style={{
-                        borderRadius: index < progress.currentDays ? '2px' : '50%',
-                      }}
+                        borderRadius: index < progress.currentDays ? '2px' : '50%'}}
                     />
                   ))}
                 </div>

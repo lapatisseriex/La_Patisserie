@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 import { useCart } from '../../hooks/useCart';
@@ -25,8 +25,7 @@ import {
   Building,
   Edit2,
   Save,
-  X,
-} from 'lucide-react';
+  X} from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
@@ -154,9 +153,7 @@ const Checkout = () => {
         },
         {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
-          },
-        }
+            'Authorization': `Bearer ${authToken}`}}
       );
 
       // Get the full location and hostel objects
@@ -233,7 +230,7 @@ const Checkout = () => {
   };
   console.log(user);
   return (
-    <div className="min-h-screen bg-gray-25" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', backgroundColor: '#fafafa' }}>
+    <div className="min-h-screen bg-gray-25" style={{ backgroundColor: '#fafafa' }}>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Back to Cart */}
         <div className="mb-6">
@@ -277,7 +274,7 @@ const Checkout = () => {
                   <h2 className="text-xl font-semibold text-[#733857]">Order Summary</h2>
                   <span
                     className="text-sm font-semibold tracking-wide"
-                    style={{ color: orderExperience.color, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                    style={{ color: orderExperience.color}}
                   >
                     {orderExperience.label}
                   </span>
@@ -598,9 +595,7 @@ const Checkout = () => {
                 disabled={isEditMode || saving}
                 maskType="nature"
                 style={{
-                  width: '100%',
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                }}
+                  width: '100%'}}
               >
                 {isEditMode ? 'Save changes to proceed' : 'Continue to Payment'}
               </MaskButton>

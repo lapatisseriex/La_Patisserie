@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Network-aware API error handler
  * Provides better error messages and retry logic for network issues
  */
@@ -79,8 +79,7 @@ export const showNetworkErrorToast = (error, customMessage = null) => {
     hideProgressBar: false,
     closeOnClick: true,
     pauseOnHover: true,
-    draggable: true,
-  };
+    draggable: true};
 
   switch (errorType) {
     case NetworkErrorTypes.OFFLINE:
@@ -148,8 +147,7 @@ export const networkAwareFetch = async (url, options = {}) => {
   try {
     const response = await fetch(url, {
       ...options,
-      signal: controller.signal,
-    });
+      signal: controller.signal});
     
     clearTimeout(timeoutId);
     

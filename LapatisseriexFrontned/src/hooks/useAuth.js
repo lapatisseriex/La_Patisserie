@@ -1,4 +1,4 @@
-import { useSelector, useDispatch } from 'react-redux';
+﻿import { useSelector, useDispatch } from 'react-redux';
 import { useCallback } from 'react';
 import { 
   signInWithGoogle,
@@ -192,8 +192,7 @@ export const useAuth = () => {
     isProfileIncomplete: () => auth.user && (!auth.user.name || !auth.user.dob || !auth.user.location),
     getUserDisplayName: () => auth.user?.name || auth.user?.email || 'User',
     // Prefer only custom uploaded avatars (with public_id). Avoid showing provider photos (e.g., Google) to prevent flicker.
-    getUserAvatarUrl: () => (auth.user?.profilePhoto?.public_id ? auth.user.profilePhoto.url : '/images/default-avatar.svg'),
-  };
+    getUserAvatarUrl: () => (auth.user?.profilePhoto?.public_id ? auth.user.profilePhoto.url : '/images/default-avatar.svg')};
 };
 
 // Custom hook for user profile
@@ -226,8 +225,7 @@ export const useUserProfile = () => {
     clearError: () => 
       dispatch({ type: 'userProfile/clearError' }),
     resetUserProfile: () => 
-      dispatch({ type: 'userProfile/resetUserProfile' }),
-  };
+      dispatch({ type: 'userProfile/resetUserProfile' })};
 };
 
 // Selectors

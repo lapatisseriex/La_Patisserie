@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { paymentsService, paymentsToCSV, downloadCSV } from '../../services/paymentsService';
 import { toast } from 'react-toastify';
 import { 
@@ -40,8 +40,7 @@ const StatCard = ({ title, value, tone = 'primary', subtitle, icon }) => {
     primary: 'from-rose-500 to-pink-500',
     success: 'from-emerald-500 to-green-500',
     warning: 'from-amber-500 to-yellow-500',
-    danger: 'from-red-500 to-rose-500',
-  };
+    danger: 'from-red-500 to-rose-500'};
   return (
     <div className="p-4 rounded-xl bg-white shadow hover:shadow-md transition-shadow">
       <div className={`inline-flex flex-wrap items-center max-w-full overflow-hidden text-white text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-md bg-gradient-to-r ${tones[tone]} mb-2`}>

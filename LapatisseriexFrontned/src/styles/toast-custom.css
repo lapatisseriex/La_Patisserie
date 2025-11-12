@@ -32,7 +32,7 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-radius: 8px !important;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-weight: 300 !important;
   min-height: 64px !important;
 }
@@ -55,7 +55,7 @@
 .Toastify__toast-body,
 .Toastify__toast-body > div {
   color: #1a1a1a !important;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-weight: 300 !important;
   padding: 8px !important;
   line-height: 1.5 !important;

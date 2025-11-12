@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 
 // Resolve API base URL for all environments
@@ -25,9 +25,7 @@ const api = axios.create({
   baseURL: API_URL,
   timeout: 120000, // 120 seconds timeout (increased for video uploads)
   headers: {
-    'Content-Type': 'application/json',
-  },
-});
+    'Content-Type': 'application/json'}});
 
 // Lazy Firebase auth accessor to avoid failures before app initialization
 let _auth;

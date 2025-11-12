@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+﻿import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { 
   // getAuth removed; we use shared auth instance
   signOut,
@@ -56,8 +56,7 @@ export const initializeAuthListener = createAsyncThunk(
                 name: firebaseUser.displayName,
                 profilePhoto: { url: firebaseUser.photoURL || '', public_id: '' },
                 // Backend authoritative data
-                ...verifyResp.data.user,
-              };
+                ...verifyResp.data.user};
               // Persist rich user immediately to minimize UI flicker
               localStorage.setItem('cachedUser', JSON.stringify(backendUser));
 
@@ -76,8 +75,7 @@ export const initializeAuthListener = createAsyncThunk(
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 name: firebaseUser.displayName,
-                profilePhoto: { url: firebaseUser.photoURL || '', public_id: '' },
-              };
+                profilePhoto: { url: firebaseUser.photoURL || '', public_id: '' }};
               dispatch({
                 type: 'auth/setUser',
                 payload: {
@@ -138,8 +136,7 @@ export const signInWithGoogle = createAsyncThunk(
             uid: user.uid,
             email: user.email,
             name: user.displayName,
-            profilePhoto: { url: user.photoURL || '', public_id: '' },
-          },
+            profilePhoto: { url: user.photoURL || '', public_id: '' }},
           token: idToken,
           isAuthenticated: true
         }
@@ -170,8 +167,7 @@ export const signInWithGoogle = createAsyncThunk(
         country: response.data.user.country || 'India',
         gender: response.data.user.gender || '',
         dob: response.data.user.dob || null,
-        anniversary: response.data.user.anniversary || null,
-      };
+        anniversary: response.data.user.anniversary || null};
       
       // Note: User data now cached via redux-persist, not manual localStorage
       
@@ -273,8 +269,7 @@ export const verifySignupOTP = createAsyncThunk(
         country: response.data.user.country || 'India',
         gender: response.data.user.gender || '',
         dob: response.data.user.dob || null,
-        anniversary: response.data.user.anniversary || null,
-      };
+        anniversary: response.data.user.anniversary || null};
       
       return {
         user: userData,
@@ -335,8 +330,7 @@ export const signUpWithEmail = createAsyncThunk(
         country: response.data.user.country || 'India',
         gender: response.data.user.gender || '',
         dob: response.data.user.dob || null,
-        anniversary: response.data.user.anniversary || null,
-      };
+        anniversary: response.data.user.anniversary || null};
       
       // Note: User data now cached via redux-persist, not manual localStorage
       
@@ -395,8 +389,7 @@ export const signInWithEmail = createAsyncThunk(
             uid: user.uid,
             email: user.email,
             name: user.displayName,
-            profilePhoto: { url: user.photoURL || '', public_id: '' },
-          },
+            profilePhoto: { url: user.photoURL || '', public_id: '' }},
           token: idToken,
           isAuthenticated: true
         }
@@ -422,8 +415,7 @@ export const signInWithEmail = createAsyncThunk(
         country: response.data.user.country || 'India',
         gender: response.data.user.gender || '',
         dob: response.data.user.dob || null,
-        anniversary: response.data.user.anniversary || null,
-      };
+        anniversary: response.data.user.anniversary || null};
       
       // Note: User data now cached via redux-persist, not manual localStorage
       
@@ -490,8 +482,7 @@ export const getCurrentUser = createAsyncThunk(
           // Ensure phone verification fields are included
           phone: response.data.user.phone || '',
           phoneVerified: response.data.user.phoneVerified || false,
-          phoneVerifiedAt: response.data.user.phoneVerifiedAt || null,
-        };
+          phoneVerifiedAt: response.data.user.phoneVerifiedAt || null};
         
         // Note: User data now cached via redux-persist, not manual localStorage
         
@@ -741,8 +732,7 @@ const authSlice = createSlice({
         error: null,
         message: ''
       };
-    },
-  },
+    }},
   extraReducers: (builder) => {
     builder
       // Google Sign In
@@ -980,8 +970,7 @@ const authSlice = createSlice({
         state.signupOtp.loading = false;
         state.signupOtp.error = action.payload;
       });
-  },
-});
+  }});
 
 export const {
   setAuthType,

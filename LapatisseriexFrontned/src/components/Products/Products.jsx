@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -121,8 +121,7 @@ const Products = () => {
         key: `category_${categoryId}`,
         limit: 20,
         category: categoryId,
-        sort: 'createdAt:-1',
-      })).unwrap();
+        sort: 'createdAt:-1'})).unwrap();
 
       // Update the products for this category
       const filteredProducts = filterProductsForFreeSelection(result.products || []);
@@ -150,6 +149,8 @@ const Products = () => {
       if (reduxProductsCache['allProducts'] && reduxProductsCache['allProducts'].length > 0) {
         setAllProducts(filterProductsForFreeSelection(reduxProductsCache['allProducts']));
         hasAnyCache = true;
+        // If we have cached allProducts, we're not in loading state
+        setIsLoading(false);
       }
       
       // Check for category-specific caches
@@ -167,6 +168,11 @@ const Products = () => {
       if (hasAnyCache && Object.keys(cachedProducts).length > 0) {
         setProductsByCategory(cachedProducts);
         console.log('✅ Initialized from Redux cache:', Object.keys(cachedProducts));
+      }
+      
+      // If we have any cache, mark as initially loaded to skip loading state
+      if (hasAnyCache) {
+        initialLoadRef.current = true;
       }
     }
   }, [reduxProductsCache, filterProductsForFreeSelection]);
@@ -365,7 +371,10 @@ const Products = () => {
     }
 
     const loadInitialProducts = async () => {
-      setIsLoading(true);
+      // Don't show loading state if we already have cached data
+      if (!initialLoadRef.current && (!allProducts || allProducts.length === 0)) {
+        setIsLoading(true);
+      }
       setError(null);
 
       try {
@@ -373,8 +382,7 @@ const Products = () => {
         const allProductsResult = await dispatch(fetchProducts({
           key: 'allProducts',
           limit: 20,
-          sort: 'createdAt:-1',
-        })).unwrap();
+          sort: 'createdAt:-1'})).unwrap();
         const filteredAllProducts = filterProductsForFreeSelection(allProductsResult.products || []);
         setAllProducts(filteredAllProducts);
 
@@ -395,8 +403,7 @@ const Products = () => {
                   key: `category_${catId}`,
                   limit: 20,
                   category: catId,
-                  sort: 'createdAt:-1',
-                })).unwrap();
+                  sort: 'createdAt:-1'})).unwrap();
                 const filteredCatProducts = filterProductsForFreeSelection(res.products || []);
                 productsByCat[catId] = filteredCatProducts;
               } catch (e) {
@@ -416,8 +423,7 @@ const Products = () => {
               key: `category_${selectedCategory}`,
               limit: 20,
               category: selectedCategory,
-              sort: 'createdAt:-1',
-            })).unwrap();
+              sort: 'createdAt:-1'})).unwrap();
             const filteredCategoryProducts = filterProductsForFreeSelection(result.products || []);
             productsByCat[selectedCategory] = filteredCategoryProducts;
           } catch (e) {
@@ -525,7 +531,11 @@ const Products = () => {
     
     // If category-specific products aren't loaded yet, use filtered allProducts as fallback
     if (!products && allProducts && allProducts.length > 0 && categoryId !== 'all') {
-      displayProducts = allProducts.filter(p => p.category === categoryId).slice(0, 20);
+      displayProducts = allProducts.filter(p => {
+        // Handle both string categoryId and object with _id
+        const productCategoryId = typeof p.category === 'object' ? p.category?._id : p.category;
+        return productCategoryId === categoryId;
+      }).slice(0, 20);
       isUsingFallback = true;
     }
     
@@ -542,7 +552,7 @@ const Products = () => {
       <div className="mb-12">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{ 
-            fontFamily: 'system-ui, -apple-system, sans-serif'
+            
           }}>{title}</h2>
         </div>
         
@@ -625,7 +635,6 @@ const Products = () => {
       {isSelectingFreeProduct && (
         <div className="py-6 px-4 md:px-6 text-center">
           <p className="text-base md:text-lg font-medium text-[#733857] tracking-wide" style={{
-            fontFamily: 'system-ui, -apple-system, sans-serif',
             fontWeight: '500',
             letterSpacing: '0.025em'
           }}>
@@ -736,7 +745,7 @@ const Products = () => {
             {/* Categories below, when available */}
             <div className="mt-0">
               <h2 className="text-2xl lg:text-3xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{ 
-                fontFamily: 'system-ui, -apple-system, sans-serif'
+                
               }}>
                 All Categories
               </h2>

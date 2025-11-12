@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiMail, 
@@ -58,9 +58,7 @@ const ContactManagement = () => {
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
+            'Content-Type': 'application/json'}}
       );
 
       const result = await response.json();
@@ -89,10 +87,8 @@ const ContactManagement = () => {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status }),
-        }
+            'Content-Type': 'application/json'},
+          body: JSON.stringify({ status })}
       );
 
       const result = await response.json();
@@ -127,13 +123,11 @@ const ContactManagement = () => {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+            'Content-Type': 'application/json'},
           body: JSON.stringify({ 
             reply: replyMessage,
             markAsResolved: true
-          }),
-        }
+          })}
       );
 
       const result = await response.json();
@@ -167,9 +161,7 @@ const ContactManagement = () => {
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
+            'Authorization': `Bearer ${token}`}}
       );
 
       const result = await response.json();
@@ -203,14 +195,12 @@ const ContactManagement = () => {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+            'Content-Type': 'application/json'},
           body: JSON.stringify({
             contactIds: selectedContacts,
             action,
             ...(status && { status })
-          }),
-        }
+          })}
       );
 
       const result = await response.json();

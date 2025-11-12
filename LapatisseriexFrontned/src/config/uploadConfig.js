@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Centralized upload configuration
  * This file consolidates all upload-related constants and settings
  */
@@ -21,8 +21,7 @@ export const UPLOAD_CONFIG = {
     BANNER_VIDEO: ['video/mp4', 'video/mov', 'video/avi', 'video/webm'],
     PRODUCT_IMAGE: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
     GENERAL_IMAGE: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
-    GENERAL_VIDEO: ['video/mp4', 'video/mov', 'video/avi', 'video/webm'],
-  },
+    GENERAL_VIDEO: ['video/mp4', 'video/mov', 'video/avi', 'video/webm']},
 
   // Upload timeouts (in milliseconds)
   TIMEOUTS: {
@@ -36,16 +35,14 @@ export const UPLOAD_CONFIG = {
   DEFAULT_IMAGES: {
     PROFILE_AVATAR: '/images/default-avatar.svg', // Local fallback instead of external URL
     PROFILE_AVATAR_FALLBACK: 'https://res.cloudinary.com/demo/image/upload/v1580294137/samples/people/smiling-man.jpg', // External fallback
-    PLACEHOLDER_IMAGE: '/images/placeholder-image.jpg',
-  },
+    PLACEHOLDER_IMAGE: '/images/placeholder-image.jpg'},
 
   // Cloudinary folders
   FOLDERS: {
     PROFILE_PHOTOS: 'la_patisserie/profile_photos',
     BANNERS: 'la_patisserie/banners',
     PRODUCTS: 'la_patisserie/products',
-    CATEGORIES: 'la_patisserie/categories',
-  },
+    CATEGORIES: 'la_patisserie/categories'},
 
   // Progress tracking intervals
   PROGRESS: {
@@ -53,8 +50,7 @@ export const UPLOAD_CONFIG = {
     FILE_READ_COMPLETE: 50,
     UPLOAD_START: 50,
     UPLOAD_COMPLETE: 90,
-    PROFILE_UPDATE_COMPLETE: 100,
-  },
+    PROFILE_UPDATE_COMPLETE: 100},
 
   // Error messages
   ERROR_MESSAGES: {
@@ -64,9 +60,7 @@ export const UPLOAD_CONFIG = {
     TIMEOUT_ERROR: 'Upload timeout. Please try with a smaller file or better connection.',
     GENERIC_ERROR: 'Upload failed. Please try again.',
     SERVER_ERROR: 'Server error occurred. Please try again in a moment.',
-    COMPONENT_UNMOUNTED: 'Component unmounted during upload',
-  },
-};
+    COMPONENT_UNMOUNTED: 'Component unmounted during upload'}};
 
 /**
  * Format file size for display
@@ -111,6 +105,5 @@ export const getUploadConfig = (uploadType) => {
     maxSize: UPLOAD_CONFIG.FILE_SIZE_LIMITS[uploadType],
     supportedFormats: UPLOAD_CONFIG.SUPPORTED_FORMATS[uploadType],
     timeout: UPLOAD_CONFIG.TIMEOUTS[uploadType] || UPLOAD_CONFIG.TIMEOUTS.GENERAL_UPLOAD,
-    folder: UPLOAD_CONFIG.FOLDERS[uploadType.split('_')[0]] || UPLOAD_CONFIG.FOLDERS.PRODUCTS,
-  };
+    folder: UPLOAD_CONFIG.FOLDERS[uploadType.split('_')[0]] || UPLOAD_CONFIG.FOLDERS.PRODUCTS};
 };

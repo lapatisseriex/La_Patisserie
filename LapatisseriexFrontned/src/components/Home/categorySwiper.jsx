@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PremiumSectionSkeleton from "../common/PremiumSectionSkeleton";
 // Icons
@@ -52,8 +52,7 @@ const CategorySwiperHome = ({
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: "smooth",
-      });
+        behavior: "smooth"});
     }
   };
 
@@ -130,16 +129,14 @@ const CategorySwiperHome = ({
       image: bestSellersImage || "/images/best-sellers.png",
       color: "text-red-600",
       icon: <FaFire className="inline-block mr-1" />,
-      ref: bestSellersRef,
-    },
+      ref: bestSellersRef},
     {
       id: "newly-launched",
       name: "Newly Launched",
       image: newlyLaunchedImage || "/images/newlyLaunched.png",
       color: "text-blue-600",
       icon: <FaNewspaper className="inline-block mr-1" />,
-      ref: newlyLaunchedRef,
-    },
+      ref: newlyLaunchedRef},
   ];
   
 
@@ -193,7 +190,7 @@ const CategorySwiperHome = ({
   const { firstRow, secondRow } = interleaveItems();
 
   return (
-    <div className="w-full py-0 md:py-6 bg-white" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="w-full py-0 md:py-6 bg-white" style={{  }}>
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 md:px-16 pt-6 pb-6 md:pt-0 md:pb-0">
         <div className="flex flex-col md:flex-row md:items-start md:gap-8">
           

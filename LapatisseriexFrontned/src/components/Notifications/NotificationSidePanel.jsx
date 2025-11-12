@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -320,8 +320,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
     if (productName.length > 18) productName = productName.slice(0, 15) + '...';
     const fallbacks = {
       'order_dispatched': 'Order Dispatched',
-      'order_delivered': 'Order Delivered',
-    };
+      'order_delivered': 'Order Delivered'};
     return { text: productName || fallbacks[notification.type] || 'Order Update', price: extractPrice(notification, true) };
   };
   
@@ -381,9 +380,7 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                 zIndex: 999999,
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}
+                overflow: 'hidden'}}
             >
             <style jsx>{`
               @media (min-width: 640px) {
@@ -561,12 +558,10 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                           backgroundColor: !notification.read 
                             ? 'rgba(115, 56, 87, 0.02)' 
                             : '#ffffff',
-                          borderBottom: '1px solid rgba(115, 56, 87, 0.08)',
-                        }}
+                          borderBottom: '1px solid rgba(115, 56, 87, 0.08)'}}
                         whileHover={{
                           scale: 1.01,
-                          backgroundColor: 'rgba(115, 56, 87, 0.05)',
-                        }}
+                          backgroundColor: 'rgba(115, 56, 87, 0.05)'}}
                         whileTap={{ scale: 0.99 }}
                       >
                         <div className="p-3 sm:p-5">

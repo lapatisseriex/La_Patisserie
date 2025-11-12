@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -132,8 +132,7 @@ const Header = ({ isAdminView = false }) => {
         id: category._id,
         name: category.name,
         featuredImage: category.featuredImage || null,
-        images: category.images || [],
-      }));
+        images: category.images || []}));
   }, [categories]);
   
   // Get user's location display name
@@ -560,17 +559,19 @@ const Header = ({ isAdminView = false }) => {
 
   return (
     <>
-    {/* Infinite Running Announcement Banner - Above Header */}
-    <AnnouncementBanner />
+    {/* Infinite Running Announcement Banner - Above Header - Hidden on mobile for cart/payment pages */}
+    <div className={isCartOrPaymentPage ? 'hidden md:block' : ''}>
+      <AnnouncementBanner />
+    </div>
     
-    <header className="md:fixed md:left-0 md:right-0 md:z-50 bg-white shadow-sm transition-all duration-300 header-with-banner" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+    <header className="md:fixed md:left-0 md:right-0 md:z-50 bg-white shadow-sm transition-all duration-300 header-with-banner">
       
       {/* Mobile Top Header Bar - Shop Name and Logo */}
       <div className="block md:hidden py-2 px-3 bg-white border-b border-gray-100">
         <div className="flex justify-between items-center">
           {/* Left side - Shop Name */}
           <Link to="/" className="flex items-center">
-            <span className="text-xl" style={{fontFamily: "'Dancing Script', cursive", color: '#733857', fontWeight: 600, letterSpacing: '1px'}}>
+            <span className="text-xl font-dancing font-semibold tracking-wide" style={{color: '#733857'}}>
               La Patisserie
             </span>
           </Link>
@@ -596,9 +597,20 @@ const Header = ({ isAdminView = false }) => {
                   }
                 }}
                 className="flex items-center text-xs py-1 px-2 rounded-md hover:bg-gray-50 transition-colors duration-200 active:bg-gray-100" 
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: 'rgba(40, 28, 32, 0.7)'}}
+                style={{ color: 'rgba(40, 28, 32, 0.7)'}}
               >
-                <img src="/compass.png" alt="Location" className="h-4 w-4 mr-2" />
+                <img 
+                  src="/compass.png" 
+                  alt="Location" 
+                  className="h-4 w-4 mr-2" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const icon = document.createElement('div');
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>';
+                    icon.className = 'h-4 w-4 mr-2 inline-block';
+                    e.target.parentNode.insertBefore(icon, e.target);
+                  }}
+                />
                 <span className="truncate max-w-[120px] font-light">{memoizedUserLocationDisplay}</span>
                 {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                   <AlertTriangle className="h-3 w-3 ml-1 text-amber-400" />
@@ -624,7 +636,7 @@ const Header = ({ isAdminView = false }) => {
           <div className="hidden md:flex items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center header-logo-text">
-                <span className="transition-colors duration-300 sm:text-xl md:text-2xl truncate max-w-[120px] sm:max-w-none" style={{fontFamily: "'Dancing Script', cursive", color: '#733857', fontWeight: 600, letterSpacing: '1px'}}>
+                <span className="transition-colors duration-300 sm:text-xl md:text-2xl truncate max-w-[120px] sm:max-w-none font-dancing font-semibold tracking-wide" style={{color: '#733857'}}>
                   La Patisserie
                   <div className="sugar-sprinkles">
                     {[...Array(15)].map((_, i) => (
@@ -652,9 +664,20 @@ const Header = ({ isAdminView = false }) => {
                 onMouseEnter={handleMegaMenuEnter}
                 onMouseLeave={handleMegaMenuLeave}
               >
-                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base rounded-lg transition-all duration-300 relative group text-center md:text-center align-middle" style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}>
-                  <img src="/food.png" alt="Menu" className="h-5 w-5 transition-all duration-300 group-hover:scale-110 align-middle" />
-                  <span className="relative z-10 font-light" style={{color: '#733857', fontWeight: 400, verticalAlign: 'middle'}}>Menu</span>
+                <Link to="/products" className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base rounded-lg transition-all duration-300 relative group text-center md:text-center align-middle font-sans" style={{color: '#281c20'}}>
+                  <img 
+                    src="/food.png" 
+                    alt="Menu" 
+                    className="h-5 w-5 transition-all duration-300 group-hover:scale-110 align-middle" 
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      const icon = document.createElement('div');
+                      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>';
+                      icon.className = 'h-5 w-5 transition-all duration-300 group-hover:scale-110 align-middle inline-block';
+                      e.target.parentNode.insertBefore(icon, e.target);
+                    }}
+                  />
+                  <span className="relative z-10 font-light" style={{color: '#733857', verticalAlign: 'middle'}}>Menu</span>
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
                 </Link>
                 
@@ -667,7 +690,7 @@ const Header = ({ isAdminView = false }) => {
                 {isMegaMenuOpen && filteredCategories.length > 0 && (
                   <div
                     className="absolute top-full left-0 mt-3 w-[600px] h-[400px] bg-white backdrop-blur-sm shadow-lg rounded-lg overflow-hidden z-50 border border-gray-100 transform opacity-0 scale-95 animate-dropdown"
-                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', animation: 'dropdownFadeIn 0.3s ease-out forwards', boxShadow: '0 8px 32px rgba(40, 28, 32, 0.15), 0 4px 16px rgba(40, 28, 32, 0.1)'}}
+                    style={{ animation: 'dropdownFadeIn 0.3s ease-out forwards', boxShadow: '0 8px 32px rgba(40, 28, 32, 0.15), 0 4px 16px rgba(40, 28, 32, 0.1)'}}
                   >
                     <div className="flex h-full">
                       {/* Categories Sidebar */}
@@ -686,9 +709,7 @@ const Header = ({ isAdminView = false }) => {
                                     : 'hover:bg-gray-50/80 hover:transform hover:translateY(-1px)'
                                 }`}
                                 style={{
-                                  color: hoveredCategory?._id === category._id ? '#281c20' : '#281c20',
-                                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                                }}
+                                  color: hoveredCategory?._id === category._id ? '#281c20' : '#281c20'}}
                                 onMouseEnter={() => handleCategoryHover(category)}
                                 onClick={() => {
                                   setIsMegaMenuOpen(false);
@@ -795,10 +816,21 @@ const Header = ({ isAdminView = false }) => {
                 <button 
                   className="nav-item flex items-center gap-2 px-3 py-2 text-sm md:text-base transition-all duration-300 relative group text-center md:text-center align-middle"
                   onClick={toggleLocationDropdown}
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
+                  style={{ color: '#281c20'}}
                 >
-                  <img src="/compass.png" alt="Location" className="h-5 w-5 transition-all duration-300 group-hover:scale-110 align-middle" />
-                  <span className="truncate max-w-[120px] sm:max-w-[140px] font-light relative z-10" style={{color: '#733857', fontWeight: 400, verticalAlign: 'middle'}}>{memoizedUserLocationDisplay}</span>
+                  <img 
+                    src="/compass.png" 
+                    alt="Location" 
+                    className="h-5 w-5 transition-all duration-300 group-hover:scale-110 align-middle" 
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      const icon = document.createElement('div');
+                      icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>';
+                      icon.className = 'h-5 w-5 transition-all duration-300 group-hover:scale-110 align-middle inline-block';
+                      e.target.parentNode.insertBefore(icon, e.target);
+                    }}
+                  />
+                  <span className="truncate max-w-[120px] sm:max-w-[140px] font-light relative z-10" style={{color: '#733857', verticalAlign: 'middle'}}>{memoizedUserLocationDisplay}</span>
                   <ChevronDown className="h-4 w-4 transition-all duration-300 group-hover:rotate-180 align-middle" style={{color: '#281c20'}} />
                   {user && typeof hasValidDeliveryLocation === 'function' && !hasValidDeliveryLocation() && (
                     <div className="absolute -top-1 -right-1">
@@ -817,8 +849,7 @@ const Header = ({ isAdminView = false }) => {
                 {isLocationDropdownOpen && (
                   <div
                     className="absolute top-full left-0 mt-3 w-56 bg-white backdrop-blur-sm overflow-hidden z-50 border border-gray-100 transform opacity-0 scale-95 animate-dropdown"
-                    style={{
-                      fontFamily: 'system-ui, -apple-system, sans-serif', 
+                    style={{ 
                       animation: 'dropdownFadeIn 0.3s ease-out forwards',
                       boxShadow: '0 8px 32px rgba(40, 28, 32, 0.15), 0 4px 16px rgba(40, 28, 32, 0.1)'
                     }}
@@ -833,7 +864,7 @@ const Header = ({ isAdminView = false }) => {
                           <Link
                             to="/profile"
                             className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) transition-all duration-300 font-light relative group backdrop-filter backdrop-blur-sm"
-                            style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
+                            style={{ color: '#281c20'}}
                             onClick={() => setIsLocationDropdownOpen(false)}
                           >
                             <img 
@@ -866,7 +897,7 @@ const Header = ({ isAdminView = false }) => {
                                 key={location._id}
                                 onClick={() => handleLocationSelect(location._id)}
                                 className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) transition-all duration-300 font-light relative group backdrop-filter backdrop-blur-sm text-left"
-                                style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
+                                style={{ color: '#281c20'}}
                               >
                                 <img 
                                   src="/compass.png" 
@@ -903,7 +934,7 @@ const Header = ({ isAdminView = false }) => {
                 {/* Admin Dashboard Button - Show only for admins - Positioned first */}
                 {user.role === 'admin' && (
                   <div className="bg-[#281c20]/50 backdrop-blur-sm rounded-lg border border-[#733857]/30">
-                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-white hover:text-[#A855F7] rounded-lg transition-all duration-300 relative group" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                    <Link to="/admin/dashboard" className="flex items-center px-4 py-3 text-white hover:text-[#A855F7] rounded-lg transition-all duration-300 relative group">
                       <Settings className="h-5 w-5 text-white group-hover:text-[#A855F7] transition-colors duration-300" />
                       <span className="ml-2 text-sm font-light">Dashboard</span>
                     </Link>
@@ -924,10 +955,21 @@ const Header = ({ isAdminView = false }) => {
                   <Link 
                     to="/cart" 
                     className="flex items-center px-3 py-2 rounded-lg transition-all duration-300 relative group" 
-                    style={{fontFamily: 'system-ui, -apple-system, sans-serif', color: '#281c20'}}
+                    style={{ color: '#281c20'}}
                     data-cart-icon="true"
                   >
-                    <img src="/ice-cream-cart.png" alt="Cart" className="h-5 w-5 transition-all duration-300 group-hover:scale-110" />
+                    <img 
+                      src="/ice-cream-cart.png" 
+                      alt="Cart" 
+                      className="h-5 w-5 transition-all duration-300 group-hover:scale-110" 
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        const icon = document.createElement('div');
+                        icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>';
+                        icon.className = 'h-5 w-5 transition-all duration-300 group-hover:scale-110 inline-block';
+                        e.target.parentNode.insertBefore(icon, e.target);
+                      }}
+                    />
                     {memoizedCartCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#733857] to-[#281c20] text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center font-light shadow-lg">
                         {memoizedCartCount}
@@ -945,7 +987,6 @@ const Header = ({ isAdminView = false }) => {
               <button 
                 onClick={toggleAuthPanel}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 group text-black hover:bg-black/5 profile-icon-btn"
-                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
               >
                 <User className="h-4 w-4 transition-all duration-300 text-black" />
                 <span className="text-sm font-light text-black transition-all duration-300">

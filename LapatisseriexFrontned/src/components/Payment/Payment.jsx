@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
@@ -619,8 +619,7 @@ const Payment = () => {
             const verifyData = await verifyPaymentWithEmail({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
+              razorpay_signature: response.razorpay_signature});
             if (verifyData.success) {
               console.log('✅ Payment verified successfully');
               // Log which API verified and that email dispatch is handled server-side
@@ -666,12 +665,10 @@ const Payment = () => {
         prefill: {
           name: user?.name || user?.displayName || '',
           email: user?.email || '',
-          contact: user?.phone || '',
-        },
+          contact: user?.phone || ''},
         theme: {
           color: '#733857',
-          backdrop_color: 'rgba(115, 56, 87, 0.6)',
-        },
+          backdrop_color: 'rgba(115, 56, 87, 0.6)'},
         modal: {
           backdropclose: false,
           escape: true,
@@ -689,9 +686,7 @@ const Payment = () => {
                   'Authorization': `Bearer ${user?.token || localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
-                  razorpay_order_id: orderData.orderId,
-                }),
-              });
+                  razorpay_order_id: orderData.orderId})});
               const cancelData = await cancelResponse.json();
               if (cancelData.success) {
                 console.log('✅ Order cancelled successfully on backend');
@@ -707,9 +702,7 @@ const Payment = () => {
             } catch (error) {
               console.error('❌ Failed to cancel order:', error);
             }
-          },
-        },
-      };
+          }}};
       const razorpay = new window.Razorpay(options);
       razorpay.open();
     } catch (error) {
@@ -851,7 +844,7 @@ if (isOrderComplete) {
         ref={successPageRef}
         tabIndex={-1}
         className="min-h-screen  px-4 py-10"
-        style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
+        style={{  }}
       >
         {/* Main content card with sharp corners */}
         <div className="mx-auto max-w-lg  p-8 sm:p-10">
@@ -968,7 +961,7 @@ if (isOrderComplete) {
   // --- Location Error Page (Unchanged) ---
   if (showLocationError) {
     return (
-      <div className="container mx-auto min-h-screen px-3 py-4 pt-4 sm:px-4 sm:py-8 sm:pt-8" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+      <div className="container mx-auto min-h-screen px-3 py-4 pt-4 sm:px-4 sm:py-8 sm:pt-8" style={{  }}>
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center mb-4 sm:mb-6">
             <div className="hidden sm:flex">
@@ -1022,7 +1015,7 @@ if (isOrderComplete) {
 
   // --- Main Payment Page (Redesigned Split-Screen Layout) ---
   return (
-    <div className="-mt-2 sm:-mt-3 md:-mt-4" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+    <div className="-mt-2 sm:-mt-3 md:-mt-4" style={{  }}>
       <ShopClosureOverlay overlayType="page" showWhenClosed={!isOpen}>
     <div className="min-h-screen bg-[#f8f5f6] pb-12">
 

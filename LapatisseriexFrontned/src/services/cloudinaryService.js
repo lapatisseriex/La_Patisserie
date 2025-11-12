@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 /**
  * Service to handle Cloudinary uploads from the frontend
@@ -64,8 +64,7 @@ class CloudinaryService {
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+            'Content-Type': 'multipart/form-data'},
           onUploadProgress: (progressEvent) => {
             if (options.onProgress && progressEvent.total) {
               const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);

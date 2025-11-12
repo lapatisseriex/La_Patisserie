@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Send, ShieldCheck, Mail, Timer, CheckCircle2, XCircle, RefreshCcw } from 'lucide-react';
 import { emailService } from '../../../services/apiService';
 import { useAuth } from '../../../hooks/useAuth';
@@ -93,8 +93,7 @@ const EmailVerification = ({ lockEmail = false }) => {
       const verificationData = {
         email: email.trim(),
         emailVerified: true,
-        emailVerifiedAt: resp?.user?.emailVerifiedAt || new Date().toISOString(),
-      };
+        emailVerifiedAt: resp?.user?.emailVerifiedAt || new Date().toISOString()};
       
       // If backend returns user data, use it, otherwise use local data
       if (resp?.user) {
@@ -133,13 +132,12 @@ const EmailVerification = ({ lockEmail = false }) => {
     <div className="space-y-2">
       <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
         color: '#733857',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
         letterSpacing: '0.02em'
       }}>
         <Mail className="h-3 w-3 sm:h-4 sm:w-4" style={{color: 'rgba(115, 56, 87, 0.6)'}} strokeWidth={1.5} />
         Email Address {!isEmailVerified && <span style={{color: '#733857'}}>*</span>}
       </label>
-      <div className="space-y-4"  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div className="space-y-4"  style={{  }}>
         {isEmailVerified ? (
           // Show verified status for verified emails (Firebase or OTP)
           <div>
@@ -150,7 +148,6 @@ const EmailVerification = ({ lockEmail = false }) => {
                 disabled={true}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border transition-all duration-300 outline-none border-gray-200 bg-gray-50 text-gray-700"
                 style={{
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   borderRadius: '4px'
                 }}
               />
@@ -174,13 +171,12 @@ const EmailVerification = ({ lockEmail = false }) => {
                       : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md'
                   }`}
                   style={{
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
                     borderRadius: '4px'
                   }}
                 />
               </div>
               {status === 'verified' && !user?.emailVerified && (
-                <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: '#10B981', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: '#10B981'}}>
                   <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> 
                   Verified on {new Date().toLocaleDateString()}
                 </div>
@@ -192,7 +188,6 @@ const EmailVerification = ({ lockEmail = false }) => {
                 className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 text-white text-sm sm:text-base font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ 
                   backgroundColor: '#733857',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   borderRadius: '4px',
                   boxShadow: '0 2px 6px rgba(115, 56, 87, 0.15)'
                 }}
@@ -223,7 +218,7 @@ const EmailVerification = ({ lockEmail = false }) => {
                 borderRadius: '4px'
               }}>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2" style={{ color: '#733857', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <div className="flex items-center gap-2" style={{ color: '#733857'}}>
                     <Timer className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
                     <span className="text-xs sm:text-sm font-semibold">OTP expires in</span>
                   </div>
@@ -236,7 +231,7 @@ const EmailVerification = ({ lockEmail = false }) => {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs sm:text-sm font-semibold mb-2 block" style={{ color: '#733857', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    <label className="text-xs sm:text-sm font-semibold mb-2 block" style={{ color: '#733857'}}>
                       Enter 6-digit code
                     </label>
                     <input
@@ -250,9 +245,7 @@ const EmailVerification = ({ lockEmail = false }) => {
                         borderColor: 'rgba(115, 56, 87, 0.3)', 
                         color: '#281c20', 
                         backgroundColor: '#FFFFFF',
-                        borderRadius: '4px',
-                        fontFamily: 'system-ui, -apple-system, sans-serif'
-                      }}
+                        borderRadius: '4px'}}
                     />
                   </div>
                   <button
@@ -262,7 +255,6 @@ const EmailVerification = ({ lockEmail = false }) => {
                     className="w-full px-4 sm:px-6 py-2.5 sm:py-3 text-white text-sm sm:text-base font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ 
                       backgroundColor: '#10B981',
-                      fontFamily: 'system-ui, -apple-system, sans-serif',
                       borderRadius: '4px',
                       boxShadow: '0 2px 6px rgba(16, 185, 129, 0.2)'
                     }}
@@ -286,7 +278,7 @@ const EmailVerification = ({ lockEmail = false }) => {
                   </button>
                 </div>
                 {remaining<=0 && (
-                  <div className="mt-3 flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: '#D97706', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <div className="mt-3 flex items-center gap-1.5 text-xs sm:text-sm" style={{ color: '#D97706'}}>
                     <XCircle className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> 
                     The code has expired. Please resend a new OTP.
                   </div>
@@ -295,7 +287,7 @@ const EmailVerification = ({ lockEmail = false }) => {
             )}
 
             {message && (
-              <div className={`flex items-center gap-1.5 text-xs sm:text-sm`} style={{ color: status==='error' ? '#B91C1C' : '#059669', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <div className={`flex items-center gap-1.5 text-xs sm:text-sm`} style={{ color: status==='error' ? '#B91C1C' : '#059669'}}>
                 {status==='error' ? <XCircle className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> : <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} />} {message}
               </div>
             )}
@@ -306,7 +298,7 @@ const EmailVerification = ({ lockEmail = false }) => {
                 borderColor: 'rgba(16, 185, 129, 0.2)',
                 borderRadius: '4px'
               }}>
-                <div className="flex items-center gap-2 text-sm sm:text-base mb-3" style={{ color: '#166534', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <div className="flex items-center gap-2 text-sm sm:text-base mb-3" style={{ color: '#166534'}}>
                   <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} /> 
                   <span className="font-semibold">Email verification completed successfully!</span>
                 </div>
@@ -318,9 +310,7 @@ const EmailVerification = ({ lockEmail = false }) => {
                     style={{ 
                       borderColor: 'rgba(16, 185, 129, 0.3)', 
                       color: '#166534',
-                      borderRadius: '4px',
-                      fontFamily: 'system-ui, -apple-system, sans-serif'
-                    }}
+                      borderRadius: '4px'}}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = 'rgba(220, 252, 231, 0.5)';
                       e.currentTarget.style.transform = 'translateY(-1px)';

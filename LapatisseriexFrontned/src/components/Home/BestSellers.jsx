@@ -1,4 +1,4 @@
-import { useSelector } from 'react-redux';
+﻿import { useSelector } from 'react-redux';
 import { useRef } from 'react';
 import { makeSelectListByKey, makeSelectLoadingByKey, selectHasBestSellers } from '../../redux/productsSlice';
 import ProductCard from "../Products/ProductCard";
@@ -38,7 +38,7 @@ const BestSellers = () => {
     <section className="w-full bg-white">
       <div className="max-w-screen-2xl mx-auto px-3 sm:px-4">
         <div className="mb-8">
-          <h2 className="text-2xl font-light tracking-wide text-center md:text-center text-[#733857]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <h2 className="text-2xl font-light tracking-wide text-center md:text-center text-[#733857]" style={{  }}>
             Best Sellers
           </h2>
           <p className="text-sm sm:text-base text-center md:text-center text-gray-600 mt-2 font-light">

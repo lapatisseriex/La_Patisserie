@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+﻿import { useState, useCallback, useRef } from 'react';
 
 export const useSparkAnimation = () => {
   const [activeAnimations, setActiveAnimations] = useState([]);
@@ -13,8 +13,7 @@ export const useSparkAnimation = () => {
     
     return {
       x: rect.left + scrollLeft + rect.width / 2,
-      y: rect.top + scrollTop + rect.height / 2,
-    };
+      y: rect.top + scrollTop + rect.height / 2};
   }, []);
 
   const getCartIconPosition = useCallback(() => {
@@ -32,8 +31,7 @@ export const useSparkAnimation = () => {
     const isMobile = window.innerWidth <= 768;
     return {
       x: isMobile ? window.innerWidth - 60 : window.innerWidth - 100,
-      y: isMobile ? 60 : 80,
-    };
+      y: isMobile ? 60 : 80};
   }, [getElementPosition]);
 
   const triggerSparkAnimation = useCallback((buttonElement, onComplete) => {
@@ -81,8 +79,7 @@ export const useSparkAnimation = () => {
   return {
     activeAnimations,
     triggerSparkAnimation,
-    clearAnimation,
-  };
+    clearAnimation};
 };
 
 export default useSparkAnimation;

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Send, ShieldCheck, Phone, Timer, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { auth } from '../../../config/firebase';
@@ -415,13 +415,12 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
     <div className="space-y-2">
       <label className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{
         color: '#733857',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
         letterSpacing: '0.02em'
       }}>
         <Phone className="h-3 w-3 sm:h-4 sm:w-4" style={{color: 'rgba(115, 56, 87, 0.6)'}} strokeWidth={1.5} />
         Phone Number {!user?.phoneVerified && <span style={{color: '#733857'}}>*</span>}
       </label>
-      <div className="space-y-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div className="space-y-4" style={{  }}>
         <div>
           <div className="relative flex gap-2">
             {/* Country Code Selector */}
@@ -435,7 +434,6 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
                   : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black'
               }`}
               style={{
-                fontFamily: 'system-ui, -apple-system, sans-serif',
                 borderRadius: '4px',
                 minWidth: '100px',
                 cursor: user?.phoneVerified ? 'not-allowed' : 'pointer'
@@ -465,7 +463,6 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
                   : 'border-gray-300 focus:border-[#733857] bg-white shadow-sm focus:shadow-md text-black'
               }`}
               style={{
-                fontFamily: 'system-ui, -apple-system, sans-serif',
                 borderRadius: '4px'
               }}
             />
@@ -488,7 +485,6 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
               className="flex-1 sm:flex-initial px-4 sm:px-6 py-2.5 sm:py-3 text-white text-sm sm:text-base font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ 
                 backgroundColor: '#733857',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
                 borderRadius: '4px',
                 boxShadow: '0 2px 6px rgba(115, 56, 87, 0.15)'
               }}
@@ -513,10 +509,10 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
           )}
           {(status === 'verified' && !user?.phoneVerified) && (
             <div className="flex-1 text-center sm:text-left">
-              <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold mb-1" style={{ color: '#10B981', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold mb-1" style={{ color: '#10B981'}}>
                 <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={2} /> Phone Verified!
               </div>
-              <div className="text-[10px] sm:text-xs font-medium" style={{ color: '#EA580C', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <div className="text-[10px] sm:text-xs font-medium" style={{ color: '#EA580C'}}>
                 Profile is now in edit mode - scroll down to "Save Profile"
               </div>
             </div>
@@ -528,9 +524,7 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
           <div className="border p-4 sm:p-6" style={{ 
             borderColor: 'rgba(190, 24, 93, 0.15)', 
             backgroundColor: 'rgba(253, 242, 248, 0.5)',
-            borderRadius: '4px',
-            fontFamily: 'system-ui, -apple-system, sans-serif'
-          }}>
+            borderRadius: '4px'}}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
               <div className="flex items-center gap-2 text-xs sm:text-sm font-medium" style={{ color: '#831843' }}>
                 <Timer className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} style={{ color: '#BE185D' }}/>
@@ -540,13 +534,11 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
                 backgroundColor: '#FFFFFF', 
                 borderColor: 'rgba(190, 24, 93, 0.2)', 
                 color: '#BE185D',
-                borderRadius: '4px',
-                fontFamily: 'ui-monospace, monospace'
-              }}>{formatTime(remaining)}</span>
+                borderRadius: '4px'}}>{formatTime(remaining)}</span>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#831843', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#831843'}}>
                   Enter 6-digit code
                 </label>
                 <input
@@ -560,9 +552,7 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
                     borderColor: 'rgba(190, 24, 93, 0.2)', 
                     color: '#281c20', 
                     backgroundColor: '#FFFFFF',
-                    borderRadius: '4px',
-                    fontFamily: 'ui-monospace, monospace'
-                  }}
+                    borderRadius: '4px'}}
                   onFocus={(e) => {
                     e.target.style.borderColor = '#BE185D';
                     e.target.style.boxShadow = '0 0 0 3px rgba(190, 24, 93, 0.1)';
@@ -580,7 +570,6 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
                 className="w-full px-6 py-3 sm:py-3.5 text-white text-sm sm:text-base font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                 style={{ 
                   backgroundColor: '#10B981',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   borderRadius: '4px',
                   boxShadow: '0 2px 6px rgba(16, 185, 129, 0.15)'
                 }}
@@ -602,7 +591,7 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
               </button>
             </div>
             {remaining <= 0 && (
-              <div className="mt-3 sm:mt-4 flex items-center gap-2 text-xs sm:text-sm font-medium" style={{ color: '#D97706', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <div className="mt-3 sm:mt-4 flex items-center gap-2 text-xs sm:text-sm font-medium" style={{ color: '#D97706'}}>
                 <XCircle className="h-4 w-4" strokeWidth={2}/> 
                 The code has expired. Please resend a new OTP.
               </div>
@@ -612,9 +601,7 @@ const PhoneVerification = ({ onVerificationSuccess, lockPhone = false }) => {
 
         {message && (
           <div className="flex items-center gap-2 text-xs sm:text-sm font-medium" style={{ 
-            color: status === 'error' ? '#B91C1C' : '#059669',
-            fontFamily: 'system-ui, -apple-system, sans-serif'
-          }}>
+            color: status === 'error' ? '#B91C1C' : '#059669'}}>
             {status === 'error' ? <XCircle className="h-4 w-4" strokeWidth={2}/> : <CheckCircle2 className="h-4 w-4" strokeWidth={2}/>} 
             {message}
           </div>

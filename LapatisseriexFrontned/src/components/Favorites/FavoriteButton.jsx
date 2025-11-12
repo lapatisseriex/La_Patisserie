@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import PropTypes from 'prop-types';
 import { Heart, Loader2 } from 'lucide-react';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
@@ -65,7 +65,6 @@ const FavoriteButton = ({ productId, size = 'md', className = '' }) => {
 FavoriteButton.propTypes = {
   productId: PropTypes.string.isRequired,
   size: PropTypes.oneOf(['sm', 'md', 'lg']),
-  className: PropTypes.string,
-};
+  className: PropTypes.string};
 
 export default FavoriteButton;

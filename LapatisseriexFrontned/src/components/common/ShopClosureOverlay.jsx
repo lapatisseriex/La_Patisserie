@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Clock } from 'lucide-react';
 import { useShopStatus } from '../../context/ShopStatusContext';
 
@@ -38,7 +38,7 @@ const ShopClosureOverlay = ({
 
       case 'page':
         return (
-          <div className={`min-h-screen  px-6 py-12 font-['Quicksand',sans-serif] sm:px-10 lg:px-16 ${className}`}>
+          <div className={`min-h-screen px-6 py-12 sm:px-10 lg:px-16 ${className}`} style={{  }}>
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-12">
               <div className="flex flex-col items-center gap-3 text-center">
                 <img src="/images/logo.png" alt="La Patisserie" className="h-12 w-auto" />

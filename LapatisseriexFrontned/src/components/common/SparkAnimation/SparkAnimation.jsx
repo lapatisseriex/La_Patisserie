@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import './SparkAnimation.css';
 
 const SparkAnimation = ({ 
@@ -52,8 +52,7 @@ const SparkAnimation = ({
     '--end-x': `${endPosition.x}px`,
     '--end-y': `${endPosition.y}px`,
     '--delta-x': `${deltaX}px`,
-    '--delta-y': `${deltaY}px`,
-  };
+    '--delta-y': `${deltaY}px`};
   
   console.log('🎨 SparkAnimation rendering with style:', sparkStyle);
 
@@ -67,8 +66,7 @@ const SparkAnimation = ({
         width: '100vw',
         height: '100vh',
         pointerEvents: 'none',
-        zIndex: 9999,
-      }}
+        zIndex: 9999}}
     >
       <div 
         className={`spark-particle ${isAnimating ? 'animating' : ''}`}

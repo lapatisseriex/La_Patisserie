@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+﻿import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Link, Outlet, useLocation as useRouterLocation } from 'react-router-dom';
 import {
   FaHome,
@@ -41,8 +41,7 @@ export const useSidebar = () => {
       isSidebarOpen: false,
       isMobile,
       toggleSidebar: () => {},
-      closeSidebarIfOpen: () => {},
-    };
+      closeSidebarIfOpen: () => {}};
   }
   return context;
 };
@@ -151,8 +150,7 @@ const AdminDashboardLayout = () => {
             isMobile
               ? {
                   top: 'var(--admin-mobile-header-offset)',
-                  height: 'calc(100vh - var(--admin-mobile-header-offset))',
-                }
+                  height: 'calc(100vh - var(--admin-mobile-header-offset))'}
               : undefined
           }
         >
@@ -386,8 +384,7 @@ const AdminDashboardLayout = () => {
             // Padding equals header height + tiny content gap (see index.css variables)
             style={{
               paddingTop: isMobile ? 'var(--admin-mobile-header-offset)' : undefined,
-              paddingBottom: isMobile ? 'var(--admin-mobile-bottom-gap)' : undefined,
-            }}
+              paddingBottom: isMobile ? 'var(--admin-mobile-bottom-gap)' : undefined}}
           >
             <div className="admin-content-root">
               <Outlet />

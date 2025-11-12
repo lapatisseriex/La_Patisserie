@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import { toast } from 'react-toastify';
 import { normalizeImageUrl } from '../../../utils/imageUtils';
@@ -60,8 +60,7 @@ const SpecialCategoryImages = () => {
         `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
         {
           method: 'POST',
-          body: formData,
-        }
+          body: formData}
       );
 
       if (!response.ok) {

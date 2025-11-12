@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Trash2, Upload, X } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useProfileImageUpload } from '../../../hooks/useProfileImageUpload';
@@ -17,8 +17,7 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
     uploadProfileImage,
     deleteProfileImage,
     resetUpload,
-    config,
-  } = useProfileImageUpload();
+    config} = useProfileImageUpload();
   
   // Log component mount
   console.log('🖼️ ProfileImageUpload component loaded');
@@ -84,7 +83,7 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
 
 
   return (
-    <div className="flex flex-col items-center space-y-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="flex flex-col items-center space-y-4" style={{  }}>
       <div className="relative group">
         <div 
           className={`overflow-hidden border-4 transition-all duration-300 ${size === 'small' ? 'w-16 h-16' : 'w-36 h-36'}`}

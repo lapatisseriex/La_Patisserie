@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import apiService from '../services/apiService';
 
@@ -103,8 +103,7 @@ export const useStock = () => {
       setLoading(true);
       setError(null);
       const { data } = await apiService.get('/stock-validation/inventory/report', {
-        params: categoryId ? { categoryId } : undefined,
-      });
+        params: categoryId ? { categoryId } : undefined});
       return data.report;
     } catch (err) {
       setError(err.message);
@@ -143,8 +142,7 @@ export const useStock = () => {
         productId,
         variantIndex,
         lowStockThreshold,
-        outOfStockAlert,
-      });
+        outOfStockAlert});
       toast.success('Stock alerts updated successfully');
       return data;
     } catch (err) {

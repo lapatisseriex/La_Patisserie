@@ -18,7 +18,7 @@ const NotFoundPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4" style={{fontFamily: 'sans-serif'}}>
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans">
       <div className="max-w-2xl w-full text-center">
         {/* 404 Illustration */}
         <div className="mb-8">
@@ -48,10 +48,10 @@ const NotFoundPage = () => {
 
         {/* Error Message */}
         <div className="mb-8">
-          <h1 className="text-3xl font-normal mb-4" style={{color: '#281c20', fontFamily: 'sans-serif'}}>
+          <h1 className="text-3xl font-normal mb-4" style={{color: '#281c20'}}>
             Page Not Found
           </h1>
-          <p className="text-gray-600 mb-6" style={{fontFamily: 'sans-serif'}}>
+          <p className="text-gray-600 mb-6">
             The page you're looking for doesn't exist or has been moved.
           </p>
         </div>
@@ -61,7 +61,7 @@ const NotFoundPage = () => {
           <button
             onClick={goHome}
             className="px-8 py-3 rounded-lg font-normal text-white hover:opacity-90 transition-all duration-200 flex items-center gap-2"
-            style={{ backgroundColor: '#281c20', fontFamily: 'sans-serif' }}
+            style={{ backgroundColor: '#281c20' }}
           >
             <Home className="w-5 h-5" />
             Go to Homepage
@@ -70,7 +70,6 @@ const NotFoundPage = () => {
           <button
             onClick={goToProducts}
             className="px-8 py-3 rounded-lg font-normal bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200 flex items-center gap-2"
-            style={{ fontFamily: 'sans-serif' }}
           >
             <Search className="w-5 h-5" />
             Browse Products
@@ -79,7 +78,6 @@ const NotFoundPage = () => {
           <button
             onClick={goBack}
             className="px-8 py-3 rounded-lg font-normal bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200 flex items-center gap-2"
-            style={{ fontFamily: 'sans-serif' }}
           >
             <ArrowLeft className="w-5 h-5" />
             Go Back
@@ -87,7 +85,7 @@ const NotFoundPage = () => {
         </div>
 
         {/* Brand Footer */}
-        <div className="mt-12 text-xs text-gray-400" style={{fontFamily: 'sans-serif'}}>
+        <div className="mt-12 text-xs text-gray-400">
           La Patisserie - Exclusive for Hostel Students
         </div>
       </div>

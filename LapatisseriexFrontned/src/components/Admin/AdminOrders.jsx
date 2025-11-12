@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   FaSearch, 
   FaEye, 
@@ -324,8 +324,7 @@ const AdminOrders = () => {
       setWsSocketId(socket.id);
       toast.success('WebSocket connected - Ready for live updates!', {
         duration: 3000,
-        icon: '🔌',
-      });
+        icon: '🔌'});
     });
 
     socket.on('connect_error', (error) => {
@@ -337,8 +336,7 @@ const AdminOrders = () => {
       setWsConnected(false);
       setWsSocketId('');
       toast.error(`WebSocket error: ${error.message}`, {
-        duration: 4000,
-      });
+        duration: 4000});
     });
 
     socket.on('disconnect', (reason) => {
@@ -374,8 +372,7 @@ const AdminOrders = () => {
       console.log('%c❌ Reconnection FAILED', 'color: red; font-weight: bold');
       console.log('⚠️ Max reconnection attempts reached');
       toast.error('WebSocket connection lost. Please refresh the page.', {
-        duration: 6000,
-      });
+        duration: 6000});
     });
     
     // Listen for new order events
@@ -395,8 +392,7 @@ const AdminOrders = () => {
       // Show toast notification
       toast.success(`New order #${data.orderNumber} received!`, {
         duration: 4000,
-        icon: '🎉',
-      });
+        icon: '🎉'});
     });
 
     // Listen for order status updates
@@ -428,8 +424,7 @@ const AdminOrders = () => {
       // Show toast notification
       toast.success(`Order status updated to ${data.status}`, {
         duration: 3000,
-        icon: '✅',
-      });
+        icon: '✅'});
     });
 
     // Test event listener (for debugging)

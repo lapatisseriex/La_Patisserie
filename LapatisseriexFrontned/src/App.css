@@ -31,7 +31,7 @@ main {
 body {
   overflow-x: hidden;
   background-color: white;
-  font-family: 'Quicksand', sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Button styles without hover transform */

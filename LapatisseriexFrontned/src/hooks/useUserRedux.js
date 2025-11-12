@@ -1,4 +1,4 @@
-import { useSelector, useDispatch } from 'react-redux';
+﻿import { useSelector, useDispatch } from 'react-redux';
 import { useCallback, useEffect } from 'react';
 import {
   setAuthType,
@@ -11,8 +11,7 @@ import {
   clearUser,
   getCurrentUser,
   updateUserProfile,
-  logoutUser,
-} from '../redux/authSlice';
+  logoutUser} from '../redux/authSlice';
 
 /**
  * Custom hook to manage user state with Redux
@@ -31,8 +30,7 @@ export const useUserRedux = () => {
     isNewUser,
     authType,
     isAuthPanelOpen,
-    profileUpdating: profileUpdateLoading,
-  } = useSelector(state => state.auth);
+    profileUpdating: profileUpdateLoading} = useSelector(state => state.auth);
 
   // Initialize auth on mount
   useEffect(() => {
@@ -137,8 +135,7 @@ export const useUserRedux = () => {
     getUserAvatarUrl: () => user?.profilePhoto?.url || '/images/default-avatar.svg',
     
     // Legacy compatibility
-    authError: error,
-  };
+    authError: error};
 };
 
 export default useUserRedux;

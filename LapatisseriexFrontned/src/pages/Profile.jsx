@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
@@ -32,8 +32,7 @@ import {
   ExternalLink,
   LayoutDashboard,
   GraduationCap,
-  AlertTriangle,
-} from 'lucide-react';
+  AlertTriangle} from 'lucide-react';
 import ProductCard from '../components/Products/ProductCard';
 import OrderCard from '../components/Orders/OrderCard';
 import { Toaster, toast } from 'react-hot-toast';
@@ -155,9 +154,7 @@ const ProfilePage = () => {
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/orders/user`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
+          'Authorization': `Bearer ${authToken}`}});
 
       if (!response.ok) {
         throw new Error('Failed to fetch orders');
@@ -187,9 +184,7 @@ const ProfilePage = () => {
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/donations/user`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
+          'Authorization': `Bearer ${authToken}`}});
 
       if (!response.ok) {
         throw new Error('Failed to fetch donations');
@@ -221,9 +216,7 @@ const ProfilePage = () => {
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/donations/user/summary`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
+          'Authorization': `Bearer ${authToken}`}});
 
       if (response.ok) {
         const data = await response.json();
@@ -365,7 +358,7 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[60vh] bg-white" style={{ paddingTop: '65px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div className="flex flex-col justify-center items-center min-h-[60vh] bg-white" style={{ paddingTop: '65px'}}>
         <div className="relative mb-6">
           <div className="animate-spin h-16 w-16 border-2 border-gray-200 border-t-[#733857]"></div>
           <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
@@ -379,7 +372,7 @@ const ProfilePage = () => {
 
   if (!user) {
     return (
-      <div className="min-h-[60vh] flex flex-col justify-center items-center bg-white" style={{ paddingTop: '65px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div className="min-h-[60vh] flex flex-col justify-center items-center bg-white" style={{ paddingTop: '65px'}}>
         <User className="h-16 w-16 text-gray-300 mb-6" strokeWidth={1} />
         <h2 className="text-2xl font-light text-gray-900 mb-2 tracking-wide" style={{ letterSpacing: '0.02em' }}>Account Access Required</h2>
         <p className="text-sm text-gray-500 font-light mb-8">Please sign in to view your profile</p>
@@ -1828,7 +1821,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', background: 'linear-gradient(to bottom, #fdfbf9 0%, #ffffff 40%, #fdfbf9 100%)' }}>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #fdfbf9 0%, #ffffff 40%, #fdfbf9 100%)' }}>
       
       {/* Beautiful Profile Hero - Only show on main tab */}
       {activeTab === 'main' && (
@@ -1838,11 +1831,9 @@ const ProfilePage = () => {
         }}>
           {/* Decorative Elements */}
           <div className="absolute top-0 right-0 w-64 h-64 opacity-8" style={{
-            background: 'radial-gradient(circle, rgba(190, 24, 93, 0.18) 0%, rgba(190, 24, 93, 0.08) 40%, transparent 70%)',
-          }}></div>
+            background: 'radial-gradient(circle, rgba(190, 24, 93, 0.18) 0%, rgba(190, 24, 93, 0.08) 40%, transparent 70%)'}}></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 opacity-8" style={{
-            background: 'radial-gradient(circle, rgba(115, 56, 87, 0.15) 0%, rgba(115, 56, 87, 0.06) 40%, transparent 70%)',
-          }}></div>
+            background: 'radial-gradient(circle, rgba(115, 56, 87, 0.15) 0%, rgba(115, 56, 87, 0.06) 40%, transparent 70%)'}}></div>
           <div className="absolute top-1/2 left-1/2 w-72 h-72 opacity-4" style={{
             background: 'radial-gradient(circle, rgba(190, 24, 93, 0.12) 0%, transparent 70%)',
             transform: 'translate(-50%, -50%)'
@@ -1995,9 +1986,7 @@ const ProfilePage = () => {
                         className="w-full group relative overflow-hidden transition-all duration-300"
                       >
                         <div className="flex items-center gap-3 px-4 py-3 relative z-10 transition-all duration-300" style={{
-                          backgroundColor: 'transparent',
-                       
-                        }}
+                          backgroundColor: 'transparent'}}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.borderLeftColor = '#733857';
                           e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.04)';
@@ -2091,9 +2080,7 @@ const ProfilePage = () => {
                         {/* Heading */}
                         <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extralight mb-3 sm:mb-4" style={{ 
                           color: '#281c20',
-                          letterSpacing: '0.05em',
-                          fontFamily: 'system-ui, -apple-system, sans-serif'
-                        }}>
+                          letterSpacing: '0.05em'}}>
                           Welcome to Your Account
                         </h3>
                         
@@ -2101,9 +2088,7 @@ const ProfilePage = () => {
                         <p className="text-xs sm:text-sm lg:text-base max-w-md mx-auto mb-6 sm:mb-8" style={{ 
                           color: 'rgba(40, 28, 32, 0.6)',
                           letterSpacing: '0.02em',
-                          lineHeight: '1.6',
-                          fontFamily: 'system-ui, -apple-system, sans-serif'
-                        }}>
+                          lineHeight: '1.6'}}>
                           Select an option from the menu to manage your profile, view orders, and explore your account
                         </p>
                         
@@ -2248,7 +2233,7 @@ const ProfilePage = () => {
                     <Link
                       to="/admin/dashboard"
                       className="w-full flex items-center justify-between px-4 py-3 bg-black text-white shadow-sm hover:shadow-md transition-all duration-300"
-                      style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                      style={{  }}
                     >
                       <span className="flex items-center gap-2 font-semibold">
                         <LayoutDashboard className="h-5 w-5" />
@@ -2351,7 +2336,7 @@ const ProfilePage = () => {
       </div>
       {/* Page-level toaster for consistent notifications */}
       <Toaster position="top-center" gutter={10} toastOptions={{
-        style: { fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: '0.9rem' },
+        style: { fontSize: '0.9rem' },
         duration: 4000
       }} />
     </div>

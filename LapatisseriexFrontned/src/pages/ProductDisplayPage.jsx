@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ShoppingCart, Plus, Minus, Share2, ChevronDown, ChevronUp, Package, Truck, Shield, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -506,8 +506,7 @@ const ProductDisplayPageNew = () => {
         await navigator.share({
           title: shareTitle,
           text: shareText,
-          url: shareUrl,
-        });
+          url: shareUrl});
         console.log('Product shared successfully');
         // Show a confirmation toast even after successful sharing
         toast.success('Product shared successfully!');
@@ -917,7 +916,7 @@ const ProductDisplayPageNew = () => {
             <div className="mb-3">
               <span
                 className="text-sm font-semibold tracking-wide"
-                style={{ color: orderExperience.color, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{ color: orderExperience.color}}
               >
                 {orderExperience.label}
               </span>
@@ -1505,7 +1504,7 @@ const ProductDisplayPageNew = () => {
                 <div className="mb-4">
                   <span
                     className="text-base font-semibold tracking-wide"
-                    style={{ color: orderExperience.color, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                    style={{ color: orderExperience.color}}
                   >
                     {orderExperience.label}
                   </span>

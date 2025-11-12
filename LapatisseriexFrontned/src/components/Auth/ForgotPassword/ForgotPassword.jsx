@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { Mail, Lock, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import '../auth.css';
@@ -236,18 +236,14 @@ const ForgotPassword = () => {
         <p 
           className="text-sm mb-1"
           style={{ 
-            color: '#281c20', 
-            fontFamily: 'system-ui, -apple-system, sans-serif' 
-          }}
+            color: '#281c20'}}
         >
           We've sent a 6-digit verification code to:
         </p>
         <p 
           className="text-sm font-medium"
           style={{ 
-            color: '#733857',
-            fontFamily: 'system-ui, -apple-system, sans-serif' 
-          }}
+            color: '#733857'}}
         >
           {passwordReset.email}
         </p>
@@ -283,7 +279,6 @@ const ForgotPassword = () => {
           className="w-full text-white py-2 px-4 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           style={{
             backgroundColor: '#733857',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '14px',
             fontWeight: '500'
           }}

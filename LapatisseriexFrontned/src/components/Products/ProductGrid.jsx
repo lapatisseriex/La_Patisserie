@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+﻿import React, { useRef, useEffect } from 'react';
 import ProductCard from './ProductCard';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, A11y, Autoplay } from 'swiper/modules';
@@ -34,7 +34,7 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <div className="text-center sm:text-left">
             <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent" style={{ 
-              fontFamily: 'system-ui, -apple-system, sans-serif'
+              
             }}>{title}</h2>
             {subtitle && <p className="text-sm sm:text-base bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent mt-1 font-medium">{subtitle}</p>}
           </div>
@@ -68,8 +68,7 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
         mo  dules={[Navigation, Pagination, A11y, Autoplay]}
         navigation={{
           prevEl: navigationPrevRef.current,
-          nextEl: navigationNextRef.current,
-        }}
+          nextEl: navigationNextRef.current}}
         slidesPerView={1}
         slidesPerGroup={1}
         spaceBetween={16}
@@ -77,14 +76,12 @@ const ProductGrid = ({ products, title, subtitle, viewAllLink }) => {
         autoplay={{
           delay: 4000,
           disableOnInteraction: false,
-          pauseOnMouseEnter: true,
-        }}
+          pauseOnMouseEnter: true}}
         pagination={{ clickable: true }}
         breakpoints={{
           640: { slidesPerView: 2, slidesPerGroup: 1 },
           768: { slidesPerView: 3, slidesPerGroup: 1 },
-          1024: { slidesPerView: 4, slidesPerGroup: 1 },
-        }}
+          1024: { slidesPerView: 4, slidesPerGroup: 1 }}}
         className="pb-8 !h-full" // force swiper container to full height
       >
         {products.map((product) => (

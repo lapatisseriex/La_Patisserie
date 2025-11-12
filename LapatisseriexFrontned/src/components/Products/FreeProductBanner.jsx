@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'framer-motion';
 import { Gift, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -21,10 +21,10 @@ const FreeProductBanner = ({ onClose }) => {
               <Gift className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <h3 className="text-lg font-bold" style={{  }}>
                 🎉 Select Your FREE Product!
               </h3>
-              <p className="text-sm text-white/90" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <p className="text-sm text-white/90" style={{  }}>
                 Click on any product below to add it to your cart for FREE
               </p>
             </div>

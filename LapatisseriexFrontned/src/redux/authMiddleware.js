@@ -1,4 +1,4 @@
-import { createListenerMiddleware } from '@reduxjs/toolkit';
+﻿import { createListenerMiddleware } from '@reduxjs/toolkit';
 import { authExpired, initializeAuth } from './authSlice';
 import { resetUserProfile, loadUserPreferences } from './userProfileSlice';
 
@@ -17,8 +17,7 @@ authMiddleware.startListening({
     localStorage.removeItem('cachedUser');
     
     console.log('Authentication expired - user data cleared');
-  },
-});
+  }});
 
 // Listen for initialization
 authMiddleware.startListening({
@@ -31,8 +30,7 @@ authMiddleware.startListening({
     if (auth.isAuthenticated) {
       listenerApi.dispatch(loadUserPreferences());
     }
-  },
-});
+  }});
 
 // Listen for successful login
 authMiddleware.startListening({
@@ -43,8 +41,7 @@ authMiddleware.startListening({
   effect: async (action, listenerApi) => {
     // Load user preferences after successful login
     listenerApi.dispatch(loadUserPreferences());
-  },
-});
+  }});
 
 // Listen for logout
 authMiddleware.startListening({
@@ -54,7 +51,6 @@ authMiddleware.startListening({
     listenerApi.dispatch(resetUserProfile());
     
     console.log('User logged out - profile data reset');
-  },
-});
+  }});
 
 export default authMiddleware;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+﻿import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { useCart } from '../../hooks/useCart';
 
@@ -203,7 +203,7 @@ const CartPickedForYou = () => {
   }
 
   return (
-    <section className="w-full py-0 md:py-6 bg-white" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <section className="w-full py-0 md:py-6 bg-white" style={{  }}>
       <div className="max-w-screen-xl mx-auto px-4 pt-6 pb-6 md:pt-0 md:pb-0">
         <div className="mb-8">
           <h2 className="text-2xl font-light tracking-wide text-left text-[#733857]">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaUser, FaPhone, FaMapMarkerAlt, FaCrown, FaExclamationTriangle, FaEye, FaFilter, FaEnvelope, FaBell, FaTimes, FaSyncAlt, FaShoppingCart, FaCreditCard, FaHeart, FaGift, FaComment, FaNewspaper, FaCalendarAlt, FaChartLine, FaDollarSign } from 'react-icons/fa';
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
@@ -182,8 +182,7 @@ const AdminUsers = () => {
       setWsSocketId(socket.id);
       toast.success('Live user updates connected!', {
         duration: 3000,
-        icon: '🔌',
-      });
+        icon: '🔌'});
     });
 
     socket.on('connect_error', (error) => {
@@ -216,8 +215,7 @@ const AdminUsers = () => {
       // Show toast notification
       toast.success(`New user signed up: ${data.userData?.email || 'Unknown'}!`, {
         duration: 4000,
-        icon: '👤',
-      });
+        icon: '👤'});
     });
 
     // Cleanup on unmount
@@ -283,8 +281,7 @@ const AdminUsers = () => {
     return {
       y: String(dt.getFullYear()),
       m: String(dt.getMonth() + 1).padStart(2, '0'),
-      d: String(dt.getDate()).padStart(2, '0'),
-    };
+      d: String(dt.getDate()).padStart(2, '0')};
   };
 
   // Derived filtered users

@@ -1,4 +1,4 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
+﻿import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import favoritesReducer from './favoritesSlice';
@@ -14,8 +14,7 @@ const persistConfig = {
   key: 'root',
   storage,
   whitelist: ['cart', 'favorites', 'auth', 'user'],
-  blacklist: ['products', 'payments'],
-};
+  blacklist: ['products', 'payments']};
 
 // Slice-level persist configs
 const cartPersistConfig = { key: 'cart', storage, whitelist: ['items', 'deliveryInfo'] };
@@ -36,8 +35,7 @@ const combinedReducers = combineReducers({
   favorites: persistedFavoritesReducer,
   cart: persistedCartReducer,
   products: productsReducer,
-  payments: paymentsReducer,
-});
+  payments: paymentsReducer});
 
 // Synchronization middleware to keep auth and user slices in sync
 const rootReducer = (state, action) => {
@@ -60,8 +58,7 @@ const rootReducer = (state, action) => {
         token: authState.token ?? userState.token,
         isAuthenticated: authState.isAuthenticated ?? userState.isAuthenticated,
         loading: authState.loading ?? userState.loading,
-        error: authState.error ?? userState.error,
-      };
+        error: authState.error ?? userState.error};
     }
     
     // If user slice was updated, sync to auth slice  
@@ -72,15 +69,13 @@ const rootReducer = (state, action) => {
         token: userState.token ?? authState.token,
         isAuthenticated: userState.isAuthenticated ?? authState.isAuthenticated,
         loading: userState.loading ?? authState.loading,
-        error: userState.error ?? authState.error,
-      };
+        error: userState.error ?? authState.error};
     }
     
     return {
       ...nextState,
       auth: canonicalAuth,
-      user: canonicalUser,
-    };
+      user: canonicalUser};
   } catch (error) {
     console.warn('Store synchronization error:', error);
     return nextState;
@@ -94,8 +89,7 @@ export const store = configureStore({
   devTools: import.meta.env.MODE !== 'production',
   // cartMiddleware is a listener middleware object; use its .middleware function
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({ serializableCheck: false }).concat(cartMiddleware.middleware),
-});
+    getDefaultMiddleware({ serializableCheck: false }).concat(cartMiddleware.middleware)});
 
 // Subscribe to store changes to keep localStorage in sync with Redux state
 // This replaces manual localStorage writes and ensures consistency

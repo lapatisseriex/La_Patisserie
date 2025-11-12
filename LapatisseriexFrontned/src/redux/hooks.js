@@ -1,4 +1,4 @@
-import { useSelector, useDispatch } from 'react-redux';
+﻿import { useSelector, useDispatch } from 'react-redux';
 import { 
   signInWithGoogle,
   signUpWithEmail,
@@ -57,8 +57,7 @@ export const useAuth = () => {
     setIsNewUser: (isNew) => dispatch(setIsNewUser(isNew)),
     clearError: () => dispatch(clearError()),
     initializeAuth: () => dispatch(initializeAuth()),
-    authExpired: () => dispatch(authExpired()),
-  };
+    authExpired: () => dispatch(authExpired())};
 };
 
 // Custom hooks for user profile state
@@ -86,8 +85,7 @@ export const useUserProfile = () => {
     updateAddress: (address) => dispatch(updateAddress(address)),
     deleteAddress: (id) => dispatch(deleteAddress(id)),
     setDefaultAddress: (id) => dispatch(setDefaultAddress(id)),
-    resetUserProfile: () => dispatch(resetUserProfile()),
-  };
+    resetUserProfile: () => dispatch(resetUserProfile())};
 };
 
 // Combined hook for all user-related data
@@ -103,8 +101,7 @@ export const useUser = () => {
     // Computed properties
     isProfileComplete: auth.user?.name && auth.user?.dob,
     hasAddresses: userProfile.addresses.length > 0,
-    defaultAddress: userProfile.addresses.find(addr => addr.isDefault),
-  };
+    defaultAddress: userProfile.addresses.find(addr => addr.isDefault)};
 };
 
 // Selector hooks for specific data
@@ -112,8 +109,7 @@ export const useAuthStatus = () => {
   return useSelector((state) => ({
     isAuthenticated: state.auth.isAuthenticated,
     loading: state.auth.loading,
-    user: state.auth.user,
-  }));
+    user: state.auth.user}));
 };
 
 export const useUserPreferences = () => {

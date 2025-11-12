@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
 const useWebSocket = () => {
@@ -16,8 +16,7 @@ const useWebSocket = () => {
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      timeout: 20000,
-    });
+      timeout: 20000});
 
     const socket = socketRef.current;
 

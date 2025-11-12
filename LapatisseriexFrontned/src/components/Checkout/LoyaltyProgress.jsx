@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getLoyaltyStatus } from '../../services/loyaltyService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Calendar, TrendingUp, Award, Sparkles } from 'lucide-react';
@@ -87,8 +87,8 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
             <Gift className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Loyalty Rewards</h3>
-            <p className="text-sm text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>Order more, earn free products!</p>
+            <h3 className="text-xl font-bold text-[#733857]">Loyalty Rewards</h3>
+            <p className="text-sm text-gray-600">Order more, earn free products!</p>
           </div>
         </div>
         {freeProductEligible && !freeProductClaimed && (
@@ -96,7 +96,6 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ repeat: Infinity, duration: 2 }}
             className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg"
-            style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
           >
             <span className="flex items-center gap-2">
               <Award className="w-4 h-4" />
@@ -139,7 +138,7 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
                 whileTap={{ scale: 0.98 }}
                 onClick={onSelectFreeProduct}
                 className="w-full bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] text-white py-3 px-6 rounded font-bold hover:opacity-90 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               >
                 <Sparkles className="w-5 h-5" />
                 <span>Select Your Free Product Now!</span>
@@ -180,14 +179,13 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#733857]" />
-                  <span className="text-sm font-semibold text-gray-700" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                  <span className="text-sm font-semibold text-gray-700">
                     Progress This Month
                   </span>
                 </div>
                 <button
                   onClick={() => setShowDates(!showDates)}
                   className="text-sm font-bold text-[#733857] hover:text-[#8d4466] transition-colors flex items-center gap-1"
-                  style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                 >
                   {uniqueDaysCount}/10 days
                   <span className="text-xs">{showDates ? '▲' : '▼'}</span>
@@ -213,7 +211,7 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
                     exit={{ opacity: 0, height: 0 }}
                     className="mt-3 bg-white/60 rounded-lg p-3 border border-[#733857]/20"
                   >
-                    <p className="text-xs font-semibold text-[#733857] mb-3" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                    <p className="text-xs font-semibold text-[#733857] mb-3">
                       📅 Your Order Timeline This Month:
                     </p>
                     <div className="space-y-2">
@@ -229,7 +227,7 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
                             {index + 1}
                           </div>
                           <div className="flex-1 bg-gradient-to-r from-[#f7eef3] to-[#f9f4f6] rounded-lg px-4 py-2 border border-[#733857]/10">
-                            <p className="text-sm font-semibold text-[#733857]" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                            <p className="text-sm font-semibold text-[#733857]">
                               {date}
                             </p>
                             <p className="text-xs text-gray-600">Order placed</p>
@@ -242,7 +240,7 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
                     </div>
                     {remainingDays > 0 && (
                       <div className="mt-3 pt-3 border-t border-[#733857]/10">
-                        <p className="text-xs text-center text-gray-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                        <p className="text-xs text-center text-gray-600">
                           🎯 Order on <span className="font-bold text-[#733857]">{remainingDays} more {remainingDays === 1 ? 'day' : 'different days'}</span> to unlock your free product!
                         </p>
                       </div>
@@ -259,10 +257,10 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
                     <TrendingUp className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-800" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                    <p className="text-sm font-semibold text-gray-800">
                       Order on <span className="text-[#733857] font-bold">{remainingDays} more {remainingDays === 1 ? 'day' : 'different days'}</span>
                     </p>
-                    <p className="text-xs text-gray-600 mt-1" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                    <p className="text-xs text-gray-600 mt-1">
                       to get a FREE product next order! 🎁
                     </p>
                   </div>
@@ -274,7 +272,7 @@ const LoyaltyProgress = ({ onFreeProductEligible, onSelectFreeProduct }) => {
       </AnimatePresence>
 
       <div className="mt-4 pt-4 border-t border-[#733857]/10">
-        <p className="text-xs text-gray-600 text-center" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+        <p className="text-xs text-gray-600 text-center">
           <span className="font-semibold">Tip:</span> Order on different days to unlock rewards faster!
         </p>
       </div>

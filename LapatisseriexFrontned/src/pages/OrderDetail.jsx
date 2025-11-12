@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -25,9 +25,7 @@ const OrderDetail = () => {
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/orders/${orderId}`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
+          'Authorization': `Bearer ${authToken}`}});
 
       if (!response.ok) {
         throw new Error('Failed to fetch order details');

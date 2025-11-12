@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 /**
@@ -325,7 +325,6 @@ ProductImageModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   images: PropTypes.arrayOf(PropTypes.string).isRequired,
-  initialIndex: PropTypes.number,
-};
+  initialIndex: PropTypes.number};
 
 export default ProductImageModal;

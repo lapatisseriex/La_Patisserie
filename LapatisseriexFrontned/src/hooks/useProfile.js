@@ -1,11 +1,10 @@
-import { useCallback } from 'react';
+﻿import { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   updateUserProfile,
   getCurrentUser,
   updateUser,
-  clearError,
-} from '../redux/authSlice';
+  clearError} from '../redux/authSlice';
 
 /**
  * Custom hook for profile management with Redux
@@ -19,8 +18,7 @@ export const useProfile = () => {
     user,
     profileUpdating: profileUpdateLoading,
     error: profileUpdateError,
-    loading,
-  } = useSelector(state => state.auth);
+    loading} = useSelector(state => state.auth);
 
   // Update profile data
   const updateProfile = useCallback(async (profileData) => {
@@ -126,8 +124,7 @@ export const useProfile = () => {
       ...user,
       locationName: typeof user.location === 'object' ? user.location?.name : '',
       hostelName: typeof user.hostel === 'object' ? user.hostel?.name : '',
-      profilePhotoUrl: user.profilePhoto?.url || '/images/default-avatar.svg',
-    };
+      profilePhotoUrl: user.profilePhoto?.url || '/images/default-avatar.svg'};
   }, [user]);
 
   // Profile form helpers
@@ -143,8 +140,7 @@ export const useProfile = () => {
       anniversary: user.anniversary ? new Date(user.anniversary).toISOString().split('T')[0] : '',
       country: user.country || 'India',
       location: typeof user.location === 'object' ? user.location?._id || '' : user.location || '',
-      hostel: typeof user.hostel === 'object' ? user.hostel?._id || '' : user.hostel || '',
-    };
+      hostel: typeof user.hostel === 'object' ? user.hostel?._id || '' : user.hostel || ''};
   }, [user]);
 
   return {
@@ -172,8 +168,7 @@ export const useProfile = () => {
     // Computed values
     profilePhotoUrl: user?.profilePhoto?.url || '/images/default-avatar.svg',
     displayName: user?.name || user?.phone || 'User',
-    isProfileIncomplete: !isProfileComplete(),
-  };
+    isProfileIncomplete: !isProfileComplete()};
 };
 
 export default useProfile;

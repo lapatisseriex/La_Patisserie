@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { 
   ShoppingCart, 
   DollarSign, 
@@ -41,8 +41,7 @@ const SummaryCards = ({ overviewData, loading }) => {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+      maximumFractionDigits: 0}).format(amount);
   };
 
   const formatNumber = (num) => {

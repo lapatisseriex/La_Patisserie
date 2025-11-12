@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Gift, Search, ShoppingCart, Check, AlertCircle } from 'lucide-react';
 import { getAvailableFreeProducts, addFreeProductToCart } from '../../services/loyaltyService';
@@ -56,8 +56,7 @@ const FreeProductSelectionModal = ({ isOpen, onClose, onProductSelected }) => {
         </div>,
         {
           duration: 4000,
-          position: 'top-center',
-        }
+          position: 'top-center'}
       );
 
       if (onProductSelected) {
@@ -108,8 +107,8 @@ const FreeProductSelectionModal = ({ isOpen, onClose, onProductSelected }) => {
                   <Gift className="w-8 h-8" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>Select Your Free Product</h2>
-                  <p className="text-sm text-white/90 mt-1" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <h2 className="text-2xl font-bold" style={{  }}>Select Your Free Product</h2>
+                  <p className="text-sm text-white/90 mt-1" style={{  }}>
                     Choose any product below - it's on us! 🎉
                   </p>
                 </div>
@@ -131,7 +130,7 @@ const FreeProductSelectionModal = ({ isOpen, onClose, onProductSelected }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                style={{  }}
               />
             </div>
           </div>
@@ -205,7 +204,6 @@ const FreeProductSelectionModal = ({ isOpen, onClose, onProductSelected }) => {
                           <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2 py-1 rounded shadow-sm">
                             <span 
                               className="text-[10px] font-light tracking-wide"
-                              style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                             >
                               {product.hasEgg ? 'WITH EGG' : 'EGGLESS'}
                             </span>
@@ -240,7 +238,6 @@ const FreeProductSelectionModal = ({ isOpen, onClose, onProductSelected }) => {
                         <div className="space-y-2">
                           <h3
                             className="font-light bg-gradient-to-r from-[#733857] via-[#8d4466] to-[#412434] bg-clip-text text-transparent line-clamp-2 text-sm cursor-pointer hover:from-[#8d4466] hover:via-[#412434] hover:to-[#733857] transition-all duration-300"
-                            style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                           >
                             {product.name}
                           </h3>
@@ -248,12 +245,11 @@ const FreeProductSelectionModal = ({ isOpen, onClose, onProductSelected }) => {
                           {/* Variants Selection */}
                           {product.variants && product.variants.length > 0 && (
                             <div className="space-y-1">
-                              <label className="text-[10px] text-gray-500 font-light block" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                              <label className="text-[10px] text-gray-500 font-light block">
                                 Select Variant:
                               </label>
                               <select
                                 className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#733857]/30 focus:border-[#733857] font-light"
-                                style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                                 onChange={(e) => setSelectedVariantIndex(parseInt(e.target.value))}
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -270,14 +266,14 @@ const FreeProductSelectionModal = ({ isOpen, onClose, onProductSelected }) => {
                           {/* Pricing */}
                           <div className="flex items-baseline gap-2 mt-2">
                             {hasDiscount && (
-                              <span className="text-xs text-gray-400 line-through font-light" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                              <span className="text-xs text-gray-400 line-through font-light">
                                 {formatCurrency(mrp)}
                               </span>
                             )}
-                            <span className="text-sm font-light text-gray-400 line-through" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                            <span className="text-sm font-light text-gray-400 line-through">
                               {formatCurrency(finalPrice)}
                             </span>
-                            <span className="text-lg font-semibold text-green-600" style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
+                            <span className="text-lg font-semibold text-green-600">
                               ₹0
                             </span>
                           </div>
@@ -295,7 +291,6 @@ const FreeProductSelectionModal = ({ isOpen, onClose, onProductSelected }) => {
                             onClick={() => handleSelectProduct(product)}
                             disabled={adding || (product.variants?.[selectedVariantIndex]?.stock <= 0) || product.stock <= 0}
                             className="w-full px-4 py-2 text-xs font-light"
-                            style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}
                           >
                             {adding ? (
                               <>
