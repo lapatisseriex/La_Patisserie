@@ -1378,7 +1378,7 @@ const Profile = ({ onDirtyChange }) => {
                       className={`w-full px-4 py-3 border bg-white focus:border-black focus:ring-2 transition-all duration-300 outline-none appearance-none text-black`}
                       style={{ borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
                     >
-                      <option value="">Select hostel/residence (Optional)</option>
+                      <option value="">Select hostel/residence</option>
                       {hostels && hostels.length > 0 ? (
                         hostels.map(hostel => (
                           <option key={hostel._id} value={hostel._id}>

@@ -12,7 +12,6 @@ import { useSparkAnimationContext } from '../../context/SparkAnimationContext/Sp
 import DebugUserState from '../common/DebugUserState';
 import './Header.css';
 import './remove-focus.css';
-import './hide-search.css';
 
 // Import UserMenu component
 import UserMenu from './UserMenu/UserMenu';
