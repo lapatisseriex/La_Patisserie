@@ -1158,7 +1158,7 @@ const Profile = ({ onDirtyChange }) => {
             {/* Phone verification section */}
             <PhoneVerification 
               key={`phone-${user?.phoneVerified}-${user?.phoneVerifiedAt}`}
-              lockPhone={true}
+              lockPhone={false}
               onVerificationSuccess={() => {
                 console.log('Phone verified and saved automatically - staying in view mode');
                 // Don't enter edit mode - phone is already saved
