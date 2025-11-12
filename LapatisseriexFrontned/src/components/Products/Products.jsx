@@ -11,6 +11,7 @@ import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import CategorySwiper from './CategorySwiper';
 import TextCategoryBar from './TextCategoryBar';
+import SearchBar from '../Home/SearchBar';
 
 const Products = () => {
   const dispatch = useDispatch();
@@ -39,6 +40,8 @@ const Products = () => {
   const [productsByCategory, setProductsByCategory] = useState({});
   // Use null to show skeletons before data arrives
   const [allProducts, setAllProducts] = useState(null);
+  // Search state for filtering on products page
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [activeViewCategory, setActiveViewCategory] = useState(initialCategory);
   
@@ -524,7 +527,7 @@ const Products = () => {
   }, []);
 
   // Function to render product row (responsive: vertical on mobile, horizontal on desktop)
-  const renderProductRow = (products, title, categoryId) => {
+  const renderProductRow = (products, title, categoryId, isSearching = false) => {
     // Use fallback products from allProducts filtered by category if specific category products aren't loaded yet
     let displayProducts = products;
     let isUsingFallback = false;
@@ -542,8 +545,10 @@ const Products = () => {
     // Only show loading skeleton if we have no products AND no fallback
     const isLoading = !displayProducts || displayProducts.length === 0;
     
+    // When searching, hide empty sections entirely (no skeletons)
+    if (isSearching && (!displayProducts || displayProducts.length === 0)) return null;
     // If there are no products and we're not loading, don't render anything
-    if (!isLoading && (!displayProducts || displayProducts.length === 0)) return null;
+    if (!isSearching && !isLoading && (!displayProducts || displayProducts.length === 0)) return null;
     
     // Create placeholder skeletons for loading state
     const skeletons = Array(4).fill(0).map((_, i) => i);
@@ -642,6 +647,8 @@ const Products = () => {
           </p>
         </div>
       )}
+
+      {/* (moved) Products Search Bar will appear below the category bar */}
       
       {/* ======================================================================================== */}
       {/* DESKTOP LEFT PADDING CONTROL: Modify the padding values in the className below */}
@@ -717,8 +724,20 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Content container - no padding needed with sticky positioning */}
-      <div className="container mx-auto px-4 pt-0 pb-4">
+      {/* Content container - search bar placed at top, below sticky category bar */}
+      <div className="container mx-auto px-4 pt-3 pb-4">
+
+        {/* Products Search Bar (same as Home), now below category bar */}
+        <div className="mt-4 md:mt-6 lg:mt-8 mb-4">
+          <SearchBar
+            bestSellers={(allProducts || []).slice(0, 8)}
+            newLaunches={(allProducts || []).slice(0, 8)}
+            cartPicks={[]}
+            onQueryChange={setSearchQuery}
+            disableSuggestions={true}
+            onProductClick={() => { /* optional: could scroll to product or open details */ }}
+          />
+        </div>
 
         {/* Main Content */}
         {error && (
@@ -732,14 +751,27 @@ const Products = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
           >
-            {/* All Products row always visible (shows skeletons while loading) */}
+            {/* All Products row always visible (filtered when searching) */}
             <div 
               key="all-products-section"
               ref={(el) => setCategoryRef(el, 'all')}
               id="category-section-all"
               className="mb-8 md:mb-10"
             >
-              {renderProductRow(allProducts, 'All Products', 'all')}
+              {renderProductRow(
+                (allProducts || []) && searchQuery.trim() !== ''
+                  ? (allProducts || []).filter(p => {
+                      const q = searchQuery.trim().toLowerCase();
+                      if (!q) return true;
+                      const name = (p.name || '').toLowerCase();
+                      const desc = (p.description || '').toLowerCase();
+                      return name.includes(q) || desc.includes(q);
+                    })
+                  : allProducts,
+                searchQuery.trim() !== '' ? 'Search Results' : 'All Products',
+                'all',
+                searchQuery.trim() !== ''
+              )}
             </div>
 
             {/* Categories below, when available */}
@@ -756,6 +788,14 @@ const Products = () => {
                   !category.name?.includes('_SPEC')
                 ).map(category => {
                   const isSelectedCategory = category._id === selectedCategory;
+                  const q = searchQuery.trim().toLowerCase();
+                  const filteredList = q
+                    ? (productsByCategory[category._id] || []).filter(p => {
+                        const name = (p?.name || '').toLowerCase();
+                        const desc = (p?.description || '').toLowerCase();
+                        return name.includes(q) || desc.includes(q);
+                      })
+                    : productsByCategory[category._id];
                   return (
                     <div 
                       key={category._id} 
@@ -763,7 +803,7 @@ const Products = () => {
                       id={`category-section-${category._id}`}
                       className={`mb-12 md:mb-16 ${isSelectedCategory ? 'p-4 rounded-xl' : ''}`}
                     >
-                      {renderProductRow(productsByCategory[category._id], category.name, category._id)}
+                      {renderProductRow(filteredList, category.name, category._id, q !== '')}
                     </div>
                   );
                 })}

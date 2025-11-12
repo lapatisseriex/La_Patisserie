@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, useDeferredVa
 import { Search, X, TrendingUp, Sparkles, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Fallback names used only if no live products are available
 const FALLBACK_TYPEWRITER_NAMES = [
   'Oreo Tiramisu',
   'Mango Tiramisu',
@@ -14,9 +15,12 @@ const SearchBar = ({
   bestSellers = [], 
   newLaunches = [], 
   cartPicks = [], 
-  onProductClick 
+  onProductClick,
+  onQueryChange,
+  disableSuggestions = false
 }) => {
-  const DEFAULT_PLACEHOLDER = 'Search for cakes, pastries, desserts...';
+  // Shown when animation is paused or no suggestions are available
+  const DEFAULT_PLACEHOLDER = 'Search for pastries, cakes, desserts...';
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() =>
@@ -67,39 +71,19 @@ const SearchBar = ({
     return suggestions.slice(0, 6);
   }, [buildEntries]);
 
+  // Prefer live product names for the typewriter animation; fallback if empty
   const typewriterNames = useMemo(() => {
     const names = suggestionPool
       .map((item) => item?.name)
-      .filter((name, index, array) => Boolean(name) && array.indexOf(name) === index);
-
+      .filter((name, i, arr) => Boolean(name) && arr.indexOf(name) === i);
     return names.length > 0 ? names : FALLBACK_TYPEWRITER_NAMES;
   }, [suggestionPool]);
 
-  // Reset typewriter state whenever the source list changes significantly
-  useEffect(() => {
-    setTypewriterState((prev) => {
-      if (
-        prev.index === 0 &&
-        prev.subIndex === 0 &&
-        prev.deleting === false &&
-        prev.pause === false &&
-        prev.placeholder === DEFAULT_PLACEHOLDER
-      ) {
-        return prev;
-      }
+  // Note: We intentionally avoid resetting the typewriter state based on data changes
+  // to keep the animation smooth and continuous even when the component re-renders.
 
-      return {
-        ...prev,
-        index: 0,
-        subIndex: 0,
-        deleting: false,
-        pause: false,
-        placeholder: DEFAULT_PLACEHOLDER
-      };
-    });
-  }, [typewriterNames, DEFAULT_PLACEHOLDER]);
-
-  const shouldAnimatePlaceholder = isSearchFocused && trimmedQuery === '';
+  // Animate the placeholder whenever the field is empty, regardless of focus
+  const shouldAnimatePlaceholder = trimmedQuery === '';
 
   // Typewriter animation for placeholder text when input is empty and focused
   useEffect(() => {
@@ -223,6 +207,7 @@ const SearchBar = ({
 
   const handleClearSearch = () => {
     setSearchQuery('');
+    if (typeof onQueryChange === 'function') onQueryChange('');
   };
 
   const handleProductClick = (product) => {
@@ -242,16 +227,22 @@ const SearchBar = ({
     return '/placeholder.png';
   };
 
-  const showEmptyState = isSearchFocused && deferredQuery !== '' && searchResults.length === 0;
+  const showDropdown = !disableSuggestions && isSearchFocused && searchResults.length > 0;
+  const showEmptyState = !disableSuggestions && isSearchFocused && deferredQuery !== '' && searchResults.length === 0;
 
   const isMobile = viewportWidth < 640;
   const isTablet = viewportWidth >= 640 && viewportWidth < 1024;
-  const inputHeight = isMobile ? 52 : isTablet ? 58 : 64;
-  const containerRadius = isMobile ? 22 : 28;
+  const isSmallPhone = viewportWidth < 360;
+  // Compact sizing (reduced height for sleeker feel) with extra small phone support
+  const inputHeight = isSmallPhone ? 40 : isMobile ? 44 : isTablet ? 48 : 52;
+  // Pill radius stays generous for premium aesthetic
+  const containerRadius = isMobile ? 999 : 999; // fully rounded pill across breakpoints
+  // Collapsed vs expanded widths for interactive polish
+  const collapsedWidth = isSmallPhone ? '96%' : isMobile ? '92%' : isTablet ? '72%' : '60%';
   const dropdownOffset = isMobile ? 8 : 12;
-  const dropdownMaxHeight = isMobile ? '55vh' : isTablet ? '50vh' : '360px';
+  const dropdownMaxHeight = isSmallPhone ? '60vh' : isMobile ? '55vh' : isTablet ? '50vh' : '360px';
   const sectionPadding = isMobile ? '0 12px' : '0';
-  const iconPaddingLeft = isMobile ? 16 : 20;
+  const iconPaddingLeft = isSmallPhone ? 12 : isMobile ? 16 : 20;
   const shadowFocused = isMobile
     ? '0 14px 32px rgba(115, 56, 87, 0.22)'
     : '0 18px 40px rgba(115, 56, 87, 0.18)';
@@ -262,68 +253,98 @@ const SearchBar = ({
   return (
     <div 
       ref={searchRef} 
-      className="relative w-full mx-auto"
+      className="relative w-full"
       style={{
         zIndex: 200,
         maxWidth: isMobile ? '100%' : '1100px',
         padding: sectionPadding
       }}
     >
-      {/* Elevated backdrop */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'linear-gradient(135deg, rgba(115,56,87,0.08) 0%, rgba(140,83,109,0.12) 100%)',
-          borderRadius: `${containerRadius}px`,
-          transform: 'translateY(-6px)',
-          filter: 'blur(12px)',
-          zIndex: -1
-        }}
-      />
-      
-      {/* Search Input Container */}
-      <div 
-        className="relative flex items-center bg-white transition-all duration-300"
-        style={{
-       border: '1.5px solid',
-          borderColor: isSearchFocused ? '#733857' : '#d1d5db',
-          boxShadow: isSearchFocused 
-            ? shadowFocused
-            : shadowIdle,
-          minHeight: `${inputHeight}px`,
-          height: `${inputHeight}px`,
-          visibility: 'visible',
-          opacity: 1,
-          display: 'flex',
-          width: '100%',
-          borderRadius: `${containerRadius}px`
-        }}
+      {/* Width-animating wrapper */}
+      <motion.div
+        className="relative mx-auto"
+        initial={false}
+        animate={{ width: isSearchFocused ? '100%' : collapsedWidth }}
+        transition={{ type: 'spring', stiffness: 320, damping: 36, mass: 0.6 }}
+        style={{ willChange: 'width' }}
       >
+        {/* Elevated backdrop */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(135deg, rgba(115,56,87,0.08) 0%, rgba(140,83,109,0.12) 100%)',
+            borderRadius: `${containerRadius}px`,
+            transform: 'translateY(-6px)',
+            filter: 'blur(12px)',
+            zIndex: -1
+          }}
+        />
+        
+        {/* Search Input Container */}
+        <div 
+          className="relative flex items-center transition-all duration-300 bg-white/95 backdrop-blur-sm"
+          style={{
+            border: '1px solid',
+            borderColor: isSearchFocused ? '#733857' : 'rgba(115,56,87,0.18)',
+            boxShadow: isSearchFocused 
+              ? '0 6px 22px rgba(115,56,87,0.22), 0 2px 6px rgba(0,0,0,0.06)'
+              : '0 4px 14px rgba(17,24,39,0.08)',
+            minHeight: `${inputHeight}px`,
+            height: `${inputHeight}px`,
+            visibility: 'visible',
+            opacity: 1,
+            display: 'flex',
+            width: '100%',
+            borderRadius: `${containerRadius}px`,
+            background: isSearchFocused
+              ? 'linear-gradient(135deg, #ffffff 0%, #fdf7fa 55%, #f8eef3 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #fcfbfc 60%, #faf7fa 100%)',
+            willChange: 'box-shadow, border-color, background',
+            transform: 'translateZ(0)'
+          }}
+        >
         {/* Search Icon */}
-        <div style={{ paddingLeft: `${iconPaddingLeft}px`, paddingRight: '12px' }}>
-          <Search 
-            className="transition-all duration-300" 
-            style={{ 
-              color: isSearchFocused ? '#733857' : 'rgba(115, 56, 87, 0.5)',
-              width: '20px',
-              height: '20px'
-            }} 
-          />
+        <div style={{ paddingLeft: `${iconPaddingLeft}px`, paddingRight: '10px', display: 'flex', alignItems: 'center' }}>
+          {/* High-res custom SVG magnifier for crisp rendering */}
+          <svg
+            width={isSmallPhone ? '17' : '19'}
+            height={isSmallPhone ? '17' : '19'}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="transition-all duration-300"
+            style={{
+              stroke: isSearchFocused ? '#733857' : 'rgba(115,56,87,0.55)',
+              strokeWidth: isSmallPhone ? 1.7 : 1.9,
+              transform: isSearchFocused ? 'scale(1.06)' : 'scale(1)',
+              filter: isSearchFocused ? 'drop-shadow(0 1px 2px rgba(115,56,87,0.25))' : 'none'
+            }}
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7.25" />
+            <line x1="16.6" y1="16.6" x2="22" y2="22" strokeLinecap="round" />
+          </svg>
         </div>
 
         {/* Input Field */}
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setSearchQuery(v);
+            if (typeof onQueryChange === 'function') onQueryChange(v);
+          }}
           onFocus={() => setIsSearchFocused(true)}
           autoComplete="off"
           placeholder={typewriterState.placeholder}
-          className="flex-1 text-sm md:text-base outline-none bg-transparent font-light placeholder-gray-400 transition-all duration-300"
+          className="flex-1 text-[12px] sm:text-[13px] md:text-sm outline-none bg-transparent font-light placeholder-gray-400 transition-all duration-300"
           style={{
             color: '#281c20',
-            padding: isMobile ? '12px 10px 12px 0' : '16px 16px 16px 0'
+            letterSpacing: '0.3px',
+            padding: isSmallPhone ? '8px 6px 8px 0' : isMobile ? '10px 8px 10px 0' : '12px 14px 12px 0'
           }}
+          aria-label="Search products"
         />
 
         {/* Clear Button */}
@@ -342,178 +363,169 @@ const SearchBar = ({
           )}
         </AnimatePresence>
 
-        {/* Animated Bottom Border */}
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 h-0.5"
-          style={{
-            background: 'linear-gradient(90deg, #733857 0%, #8d4466 50%, #412434 100%)',
-            transformOrigin: 'left'
-          }}
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: isSearchFocused ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
-        />
-      </div>
+    
+        </div>
 
-      {/* Search Results Dropdown */}
-      <AnimatePresence>
-        {isSearchFocused && searchResults.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute left-0 right-0 w-full bg-white border overflow-hidden"
-            style={{
-              top: `calc(100% + ${dropdownOffset}px)`,
-              borderColor: 'rgba(115, 56, 87, 0.1)',
-              boxShadow: '0 12px 32px rgba(115, 56, 87, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08)',
-              maxHeight: dropdownMaxHeight,
-              zIndex: 400
-            }}
-          >
-            <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: dropdownMaxHeight }}>
-              {/* Results Header */}
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                <p className="text-xs font-medium tracking-wider uppercase" style={{ color: '#733857' }}>
-                  {isShowingDefaultSuggestions
-                    ? 'Suggested For You'
-                    : `${searchResults.length} ${searchResults.length === 1 ? 'Result' : 'Results'} Found`}
-                </p>
-                {isShowingDefaultSuggestions && (
-                  <p className="mt-1 text-[11px] uppercase tracking-wide text-gray-400">
-                    Trending picks to get you started
+        {/* Search Results Dropdown */}
+        <AnimatePresence>
+          {showDropdown && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="absolute left-0 right-0 w-full bg-white border overflow-hidden"
+              style={{
+                top: `calc(100% + ${dropdownOffset}px)`,
+                borderColor: 'rgba(115, 56, 87, 0.1)',
+                boxShadow: '0 12px 32px rgba(115, 56, 87, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08)',
+                maxHeight: dropdownMaxHeight,
+                zIndex: 400
+              }}
+            >
+              <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: dropdownMaxHeight }}>
+                {/* Results Header */}
+                <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                  <p className="text-xs font-medium tracking-wider uppercase" style={{ color: '#733857' }}>
+                    {isShowingDefaultSuggestions
+                      ? 'Suggested For You'
+                      : `${searchResults.length} ${searchResults.length === 1 ? 'Result' : 'Results'} Found`}
                   </p>
-                )}
-              </div>
+                  {isShowingDefaultSuggestions && (
+                    <p className="mt-1 text-[11px] uppercase tracking-wide text-gray-400">
+                      Trending picks to get you started
+                    </p>
+                  )}
+                </div>
 
-              {/* Results List */}
-              <div className="py-2">
-                {searchResults.map((product, index) => {
-                  const Icon = product.icon || Search;
-                  return (
-                    <motion.button
-                      key={`${product._id}-${index}`}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => handleProductClick(product)}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-all duration-200 group border-b border-gray-50 last:border-b-0"
-                    >
-                      {/* Product Image */}
-                      <div
-                        className="flex-shrink-0 bg-gray-100 overflow-hidden relative"
-                        style={{
-                          width: isMobile ? '52px' : '64px',
-                          height: isMobile ? '52px' : '64px',
-                          borderRadius: isMobile ? '14px' : '16px'
-                        }}
+                {/* Results List */}
+                <div className="py-2">
+                  {searchResults.map((product, index) => {
+                    const Icon = product.icon || Search;
+                    return (
+                      <motion.button
+                        key={`${product._id}-${index}`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => handleProductClick(product)}
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-all duration-200 group border-b border-gray-50 last:border-b-0"
                       >
-                        <img
-                          src={getProductImage(product)}
-                          alt={product.name}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        />
-                        {/* Section Badge */}
-                        <div 
-                          className="absolute top-1 right-1 p-1"
-                          style={{ 
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            backdropFilter: 'blur(4px)'
+                        {/* Product Image */}
+                        <div
+                          className="flex-shrink-0 bg-gray-100 overflow-hidden relative"
+                          style={{
+                            width: isMobile ? '52px' : '64px',
+                            height: isMobile ? '52px' : '64px',
+                            borderRadius: isMobile ? '14px' : '16px'
                           }}
                         >
-                          <Icon 
-                            className="w-3 h-3" 
-                            style={{ color: product.color }} 
+                          <img
+                            src={getProductImage(product)}
+                            alt={product.name}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                           />
-                        </div>
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="flex-1 text-left min-w-0">
-                        <h4 
-                          className="text-sm md:text-base font-medium truncate group-hover:text-[#733857] transition-colors duration-200"
-                          style={{ color: '#281c20' }}
-                        >
-                          {product.name}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span 
-                            className="text-xs font-light tracking-wide uppercase"
-                            style={{ color: product.color }}
+                          {/* Section Badge */}
+                          <div 
+                            className="absolute top-1 right-1 p-1"
+                            style={{ 
+                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                              backdropFilter: 'blur(4px)'
+                            }}
                           >
-                            {product.section}
-                          </span>
-                          {product.offerPrice && product.actualPrice && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-medium" style={{ color: '#733857' }}>
-                                ₹{product.offerPrice}
-                              </span>
-                              <span className="text-xs line-through text-gray-400">
-                                ₹{product.actualPrice}
-                              </span>
-                            </div>
-                          )}
+                            <Icon 
+                              className="w-3 h-3" 
+                              style={{ color: product.color }} 
+                            />
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Arrow Icon */}
-                      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-200">
-                        <svg 
-                          width="20" 
-                          height="20" 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          strokeWidth="2"
-                          style={{ color: '#733857' }}
-                        >
-                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                        {/* Product Info */}
+                        <div className="flex-1 text-left min-w-0">
+                          <h4 
+                            className="text-sm md:text-base font-medium truncate group-hover:text-[#733857] transition-colors duration-200"
+                            style={{ color: '#281c20' }}
+                          >
+                            {product.name}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span 
+                              className="text-xs font-light tracking-wide uppercase"
+                              style={{ color: product.color }}
+                            >
+                              {product.section}
+                            </span>
+                            {product.offerPrice && product.actualPrice && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-medium" style={{ color: '#733857' }}>
+                                  ₹{product.offerPrice}
+                                </span>
+                                <span className="text-xs line-through text-gray-400">
+                                  ₹{product.actualPrice}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-      {/* No Results Message */}
-      <AnimatePresence>
-        {showEmptyState && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute left-0 right-0 w-full bg-white border p-6 text-center"
-            style={{
-              top: `calc(100% + ${dropdownOffset}px)`,
-              borderColor: 'rgba(115, 56, 87, 0.1)',
-              boxShadow: '0 12px 32px rgba(115, 56, 87, 0.15)',
-              zIndex: 400
-            }}
-          >
-            <div className="flex flex-col items-center gap-3">
-              <div 
-                className="w-12 h-12 flex items-center justify-center"
-            
-              >
-                <Search className="w-6 h-6" style={{ color: '#733857' }} />
+                        {/* Arrow Icon */}
+                        <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-200">
+                          <svg 
+                            width="20" 
+                            height="20" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2"
+                            style={{ color: '#733857' }}
+                          >
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                          </svg>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium mb-1" style={{ color: '#281c20' }}>
-                  No products found
-                </p>
-                <p className="text-xs text-gray-500 font-light">
-                  Try searching with different keywords
-                </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* No Results Message */}
+        <AnimatePresence>
+          {showEmptyState && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute left-0 right-0 w-full bg-white border p-6 text-center"
+              style={{
+                top: `calc(100% + ${dropdownOffset}px)`,
+                borderColor: 'rgba(115, 56, 87, 0.1)',
+                boxShadow: '0 12px 32px rgba(115, 56, 87, 0.15)',
+                zIndex: 400
+              }}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div 
+                  className="w-12 h-12 flex items-center justify-center"
+              
+                >
+                  <Search className="w-6 h-6" style={{ color: '#733857' }} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1" style={{ color: '#281c20' }}>
+                    No products found
+                  </p>
+                  <p className="text-xs text-gray-500 font-light">
+                    Try searching with different keywords
+                  </p>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
