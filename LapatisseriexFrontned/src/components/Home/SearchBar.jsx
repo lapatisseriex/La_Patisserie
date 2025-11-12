@@ -34,7 +34,7 @@ const SearchBar = ({
   const searchRef = useRef(null);
 
   const productSources = useMemo(() => ([
-    { list: bestSellers, section: 'Best Seller', icon: TrendingUp, color: '#733857' },
+    { list: bestSellers, section: 'Best Sellers', icon: TrendingUp, color: '#733857' },
     { list: newLaunches, section: 'New Launch', icon: Sparkles, color: '#8d4466' },
     { list: cartPicks, section: 'Picked For You', icon: ShoppingCart, color: '#412434' }
   ]), [bestSellers, newLaunches, cartPicks]);
