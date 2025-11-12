@@ -46,7 +46,7 @@ La Patisserie is an online ordering experience for our bakery. Browse the menu, 
 ## Promotions and free treats
 
 - From time to time, special offers or free items may be available
-- Look for badges on the menu or messages at checkout
+- Look for badges on the menu or messages at checkout.
 
 ## Donations (optional)
 
