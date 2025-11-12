@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue } from 'react';
 import { Search, X, TrendingUp, Sparkles, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,8 +19,6 @@ const SearchBar = ({
   const DEFAULT_PLACEHOLDER = 'Search for cakes, pastries, desserts...';
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const [isShowingDefaultSuggestions, setIsShowingDefaultSuggestions] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1024
   );
@@ -32,6 +30,8 @@ const SearchBar = ({
     placeholder: DEFAULT_PLACEHOLDER
   });
   const searchRef = useRef(null);
+  const trimmedQuery = useMemo(() => searchQuery.toLowerCase().trim(), [searchQuery]);
+  const deferredQuery = useDeferredValue(trimmedQuery);
 
   const productSources = useMemo(() => ([
     { list: bestSellers, section: 'Best Sellers', icon: TrendingUp, color: '#733857' },
@@ -99,9 +99,11 @@ const SearchBar = ({
     });
   }, [typewriterNames, DEFAULT_PLACEHOLDER]);
 
-  // Typewriter animation for placeholder text when input is empty
+  const shouldAnimatePlaceholder = isSearchFocused && trimmedQuery === '';
+
+  // Typewriter animation for placeholder text when input is empty and focused
   useEffect(() => {
-    if (searchQuery || typewriterNames.length === 0) {
+    if (!shouldAnimatePlaceholder || typewriterNames.length === 0) {
       if (
         typewriterState.placeholder !== DEFAULT_PLACEHOLDER ||
         typewriterState.subIndex !== 0 ||
@@ -162,11 +164,11 @@ const SearchBar = ({
     }, typewriterState.deleting ? 55 : 110);
 
     return () => clearTimeout(timeout);
-  }, [typewriterNames, typewriterState, searchQuery, DEFAULT_PLACEHOLDER]);
+  }, [typewriterNames, typewriterState, shouldAnimatePlaceholder, DEFAULT_PLACEHOLDER]);
 
   // Resume animation after pause duration
   useEffect(() => {
-    if (!typewriterState.pause || searchQuery || typewriterNames.length === 0) return;
+    if (!typewriterState.pause || !shouldAnimatePlaceholder || typewriterNames.length === 0) return;
 
     const timeout = setTimeout(() => {
       setTypewriterState((prev) => ({
@@ -177,7 +179,7 @@ const SearchBar = ({
     }, 1500);
 
     return () => clearTimeout(timeout);
-  }, [typewriterState.pause, typewriterNames.length, searchQuery]);
+  }, [typewriterState.pause, typewriterNames.length, shouldAnimatePlaceholder]);
 
   // Close search dropdown when clicking outside
   useEffect(() => {
@@ -205,34 +207,26 @@ const SearchBar = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Dynamic search across all sections + default suggestions when empty
-  useEffect(() => {
-    const trimmedQuery = searchQuery.toLowerCase().trim();
-
-    if (trimmedQuery === '') {
-      setSearchResults(suggestionPool);
-      setIsShowingDefaultSuggestions(suggestionPool.length > 0);
-      return;
+  const searchResults = useMemo(() => {
+    if (deferredQuery === '') {
+      return suggestionPool;
     }
 
-    const filtered = buildEntries((product) => {
-      const nameMatch = product.name?.toLowerCase().includes(trimmedQuery);
-      const descriptionMatch = product.description?.toLowerCase().includes(trimmedQuery);
+    return buildEntries((product) => {
+      const nameMatch = product.name?.toLowerCase().includes(deferredQuery);
+      const descriptionMatch = product.description?.toLowerCase().includes(deferredQuery);
       return Boolean(nameMatch || descriptionMatch);
-    });
+    }).slice(0, 8);
+  }, [deferredQuery, suggestionPool, buildEntries]);
 
-    setIsShowingDefaultSuggestions(false);
-    setSearchResults(filtered.slice(0, 8));
-  }, [searchQuery, buildEntries, suggestionPool]);
+  const isShowingDefaultSuggestions = deferredQuery === '' && suggestionPool.length > 0;
 
   const handleClearSearch = () => {
     setSearchQuery('');
-    setSearchResults([]);
   };
 
   const handleProductClick = (product) => {
     setSearchQuery('');
-    setSearchResults([]);
     setIsSearchFocused(false);
     if (onProductClick) {
       onProductClick(product);
@@ -248,7 +242,7 @@ const SearchBar = ({
     return '/placeholder.png';
   };
 
-  const showEmptyState = isSearchFocused && searchQuery && searchResults.length === 0;
+  const showEmptyState = isSearchFocused && deferredQuery !== '' && searchResults.length === 0;
 
   const isMobile = viewportWidth < 640;
   const isTablet = viewportWidth >= 640 && viewportWidth < 1024;
