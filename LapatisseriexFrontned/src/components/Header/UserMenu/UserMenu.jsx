@@ -216,6 +216,13 @@ const UserMenu = memo(() => {
                 src="/yummy.png" 
                 alt="Profile Icon" 
                 className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const icon = document.createElement('div');
+                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+                  icon.className = 'h-4 w-4 transition-all duration-300 group-hover:scale-110 inline-block';
+                  e.target.parentNode.insertBefore(icon, e.target);
+                }}
               />
               <span className="font-light relative z-10">My Profile</span>
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
@@ -239,6 +246,13 @@ const UserMenu = memo(() => {
                 src="/cupcake.png" 
                 alt="Orders Icon" 
                 className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const icon = document.createElement('div');
+                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>';
+                  icon.className = 'h-4 w-4 transition-all duration-300 group-hover:scale-110 inline-block';
+                  e.target.parentNode.insertBefore(icon, e.target);
+                }}
               />
               <span className="font-light relative z-10">My Orders</span>
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
@@ -262,6 +276,13 @@ const UserMenu = memo(() => {
                 src="/cakefavorites.png" 
                 alt="Favorites Icon" 
                 className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const icon = document.createElement('div');
+                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
+                  icon.className = 'h-4 w-4 transition-all duration-300 group-hover:scale-110 inline-block';
+                  e.target.parentNode.insertBefore(icon, e.target);
+                }}
               />
               <span className="font-light relative z-10">My Favorites</span>
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
@@ -279,6 +300,13 @@ const UserMenu = memo(() => {
                 src="/signout.png" 
                 alt="Logout Icon" 
                 className={`h-4 w-4 transition-all duration-300 group-hover:scale-110 ${isLoggingOut ? 'opacity-50' : ''}`} 
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const icon = document.createElement('div');
+                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
+                  icon.className = `h-4 w-4 transition-all duration-300 group-hover:scale-110 inline-block ${isLoggingOut ? 'opacity-50' : ''}`;
+                  e.target.parentNode.insertBefore(icon, e.target);
+                }}
               />
               <span className="font-light relative z-10">
                 {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
