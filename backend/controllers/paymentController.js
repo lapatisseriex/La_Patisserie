@@ -934,11 +934,22 @@ export const verifyPayment = asyncHandler(async (req, res) => {
           gatewayOrderId: razorpay_order_id,
           meta: { source: 'verifyPayment' }
         };
-        await Payment.findOneAndUpdate(
-          { gatewayPaymentId: razorpay_payment_id },
+
+        // First try to UPDATE the existing pending intent created at checkout (preferred)
+        const updatedPending = await Payment.findOneAndUpdate(
+          { gatewayOrderId: razorpay_order_id },
           { $set: update },
-          { upsert: true }
+          { new: true }
         );
+
+        if (!updatedPending) {
+          // Fallback: upsert by gatewayPaymentId (legacy behaviour)
+          await Payment.findOneAndUpdate(
+            { gatewayPaymentId: razorpay_payment_id },
+            { $set: update },
+            { upsert: true }
+          );
+        }
       } catch (persistErr) {
         console.error('Failed to persist/update payment record:', persistErr.message);
       }
@@ -1197,10 +1208,10 @@ export const handleWebhook = asyncHandler(async (req, res) => {
         } catch (cartErr) {
           console.warn('Webhook cart cleanup failed:', cartErr?.message || cartErr);
         }
-        // Save payment record as success
+        // Save payment record as success (update existing intent if present)
         try {
           const linkedOrder = await Order.findOne({ razorpayOrderId: capturedPayment.order_id });
-          await Payment.create({
+          const payload = {
             userId: linkedOrder?.userId,
             email: linkedOrder?.userDetails?.email,
             orderId: linkedOrder?.orderNumber || capturedPayment.order_id,
@@ -1211,7 +1222,19 @@ export const handleWebhook = asyncHandler(async (req, res) => {
             gatewayPaymentId: capturedPayment.id,
             gatewayOrderId: capturedPayment.order_id,
             meta: { source: 'webhook', method: capturedPayment.method }
-          });
+          };
+          const updated = await Payment.findOneAndUpdate(
+            { gatewayOrderId: capturedPayment.order_id },
+            { $set: payload },
+            { new: true }
+          );
+          if (!updated) {
+            await Payment.findOneAndUpdate(
+              { gatewayPaymentId: capturedPayment.id },
+              { $set: payload },
+              { upsert: true }
+            );
+          }
         } catch (err) {
           console.error('Failed to save webhook payment:', err.message);
         }
@@ -1243,10 +1266,10 @@ export const handleWebhook = asyncHandler(async (req, res) => {
           }
         }
 
-        // Record failed payment for admin tracking
+        // Record failed payment for admin tracking (update intent if exists)
         try {
           const linkedOrder = await Order.findOne({ razorpayOrderId: failedPayment.order_id });
-          await Payment.create({
+          const payload = {
             userId: linkedOrder?.userId,
             email: linkedOrder?.userDetails?.email,
             orderId: linkedOrder?.orderNumber || failedPayment.order_id,
@@ -1257,7 +1280,19 @@ export const handleWebhook = asyncHandler(async (req, res) => {
             gatewayPaymentId: failedPayment.id,
             gatewayOrderId: failedPayment.order_id,
             meta: { source: 'webhook', reason: failedPayment.error_reason }
-          });
+          };
+          const updated = await Payment.findOneAndUpdate(
+            { gatewayOrderId: failedPayment.order_id },
+            { $set: payload },
+            { new: true }
+          );
+          if (!updated) {
+            await Payment.findOneAndUpdate(
+              { gatewayPaymentId: failedPayment.id },
+              { $set: payload },
+              { upsert: true }
+            );
+          }
           console.log('💾 Failed payment record saved');
         } catch (err) {
           console.error('Failed to save failed payment:', err.message);
@@ -1566,9 +1601,26 @@ export const listPayments = asyncHandler(async (req, res) => {
   const limitNumber = Math.min(100, Math.max(1, Number(limit) || 20));
   const skip = (pageNumber - 1) * limitNumber;
 
+  const normalizeAll = (val) => {
+    if (!val) return '';
+    const s = String(val).trim().toLowerCase();
+    return ['all', 'all methods', 'any'].includes(s) ? '' : s;
+  };
+
   const paymentMatch = {};
-  if (status) paymentMatch.paymentStatus = status;
-  if (method) paymentMatch.paymentMethod = method;
+  const normStatus = normalizeAll(status);
+  const normMethod = normalizeAll(method);
+  // Default behavior: hide failed and pending payments in admin view unless explicitly requested
+  if (!normStatus) {
+    paymentMatch.paymentStatus = { $nin: ['failed', 'pending'] };
+  } else if (normStatus === 'failed') {
+    paymentMatch.paymentStatus = 'failed';
+  } else if (normStatus === 'pending') {
+    paymentMatch.paymentStatus = 'pending';
+  } else {
+    paymentMatch.paymentStatus = normStatus;
+  }
+  if (normMethod) paymentMatch.paymentMethod = normMethod;
 
   if (startDate || endDate) {
     paymentMatch.date = paymentMatch.date || {};

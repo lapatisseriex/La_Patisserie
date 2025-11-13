@@ -1017,7 +1017,7 @@ if (isOrderComplete) {
   return (
     <div className="-mt-2 sm:-mt-3 md:-mt-4" style={{  }}>
       <ShopClosureOverlay overlayType="page" showWhenClosed={!isOpen}>
-    <div className="min-h-screen bg-[#f8f5f6] pb-12">
+  <div className="min-h-screen bg-[#f8f5f6] pb-12 overflow-x-hidden">
 
         {/* --- Website Live Timer at the very top --- */}
         <div className="w-full bg-white border-b border-slate-200">
@@ -1513,128 +1513,118 @@ if (isOrderComplete) {
           
 
 
-            {/* --- Payment Card (Reference layout) --- */}
-              <div className=" p-5 sm:p-6 lg:p-7">
-              <div className="flex flex-col gap-1">
-                <h1 className="text-lg font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]">Payment</h1>
-                <p className="text-xs uppercase tracking-[0.16em] text-[rgba(26,26,26,0.55)]">Choose how you would like to pay</p>
-              </div>
+            {/* --- Payment Card (Compact • Responsive) --- */}
+              <div className="rounded-3xl border border-[#733857]/20 bg-white p-5 sm:p-6 lg:p-7 shadow-sm">
+                {/* Heading */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <h1 className="text-lg sm:text-xl font-semibold uppercase tracking-[0.14em] text-[#1a1a1a]">Payment</h1>
+                    <p className="text-xs sm:text-[11px] uppercase tracking-[0.14em] text-[rgba(26,26,26,0.55)]">Select a method</p>
+                  </div>
+                </div>
 
-              <div className="mt-6 space-y-4">
-                {/* Razorpay Payment Method */}
-                <div className="relative">
-                  <FlipButton
-                    frontText="Pay Online"
-                    backText="Razorpay Secure"
-                    selected={isRazorpaySelected}
+                {/* Methods as tiles */}
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Razorpay */}
+                  <button
+                    type="button"
                     onClick={() => setSelectedPaymentMethod('razorpay')}
-                    className="payment-method-flip w-full"
-                  />
-                  {isRazorpaySelected && (
-                    <div className="mt-3 p-4 bg-[#f7eef3] border border-[#733857] rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <img src="/images/razorpay.svg" alt="Razorpay" className="h-4 w-auto" />
-                        <span className="text-sm font-semibold text-[#733857]">Razorpay Secure Checkout</span>
-                        <span className="text-xs bg-[#733857] text-white px-2 py-1 rounded">Recommended</span>
-                      </div>
-                      <p className="text-xs text-[#6f5260] mb-3">
-                        Pay instantly with UPI, cards, net banking or wallets through Razorpay's protected gateway.
-                      </p>
-                      <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8d4466]">
-                        <span className="border border-[#d9c4cd] px-2 py-1 rounded">UPI</span>
-                        <span className="border border-[#d9c4cd] px-2 py-1 rounded">Cards</span>
-                        <span className="border border-[#d9c4cd] px-2 py-1 rounded">Net Banking</span>
-                        <span className="border border-[#d9c4cd] px-2 py-1 rounded">Wallets</span>
+                    className={`group flex items-center justify-between rounded-2xl border px-4 py-4 sm:px-5 sm:py-5 transition-all ${
+                      isRazorpaySelected
+                        ? 'border-[#733857] bg-[#f8f0f4] ring-2 ring-[#733857]/40'
+                        : 'border-slate-200 hover:border-[#733857]/50 bg-white'
+                    }`}
+                    aria-pressed={isRazorpaySelected}
+                  >
+                    <div className="flex items-center gap-3">
+                      <img src="/images/razorpay.svg" alt="Razorpay" className="h-5 w-auto" />
+                      <div className="text-left">
+                        <p className="text-sm sm:text-base font-semibold text-[#412434]">Pay Online</p>
+                        <p className="mt-0.5 text-[11px] sm:text-xs text-[#6f5260]">UPI • Card • Netbanking • Wallet</p>
                       </div>
                     </div>
-                  )}
-                </div>
+                    <span
+                      className={`text-[10px] sm:text-xs font-bold rounded-full px-2 py-1 ${
+                        isRazorpaySelected ? 'bg-[#733857] text-white' : 'bg-slate-100 text-[#733857]'
+                      }`}
+                    >
+                      Secure
+                    </span>
+                  </button>
 
-                {/* Cash on Delivery Method */}
-                <div className="relative">
-                  <FlipButton
-                    frontText="Cash on Delivery"
-                    backText="Pay at Doorstep"
-                    selected={isCodSelected}
+                  {/* COD */}
+                  <button
+                    type="button"
                     onClick={() => setSelectedPaymentMethod('cod')}
-                    className="payment-method-flip w-full"
-                  />
-                  {isCodSelected && (
-                    <div className="mt-3 p-4 bg-[#f1e8ed] border border-[#412434] rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <img src="/images/cod.svg" alt="Cash on Delivery" className="h-4 w-auto" />
-                        <span className="text-sm font-semibold text-[#412434]">Cash on Delivery</span>
+                    className={`group flex items-center justify-between rounded-2xl border px-4 py-4 sm:px-5 sm:py-5 transition-all ${
+                      isCodSelected
+                        ? 'border-[#412434] bg-[#f3edf0] ring-2 ring-[#412434]/30'
+                        : 'border-slate-200 hover:border-[#412434]/50 bg-white'
+                    }`}
+                    aria-pressed={isCodSelected}
+                  >
+                    <div className="flex items-center gap-3">
+                      <img src="/images/cod.svg" alt="Cash on Delivery" className="h-5 w-auto" />
+                      <div className="text-left">
+                        <p className="text-sm sm:text-base font-semibold text-[#412434]">Cash on Delivery</p>
+                        <p className="mt-0.5 text-[11px] sm:text-xs text-[#6f5260]">Pay at your doorstep</p>
                       </div>
-                      <p className="text-xs text-[#6f5260]">
-                        Pay once your desserts arrive. We will reconfirm the order and bring an invoice along.
-                      </p>
+                    </div>
+                    <span
+                      className={`text-[10px] sm:text-xs font-bold rounded-full px-2 py-1 ${
+                        isCodSelected ? 'bg-[#412434] text-white' : 'bg-slate-100 text-[#412434]'
+                      }`}
+                    >
+                      COD
+                    </span>
+                  </button>
+                </div>
+
+                {/* Short helper bar */}
+                <div className="mt-4 rounded-lg border border-dashed border-[#d9c4cd] bg-[#f9f4f6] px-4 py-3 sm:px-5 text-[12px] sm:text-xs text-[#412434]">
+                  {isRazorpaySelected ? (
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <span className="font-semibold text-[#733857] uppercase tracking-[0.12em]">Razorpay</span>
+                      <span className="text-[#6f5260]">Pay {formatCurrency(grandTotal)} securely</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <span className="font-semibold text-[#412434] uppercase tracking-[0.12em]">Pay on delivery</span>
+                      <span className="text-[#6f5260]">Have {formatCurrency(grandTotal)} ready</span>
                     </div>
                   )}
                 </div>
-              </div>
 
-              <div className="mt-5 rounded border border-dashed border-[#d9c4cd] bg-[#f9f4f6] px-4 py-4 text-xs leading-relaxed text-[#412434] sm:px-5">
-                {isRazorpaySelected ? (
-                  <>
-                    <span className="font-semibold uppercase tracking-[0.16em] text-[#733857]">Digital checkout</span>
-                    <p className="mt-2 text-[13px] text-[#6f5260]">
-                      We will redirect you to Razorpay to collect {formatCurrency(grandTotal)} securely with your preferred digital method.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-semibold uppercase tracking-[0.16em] text-[#412434]">Pay on delivery</span>
-                    <p className="mt-2 text-[13px] text-[#6f5260]">
-                      Please keep {formatCurrency(grandTotal)} ready. Our delivery team carries change and a printed receipt.
-                    </p>
-                  </>
+                {/* Terms */}
+                <label className="mt-5 flex items-start gap-3 text-[12px] sm:text-[13px] text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={hasAcceptedTerms}
+                    onChange={(e) => setHasAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 border border-slate-400 text-[#733857] focus:ring-[#733857]"
+                  />
+                  <span>
+                    I accept the <a href="/terms" className="text-[#733857] underline">terms</a> and <a href="/privacy-policy" className="text-[#733857] underline">privacy</a>.
+                  </span>
+                </label>
+
+                {!hasAcceptedTerms && (
+                  <p className="mt-2 text-[11px] uppercase tracking-[0.16em] text-[rgba(26,26,26,0.55)]">Accept terms to continue</p>
                 )}
-              </div>
 
-              <label className="mt-6 flex items-start gap-3 text-xs leading-relaxed text-slate-600 sm:text-[13px]">
-                <input
-                  type="checkbox"
-                  checked={hasAcceptedTerms}
-                  onChange={(event) => setHasAcceptedTerms(event.target.checked)}
-                  className="mt-1 h-4 w-4 border border-slate-400 text-[#733857] focus:ring-[#733857]"
-                />
-                <span>
-                  I have reviewed my order details and accept the{' '}
-                  <a
-                    href="/terms"
-                    className="text-[#733857] underline decoration-[#733857] underline-offset-2 transition hover:text-[#5e2c46]"
-                  >
-                    terms &amp; conditions
-                  </a>{' '}
-                  and{' '}
-                  <a
-                    href="/privacy-policy"
-                    className="text-[#733857] underline decoration-[#733857] underline-offset-2 transition hover:text-[#5e2c46]"
-                  >
-                    privacy policy
-                  </a>
-                  .
-                </span>
-              </label>
-
-              {!hasAcceptedTerms && (
-                <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[rgba(26,26,26,0.55)]">
-                  Accept the terms to enable placing your order.
-                </p>
-              )}
-
-              <StyleButton
-                onClick={handlePlaceOrder}
-                disabled={isPlaceOrderDisabled}
-                className="place-order-btn mt-6"
-              >
-                {(() => {
-                  if (isProcessing) return isCodSelected ? 'Placing your order…' : 'Processing…';
-                  if (lastOrderAttempt && (Date.now() - lastOrderAttempt) < 2000) return 'Please wait…';
-                  if (!hasAcceptedTerms) return 'Accept terms to continue';
-                  return placeOrderLabel;
-                })()}
-              </StyleButton>
+                {/* CTA */}
+                <StyleButton
+                  onClick={handlePlaceOrder}
+                  disabled={isPlaceOrderDisabled}
+                  className="place-order-btn mt-5"
+                >
+                  {(() => {
+                    if (isProcessing) return isCodSelected ? 'Placing order…' : 'Processing…';
+                    if (lastOrderAttempt && (Date.now() - lastOrderAttempt) < 2000) return 'Please wait…';
+                    if (!hasAcceptedTerms) return 'Accept terms to continue';
+                    return placeOrderLabel;
+                  })()}
+                </StyleButton>
               {/* COD detailed loading overlay */}
               {isProcessing && isCodSelected && !isOrderComplete && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
