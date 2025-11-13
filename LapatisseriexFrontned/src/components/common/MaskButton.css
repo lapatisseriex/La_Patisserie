@@ -191,3 +191,26 @@
     mask-position: 0 0;
   }
 }
+
+/* Compact size variant for small devices */
+.mask-button--compact {
+  height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.mask-button--compact .mask-text,
+.mask-button--compact button {
+  font-size: 14px;
+}
+
+/* Scale up a bit on larger screens while staying slightly smaller than default */
+@media (min-width: 640px) {
+  .mask-button--compact {
+    height: 50px;
+    font-size: 15px;
+  }
+  .mask-button--compact .mask-text,
+  .mask-button--compact button {
+    font-size: 15px;
+  }
+}

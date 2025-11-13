@@ -735,6 +735,8 @@ const Products = () => {
             cartPicks={[]}
             onQueryChange={setSearchQuery}
             disableSuggestions={true}
+            // Lower z-index on Products page so it doesn't overlap sticky category bars on mobile
+            baseZIndex={10}
             onProductClick={() => { /* optional: could scroll to product or open details */ }}
           />
         </div>

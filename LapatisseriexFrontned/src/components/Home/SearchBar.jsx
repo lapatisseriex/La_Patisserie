@@ -17,7 +17,9 @@ const SearchBar = ({
   cartPicks = [], 
   onProductClick,
   onQueryChange,
-  disableSuggestions = false
+  disableSuggestions = false,
+  // Optional: control wrapper z-index for pages with their own sticky bars (e.g., Products)
+  baseZIndex = 200
 }) => {
   // Shown when animation is paused or no suggestions are available
   const DEFAULT_PLACEHOLDER = 'Search for pastries, cakes, desserts...';
@@ -255,7 +257,8 @@ const SearchBar = ({
       ref={searchRef} 
       className="relative w-full"
       style={{
-        zIndex: 200,
+        // Keep high by default (Home page), but allow pages to override to avoid overlapping sticky headers
+        zIndex: baseZIndex,
         maxWidth: isMobile ? '100%' : '1100px',
         padding: sectionPadding
       }}

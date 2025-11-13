@@ -397,7 +397,7 @@ const Checkout = () => {
             </div>
 
             {/* Contact & Delivery Information - Shows SECOND on mobile, FIRST on desktop */}
-            <div className="order-2 lg:order-1 bg-white p-8 space-y-8 rounded-xl shadow-sm border border-gray-100">
+            <div className="order-2 lg:order-1 bg-white p-5 sm:p-8 space-y-6 sm:space-y-8 rounded-xl shadow-sm border border-gray-100">
               {/* Error message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4">
@@ -409,9 +409,9 @@ const Checkout = () => {
               )}
 
               {/* Contact Information */}
-              <div className="bg-transparent p-0 shadow-none border-b border-gray-100 pb-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-[#733857]">Contact Information</h2>
+              <div className="bg-transparent p-0 shadow-none border-b border-gray-100 pb-5 sm:pb-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl font-semibold text-[#733857]">Contact Information</h2>
                   {!isEditMode && (
                     <CubeButton
                       onClick={() => setIsEditMode(true)}
@@ -420,31 +420,33 @@ const Checkout = () => {
                     </CubeButton>
                   )}
                 </div>
-                
-                {/* Phone */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-[#733857] mb-2">
-                    Phone number
-                  </label>
-                  <input
-                    type="text"
-                    value={user?.phone || ''}
-                    readOnly
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900"
-                  />
-                </div>
+                {/* Phone + Email compact grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-[#733857] mb-1.5 sm:mb-2">
+                      Phone number
+                    </label>
+                    <input
+                      type="text"
+                      value={user?.phone || ''}
+                      readOnly
+                      className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900"
+                    />
+                  </div>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-[#733857] mb-2">
-                    Email address
-                  </label>
-                  <input
-                    type="email"
-                    value={user?.email || email}
-                    readOnly
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900"
-                  />
+                  {/* Email */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-[#733857] mb-1.5 sm:mb-2">
+                      Email address
+                    </label>
+                    <input
+                      type="email"
+                      value={user?.email || email}
+                      readOnly
+                      className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -453,8 +455,8 @@ const Checkout = () => {
                 <h2 className="text-lg font-semibold text-[#733857] mb-4">Delivery</h2>
                 
                 {/* Name */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-[#733857] mb-2">
+                <div className="mb-3 sm:mb-4">
+                  <label className="block text-xs sm:text-sm font-medium text-[#733857] mb-1.5 sm:mb-2">
                     Full Name
                   </label>
                   <input
@@ -462,114 +464,134 @@ const Checkout = () => {
                     value={isEditMode ? editName : user?.name || ''}
                     onChange={(e) => setEditName(e.target.value)}
                     readOnly={!isEditMode}
-                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg ${
+                    className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg ${
                       isEditMode 
                         ? 'bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent' 
                         : 'bg-white text-gray-900'
                     }`}
                   />
                 </div>
-
-                {/* Location */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-[#733857] mb-2">
-                    Delivery Location
-                  </label>
-                  {isEditMode ? (
-                    <select
-                      value={editLocationId}
-                      onChange={(e) => setEditLocationId(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
-                    >
-                      <option value="">Select a location</option>
-                      {locationsLoading ? (
-                        <option disabled>Loading locations...</option>
-                      ) : (
-                        locations.map((location) => (
-                          <option key={location._id} value={location._id}>
-                            {location.area}, {location.city} - {location.pincode}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={(() => {
-                        const locationName = getCurrentLocationName();
-                        if (locationName === "Select Location" || locationName === "Location Loading...") {
-                          if (user?.location) {
-                            if (typeof user.location === 'object' && user.location.area) {
-                              return `${user.location.area}, ${user.location.city}`;
-                            } else if (typeof user.location === 'string' && locations.length > 0) {
-                              const loc = locations.find(l => l._id === user.location);
-                              return loc ? `${loc.area}, ${loc.city}` : 'Not set';
+                {/* Location + Hostel compact grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Location */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-[#733857] mb-1.5 sm:mb-2">
+                      Delivery Location
+                    </label>
+                    {isEditMode ? (
+                      <select
+                        value={editLocationId}
+                        onChange={(e) => setEditLocationId(e.target.value)}
+                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
+                      >
+                        <option value="">Select a location</option>
+                        {locationsLoading ? (
+                          <option disabled>Loading locations...</option>
+                        ) : (
+                          locations.map((location) => (
+                            <option key={location._id} value={location._id}>
+                              {location.area}, {location.city} - {location.pincode}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={(() => {
+                          const locationName = getCurrentLocationName();
+                          if (locationName === "Select Location" || locationName === "Location Loading...") {
+                            if (user?.location) {
+                              if (typeof user.location === 'object' && user.location.area) {
+                                return `${user.location.area}, ${user.location.city}`;
+                              } else if (typeof user.location === 'string' && locations.length > 0) {
+                                const loc = locations.find(l => l._id === user.location);
+                                return loc ? `${loc.area}, ${loc.city}` : 'Not set';
+                              }
                             }
+                            return 'Not set';
                           }
-                          return 'Not set';
-                        }
-                        return locationName;
-                      })()}
-                      readOnly
-                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.location ? 'border-red-300' : ''}`}
-                    />
-                  )}
-                  {!user?.location && !isEditMode && (
-                    <p className="text-sm text-red-600 mt-1">
-                      Please set your delivery location before proceeding
-                    </p>
-                  )}
+                          return locationName;
+                        })()}
+                        readOnly
+                        className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.location ? 'border-red-300' : ''}`}
+                      />
+                    )}
+                    {!user?.location && !isEditMode && (
+                      <p className="text-xs sm:text-sm text-red-600 mt-1">
+                        Please set your delivery location before proceeding
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Hostel */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-[#733857] mb-1.5 sm:mb-2">
+                      Hostel/Residence
+                    </label>
+                    {isEditMode ? (
+                      <select
+                        value={editHostelId}
+                        onChange={(e) => setEditHostelId(e.target.value)}
+                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
+                      >
+                        <option value="">Select a hostel</option>
+                        {hostelsLoading ? (
+                          <option disabled>Loading hostels...</option>
+                        ) : hostels.length === 0 ? (
+                          <option disabled>No hostels available for this location</option>
+                        ) : (
+                          hostels.map((hostel) => (
+                            <option key={hostel._id} value={hostel._id}>
+                              {hostel.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={user?.hostel?.name || 'Not set'}
+                        readOnly
+                        className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.hostel ? 'border-red-300' : ''}`}
+                      />
+                    )}
+                    {!user?.hostel && !isEditMode && (
+                      <p className="text-xs sm:text-sm text-red-600 mt-1">
+                        Please set your hostel before proceeding
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Hostel */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-[#733857] mb-2">
-                    Hostel/Residence
-                  </label>
-                  {isEditMode ? (
-                    <select
-                      value={editHostelId}
-                      onChange={(e) => setEditHostelId(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
-                    >
-                      <option value="">Select a hostel</option>
-                      {hostelsLoading ? (
-                        <option disabled>Loading hostels...</option>
-                      ) : hostels.length === 0 ? (
-                        <option disabled>No hostels available for this location</option>
-                      ) : (
-                        hostels.map((hostel) => (
-                          <option key={hostel._id} value={hostel._id}>
-                            {hostel.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={user?.hostel?.name || 'Not set'}
-                      readOnly
-                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.hostel ? 'border-red-300' : ''}`}
-                    />
-                  )}
-                  {!user?.hostel && !isEditMode && (
-                    <p className="text-sm text-red-600 mt-1">
-                      Please set your hostel before proceeding
-                    </p>
-                  )}
+                {/* Common service coverage note */}
+                <div className="mt-3 sm:mt-4 rounded-md bg-[#f9f4f6] border border-[#733857]/20 px-3 py-2 flex items-start gap-2">
+                  <AlertCircle size={14} className="mt-0.5 text-[#733857] flex-shrink-0" />
+                  <p className="text-[11px] sm:text-xs leading-snug text-[#412434]">
+                    We currently serve only selected delivery areas and partner hostel students.
+                  </p>
                 </div>
+
+                {/* Small helper: how to change location/hostel */}
+                {!isEditMode && (
+                  <div className="mt-2 flex items-start text-[12px] sm:text-xs text-[#5a2943]">
+                    <Edit2 size={14} className="mt-0.5 text-[#733857] flex-shrink-0" />
+                    <p className="ml-2 leading-snug">
+                      To change your delivery location or hostel, click the <span className="font-semibold">Edit</span> button above.
+                    </p>
+                  </div>
+                )}
 
                 {/* Edit Mode Buttons */}
                 {isEditMode && (
-                  <div className="flex gap-4 pt-4 items-center justify-center">
+                  <div className="flex gap-3 sm:gap-4 pt-3 sm:pt-4 items-center justify-center">
                     <CubeButton
                       onClick={handleCancelEdit}
                       disabled={saving}
                       variant="cancel-variant"
                       style={{ 
-                        width: '120px',
-                        height: '40px'
+                        width: '108px',
+                        height: '38px'
                       }}
                     >
                       Cancel
@@ -579,8 +601,8 @@ const Checkout = () => {
                       disabled={saving}
                       variant="save-variant"
                       style={{ 
-                        width: '140px',
-                        height: '40px'
+                        width: '128px',
+                        height: '38px'
                       }}
                     >
                       {saving ? 'Saving...' : 'Save'}
@@ -589,16 +611,19 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Proceed Button */}
-              <MaskButton
-                onClick={handleProceedToPayment}
-                disabled={isEditMode || saving}
-                maskType="nature"
-                style={{
-                  width: '100%'}}
-              >
-                {isEditMode ? 'Save changes to proceed' : 'Continue to Payment'}
-              </MaskButton>
+              {/* Proceed Button (only when NOT editing) */}
+              {!isEditMode && (
+                <MaskButton
+                  onClick={handleProceedToPayment}
+                  disabled={saving}
+                  maskType="nature"
+                  className="mask-button--compact"
+                  style={{
+                    width: '100%'}}
+                >
+                  Continue to Payment
+                </MaskButton>
+              )}
             </div>
           </div>
         )}
