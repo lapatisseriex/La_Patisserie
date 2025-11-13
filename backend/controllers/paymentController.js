@@ -523,67 +523,98 @@ export const createOrder = asyncHandler(async (req, res) => {
       }
     }));
 
-    // Create order in database
-    // For online payments: Set orderStatus to 'pending' until payment is verified
-    // For COD: Set orderStatus to 'placed' immediately since payment is guaranteed
-    const order = new Order({
-      orderNumber,
-      userId,
-      razorpayOrderId: razorpayOrder?.id || null,
-      amount: amount / 100, // Convert back to rupees for storage
-      currency,
-      paymentMethod,
-      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'created',
-      orderStatus: paymentMethod === 'cod' ? 'placed' : 'pending', // ✅ Don't mark as 'placed' until payment verified
-      cartItems: normalizedCartItems,
-      userDetails,
-      deliveryLocation,
-      hostelName,
-      hostelId,
-      orderSummary: {
-        cartTotal: orderSummary.cartTotal,
-        discountedTotal: orderSummary.discountedTotal,
-        deliveryCharge: orderSummary.deliveryCharge,
-        taxAmount: orderSummary.taxAmount,
-        couponDiscount: orderSummary.couponDiscount || 0,
-        grandTotal: orderSummary.grandTotal
-      },
-      estimatedDeliveryTime: new Date(Date.now() + 45 * 60 * 1000) // 45 minutes from now
-    });
-
-    await order.save();
-    console.log('Order saved to database:', order._id);
-    console.log('Order hostelName stored:', order.hostelName);
-
-    // 💝 Track donation if present
-    if (donationDetails && donationDetails.donationAmount > 0) {
+    // For online payments: do NOT create the Order now. Persist a Payment intent with checkout snapshot.
+    // For COD: create the Order immediately.
+    let order = null;
+    if (paymentMethod === 'cod') {
+      order = new Order({
+        orderNumber,
+        userId,
+        razorpayOrderId: razorpayOrder?.id || null,
+        amount: amount / 100, // Convert back to rupees for storage
+        currency,
+        paymentMethod,
+        paymentStatus: 'pending',
+        orderStatus: 'placed',
+        cartItems: normalizedCartItems,
+        userDetails,
+        deliveryLocation,
+        hostelName,
+        hostelId,
+        orderSummary: {
+          cartTotal: orderSummary.cartTotal,
+          discountedTotal: orderSummary.discountedTotal,
+          deliveryCharge: orderSummary.deliveryCharge,
+          taxAmount: orderSummary.taxAmount,
+          couponDiscount: orderSummary.couponDiscount || 0,
+          grandTotal: orderSummary.grandTotal
+        },
+        estimatedDeliveryTime: new Date(Date.now() + 45 * 60 * 1000)
+      });
+      await order.save();
+      console.log('Order saved to database:', order._id);
+      console.log('Order hostelName stored:', order.hostelName);
+    } else {
+      // Persist a pending payment intent with full checkout snapshot; no Order is created yet
       try {
-        const donation = new Donation({
+        await Payment.create({
           userId,
-          userEmail: userDetails.email,
-          userName: userDetails.name,
-          userPhone: userDetails.phone,
-          donationAmount: donationDetails.donationAmount,
-          orderId: order._id,
-          orderNumber,
-          paymentMethod,
-          paymentStatus: paymentMethod === 'cod' ? 'completed' : 'pending',
-          initiativeName: donationDetails.initiativeName || 'கற்பிப்போம் பயிலகம் - Education Initiative',
-          initiativeDescription: donationDetails.initiativeDescription || 'Supporting student education and learning resources',
-          deliveryLocation,
-          hostelName
+          email: userDetails?.email,
+          orderId: orderNumber, // our app order number for traceability
+          amount: amount / 100,
+          paymentMethod: 'razorpay',
+          paymentStatus: 'pending',
+          date: new Date(),
+          seatCount: Array.isArray(cartItems) ? cartItems.reduce((a, c) => a + (c.quantity || 0), 0) : undefined,
+          gatewayOrderId: razorpayOrder?.id,
+          meta: {
+            checkoutSnapshot: {
+              orderNumber,
+              userId,
+              currency,
+              cartItems: normalizedCartItems,
+              userDetails,
+              deliveryLocation,
+              hostelName,
+              hostelId,
+              orderSummary,
+              donationDetails
+            },
+            source: 'createOrder'
+          }
         });
+        console.log('📝 Stored payment intent with checkout snapshot for online payment:', orderNumber);
+      } catch (persistIntentErr) {
+        console.error('Failed to persist payment intent:', persistIntentErr?.message || persistIntentErr);
+      }
+    }
 
-        await donation.save();
-        console.log('✅ Donation tracked:', {
-          donationAmount: donationDetails.donationAmount,
-          orderNumber,
-          paymentMethod,
-          userId
-        });
-      } catch (donationError) {
-        console.error('❌ Failed to track donation:', donationError);
-        // Don't fail the order creation if donation tracking fails
+    // 💝 Track donation: For online payments, defer until payment is verified. For COD, persist now.
+    if (donationDetails && donationDetails.donationAmount > 0) {
+      if (paymentMethod === 'cod' && order) {
+        try {
+          const donation = new Donation({
+            userId,
+            userEmail: userDetails.email,
+            userName: userDetails.name,
+            userPhone: userDetails.phone,
+            donationAmount: donationDetails.donationAmount,
+            orderId: order._id,
+            orderNumber,
+            paymentMethod,
+            paymentStatus: 'completed',
+            initiativeName: donationDetails.initiativeName || 'கற்பிப்போம் பயிலகம் - Education Initiative',
+            initiativeDescription: donationDetails.initiativeDescription || 'Supporting student education and learning resources',
+            deliveryLocation,
+            hostelName
+          });
+          await donation.save();
+          console.log('✅ Donation tracked (COD):', { donationAmount: donationDetails.donationAmount, orderNumber, paymentMethod, userId });
+        } catch (donationError) {
+          console.error('❌ Failed to track donation (COD):', donationError);
+        }
+      } else {
+        console.log('💡 Online payment: donation tracking deferred until payment verification');
       }
     }
 
@@ -592,7 +623,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     // ⚠️ DO NOT CREATE NOTIFICATION FOR ONLINE PAYMENTS YET
     // For online payments, we'll send notification only after successful payment verification
     // For COD, send notification immediately since payment is confirmed at placement
-    if (paymentMethod === 'cod') {
+  if (paymentMethod === 'cod') {
       try {
         // Check if notification already exists for this order
         const existingNotification = await Notification.findOne({
@@ -666,12 +697,12 @@ export const createOrder = asyncHandler(async (req, res) => {
     }
 
     // After COD order creation, remove the user's cart document immediately
-    if (paymentMethod === 'cod') {
+  if (paymentMethod === 'cod') {
       await removeUserCart({ uid: req.user?.uid, _id: userId });
     }
 
     // For COD orders, create a pending Payment record so admin can track it
-    if (paymentMethod === 'cod') {
+  if (paymentMethod === 'cod') {
       try {
         await Payment.create({
           userId,
@@ -790,44 +821,53 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (isAuthentic) {
-      // ✅ ATOMIC UPDATE: Use findOneAndUpdate with conditions to prevent race conditions
-      const order = await Order.findOneAndUpdate(
-        { 
-          razorpayOrderId: razorpay_order_id,
-          paymentStatus: { $in: ['created', 'pending'] } // Only update if not already paid
-        },
-        { 
-          paymentStatus: 'paid',
-          razorpayPaymentId: razorpay_payment_id,
-          orderStatus: 'placed' // ✅ NOW mark as 'placed' after payment is verified
-        },
-        { new: true }
-      );
-
+      // Try to find an existing order (legacy flow). If not found, create from Payment intent snapshot.
+      let order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
       if (!order) {
-        // Check if order exists but already paid
-        const existingOrder = await Order.findOne({ razorpayOrderId: razorpay_order_id });
-        if (existingOrder && existingOrder.paymentStatus === 'paid') {
-          console.log('⚠️ Order already paid:', existingOrder.orderNumber);
-          await ensureOrderPlacedNotification(existingOrder, { forceEmit: true });
-          return res.json({
-            success: true,
-            message: 'Payment already verified',
-            orderNumber: existingOrder.orderNumber,
-            paymentId: razorpay_payment_id,
-            orderId: razorpay_order_id,
-          });
+        // Create order from stored payment intent snapshot
+        const intent = await Payment.findOne({ gatewayOrderId: razorpay_order_id, paymentMethod: 'razorpay' });
+        if (!intent || !intent.meta?.checkoutSnapshot) {
+          console.error('No checkout snapshot found for gateway order:', razorpay_order_id);
+          return res.status(404).json({ success: false, message: 'Order not found' });
         }
-        
-        return res.status(404).json({
-          success: false,
-          message: 'Order not found',
-        });
+        const snap = intent.meta.checkoutSnapshot;
+        try {
+          order = new Order({
+            orderNumber: snap.orderNumber,
+            userId: snap.userId,
+            razorpayOrderId: razorpay_order_id,
+            amount: intent.amount,
+            currency: snap.currency || 'INR',
+            paymentMethod: 'razorpay',
+            paymentStatus: 'paid',
+            orderStatus: 'placed',
+            cartItems: snap.cartItems || [],
+            userDetails: snap.userDetails,
+            deliveryLocation: snap.deliveryLocation,
+            hostelName: snap.hostelName,
+            hostelId: snap.hostelId || null,
+            orderSummary: snap.orderSummary,
+            estimatedDeliveryTime: new Date(Date.now() + 45 * 60 * 1000),
+            razorpayPaymentId: razorpay_payment_id
+          });
+          await order.save();
+        } catch (createErr) {
+          console.error('Failed to create order from snapshot:', createErr?.message || createErr);
+          return res.status(500).json({ success: false, message: 'Failed to create order' });
+        }
+      } else {
+        // Update existing order to paid/placed if necessary
+        if (order.paymentStatus !== 'paid') {
+          order.paymentStatus = 'paid';
+          order.orderStatus = 'placed';
+          order.razorpayPaymentId = razorpay_payment_id;
+          await order.save();
+        }
       }
       
       console.log('Payment verified successfully for order:', order.orderNumber);
 
-      // 💝 Update donation status to completed for online payments
+      // 💝 Update or create donation to completed for online payments
       try {
         const donationUpdate = await Donation.updateMany(
           { 
@@ -840,9 +880,35 @@ export const verifyPayment = asyncHandler(async (req, res) => {
             updatedAt: new Date()
           }
         );
-        
         if (donationUpdate.matchedCount > 0) {
           console.log('✅ Donation status updated to completed for order:', order.orderNumber);
+        } else {
+          // If there was no pending donation (new flow), create one from snapshot if present
+          try {
+            const intent = await Payment.findOne({ gatewayOrderId: razorpay_order_id, paymentMethod: 'razorpay' });
+            const snap = intent?.meta?.checkoutSnapshot;
+            const d = snap?.donationDetails;
+            if (d && d.donationAmount > 0) {
+              await Donation.create({
+                userId: order.userId,
+                userEmail: order?.userDetails?.email,
+                userName: order?.userDetails?.name,
+                userPhone: order?.userDetails?.phone,
+                donationAmount: d.donationAmount,
+                orderId: order._id,
+                orderNumber: order.orderNumber,
+                paymentMethod: 'razorpay',
+                paymentStatus: 'completed',
+                initiativeName: d.initiativeName || 'கற்பிப்போம் பயிலகம் - Education Initiative',
+                initiativeDescription: d.initiativeDescription || 'Supporting student education and learning resources',
+                deliveryLocation: order.deliveryLocation,
+                hostelName: order.hostelName
+              });
+              console.log('✅ Donation created (online):', d.donationAmount);
+            }
+          } catch (donCreateErr) {
+            console.error('❌ Failed creating donation from snapshot:', donCreateErr?.message || donCreateErr);
+          }
         }
       } catch (donationError) {
         console.error('❌ Failed to update donation status:', donationError);
@@ -851,9 +917,9 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 
       await ensureOrderPlacedNotification(order, { forceEmit: true });
 
-      // Persist payment record for admin reporting
+      // Persist or update payment record for admin reporting
       try {
-        await Payment.create({
+        const update = {
           userId: order.userId,
           email: order?.userDetails?.email,
           orderId: order.orderNumber,
@@ -867,9 +933,14 @@ export const verifyPayment = asyncHandler(async (req, res) => {
           gatewayPaymentId: razorpay_payment_id,
           gatewayOrderId: razorpay_order_id,
           meta: { source: 'verifyPayment' }
-        });
+        };
+        await Payment.findOneAndUpdate(
+          { gatewayPaymentId: razorpay_payment_id },
+          { $set: update },
+          { upsert: true }
+        );
       } catch (persistErr) {
-        console.error('Failed to persist payment record:', persistErr.message);
+        console.error('Failed to persist/update payment record:', persistErr.message);
       }
       
       // IMPORTANT: Decrement actual stock now that payment is confirmed
@@ -930,7 +1001,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         console.error('❌ Error emitting WebSocket event for new order:', wsError);
       }
       
-      // After successful online payment verification, remove the user's cart document
+  // After successful online payment verification, remove the user's cart document
       try {
         const userDoc = await User.findById(order.userId).select('uid').lean();
         if (userDoc?.uid) {
@@ -979,43 +1050,45 @@ export const cancelOrder = asyncHandler(async (req, res) => {
       });
     }
 
-    // Find the order
+    // Find the order (legacy flow) and the payment intent (new flow)
     const order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+    const paymentIntent = await Payment.findOne({ gatewayOrderId: razorpay_order_id, paymentMethod: 'razorpay' });
 
-    if (!order) {
-      console.log('Order not found for cancellation:', razorpay_order_id);
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
+    if (!order && !paymentIntent) {
+      console.log('No order/payment intent found for cancellation:', razorpay_order_id);
+      return res.status(404).json({ success: false, message: 'Nothing to cancel' });
     }
 
-    // Verify the order belongs to the requesting user
-    if (order.userId.toString() !== userId.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized to cancel this order'
-      });
+    if (order) {
+      // Verify the order belongs to the requesting user
+      if (order.userId.toString() !== userId.toString()) {
+        return res.status(403).json({ success: false, message: 'Unauthorized to cancel this order' });
+      }
     }
 
-    // Allow cancellation for 'created', 'pending', and 'failed' payment statuses
-    // Do NOT allow cancellation if payment is 'paid' or already 'cancelled'
-    if (['paid', 'cancelled'].includes(order.paymentStatus)) {
-      console.log('⚠️ Order already processed/cancelled. Payment status:', order.paymentStatus);
-      return res.status(400).json({
-        success: false,
-        message: 'Order cannot be cancelled',
-        currentStatus: order.paymentStatus
-      });
+    // New behavior: If order exists but is not paid, delete it instead of keeping a cancelled order record.
+    if (order) {
+      if (['paid'].includes(order.paymentStatus)) {
+        console.log('⚠️ Order already processed. Payment status:', order.paymentStatus);
+        return res.status(400).json({ success: false, message: 'Order cannot be cancelled', currentStatus: order.paymentStatus });
+      }
+      await Order.deleteOne({ _id: order._id });
+      console.log('🗑️ Pending order document removed for cancelled payment:', order.orderNumber);
+      try {
+        await Notification.deleteMany({ userId: order.userId, orderNumber: order.orderNumber, type: 'order_placed' });
+      } catch {}
     }
 
-    // Update order status to cancelled, keep payment as pending
-  order.orderStatus = 'cancelled';
-  order.paymentStatus = 'pending'; // ✅ Show as PENDING when user cancels
-  order.cancelledAt = new Date();
-    await order.save();
+    // Mark payment intent as failed/cancelled for admin insight (if exists)
+    if (paymentIntent) {
+      try {
+        await Payment.updateOne({ _id: paymentIntent._id }, { $set: { paymentStatus: 'failed', meta: { ...(paymentIntent.meta || {}), cancelledByUser: true, cancelledAt: new Date() } } });
+      } catch (e) {
+        console.warn('Failed to update payment intent on cancel:', e?.message || e);
+      }
+    }
 
-    console.log('✅ Order cancelled successfully:', order.orderNumber);
+  console.log('✅ Cancellation processed for Razorpay order:', razorpay_order_id);
 
     // Delete any "Order Placed" notifications if they exist
     try {
@@ -1034,7 +1107,7 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     res.json({
       success: true,
       message: 'Order cancelled successfully',
-      orderNumber: order.orderNumber
+      orderNumber: order?.orderNumber || paymentIntent?.orderId || undefined
     });
   } catch (error) {
     console.error('Error cancelling order:', error);
@@ -1073,14 +1146,45 @@ export const handleWebhook = asyncHandler(async (req, res) => {
         const capturedPayment = event.payload.payment.entity;
         console.log('Payment captured:', capturedPayment.id);
         
-        const updatedOrder = await Order.findOneAndUpdate(
-          { razorpayOrderId: capturedPayment.order_id },
-          { 
-            paymentStatus: 'paid',
-            razorpayPaymentId: capturedPayment.id,
-            orderStatus: 'placed' // ✅ Mark as 'placed' when payment is captured
+        let updatedOrder = await Order.findOne({ razorpayOrderId: capturedPayment.order_id });
+        if (!updatedOrder) {
+          // Create from snapshot intent if not already created
+          try {
+            const intent = await Payment.findOne({ gatewayOrderId: capturedPayment.order_id, paymentMethod: 'razorpay' });
+            const snap = intent?.meta?.checkoutSnapshot;
+            if (snap) {
+              updatedOrder = new Order({
+                orderNumber: snap.orderNumber,
+                userId: snap.userId,
+                razorpayOrderId: capturedPayment.order_id,
+                amount: (capturedPayment.amount / 100),
+                currency: snap.currency || 'INR',
+                paymentMethod: 'razorpay',
+                paymentStatus: 'paid',
+                orderStatus: 'placed',
+                cartItems: snap.cartItems || [],
+                userDetails: snap.userDetails,
+                deliveryLocation: snap.deliveryLocation,
+                hostelName: snap.hostelName,
+                hostelId: snap.hostelId || null,
+                orderSummary: snap.orderSummary,
+                estimatedDeliveryTime: new Date(Date.now() + 45 * 60 * 1000),
+                razorpayPaymentId: capturedPayment.id
+              });
+              await updatedOrder.save();
+            }
+          } catch (e) {
+            console.error('Webhook failed to create order from snapshot:', e?.message || e);
           }
-        );
+        } else {
+          // Update statuses
+          if (updatedOrder.paymentStatus !== 'paid') {
+            updatedOrder.paymentStatus = 'paid';
+            updatedOrder.orderStatus = 'placed';
+            updatedOrder.razorpayPaymentId = capturedPayment.id;
+            await updatedOrder.save();
+          }
+        }
         // Attempt to clear user's cart as well
         try {
           const orderDoc = await Order.findOne({ razorpayOrderId: capturedPayment.order_id }).select('userId');
@@ -1119,15 +1223,11 @@ export const handleWebhook = asyncHandler(async (req, res) => {
         console.log('❌ Payment failed:', failedPayment.id);
         
         // Update order to failed status and DO NOT mark as placed/confirmed
-        const failedOrder = await Order.findOneAndUpdate(
-          { razorpayOrderId: failedPayment.order_id },
-          { 
-            paymentStatus: 'failed',
-            orderStatus: 'cancelled', // Mark order as cancelled when payment fails
-            cancelledAt: new Date()
-          },
-          { new: true }
-        );
+        let failedOrder = await Order.findOne({ razorpayOrderId: failedPayment.order_id });
+        if (failedOrder && failedOrder.paymentStatus !== 'paid') {
+          // Remove pending order so it doesn't appear in admin/user lists
+          await Order.deleteOne({ _id: failedOrder._id });
+        }
 
         // Delete any "Order Placed" notifications for failed payments
         if (failedOrder) {

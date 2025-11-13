@@ -4,6 +4,8 @@ import Product from '../models/productModel.js';
 import Order from '../models/orderModel.js';
 import firebaseAdmin from '../config/firebase.js';
 import { deleteFromCloudinary } from '../utils/cloudinary.js';
+import { userDeletionQueue } from '../utils/queue.js';
+import { deleteUserCascadeSequential } from '../services/userDeletionService.js';
 
 // @desc    Get current user profile
 // @route   GET /api/users/me
@@ -477,62 +479,20 @@ export const deleteUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
   
-  // Cascade delete related data (orders, notifications, favorites, payments, etc.)
-  const session = await User.startSession();
-  session.startTransaction();
+  // Serialize heavy deletions via a dedicated in-process queue to reduce DB stress
   try {
-    const mongoUser = await User.findOne({ uid: userId }).session(session);
-    const userObjectId = mongoUser?._id;
-
-    // Delete related collections where userId or uid referenced
-    const models = {};
-    try { models.Order = (await import('../models/orderModel.js')).default; } catch {}
-    try { models.Notification = (await import('../models/notificationModel.js')).default; } catch {}
-    try { models.Favorite = (await import('../models/favoriteModel.js')).default; } catch {}
-    try { models.Payment = (await import('../models/paymentModel.js')).default; } catch {}
-    try { models.LoyaltyProgram = (await import('../models/loyaltyProgramModel.js')).default; } catch {}
-    try { models.Newsletter = (await import('../models/newsletterModel.js')).default; } catch {}
-    try { models.Donation = (await import('../models/donationModel.js')).default; } catch {}
-    try { models.NewCart = (await import('../models/newCartModel.js')).default; } catch {}
-    // Add others as needed
-
-    const deletionSummary = {};
-    for (const [name, Model] of Object.entries(models)) {
-      if (!Model) continue;
-      let filter = {};
-      // Attempt common field names
-      if (Model.schema.paths.userId) filter.userId = userObjectId;
-      else if (Model.schema.paths.uid) filter.uid = userId;
-      else if (Model.schema.paths.user) filter.user = userObjectId;
-      else continue; // Skip if no direct user reference
-      const result = await Model.deleteMany(filter).session(session);
-      deletionSummary[name] = result.deletedCount;
-    }
-
-    // Delete user document
-    await User.deleteOne({ uid: userId }).session(session);
-
-    // Delete from Firebase Auth (after DB cleanup for consistency)
-    try {
-      await firebaseAdmin.auth().deleteUser(userId);
-    } catch (fbErr) {
-      console.error('Firebase user deletion error (continuing):', fbErr.message);
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-
-    res.status(200).json({
+    const result = await userDeletionQueue.add(() => deleteUserCascadeSequential(userId));
+    return res.status(200).json({
       success: true,
       message: 'User and related data deleted successfully',
-      deleted: deletionSummary
+      deleted: result,
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error('Error cascading delete:', error);
-    res.status(500);
-    throw new Error(`Failed to fully delete user: ${error.message}`);
+    console.error('Final failure deleting user:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Could not delete account at this time. Please try again later or contact support.'
+    });
   }
 });
 
