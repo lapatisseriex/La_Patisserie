@@ -30,7 +30,7 @@ import imageReprocessRoutes from './routes/imageReprocessRoutes.js';
 import timeSettingsRoutes from './routes/timeSettingsRoutes.js';
 import newCartRoutes from './routes/newCartRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
-import twilioRoutes from './routes/twilioRoutesNew.js';
+
 import stockRoutes from './routes/stockRoutes.js';
 import stockValidationRoutes from './routes/stockValidationRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
@@ -352,7 +352,7 @@ const startServer = async () => {
     app.use('/api/time-settings', timeSettingsRoutes);
     app.use('/api/newcart', cartRateLimit, newCartRoutes);
     app.use('/api/payments', paymentRoutes);
-    app.use('/api/twilio', twilioRoutes);
+    
     app.use('/api/stock', stockRoutes);
     app.use('/api/stock-validation', stockValidationRoutes);
     app.use('/api/contact', contactRoutes);

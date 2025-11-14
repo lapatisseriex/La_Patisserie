@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { 
   FaSearch, 
   FaEye, 
@@ -62,7 +62,18 @@ const AdminOrders = () => {
   const [wsSocketId, setWsSocketId] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grouped'
 
+  const filtersRef = useRef(filters);
+  const currentPageRef = useRef(currentPage);
+
   const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K';
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
 
   const getItemImage = (item = {}) => {
     const sources = [
@@ -171,6 +182,7 @@ const AdminOrders = () => {
       const data = await response.json();
       setOrders(data.orders);
       setCurrentPage(data.pagination.page);
+      currentPageRef.current = data.pagination.page;
       setTotalPages(data.pagination.pages);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -182,6 +194,7 @@ const AdminOrders = () => {
   // Handle search and filters
   const handleSearch = () => {
     setCurrentPage(1);
+    currentPageRef.current = 1;
     fetchOrders(1, filters);
   };
 
@@ -189,7 +202,9 @@ const AdminOrders = () => {
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
+    filtersRef.current = newFilters;
     setCurrentPage(1);
+    currentPageRef.current = 1;
     fetchOrders(1, newFilters);
   };
 
@@ -197,7 +212,9 @@ const AdminOrders = () => {
   const handleMultipleFilterChange = (newFilters) => {
     const updatedFilters = { ...filters, ...newFilters };
     setFilters(updatedFilters);
+    filtersRef.current = updatedFilters;
     setCurrentPage(1);
+    currentPageRef.current = 1;
     fetchOrders(1, updatedFilters);
   };
 
@@ -215,7 +232,9 @@ const AdminOrders = () => {
       quickRange: ''
     };
     setFilters(clearedFilters);
+    filtersRef.current = clearedFilters;
     setCurrentPage(1);
+    currentPageRef.current = 1;
     fetchOrders(1, clearedFilters);
   };
 
@@ -254,7 +273,9 @@ const AdminOrders = () => {
       quickRange: range 
     };
     setFilters(newFilters);
+    filtersRef.current = newFilters;
     setCurrentPage(1);
+    currentPageRef.current = 1;
     fetchOrders(1, newFilters);
   };
 
@@ -388,6 +409,10 @@ const AdminOrders = () => {
       
       setShowNewOrderBanner(true);
       setNewOrderCount(prev => prev + 1);
+
+      const targetPage = currentPageRef.current || 1;
+      const activeFilters = filtersRef.current || {};
+      fetchOrders(targetPage, activeFilters);
       
       // Show toast notification
       toast.success(`New order #${data.orderNumber} received!`, {
@@ -736,7 +761,7 @@ const AdminOrders = () => {
                   New order{newOrderCount > 1 ? 's' : ''} issued!
                 </p>
                 <p className="text-green-700 text-sm">
-                  {newOrderCount} new order{newOrderCount > 1 ? 's have' : ' has'} been placed. Click refresh to view.
+                  {newOrderCount} new order{newOrderCount > 1 ? 's have' : ' has'} been placed. Orders list updated automatically.
                 </p>
               </div>
             </div>

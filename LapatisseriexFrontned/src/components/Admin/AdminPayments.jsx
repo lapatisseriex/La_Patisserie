@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { paymentsService, paymentsToCSV, downloadCSV } from '../../services/paymentsService';
 import { toast } from 'react-toastify';
 import { 
@@ -19,6 +19,7 @@ import {
   FiTruck
 } from 'react-icons/fi';
 import { HiOutlineOfficeBuilding } from 'react-icons/hi';
+import webSocketService from '../../services/websocketService';
 
 const COD_REVENUE_STATUSES = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
 const EMPTY_METRICS = Object.freeze({
@@ -215,18 +216,17 @@ const PaymentFilters = ({
 
 const PaymentsTable = ({ items, onMarkPaid, onView }) => {
   const resolveBadge = (payment) => {
-    // Cancelled takes precedence
     if (payment.data?.order?.orderStatus === 'cancelled') {
       return { label: 'cancelled', tone: 'bg-red-100 text-red-700' };
     }
-    // Treat success OR legacy COD progression states as unified success
-    const codProgressStates = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
-    const isCodProgress = payment.paymentMethod === 'cod' && codProgressStates.includes(payment.data?.order?.orderStatus || '');
-    if (payment.paymentStatus === 'success' || isCodProgress) {
+    if (payment.paymentStatus === 'success') {
       return { label: 'success', tone: 'bg-green-100 text-green-700' };
     }
     if (payment.paymentStatus === 'pending') {
-      return { label: 'pending', tone: 'bg-yellow-100 text-yellow-700' };
+      return {
+        label: payment.paymentMethod === 'cod' ? 'pending (COD)' : 'pending',
+        tone: 'bg-yellow-100 text-yellow-700'
+      };
     }
     if (payment.paymentStatus === 'failed') {
       return { label: 'failed', tone: 'bg-red-100 text-red-700' };
@@ -274,6 +274,14 @@ const PaymentsTable = ({ items, onMarkPaid, onView }) => {
                     <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${badge.tone}`}>
                       {badge.label}
                     </span>
+                    <div className={`text-xs ${p.paymentMethod === 'cod' ? 'text-amber-700 font-semibold' : 'text-gray-600'}`}>
+                      Payment status: {p.paymentStatus || 'unknown'}{p.paymentMethod === 'cod' ? ' (COD)' : ''}
+                    </div>
+                    {p.paymentMethod === 'cod' && p.paymentStatus === 'pending' && (
+                      <div className="text-xs text-amber-600 font-semibold">
+                        COD payment pending — awaiting cash collection
+                      </div>
+                    )}
                     {p.data?.order?.paymentStatus && (
                       <div className="text-xs text-gray-500">Order payment: {p.data.order.paymentStatus}</div>
                     )}
@@ -321,13 +329,14 @@ const PaymentsCards = ({ items, onMarkPaid, onView }) => {
     if (payment.data?.order?.orderStatus === 'cancelled') {
       return { label: 'cancelled', tone: 'bg-red-100 text-red-700' };
     }
-    const codProgressStates = ['placed', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
-    const isCodProgress = payment.paymentMethod === 'cod' && codProgressStates.includes(payment.data?.order?.orderStatus || '');
-    if (payment.paymentStatus === 'success' || isCodProgress) {
+    if (payment.paymentStatus === 'success') {
       return { label: 'success', tone: 'bg-green-100 text-green-700' };
     }
     if (payment.paymentStatus === 'pending') {
-      return { label: 'pending', tone: 'bg-yellow-100 text-yellow-700' };
+      return {
+        label: payment.paymentMethod === 'cod' ? 'pending (COD)' : 'pending',
+        tone: 'bg-yellow-100 text-yellow-700'
+      };
     }
     if (payment.paymentStatus === 'failed') {
       return { label: 'failed', tone: 'bg-red-100 text-red-700' };
@@ -359,6 +368,14 @@ const PaymentsCards = ({ items, onMarkPaid, onView }) => {
               <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${badge.tone}`}>
                 {badge.label}
               </span>
+              <span className={`text-xs ${p.paymentMethod === 'cod' ? 'text-amber-700 font-semibold' : 'text-gray-600'}`}>
+                Payment status: {p.paymentStatus || 'unknown'}{p.paymentMethod === 'cod' ? ' (COD)' : ''}
+              </span>
+              {p.paymentMethod === 'cod' && p.paymentStatus === 'pending' && (
+                <span className="text-xs text-amber-600 font-semibold">
+                  COD payment pending — awaiting cash collection
+                </span>
+              )}
               {p.data?.order?.paymentStatus && (
                 <span className="text-xs text-gray-500">Order payment: {p.data.order.paymentStatus}</span>
               )}
@@ -430,8 +447,9 @@ const AdminPayments = () => {
   const [availableHostels, setAvailableHostels] = useState([]);
   const [serverMetrics, setServerMetrics] = useState({ filtered: EMPTY_METRICS, last7Days: EMPTY_METRICS });
   const [hasServerMetrics, setHasServerMetrics] = useState(false);
+  const realtimeRefreshRef = useRef({ timeoutId: null });
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError('');
     const { quickRange, ...queryFilters } = filters;
@@ -476,29 +494,93 @@ const AdminPayments = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     refresh();
-    // simple polling as real-time: refresh every 20s
-    const id = setInterval(refresh, 20000);
+    const id = setInterval(() => {
+      refresh();
+    }, 20000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    filters.page,
-    filters.limit,
-    filters.status,
-    filters.method,
-    filters.orderStatus,
-    filters.orderPaymentStatus,
-    filters.startDate,
-    filters.endDate,
-    filters.deliveryLocation,
-    filters.hostel,
-    filters.search,
-    filters.email,
-    filters.phone
-  ]);
+  }, [refresh]);
+
+  useEffect(() => {
+    const socket = webSocketService.connect(null);
+    console.log('[Payments] WebSocket connection state:', socket?.connected, socket?.id);
+
+    const scheduleRefresh = (reason, payload) => {
+      console.log('[Payments] Scheduling refresh from real-time event:', reason, payload);
+      if (realtimeRefreshRef.current.timeoutId) {
+        clearTimeout(realtimeRefreshRef.current.timeoutId);
+      }
+      realtimeRefreshRef.current.timeoutId = setTimeout(() => {
+        realtimeRefreshRef.current.timeoutId = null;
+        refresh();
+      }, 500);
+    };
+
+    const handlePaymentUpdated = (payload = {}) => {
+      console.log('[Payments] paymentUpdated event received:', payload);
+      if (!payload) {
+        return;
+      }
+
+      setItems((prev) => {
+        if (!Array.isArray(prev) || !payload.paymentId) {
+          return prev;
+        }
+
+        const idx = prev.findIndex((item) => item._id === payload.paymentId || item.orderId === payload.orderId);
+        if (idx === -1) {
+          return prev;
+        }
+
+        const next = [...prev];
+        const current = next[idx];
+        next[idx] = {
+          ...current,
+          paymentStatus: payload.status || current.paymentStatus,
+          amount: payload.amount ?? current.amount,
+          paymentMethod: payload.paymentMethod || current.paymentMethod,
+          date: payload.timestamp || current.date,
+          data: {
+            ...current.data,
+            order: {
+              ...current.data?.order,
+              paymentStatus: payload.status || current.data?.order?.paymentStatus
+            }
+          }
+        };
+        return next;
+      });
+
+      scheduleRefresh('paymentUpdated', payload);
+    };
+
+    const handleOrderStatusUpdated = (payload = {}) => {
+      console.log('[Payments] orderStatusUpdated event received:', payload);
+      scheduleRefresh('orderStatusUpdated', payload);
+    };
+
+    const handleNewOrderPlaced = (payload = {}) => {
+      console.log('[Payments] newOrderPlaced event received:', payload);
+      scheduleRefresh('newOrderPlaced', payload);
+    };
+
+    webSocketService.onPaymentUpdated(handlePaymentUpdated);
+    webSocketService.onOrderStatusUpdated(handleOrderStatusUpdated);
+    webSocketService.onNewOrderPlaced(handleNewOrderPlaced);
+
+    return () => {
+      webSocketService.offPaymentUpdated(handlePaymentUpdated);
+      webSocketService.offOrderStatusUpdated(handleOrderStatusUpdated);
+      webSocketService.offNewOrderPlaced(handleNewOrderPlaced);
+      if (realtimeRefreshRef.current.timeoutId) {
+        clearTimeout(realtimeRefreshRef.current.timeoutId);
+        realtimeRefreshRef.current.timeoutId = null;
+      }
+    };
+  }, [refresh]);
 
   // Debug: log items whenever they change
   useEffect(() => {

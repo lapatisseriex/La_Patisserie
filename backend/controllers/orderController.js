@@ -12,6 +12,45 @@ import {
   sendAdminOrderStatusNotification
 } from '../utils/orderEmailService.js';
 import { getLogoData } from '../utils/logoUtils.js';
+import { emitPaymentUpdate } from '../utils/socketEvents.js';
+
+const resolveUserIdString = (userRef) => {
+  if (!userRef) {
+    return null;
+  }
+
+  if (typeof userRef === 'string') {
+    return userRef;
+  }
+
+  if (typeof userRef === 'object') {
+    if (userRef._id) {
+      return resolveUserIdString(userRef._id);
+    }
+
+    if (userRef.id) {
+      return resolveUserIdString(userRef.id);
+    }
+
+    if (typeof userRef.toHexString === 'function') {
+      return userRef.toHexString();
+    }
+
+    if (typeof userRef.toString === 'function') {
+      return userRef.toString();
+    }
+  }
+
+  return null;
+};
+
+const getConnectedUserSocketId = (userRef) => {
+  const userId = resolveUserIdString(userRef);
+  if (!userId || !global.connectedUsers) {
+    return null;
+  }
+  return global.connectedUsers.get(userId);
+};
 
 const normalizeOrderForEmail = async (orderDoc) => {
   if (!orderDoc) {
@@ -540,7 +579,7 @@ export const dispatchOrders = asyncHandler(async (req, res) => {
 
         // Send real-time WebSocket notification immediately (before database write for faster delivery)
         if (global.io && global.connectedUsers) {
-          const userSocketId = global.connectedUsers.get(updatedOrder.userId.toString());
+          const userSocketId = getConnectedUserSocketId(updatedOrder.userId);
           if (userSocketId) {
             global.io.to(userSocketId).emit('orderStatusUpdate', {
               orderNumber: updatedOrder.orderNumber,
@@ -712,8 +751,8 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
 
       // Send real-time WebSocket notification immediately (before database write for faster delivery)
       if (global.io && global.connectedUsers) {
-        const userId = order.userId._id ? order.userId._id.toString() : order.userId.toString();
-        const userSocketId = global.connectedUsers.get(userId);
+        const userId = resolveUserIdString(order.userId);
+        const userSocketId = getConnectedUserSocketId(order.userId);
 
         console.log(`🔔 Attempting WebSocket notification for user ${userId}`);
         console.log(`🔌 User socket ID: ${userSocketId || 'NOT CONNECTED'}`);
@@ -738,7 +777,7 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
 
       // Create notification in database (non-blocking)
       createNotification(
-        order.userId._id,
+        resolveUserIdString(order.userId),
         order.orderNumber,
         'order_dispatched',
         notificationTitle,
@@ -902,13 +941,16 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
 
     if (shouldFinalizeCodPayment) {
       try {
-        const paymentRecord = await Payment.findOne({ orderId: order.orderNumber });
-        if (paymentRecord && paymentRecord.paymentStatus !== 'success') {
-          paymentRecord.paymentStatus = 'success';
-          paymentRecord.date = paymentRecord.date || new Date();
-          await paymentRecord.save();
-        } else if (!paymentRecord) {
-          await Payment.create({
+        let codPaymentDoc = await Payment.findOne({ orderId: order.orderNumber });
+        let codPreviousStatus = codPaymentDoc?.paymentStatus;
+
+        if (codPaymentDoc && codPaymentDoc.paymentStatus !== 'success') {
+          codPreviousStatus = codPaymentDoc.paymentStatus;
+          codPaymentDoc.paymentStatus = 'success';
+          codPaymentDoc.date = codPaymentDoc.date || new Date();
+          await codPaymentDoc.save();
+        } else if (!codPaymentDoc) {
+          codPaymentDoc = await Payment.create({
             userId: order.userId,
             email: order.userDetails?.email,
             orderId: order.orderNumber,
@@ -918,7 +960,13 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
             date: new Date(),
             meta: { source: 'cod_delivery_auto_finalize' }
           });
+          codPreviousStatus = 'pending';
         }
+
+        emitPaymentUpdate(codPaymentDoc, {
+          source: 'cod_delivery_auto_finalize',
+          previousStatus: codPreviousStatus
+        });
       } catch (paymentUpdateError) {
         console.error('Failed to finalize COD payment record:', paymentUpdateError);
       }
@@ -947,7 +995,7 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
 
       // Send real-time WebSocket notification immediately (before database write for faster delivery)
       if (global.io && global.connectedUsers) {
-        const userSocketId = global.connectedUsers.get(order.userId._id.toString());
+        const userSocketId = getConnectedUserSocketId(order.userId);
         if (userSocketId) {
           global.io.to(userSocketId).emit('orderStatusUpdate', {
             orderNumber: order.orderNumber,
@@ -982,7 +1030,7 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
 
       // Create notification in database (non-blocking)
       createNotification(
-        order.userId._id,
+        resolveUserIdString(order.userId),
         order.orderNumber,
         'order_delivered',
         notificationTitle,

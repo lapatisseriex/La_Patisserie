@@ -5,22 +5,34 @@ class WebSocketService {
     this.socket = null;
     this.connected = false;
     this.userId = null;
+    this.currentAuthId = null;
   }
 
   connect(userId) {
     const normalizedId = userId ? userId.toString() : null;
 
-    if (this.socket && this.socket.connected) {
-      if (!normalizedId && this.userId) {
-        this.socket.emit('logout');
-        this.userId = null;
-      } else if (normalizedId && this.userId !== normalizedId) {
-        if (this.userId) {
+    if (normalizedId && this.userId !== normalizedId) {
+      this.userId = normalizedId;
+
+      if (this.socket && this.socket.connected) {
+        if (this.currentAuthId && this.currentAuthId !== normalizedId) {
           this.socket.emit('logout');
         }
-        this.userId = normalizedId;
         this.socket.emit('authenticate', normalizedId);
+        this.currentAuthId = normalizedId;
       }
+    }
+
+    if (this.socket) {
+      if (!this.socket.connected) {
+        this.socket.connect();
+      }
+
+      if (this.socket.connected && this.userId && this.currentAuthId !== this.userId) {
+        this.socket.emit('authenticate', this.userId);
+        this.currentAuthId = this.userId;
+      }
+
       return this.socket;
     }
 
@@ -39,21 +51,24 @@ class WebSocketService {
       randomizationFactor: 0.5
     });
 
-    this.userId = normalizedId;
+    if (normalizedId && !this.userId) {
+      this.userId = normalizedId;
+    }
 
     this.socket.on('connect', () => {
       console.log('Connected to WebSocket server');
       this.connected = true;
-      
+
       if (this.userId) {
         this.socket.emit('authenticate', this.userId);
+        this.currentAuthId = this.userId;
       }
     });
 
     this.socket.on('disconnect', () => {
       console.log('Disconnected from WebSocket server');
       this.connected = false;
-      this.userId = null;
+      this.currentAuthId = null;
     });
 
     this.socket.on('connect_error', (error) => {
@@ -66,13 +81,14 @@ class WebSocketService {
 
   disconnect() {
     if (this.socket) {
-      if (this.userId) {
+      if (this.currentAuthId) {
         this.socket.emit('logout');
       }
       this.socket.disconnect();
       this.socket = null;
       this.connected = false;
       this.userId = null;
+      this.currentAuthId = null;
     }
   }
 
@@ -109,6 +125,42 @@ class WebSocketService {
   offShopStatusUpdate(callback) {
     if (this.socket) {
       this.socket.off('shopStatusUpdate', callback);
+    }
+  }
+
+  onOrderStatusUpdated(callback) {
+    if (this.socket) {
+      this.socket.on('orderStatusUpdated', callback);
+    }
+  }
+
+  offOrderStatusUpdated(callback) {
+    if (this.socket) {
+      this.socket.off('orderStatusUpdated', callback);
+    }
+  }
+
+  onNewOrderPlaced(callback) {
+    if (this.socket) {
+      this.socket.on('newOrderPlaced', callback);
+    }
+  }
+
+  offNewOrderPlaced(callback) {
+    if (this.socket) {
+      this.socket.off('newOrderPlaced', callback);
+    }
+  }
+
+  onPaymentUpdated(callback) {
+    if (this.socket) {
+      this.socket.on('paymentUpdated', callback);
+    }
+  }
+
+  offPaymentUpdated(callback) {
+    if (this.socket) {
+      this.socket.off('paymentUpdated', callback);
     }
   }
 

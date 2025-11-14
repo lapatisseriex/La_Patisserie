@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaTruck, 
@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
+import webSocketService from '../../services/websocketService';
 
 // CSS for line clamp
 const styles = `
@@ -278,6 +279,8 @@ const AdminOrderTracking = () => {
     maxCount: 0,
     customCount: 1
   });
+  const fetchOrderDataRef = useRef(() => {});
+  const realtimeRefreshRef = useRef({ timeoutId: null });
   
   // Dropdown state management for order sections
   const [todaysOrdersExpanded, setTodaysOrdersExpanded] = useState(() => {
@@ -376,6 +379,8 @@ const AdminOrderTracking = () => {
     }
   };
 
+  fetchOrderDataRef.current = fetchOrderData;
+
   // Refresh data function
   const handleRefresh = () => {
     console.log('Refresh button clicked - calling fetchOrderData with isRefresh=true');
@@ -429,6 +434,54 @@ const AdminOrderTracking = () => {
     
     return { todaysOrders, remainingOrders };
   };
+
+  useEffect(() => {
+    const socket = webSocketService.connect(null);
+    console.log('[AdminOrderTracking] WebSocket connection state:', socket?.connected, socket?.id);
+
+    const scheduleRefresh = (reason, payload) => {
+      console.log('[AdminOrderTracking] Scheduling refresh from real-time event:', reason, payload);
+      if (realtimeRefreshRef.current.timeoutId) {
+        clearTimeout(realtimeRefreshRef.current.timeoutId);
+      }
+
+      realtimeRefreshRef.current.timeoutId = setTimeout(() => {
+        realtimeRefreshRef.current.timeoutId = null;
+        if (typeof fetchOrderDataRef.current === 'function') {
+          fetchOrderDataRef.current(true);
+        }
+      }, 400);
+    };
+
+    const handleOrderStatusUpdated = (payload = {}) => {
+      console.log('[AdminOrderTracking] orderStatusUpdated event received:', payload);
+      scheduleRefresh('orderStatusUpdated', payload);
+    };
+
+    const handlePaymentUpdated = (payload = {}) => {
+      console.log('[AdminOrderTracking] paymentUpdated event received:', payload);
+      scheduleRefresh('paymentUpdated', payload);
+    };
+
+    const handleNewOrderPlaced = (payload = {}) => {
+      console.log('[AdminOrderTracking] newOrderPlaced event received:', payload);
+      scheduleRefresh('newOrderPlaced', payload);
+    };
+
+    webSocketService.onOrderStatusUpdated(handleOrderStatusUpdated);
+    webSocketService.onPaymentUpdated(handlePaymentUpdated);
+    webSocketService.onNewOrderPlaced(handleNewOrderPlaced);
+
+    return () => {
+      webSocketService.offOrderStatusUpdated(handleOrderStatusUpdated);
+      webSocketService.offPaymentUpdated(handlePaymentUpdated);
+      webSocketService.offNewOrderPlaced(handleNewOrderPlaced);
+      if (realtimeRefreshRef.current.timeoutId) {
+        clearTimeout(realtimeRefreshRef.current.timeoutId);
+        realtimeRefreshRef.current.timeoutId = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     fetchOrderData();

@@ -16,6 +16,7 @@ import {
 } from '../utils/orderEmailService.js';
 import { getEmailDelegateApiBase, isDelegationEnabled, delegateEmailPost } from '../utils/emailDelegator.js';
 import { createNotification } from './notificationController.js';
+import { emitPaymentUpdate } from '../utils/socketEvents.js';
 import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
 import NewCart from '../models/newCartModel.js';
 import { trackOrderDay, markFreeProductUsed } from '../middleware/freeProductMiddleware.js';
@@ -704,7 +705,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     // For COD orders, create a pending Payment record so admin can track it
   if (paymentMethod === 'cod') {
       try {
-        await Payment.create({
+        const paymentDoc = await Payment.create({
           userId,
           email: userDetails?.email,
           orderId: orderNumber,
@@ -716,6 +717,10 @@ export const createOrder = asyncHandler(async (req, res) => {
           meta: { source: 'createOrder' }
         });
         console.log('Created pending payment record for COD order:', orderNumber);
+
+        emitPaymentUpdate(paymentDoc, {
+          source: 'cod_order_created'
+        });
       } catch (e) {
         console.error('Failed to create COD payment record:', e.message);
       }
@@ -1021,6 +1026,19 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       } catch (clrErr) {
         console.warn('Cart cleanup after payment verify failed:', clrErr?.message || clrErr);
       }
+
+      emitPaymentUpdate(null, {
+        orderId: order.orderNumber,
+        paymentId: razorpay_payment_id,
+        status: 'success',
+        amount: order.amount,
+        paymentMethod: order.paymentMethod || 'razorpay',
+        userId: order.userId,
+        source: 'verifyPayment',
+        metadata: {
+          gatewayOrderId: razorpay_order_id
+        }
+      });
 
       res.json({
         success: true,
@@ -2385,6 +2403,11 @@ export const updatePaymentStatus = asyncHandler(async (req, res) => {
   const prev = payment.paymentStatus;
   payment.paymentStatus = paymentStatus;
   await payment.save();
+
+  emitPaymentUpdate(payment, {
+    source: 'admin_updatePaymentStatus',
+    previousStatus: prev
+  });
 
   // Sync related order paymentStatus when possible
   if (payment.orderId) {
