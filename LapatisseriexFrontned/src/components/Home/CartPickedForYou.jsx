@@ -52,6 +52,12 @@ const CartPickedForYou = () => {
 
   useEffect(() => {
     const loadSmartRecommendations = async () => {
+      // Set a timeout to prevent infinite loading
+      const loadingTimeout = setTimeout(() => {
+        console.warn('⏱️ CartPickedForYou loading timeout - stopping loader');
+        setLoading(false);
+      }, 5000); // 5 second timeout
+
       try {
         setLoading(true);
 
@@ -59,6 +65,7 @@ const CartPickedForYou = () => {
         if (!user || !cartAnalysis.hasItems) {
           setRecommendedProducts([]);
           setLoading(false);
+          clearTimeout(loadingTimeout);
           return;
         }
 
@@ -169,18 +176,20 @@ const CartPickedForYou = () => {
         
         setRecommendedProducts(recommendations);
         setRecommendationType(recType);
+        clearTimeout(loadingTimeout);
         
       } catch (err) {
         console.error("Error loading smart recommendations:", err);
         setRecommendedProducts([]);
         setRecommendationType('');
+        clearTimeout(loadingTimeout);
       } finally {
         setLoading(false);
       }
     };
 
     loadSmartRecommendations();
-  }, [cartAnalysis, dispatch, user, recentlyViewed]);
+  }, [cartAnalysis, dispatch, user, recentlyViewed, categories]);
 
   // Don't render section if no cart items, or no recommendations
   if (!cartAnalysis.hasItems || (recommendedProducts.length === 0 && !loading)) {

@@ -1015,7 +1015,7 @@ const Cart = () => {
               {/* Profile Completion Warning - Compact & Professional */}
               {!canProceedToCheckout() && (
                 <div className="px-4 mt-4 mb-3">
-                  <div className="bg-pink-50 border border-pink-200 rounded-md p-3 shadow-sm">
+                  <div className="p-3 ">
                     <div className="flex items-center gap-2 mb-2">
                       <FaExclamationTriangle className="text-pink-600 text-sm flex-shrink-0" />
                       <h3 className="text-sm font-semibold text-pink-900">

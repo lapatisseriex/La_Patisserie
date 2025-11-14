@@ -1,13 +1,17 @@
 ﻿import React, { memo, useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import { useAuth } from '../../../hooks/useAuth';
+import { useFavorites } from '../../../context/FavoritesContext/FavoritesContext';
 
-import { User, Package, Heart, LogOut, Settings, ShoppingCart } from 'lucide-react';
+import { User, ChevronRight } from 'lucide-react';
 import './UserMenu.css';
 
 const UserMenu = memo(() => {
   const { user, logout } = useAuth();
+  const { count: favoritesCount } = useFavorites();
+  const [ordersCount, setOrdersCount] = useState(0);
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -16,6 +20,36 @@ const UserMenu = memo(() => {
   const isProfileIncomplete = user && (!user.name || !user.dob || !user.location);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Fetch orders count
+  useEffect(() => {
+    const fetchOrdersCount = async () => {
+      if (!user) {
+        setOrdersCount(0);
+        return;
+      }
+      
+      try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) return;
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/orders/user`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setOrdersCount(data.orders?.length || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching orders count:', error);
+      }
+    };
+
+    fetchOrdersCount();
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -174,144 +208,152 @@ const UserMenu = memo(() => {
         <div className="absolute top-full right-0 w-full h-1 bg-transparent" />
       )}
       
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu - Compact Icon List Style */}
       {isMenuOpen && (
         <div 
-          className="absolute right-0 mt-1 w-56 rounded-lg border border-gray-100 z-50 transform origin-top-right transition-all duration-200 bg-white backdrop-blur-sm"
+          className="absolute right-0 mt-1 w-72 bg-white border border-gray-200 z-50 transform origin-top-right transition-all duration-200"
           style={{ 
             animation: 'fadeIn 0.3s ease-out forwards',
             maxWidth: 'calc(100vw - 20px)',
             boxShadow: '0 8px 32px rgba(40, 28, 32, 0.15), 0 4px 16px rgba(40, 28, 32, 0.1)'}}
           onMouseEnter={() => {
-            // Clear timeout when user mouses over the menu
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
           }}
           onMouseLeave={() => {
-            // Set timeout when mouse leaves the menu
             timeoutRef.current = setTimeout(() => {
               setIsMenuOpen(false);
-            }, 150); // Match the 150ms delay on the parent
+            }, 150);
           }}
         >
-          <div className="p-3 border-b border-gray-100">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase" style={{ color: '#281c20', opacity: 0.7 }}>MY ACCOUNT</p>
+          {/* Header Section - User Welcome */}
+          <div className="px-4 py-3 bg-gradient-to-r from-[#f9f7f8] to-white border-b border-gray-200">
+            <p className="text-xs text-[#722F37] mb-1 tracking-wide">Welcome back,</p>
+            <h3 className="text-lg text-[#281C20]" style={{ fontFamily: '"Dancing Script", "Pacifico", "Great Vibes", cursive', fontWeight: '600', letterSpacing: '0.05em' }}>
+              {user?.name || 'Guest'}
+            </h3>
           </div>
           
+          {/* Menu Items - Compact Icon List */}
           <div className="py-1">
             <Link 
               to="/profile" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
-              style={{ color: '#281c20' }}
+              className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all"
               onClick={(e) => {
-                // Don't close the menu immediately on click to prevent accidental misclicks
-                e.stopPropagation(); // Prevent event bubbling
-                // Navigate first, then close with a slight delay
+                e.stopPropagation();
                 setTimeout(() => {
                   if (timeoutRef.current) clearTimeout(timeoutRef.current);
                   setIsMenuOpen(false);
                 }, 100);
               }}
             >
-              <img 
-                src="/yummy.png" 
-                alt="Profile Icon" 
-                className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  const icon = document.createElement('div');
-                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
-                  icon.className = 'h-4 w-4 transition-all duration-300 group-hover:scale-110 inline-block';
-                  e.target.parentNode.insertBefore(icon, e.target);
-                }}
-              />
-              <span className="font-light relative z-10">My Profile</span>
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/yummy.png" 
+                  alt="Profile Icon" 
+                  className="h-4 w-4 transition-all duration-300" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const icon = document.createElement('div');
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#722F37" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+                    icon.className = 'h-4 w-4 transition-all duration-300 inline-block';
+                    e.target.parentNode.insertBefore(icon, e.target);
+                  }}
+                />
+                <span className="text-sm text-gray-800">My Profile</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
             </Link>
             
             <Link 
               to="/orders" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
-              style={{ color: '#281c20' }}
+              className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all"
               onClick={(e) => {
-                // Don't close the menu immediately on click to prevent accidental misclicks
-                e.stopPropagation(); // Prevent event bubbling
-                // Navigate first, then close with a slight delay
+                e.stopPropagation();
                 setTimeout(() => {
                   if (timeoutRef.current) clearTimeout(timeoutRef.current);
                   setIsMenuOpen(false);
                 }, 100);
               }}
             >
-              <img 
-                src="/cupcake.png" 
-                alt="Orders Icon" 
-                className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  const icon = document.createElement('div');
-                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>';
-                  icon.className = 'h-4 w-4 transition-all duration-300 group-hover:scale-110 inline-block';
-                  e.target.parentNode.insertBefore(icon, e.target);
-                }}
-              />
-              <span className="font-light relative z-10">My Orders</span>
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/cupcake.png" 
+                  alt="Orders Icon" 
+                  className="h-4 w-4 transition-all duration-300" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const icon = document.createElement('div');
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#722F37" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>';
+                    icon.className = 'h-4 w-4 transition-all duration-300 inline-block';
+                    e.target.parentNode.insertBefore(icon, e.target);
+                  }}
+                />
+                <span className="text-sm text-gray-800">My Orders</span>
+                {ordersCount > 0 && (
+                  <span className="text-xs text-[#722F37] font-medium ml-1">{ordersCount}</span>
+                )}
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
             </Link>
             
             <Link 
               to="/favorites" 
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) rounded-lg relative group backdrop-filter backdrop-blur-sm"
-              style={{ color: '#281c20' }}
+              className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all"
               onClick={(e) => {
-                // Don't close the menu immediately on click to prevent accidental misclicks
-                e.stopPropagation(); // Prevent event bubbling
-                // Navigate first, then close with a slight delay
+                e.stopPropagation();
                 setTimeout(() => {
                   if (timeoutRef.current) clearTimeout(timeoutRef.current);
                   setIsMenuOpen(false);
                 }, 100);
               }}
             >
-              <img 
-                src="/cakefavorites.png" 
-                alt="Favorites Icon" 
-                className="h-4 w-4 transition-all duration-300 group-hover:scale-110" 
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  const icon = document.createElement('div');
-                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
-                  icon.className = 'h-4 w-4 transition-all duration-300 group-hover:scale-110 inline-block';
-                  e.target.parentNode.insertBefore(icon, e.target);
-                }}
-              />
-              <span className="font-light relative z-10">My Favorites</span>
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/cakefavorites.png" 
+                  alt="Favorites Icon" 
+                  className="h-4 w-4 transition-all duration-300" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const icon = document.createElement('div');
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#722F37" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
+                    icon.className = 'h-4 w-4 transition-all duration-300 inline-block';
+                    e.target.parentNode.insertBefore(icon, e.target);
+                  }}
+                />
+                <span className="text-sm text-gray-800">My Favorites</span>
+                {favoritesCount > 0 && (
+                  <span className="text-xs text-[#722F37] font-medium ml-1">{favoritesCount}</span>
+                )}
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
             </Link>
           </div>
           
-          <div className="p-2 border-t border-gray-100">
+          {/* Sign Out Section */}
+          <div className="border-t border-gray-200">
             <button
               onClick={handleSignOut}
               disabled={isLoggingOut}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg user-menu-item transition-all duration-300 hover:bg-gray-50/80 hover:transform hover:translateY(-1px) relative group backdrop-filter backdrop-blur-sm auth-button-secondary ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
-              style={{ color: '#281c20' }}
+              className={`w-full flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-all ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <img 
-                src="/signout.png" 
-                alt="Logout Icon" 
-                className={`h-4 w-4 transition-all duration-300 group-hover:scale-110 ${isLoggingOut ? 'opacity-50' : ''}`} 
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  const icon = document.createElement('div');
-                  icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
-                  icon.className = `h-4 w-4 transition-all duration-300 group-hover:scale-110 inline-block ${isLoggingOut ? 'opacity-50' : ''}`;
-                  e.target.parentNode.insertBefore(icon, e.target);
-                }}
-              />
-              <span className="font-light relative z-10">
-                {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
-              </span>
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#733857] to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center rounded-full"></div>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/signout.png" 
+                  alt="Logout Icon" 
+                  className={`h-4 w-4 transition-all duration-300 ${isLoggingOut ? 'opacity-50' : ''}`} 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const icon = document.createElement('div');
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#722F37" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
+                    icon.className = `h-4 w-4 transition-all duration-300 inline-block ${isLoggingOut ? 'opacity-50' : ''}`;
+                    e.target.parentNode.insertBefore(icon, e.target);
+                  }}
+                />
+                <span className="text-sm text-gray-800">
+                  {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
+                </span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
             </button>
           </div>
         </div>

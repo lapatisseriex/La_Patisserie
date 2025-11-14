@@ -1959,89 +1959,84 @@ const ProfilePage = () => {
         {activeTab === 'main' ? (
           /* Desktop: Show sidebar + content, Mobile: Show menu grid */
           <div className="hidden lg:grid lg:grid-cols-4 lg:gap-8">
-            {/* Beautiful Desktop Sidebar Navigation */}
+            {/* Minimal Profile Card Layout - Desktop Sidebar */}
             <div className="lg:col-span-1">
-              <div className="bg-white sticky top-24" style={{
-              
-           
-              }}>
-                <div className="p-6">
-                  {/* Elegant Header */}
-                  <div className="mb-6 pb-4" style={{ borderBottom: '2px solid rgba(115, 56, 87, 0.1)' }}>
-                    <h2 className="text-lg font-light tracking-wide" style={{ 
-                      color: '#281c20',
-                      letterSpacing: '0.03em'
-                    }}>Your Account</h2>
-                    <p className="text-xs mt-1" style={{ 
-                      color: 'rgba(40, 28, 32, 0.5)',
-                      letterSpacing: '0.02em'
-                    }}>Manage your profile & preferences</p>
-                  </div>
-                  
-                  <nav className="space-y-2">
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => guardedSetActiveTab(tab.id)}
-                        className="w-full group relative overflow-hidden transition-all duration-300"
-                      >
-                        <div className="flex items-center gap-3 px-4 py-3 relative z-10 transition-all duration-300" style={{
-                          backgroundColor: 'transparent'}}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderLeftColor = '#733857';
-                          e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.04)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderLeftColor = 'transparent';
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}>
-                          <tab.icon className="h-5 w-5 flex-shrink-0 transition-all duration-300" 
-                            style={{ color: 'rgba(115, 56, 87, 0.7)' }} 
-                            strokeWidth={1.5} 
-                          />
-                          <span className="font-medium text-sm text-left transition-all duration-300" style={{ 
-                            color: 'rgba(40, 28, 32, 0.8)',
-                            letterSpacing: '0.02em'
-                          }}>{tab.label}</span>
-                          {tab.id === 'favorites' && favorites?.length > 0 && (
-                            <span className="ml-auto text-white text-xs px-2 py-1 font-bold" style={{ 
-                              backgroundColor: '#733857',
-                              letterSpacing: '0.08em',
-                              boxShadow: '0 2px 6px rgba(115, 56, 87, 0.25)'
-                            }}>
-                              {favorites.length}
-                            </span>
-                          )}
+              <div className="bg-white sticky top-24 border border-gray-100">
+                {/* Profile Card Header */}
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-20 h-20 rounded-full border-2 border-[#722F37] overflow-hidden mb-3">
+                      {user && user.profilePhoto && user.profilePhoto.url ? (
+                        <img 
+                          src={user.profilePhoto.url} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/images/default-avatar.svg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                          <User className="h-10 w-10 text-gray-400" />
                         </div>
-                      </button>
-                    ))}
-                  </nav>
-
-                  {/* Elegant Logout Button */}
-                  <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(115, 56, 87, 0.1)' }}>
-                    <button
-                      onClick={logout}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-3 transition-all duration-300"
-                      style={{
-                     
-                        color: '#733857',
-                        backgroundColor: 'transparent'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#733857';
-                        e.currentTarget.style.color = 'white';
-                        e.currentTarget.style.borderColor = '#733857';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#733857';
-                        e.currentTarget.style.borderColor = 'rgba(115, 56, 87, 0.3)';
-                      }}
-                    >
-                      <LogOut className="h-4 w-4" strokeWidth={1.5} />
-                      <span className="font-medium text-sm uppercase tracking-wider" style={{ letterSpacing: '0.08em' }}>Sign Out</span>
-                    </button>
+                      )}
+                    </div>
+                    <h3 className="text-base font-medium text-[#281C20] mb-1">
+                      {user?.name || 'Guest'}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {user?.email || 'guest@example.com'}
+                    </p>
                   </div>
+                </div>
+                
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-px bg-gray-100 border-b border-gray-100">
+                  <div className="bg-white p-4 text-center">
+                    <div className="text-lg font-semibold text-[#722F37]">{orders?.length || 0}</div>
+                    <div className="text-xs text-gray-500 uppercase">Orders</div>
+                  </div>
+                  <div className="bg-white p-4 text-center">
+                    <div className="text-lg font-semibold text-[#722F37]">{favorites?.length || 0}</div>
+                    <div className="text-xs text-gray-500 uppercase">Saved</div>
+                  </div>
+                  <div className="bg-white p-4 text-center">
+                    <div className="text-lg font-semibold text-[#722F37]">{donationStats?.donationCount || 0}</div>
+                    <div className="text-xs text-gray-500 uppercase">Gifts</div>
+                  </div>
+                </div>
+                
+                {/* Navigation Menu */}
+                <nav className="p-3">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => guardedSetActiveTab(tab.id)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <tab.icon className="h-4 w-4 text-gray-400 group-hover:text-[#722F37] transition-colors" strokeWidth={2} />
+                        <span className="font-medium">{tab.label}</span>
+                      </div>
+                      {tab.id === 'favorites' && favorites?.length > 0 && (
+                        <span className="text-xs font-semibold text-[#722F37] bg-[#722F37]/10 px-2 py-0.5 rounded-full">
+                          {favorites.length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </nav>
+
+                {/* Logout Button */}
+                <div className="p-3 border-t border-gray-100">
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors rounded"
+                  >
+                    <LogOut className="h-4 w-4" strokeWidth={2} />
+                    <span>Sign Out</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2106,95 +2101,90 @@ const ProfilePage = () => {
         ) : (
           /* Desktop: Show sidebar + content with selected component, Mobile: Show content only */
           <div className="hidden lg:grid lg:grid-cols-4 lg:gap-8">
-            {/* Beautiful Desktop Sidebar Navigation */}
+            {/* Minimal Profile Card Layout - Desktop Sidebar */}
             <div className="lg:col-span-1">
-              <div className="bg-white sticky top-24" style={{
-                border: '1px solid rgba(115, 56, 87, 0.15)',
-                boxShadow: '0 2px 12px rgba(115, 56, 87, 0.06)'
-              }}>
-                <div className="p-6">
-                  {/* Elegant Header */}
-                  <div className="mb-6 pb-4" style={{ borderBottom: '2px solid rgba(115, 56, 87, 0.1)' }}>
-                    <h2 className="text-lg font-light tracking-wide" style={{ 
-                      color: '#281c20',
-                      letterSpacing: '0.03em'
-                    }}>Your Account</h2>
-                    <p className="text-xs mt-1" style={{ 
-                      color: 'rgba(40, 28, 32, 0.5)',
-                      letterSpacing: '0.02em'
-                    }}>Manage your profile & preferences</p>
-                  </div>
-                  
-                  <nav className="space-y-2">
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => guardedSetActiveTab(tab.id)}
-                        className="w-full group relative overflow-hidden transition-all duration-300"
-                      >
-                        <div className="flex items-center gap-3 px-4 py-3 relative z-10 transition-all duration-300" style={{
-                          backgroundColor: activeTab === tab.id ? 'rgba(115, 56, 87, 0.08)' : 'transparent',
-                          borderLeft: `2px solid ${activeTab === tab.id ? '#733857' : 'transparent'}`
-                        }}
-                        onMouseEnter={(e) => {
-                          if (activeTab !== tab.id) {
-                            e.currentTarget.style.borderLeftColor = '#733857';
-                            e.currentTarget.style.backgroundColor = 'rgba(115, 56, 87, 0.04)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (activeTab !== tab.id) {
-                            e.currentTarget.style.borderLeftColor = 'transparent';
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }
-                        }}>
-                          <tab.icon className="h-5 w-5 flex-shrink-0 transition-all duration-300" 
-                            style={{ color: activeTab === tab.id ? '#733857' : 'rgba(115, 56, 87, 0.7)' }} 
-                            strokeWidth={1.5} 
-                          />
-                          <span className="font-medium text-sm text-left transition-all duration-300" style={{ 
-                            color: activeTab === tab.id ? '#733857' : 'rgba(40, 28, 32, 0.8)',
-                            letterSpacing: '0.02em'
-                          }}>{tab.label}</span>
-                          {tab.id === 'favorites' && favorites?.length > 0 && (
-                            <span className="ml-auto text-white text-xs px-2 py-1 font-bold" style={{ 
-                              backgroundColor: '#733857',
-                              letterSpacing: '0.08em',
-                              boxShadow: '0 2px 6px rgba(115, 56, 87, 0.25)'
-                            }}>
-                              {favorites.length}
-                            </span>
-                          )}
+              <div className="bg-white sticky top-24 border border-gray-100">
+                {/* Profile Card Header */}
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-20 h-20 rounded-full border-2 border-[#722F37] overflow-hidden mb-3">
+                      {user && user.profilePhoto && user.profilePhoto.url ? (
+                        <img 
+                          src={user.profilePhoto.url} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/images/default-avatar.svg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                          <User className="h-10 w-10 text-gray-400" />
                         </div>
-                      </button>
-                    ))}
-                  </nav>
-
-                  {/* Elegant Logout Button */}
-                  <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(115, 56, 87, 0.1)' }}>
-                    <button
-                      onClick={logout}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-3 transition-all duration-300"
-                      style={{
-                        border: '1px solid rgba(115, 56, 87, 0.3)',
-                        color: '#733857',
-                        backgroundColor: 'transparent'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#733857';
-                        e.currentTarget.style.color = 'white';
-                        e.currentTarget.style.borderColor = '#733857';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#733857';
-                        e.currentTarget.style.borderColor = 'rgba(115, 56, 87, 0.3)';
-                      }}
-                    >
-                      <LogOut className="h-4 w-4" strokeWidth={1.5} />
-                      <span className="font-medium text-sm uppercase tracking-wider" style={{ letterSpacing: '0.08em' }}>Sign Out</span>
-                    </button>
+                      )}
+                    </div>
+                    <h3 className="text-base font-medium text-[#281C20] mb-1">
+                      {user?.name || 'Guest'}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {user?.email || 'guest@example.com'}
+                    </p>
                   </div>
+                </div>
+                
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-px bg-gray-100 border-b border-gray-100">
+                  <div className="bg-white p-4 text-center">
+                    <div className="text-lg font-semibold text-[#722F37]">{orders?.length || 0}</div>
+                    <div className="text-xs text-gray-500 uppercase">Orders</div>
+                  </div>
+                  <div className="bg-white p-4 text-center">
+                    <div className="text-lg font-semibold text-[#722F37]">{favorites?.length || 0}</div>
+                    <div className="text-xs text-gray-500 uppercase">Saved</div>
+                  </div>
+                  <div className="bg-white p-4 text-center">
+                    <div className="text-lg font-semibold text-[#722F37]">{donationStats?.donationCount || 0}</div>
+                    <div className="text-xs text-gray-500 uppercase">Gifts</div>
+                  </div>
+                </div>
+                
+                {/* Navigation Menu */}
+                <nav className="p-3">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => guardedSetActiveTab(tab.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors rounded group ${
+                        activeTab === tab.id 
+                          ? 'bg-[#722F37]/10 text-[#722F37]' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <tab.icon className={`h-4 w-4 transition-colors ${
+                          activeTab === tab.id ? 'text-[#722F37]' : 'text-gray-400 group-hover:text-[#722F37]'
+                        }`} strokeWidth={2} />
+                        <span className="font-medium">{tab.label}</span>
+                      </div>
+                      {tab.id === 'favorites' && favorites?.length > 0 && (
+                        <span className="text-xs font-semibold text-[#722F37] bg-[#722F37]/10 px-2 py-0.5 rounded-full">
+                          {favorites.length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </nav>
+
+                {/* Logout Button */}
+                <div className="p-3 border-t border-gray-100">
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors rounded"
+                  >
+                    <LogOut className="h-4 w-4" strokeWidth={2} />
+                    <span>Sign Out</span>
+                  </button>
                 </div>
               </div>
             </div>

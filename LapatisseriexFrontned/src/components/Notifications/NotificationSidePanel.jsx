@@ -353,9 +353,9 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(40, 28, 32, 0.5)',
-                backdropFilter: 'blur(8px)',
-                zIndex: 999998
+                backgroundColor: 'rgba(40, 28, 32, 0.3)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 59
               }}
             />
             
@@ -373,11 +373,11 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
               style={{
                 position: 'fixed',
                 right: 0,
-                top: 0,
-                height: '100vh',
+                top: '5rem',
+                height: 'calc(100vh - 5rem)',
                 width: '100%',
                 backgroundColor: '#ffffff',
-                zIndex: 999999,
+                zIndex: 60,
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden'}}
@@ -391,6 +391,8 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
               @media (min-width: 768px) {
                 .luxury-shadow {
                   max-width: 520px !important;
+                  top: 5rem !important;
+                  height: calc(100vh - 5rem) !important;
                 }
               }
               @media (min-width: 1024px) {
@@ -401,6 +403,12 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
               @media (min-width: 1280px) {
                 .luxury-shadow {
                   max-width: 600px !important;
+                }
+              }
+              @media (max-width: 767px) {
+                .luxury-shadow {
+                  top: 0 !important;
+                  height: 100vh !important;
                 }
               }
             `}</style>
