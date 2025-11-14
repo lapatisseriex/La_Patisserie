@@ -26,8 +26,12 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        sans: ['system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        sans: ['Nunito', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
         dancing: ['"Dancing Script"', 'cursive'],
+        serif: ['"Playfair Display"', 'Georgia', 'serif'],
+        elegant: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        script: ['"Great Vibes"', '"Dancing Script"', 'cursive'],
+        signature: ['"Allura"', 'cursive'],
       },
       backgroundImage: {
         'cake-pattern': "url('/images/backGround.png')",

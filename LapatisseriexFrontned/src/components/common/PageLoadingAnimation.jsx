@@ -3,8 +3,8 @@
 // Elegant pastel version for La Patisserie aesthetic
 const PageLoadingAnimation = ({
   isVisible = true,
-  title = 'La Patisserie',
-  subtitle = 'Baking happiness, please wait...'
+  title = 'La Pâtisserie',
+  subtitle = 'Crafting sweet moments, one masterpiece at a time...'
 }) => {
   const [imgError, setImgError] = useState(false);
   if (!isVisible) return null;
@@ -33,37 +33,39 @@ const PageLoadingAnimation = ({
 
       {/* Title */}
       <h2
-        className="text-3xl md:text-4xl font-serif font-semibold mb-2"
+        className="text-5xl md:text-6xl font-script font-normal mb-3 tracking-wider"
         style={{
-          background:
-            'linear-gradient(to right, #b86b77, #d98fa5, #b86b77)',
-          WebkitBackgroundClip: 'text',
-          color: 'transparent'}}
+          color: '#281c20',
+          letterSpacing: '0.05em',
+          textShadow: '2px 2px 6px rgba(139, 69, 19, 0.2)'
+        }}
       >
         {title}
       </h2>
 
       {/* Subtitle */}
-      <p className="text-sm md:text-base text-[#6b6b6b] italic opacity-80 mb-4">
+      <p className="text-base md:text-lg text-[#6b6b6b] font-elegant italic opacity-80 mb-4 tracking-wide">
         {subtitle}
       </p>
 
       {/* Animated dots */}
-      <div className="flex justify-center space-x-2 mt-2">
-        <div className="w-2.5 h-2.5 rounded-full bg-[#d98fa5] animate-bounce" />
+      <div className="flex justify-center items-center space-x-1.5 mt-4">
+        <div className="w-3 h-3 rounded-full bg-[#281c20] animate-pulse-wave" />
         <div
-          className="w-2.5 h-2.5 rounded-full bg-[#b86b77] animate-bounce"
-          style={{ animationDelay: '0.15s' }}
+          className="w-3 h-3 rounded-full bg-[#281c20] animate-pulse-wave"
+          style={{ animationDelay: '0.2s' }}
         />
         <div
-          className="w-2.5 h-2.5 rounded-full bg-[#8d5b68] animate-bounce"
-          style={{ animationDelay: '0.3s' }}
+          className="w-3 h-3 rounded-full bg-[#281c20] animate-pulse-wave"
+          style={{ animationDelay: '0.4s' }}
         />
       </div>
 
-      {/* Elegant underline */}
-      <div className="mt-6">
-        <div className="h-0.5 w-32 mx-auto bg-gradient-to-r from-[#d98fa5] via-[#b86b77] to-[#8d5b68] opacity-80 rounded-full" />
+      {/* Elegant decorative elements */}
+      <div className="mt-6 flex items-center justify-center gap-3">
+        <div className="w-12 h-[2px] bg-gradient-to-r from-transparent via-[#281c20] to-[#281c20] opacity-60" />
+        <div className="w-2 h-2 rotate-45 bg-[#281c20] opacity-40" />
+        <div className="w-12 h-[2px] bg-gradient-to-l from-transparent via-[#281c20] to-[#281c20] opacity-60" />
       </div>
 
       {/* Custom smooth pulse animation */}
@@ -75,6 +77,19 @@ const PageLoadingAnimation = ({
           }
           .animate-pulse-smooth {
             animation: pulseSmooth 1.8s ease-in-out infinite;
+          }
+          @keyframes pulseWave {
+            0%, 100% { 
+              transform: scale(0.8); 
+              opacity: 0.4;
+            }
+            50% { 
+              transform: scale(1.2); 
+              opacity: 1;
+            }
+          }
+          .animate-pulse-wave {
+            animation: pulseWave 1.4s ease-in-out infinite;
           }
         `}
       </style>
