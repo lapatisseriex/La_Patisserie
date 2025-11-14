@@ -1,8 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaGift, FaStar } from 'react-icons/fa';
 import { checkFreeProductEligibility, getFreeProductProgress } from '../../services/freeProductService';
 import { useCart } from '../../hooks/useCart';
+import { useAuth } from '../../hooks/useAuth';
+import { hasCompletedOrders } from '../../utils/orderExperience';
 
 const FreeProductBanner = ({ onSelectFreeProduct }) => {
   const [eligibility, setEligibility] = useState(null);
@@ -11,6 +13,7 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
   const [dismissed, setDismissed] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const { cartItems } = useCart();
+  const { user } = useAuth();
 
   // Check if cart has a free product
   const hasFreeProductInCart = cartItems?.some(item => item.isFreeProduct);
@@ -63,6 +66,9 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
     }
   }, [hasFreeProductInCart]);
 
+  // Check if user is a first-time customer (no completed orders)
+  const isFirstTimeCustomer = user && !hasCompletedOrders(user);
+
   if (initialLoading || dismissed) {
     return null;
   }
@@ -70,6 +76,80 @@ const FreeProductBanner = ({ onSelectFreeProduct }) => {
   // CRITICAL: Hide ALL banners if free product is already in cart
   if (hasFreeProductInCart) {
     return null;
+  }
+
+  // Show first-time customer welcome banner
+  if (isFirstTimeCustomer && (!progress || progress.currentDays === 0)) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+          className="relative mb-4 border border-amber-200 bg-white overflow-hidden font-sans"
+        >
+          <button
+            onClick={() => setDismissed(true)}
+            className="absolute top-1.5 right-1.5 text-gray-400 hover:text-gray-600 transition-colors z-10"
+            aria-label="Dismiss"
+          >
+            <FaTimes size={12} />
+          </button>
+
+          <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-7">
+            {/* Elegant icon */}
+            <motion.div 
+              className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg border-2 border-amber-300 bg-amber-50 flex items-center justify-center relative"
+              animate={{ 
+                borderColor: ['#fcd34d', '#f472b6', '#fcd34d']
+              }}
+              transition={{ 
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <FaGift className="text-pink-500 text-sm sm:text-base" />
+              <motion.div
+                className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm bg-pink-500 border border-white flex items-center justify-center"
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 10, 0]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatDelay: 1
+                }}
+              >
+                <FaStar className="text-white text-[5px] sm:text-[6px]" />
+              </motion.div>
+            </motion.div>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-1 sm:gap-1.5 mb-0.5">
+                <h3 className="text-[10px] sm:text-xs font-bold text-gray-900 tracking-wide uppercase font-sans">
+                  Monthly Reward
+                </h3>
+                <span className="text-[8px] sm:text-[9px] text-pink-600 font-semibold tracking-wider font-sans">NEW</span>
+              </div>
+              
+              <p className="text-[10px] sm:text-[11px] text-gray-700 leading-snug mb-1 sm:mb-1.5 font-sans">
+                Complete this order & unlock rewards! Order on <span className="font-bold text-pink-600">10 days/month</span> → Get <span className="font-bold text-amber-600">FREE dessert</span>
+              </p>
+
+              <div className="inline-flex items-center gap-1 sm:gap-1.5 bg-amber-50 border border-pink-200 px-1.5 sm:px-2 py-0.5 rounded">
+                <div className="w-1 h-1 rounded-full bg-pink-500"></div>
+                <p className="text-[8px] sm:text-[9px] text-pink-700 font-semibold tracking-wide uppercase font-sans">
+                  Start earning today
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    );
   }
 
   // STRICT: Show "already claimed" message if user used their free product this month

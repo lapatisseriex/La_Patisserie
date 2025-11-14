@@ -39,14 +39,14 @@ const OfflinePage = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-200px)] bg-white flex items-center justify-center p-4" style={{fontFamily: 'sans-serif'}}>
-      <div className="max-w-2xl w-full text-center">
+    <div className="min-h-[calc(100vh-200px)] bg-white flex items-center justify-center p-3 sm:p-4 md:p-6" style={{fontFamily: 'sans-serif'}}>
+      <div className="max-w-xl lg:max-w-2xl w-full text-center px-2 sm:px-4">
         {/* Offline Illustration */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <img 
             src="/images/offline-illustration.png" 
             alt="Offline illustration" 
-            className="w-96 h-72 mx-auto object-contain"
+            className="w-48 h-36 sm:w-64 sm:h-48 md:w-80 md:h-60 lg:w-96 lg:h-72 mx-auto object-contain"
             onError={(e) => {
               // Fallback if image fails to load
               e.target.style.display = 'none';
@@ -55,7 +55,7 @@ const OfflinePage = () => {
           />
           {/* Fallback visual element */}
           <div 
-            className="w-96 h-72 mx-auto rounded-2xl flex items-center justify-center text-6xl"
+            className="w-48 h-36 sm:w-64 sm:h-48 md:w-80 md:h-60 lg:w-96 lg:h-72 mx-auto rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center text-4xl sm:text-5xl md:text-6xl"
             style={{
               display: 'none',
               backgroundColor: '#f8fafc',
@@ -69,27 +69,27 @@ const OfflinePage = () => {
 
         {/* Status Messages */}
         {isOnline ? (
-          <div className="mb-6">
-            <h1 className="text-3xl font-normal mb-4" style={{color: '#281c20', fontFamily: 'sans-serif'}}>
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-normal mb-3 sm:mb-4 px-2" style={{color: '#281c20', fontFamily: 'sans-serif'}}>
               Connection Restored!
             </h1>
             <button
               onClick={() => window.location.reload()}
-              className="px-8 py-3 rounded-lg font-normal text-white hover:opacity-90 transition-all duration-200"
+              className="px-5 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3 rounded-lg font-normal text-sm sm:text-base text-white hover:opacity-90 transition-all duration-200 active:scale-95"
               style={{ backgroundColor: '#281c20', fontFamily: 'sans-serif' }}
             >
               Continue
             </button>
           </div>
         ) : (
-          <div className="mb-6">
-            <h1 className="text-3xl font-normal mb-8" style={{color: '#281c20', fontFamily: 'sans-serif'}}>
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-normal mb-4 sm:mb-6 md:mb-8 px-2" style={{color: '#281c20', fontFamily: 'sans-serif'}}>
               No Internet Connection
             </h1>
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className={`px-8 py-3 rounded-lg font-normal transition-all duration-200 ${
+              className={`px-5 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3 rounded-lg font-normal text-sm sm:text-base transition-all duration-200 active:scale-95 ${
                 isRefreshing
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'text-white hover:opacity-90'
