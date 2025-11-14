@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   FaSearch, 
   FaEye, 
@@ -32,6 +32,7 @@ import { BsCashCoin } from 'react-icons/bs';
 import { toast } from 'react-hot-toast';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import io from 'socket.io-client';
+import { getWebSocketBaseUrl, getSocketOptions } from '../../utils/websocketUrl.js';
 import { useLocation } from 'react-router-dom';
 
 const AdminOrders = () => {
@@ -62,18 +63,7 @@ const AdminOrders = () => {
   const [wsSocketId, setWsSocketId] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grouped'
 
-  const filtersRef = useRef(filters);
-  const currentPageRef = useRef(currentPage);
-
   const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik03NSA3NUgxMjVWMTI1SDc1Vjc1WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K';
-
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
-
-  useEffect(() => {
-    currentPageRef.current = currentPage;
-  }, [currentPage]);
 
   const getItemImage = (item = {}) => {
     const sources = [
@@ -182,7 +172,6 @@ const AdminOrders = () => {
       const data = await response.json();
       setOrders(data.orders);
       setCurrentPage(data.pagination.page);
-      currentPageRef.current = data.pagination.page;
       setTotalPages(data.pagination.pages);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -190,11 +179,9 @@ const AdminOrders = () => {
       setLoading(false);
     }
   };
-
   // Handle search and filters
   const handleSearch = () => {
     setCurrentPage(1);
-    currentPageRef.current = 1;
     fetchOrders(1, filters);
   };
 
@@ -202,9 +189,7 @@ const AdminOrders = () => {
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
-    filtersRef.current = newFilters;
     setCurrentPage(1);
-    currentPageRef.current = 1;
     fetchOrders(1, newFilters);
   };
 
@@ -212,9 +197,7 @@ const AdminOrders = () => {
   const handleMultipleFilterChange = (newFilters) => {
     const updatedFilters = { ...filters, ...newFilters };
     setFilters(updatedFilters);
-    filtersRef.current = updatedFilters;
     setCurrentPage(1);
-    currentPageRef.current = 1;
     fetchOrders(1, updatedFilters);
   };
 
@@ -232,9 +215,7 @@ const AdminOrders = () => {
       quickRange: ''
     };
     setFilters(clearedFilters);
-    filtersRef.current = clearedFilters;
     setCurrentPage(1);
-    currentPageRef.current = 1;
     fetchOrders(1, clearedFilters);
   };
 
@@ -273,14 +254,16 @@ const AdminOrders = () => {
       quickRange: range 
     };
     setFilters(newFilters);
-    filtersRef.current = newFilters;
     setCurrentPage(1);
-    currentPageRef.current = 1;
     fetchOrders(1, newFilters);
   };
 
-  // View order details
-  const viewOrderDetails = async (orderNumber) => {
+  // View order details with graceful fallback for synthetic/local orders
+  const viewOrderDetails = async (orderOrNumber) => {
+    // Accept either an order object or an orderNumber string
+    const providedOrder = typeof orderOrNumber === 'object' && orderOrNumber !== null ? orderOrNumber : null;
+    const orderNumber = providedOrder ? providedOrder.orderNumber : orderOrNumber;
+
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/orders/${orderNumber}`, {
@@ -290,7 +273,20 @@ const AdminOrders = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch order details');
+        // If backend can't find it but we have a local (synthetic) order, fallback
+        if (response.status === 404 && providedOrder) {
+          console.warn('Order not found on backend; displaying synthetic/local order object.');
+          toast((t) => (
+            <span>
+              Showing local order – backend record missing.
+              <button onClick={() => toast.dismiss(t.id)} className="ml-2 underline">Dismiss</button>
+            </span>
+          ), { icon: 'ℹ️' });
+          setSelectedOrder(providedOrder);
+          setShowOrderModal(true);
+          return;
+        }
+        throw new Error(`Failed to fetch order details (HTTP ${response.status})`);
       }
 
       const data = await response.json();
@@ -298,7 +294,14 @@ const AdminOrders = () => {
       setShowOrderModal(true);
     } catch (error) {
       console.error('Error fetching order details:', error);
-      alert('Failed to fetch order details');
+      if (providedOrder) {
+        // Fallback to provided order object even on network or other errors
+        toast.error('Backend fetch failed; showing local order snapshot.');
+        setSelectedOrder(providedOrder);
+        setShowOrderModal(true);
+      } else {
+        toast.error(error.message || 'Failed to fetch order details');
+      }
     }
   };
 
@@ -315,26 +318,21 @@ const AdminOrders = () => {
   useEffect(() => {
     fetchOrders();
 
-    // Set up WebSocket connection
-    let rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    
-    // Remove /api or any path from the URL to get base server URL
-    const apiUrl = rawApiUrl.replace(/\/api.*$/, '');
+    // Set up WebSocket connection (production-safe)
+    const apiUrl = getWebSocketBaseUrl();
     
     console.log('%c🔌 WebSocket Connection Attempt', 'color: #733857; font-weight: bold; font-size: 14px');
-    console.log('📍 Raw API URL:', rawApiUrl);
     console.log('📍 Cleaned URL for WebSocket:', apiUrl);
     console.log('⏰ Time:', new Date().toLocaleTimeString());
     
-    const socket = io(apiUrl, {
-      path: '/socket.io/',  // Explicitly set the default path
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 10000,
-      autoConnect: true
-    });
+    const socket = io(apiUrl, getSocketOptions({ autoConnect: true }));
+
+    // Heartbeat optional (UI-level) to reflect connection health
+    let heartbeatInterval = setInterval(() => {
+      if (socket.connected) {
+        socket.emit('ping');
+      }
+    }, 30000);
     
     socket.on('connect', () => {
       console.log('%c✅ WebSocket CONNECTED!', 'color: green; font-weight: bold; font-size: 14px');
@@ -409,10 +407,6 @@ const AdminOrders = () => {
       
       setShowNewOrderBanner(true);
       setNewOrderCount(prev => prev + 1);
-
-      const targetPage = currentPageRef.current || 1;
-      const activeFilters = filtersRef.current || {};
-      fetchOrders(targetPage, activeFilters);
       
       // Show toast notification
       toast.success(`New order #${data.orderNumber} received!`, {
@@ -460,6 +454,7 @@ const AdminOrders = () => {
     // Cleanup on unmount
     return () => {
       console.log('%c🔌 Cleaning up WebSocket connection', 'color: gray; font-size: 12px');
+      clearInterval(heartbeatInterval);
       socket.offAny();
       socket.off('newOrderPlaced');
       socket.off('orderStatusUpdated');
@@ -704,7 +699,7 @@ const AdminOrders = () => {
 
           {/* View Details Button */}
           <button
-            onClick={() => onViewDetails(order.orderNumber)}
+            onClick={() => onViewDetails(order)}
             className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
           >
             <FaEye />
@@ -761,7 +756,7 @@ const AdminOrders = () => {
                   New order{newOrderCount > 1 ? 's' : ''} issued!
                 </p>
                 <p className="text-green-700 text-sm">
-                  {newOrderCount} new order{newOrderCount > 1 ? 's have' : ' has'} been placed. Orders list updated automatically.
+                  {newOrderCount} new order{newOrderCount > 1 ? 's have' : ' has'} been placed. Click refresh to view.
                 </p>
               </div>
             </div>
@@ -1144,7 +1139,7 @@ const AdminOrders = () => {
                       <div className="flex justify-end items-center space-x-1">
                         {/* View Details */}
                         <button
-                          onClick={() => viewOrderDetails(order.orderNumber)}
+                          onClick={() => viewOrderDetails(order)}
                           className="text-blue-600 hover:text-blue-900 p-1"
                           title="View Details"
                         >
@@ -1309,11 +1304,26 @@ const AdminOrders = () => {
 
       {/* Order Detail Modal */}
       {showOrderModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[999] pt-10">
-          <div className="bg-white rounded-lg w-full max-w-[95vw] lg:max-w-6xl h-[calc(100vh-5rem)] shadow-2xl flex flex-col mx-4">
+        <div className="fixed inset-0 z-[1000]">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowOrderModal(false)}
+          />
+          {/* Positioned modal container with left gap for side panel */}
+          <div className="absolute inset-0 flex flex-col md:items-start md:justify-start pt-6 md:pt-12 overflow-y-auto lg:pl-56 xl:pl-64 lg:pr-6">
+            <div className="relative bg-white rounded-xl shadow-2xl w-full md:w-[92%] lg:w-[85%] xl:w-[70%] mx-auto max-h-[calc(100vh-4rem)] flex flex-col border border-gray-200">
+              {/* Close button always visible */}
+              <button
+                onClick={() => setShowOrderModal(false)}
+                className="absolute top-3 right-3 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition-colors z-10"
+                aria-label="Close order details"
+              >
+                <FaTimes className="text-gray-600" />
+              </button>
             
-            {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white/95 backdrop-blur z-10">
               <div className="flex items-center space-x-3">
                 <FaThList className="text-xl text-blue-600" />
                 <div>
@@ -1332,17 +1342,11 @@ const AdminOrders = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowOrderModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <FaTimes className="text-gray-600" />
-              </button>
-            </div>
+              </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-6">
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="p-6">
                 
                 {/* Status and Quick Info Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
@@ -1741,6 +1745,7 @@ const AdminOrders = () => {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       <style>{`

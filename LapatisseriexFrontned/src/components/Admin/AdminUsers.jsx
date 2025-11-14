@@ -5,6 +5,7 @@ import { useLocation as useLocationContext } from '../../context/LocationContext
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
 import io from 'socket.io-client';
+import { getWebSocketBaseUrl, getSocketOptions } from '../../utils/websocketUrl.js';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -156,24 +157,15 @@ const AdminUsers = () => {
 
   // Set up WebSocket connection for real-time user signup notifications
   useEffect(() => {
-    let rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    
-    // Remove /api or any path from the URL to get base server URL
-    const apiUrl = rawApiUrl.replace(/\/api.*$/, '');
-    
+    const apiUrl = getWebSocketBaseUrl();
     console.log('%c🔌 WebSocket Connection (Users Page)', 'color: #733857; font-weight: bold; font-size: 14px');
-    console.log('📍 Connecting to:', apiUrl);
+    console.log('📍 Derived WS Base:', apiUrl);
     console.log('⏰ Time:', new Date().toLocaleTimeString());
-    
-    const socket = io(apiUrl, {
-      path: '/socket.io/',
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 10000,
-      autoConnect: true
-    });
+
+    const socket = io(apiUrl, getSocketOptions({ autoConnect: true }));
+    let heartbeatInterval = setInterval(() => {
+      if (socket.connected) socket.emit('ping');
+    }, 30000);
     
     socket.on('connect', () => {
       console.log('%c✅ WebSocket CONNECTED (Users Page)', 'color: green; font-weight: bold; font-size: 14px');
@@ -221,6 +213,7 @@ const AdminUsers = () => {
     // Cleanup on unmount
     return () => {
       console.log('%c🔌 Cleaning up WebSocket (Users Page)', 'color: gray');
+      clearInterval(heartbeatInterval);
       socket.off('newUserSignup');
       socket.off('connect');
       socket.off('connect_error');

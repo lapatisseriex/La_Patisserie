@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { getWebSocketBaseUrl, getSocketOptions } from '../utils/websocketUrl.js';
 
 class WebSocketService {
   constructor() {
@@ -36,19 +37,34 @@ class WebSocketService {
       return this.socket;
     }
 
-    const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+  // Always derive WebSocket base from Render API (VITE_API_URL) and strip any trailing /api path.
+  // This ensures we do NOT accidentally connect to the Vercel deployment which may not support persistent WS.
+  const serverUrl = getWebSocketBaseUrl();
+  console.log('[WebSocketService] Derived WebSocket base:', serverUrl);
 
-    this.socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
-      upgrade: true,
-      rememberUpgrade: true,
-      timeout: 5000, // Reduce timeout for faster connection attempts
-      forceNew: false, // Reuse connections when possible
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000, // Start reconnecting quickly
-      reconnectionDelayMax: 5000,
-      randomizationFactor: 0.5
+    this.socket = io(serverUrl, getSocketOptions());
+
+    // Heartbeat / latency monitor
+    this.lastPong = Date.now();
+    this.pingInterval = setInterval(() => {
+      if (!this.socket || !this.socket.connected) return;
+      const sentAt = Date.now();
+      this.socket.emit('ping');
+      // If we haven't received a pong in 2 intervals, force reconnect
+      if (sentAt - this.lastPong > 60000) { // 60s no pong => reconnect
+        console.warn('[WebSocketService] Pong timeout, forcing reconnect');
+        this.socket.disconnect();
+        this.socket.connect();
+      }
+    }, 30000); // every 30s
+
+    this.socket.on('pong', () => {
+      const now = Date.now();
+      const latency = now - this.lastPong;
+      this.lastPong = now;
+      if (latency > 0 && latency < 120000) {
+        console.log('[WebSocketService] pong latency(ms):', latency);
+      }
     });
 
     if (normalizedId && !this.userId) {
@@ -65,14 +81,14 @@ class WebSocketService {
       }
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
+    this.socket.on('disconnect', (reason) => {
+      console.log('Disconnected from WebSocket server. Reason:', reason);
       this.connected = false;
       this.currentAuthId = null;
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+      console.error('[WebSocketService] connection error:', error?.message || error);
       this.connected = false;
     });
 
@@ -85,6 +101,7 @@ class WebSocketService {
         this.socket.emit('logout');
       }
       this.socket.disconnect();
+      if (this.pingInterval) clearInterval(this.pingInterval);
       this.socket = null;
       this.connected = false;
       this.userId = null;
