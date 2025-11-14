@@ -1,15 +1,16 @@
 /* Header Styles */
 
-/* Apply modern system font to all text elements */
+/* Apply modern stylish font to all text elements */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
 
-/* Space for fixed announcement banners on desktop */
+/* Space for fixed announcement banners on desktop - REMOVE GAP */
 @media (min-width: 768px) {
   .header-with-banner {
-    top: 5rem !important;
+    top: 3.5rem !important; /* Reduced from 5rem to eliminate gap */
   }
 }
 
-/* Unify font style for header, menu, location text */
+/* Unify stylish font for header, menu, location text */
 .category-swiper,
 .breadcrumb,
 .header-container,
@@ -18,7 +19,7 @@
 .nav-link,
 .auth-panel-closing,
 .mobile-menu {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 300;
   letter-spacing: 0.03em;
   color: #281c20;

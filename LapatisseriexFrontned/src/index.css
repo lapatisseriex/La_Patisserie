@@ -57,7 +57,7 @@ body.has-fixed-header {
 
 /* Ensure proper spacing between content and footer */
 main {
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
 .product-image-swiper img {

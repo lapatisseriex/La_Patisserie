@@ -164,10 +164,10 @@ const NotificationBell = () => {
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
-                className="absolute -top-1 -right-1"
+                className="absolute -top-0.5 -right-0.5 md:-top-1 md:-right-1"
               >
                 <div
-                  className="premium-badge rounded-full bg-gradient-to-r from-[#733857] to-[#281c20] text-white text-xs h-5 w-5 flex items-center justify-center font-bold shadow-lg relative overflow-hidden"
+                  className="premium-badge rounded-full bg-gradient-to-r from-[#733857] to-[#281c20] text-white text-[10px] md:text-xs h-4 w-4 md:h-5 md:w-5 flex items-center justify-center font-bold shadow-lg relative overflow-hidden"
                   style={{
                     
                   }}

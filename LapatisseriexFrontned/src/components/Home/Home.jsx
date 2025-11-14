@@ -205,12 +205,7 @@ const Home = () => {
       <section className="w-full">
         <RecentlyViewedSection />
       </section>
-
-      {/* Cart Picked for You Section - Shows cart items + recommendations */}
-      <section className="w-full">
-        <CartPickedForYou />
-      </section>
-
+{/* 
       {/* Browse Categories Section */}
       <section className="w-full">
         <CategorySwiper 

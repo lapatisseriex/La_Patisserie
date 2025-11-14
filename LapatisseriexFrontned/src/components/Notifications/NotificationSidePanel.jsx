@@ -373,8 +373,8 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
               style={{
                 position: 'fixed',
                 right: 0,
-                top: '5rem',
-                height: 'calc(100vh - 5rem)',
+                top: '3.5rem',
+                height: 'calc(100vh - 3.5rem)',
                 width: '100%',
                 backgroundColor: '#ffffff',
                 zIndex: 60,
@@ -391,8 +391,8 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
               @media (min-width: 768px) {
                 .luxury-shadow {
                   max-width: 520px !important;
-                  top: 5rem !important;
-                  height: calc(100vh - 5rem) !important;
+                  top: 3.5rem !important;
+                  height: calc(100vh - 3.5rem) !important;
                 }
               }
               @media (min-width: 1024px) {

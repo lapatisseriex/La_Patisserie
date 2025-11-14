@@ -617,7 +617,7 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                     handleQuantityDelta(-1);
                   }}
                   disabled={!isProductAvailable || isOutOfStockTracked}
-                  className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-light ${
+                  className={`w-6 h-6 md:w-7 md:h-7 flex items-center justify-center bg-transparent transition-all duration-150 rounded-l-lg font-light text-sm md:text-base ${
                     !isProductAvailable || isOutOfStockTracked
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-[#733857] hover:bg-[#733857]/10'
@@ -656,7 +656,7 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                     times: [0, 0.2, 0.5, 0.8, 1],
                     ease: "easeInOut"
                   }}
-                  className={`px-3 py-1 font-light text-xs min-w-[1.5rem] text-center border-l border-r inline-block ${
+                  className={`px-1.5 md:px-2 py-1 font-light text-[10px] md:text-xs min-w-[1.25rem] md:min-w-[1.5rem] text-center border-l border-r inline-block ${
                   !isProductAvailable || isOutOfStockTracked
                     ? 'text-gray-400 border-gray-300'
                     : 'text-[#733857] border-[#733857]'
@@ -670,7 +670,7 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
                     handleQuantityDelta(1);
                   }}
                   disabled={isOutOfStockTracked || (tracks && currentQuantity >= totalStock) || !isProductAvailable}
-                  className={`w-7 h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light ${
+                  className={`w-6 h-6 md:w-7 md:h-7 flex items-center justify-center bg-transparent transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg font-light text-sm md:text-base ${
                     !isProductAvailable || isOutOfStockTracked
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'text-[#733857] hover:bg-[#733857]/10'
