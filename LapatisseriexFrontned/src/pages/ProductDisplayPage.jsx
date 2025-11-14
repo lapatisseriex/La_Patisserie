@@ -414,7 +414,11 @@ const ProductDisplayPageNew = () => {
     const now = Date.now();
     const timeSinceLastClick = now - lastQuantityChangeTime;
     
-    if (timeSinceLastClick < 50) return;
+    // Increase debounce time to prevent rapid clicks
+    if (timeSinceLastClick < 300) {
+      console.log('⏳ Throttling quantity update - too fast');
+      return;
+    }
     
     setLastQuantityChangeTime(now);
     
@@ -424,9 +428,13 @@ const ProductDisplayPageNew = () => {
     
     setJellyAnimationKey(prev => prev + 1);
     
-    updateQuantity(product._id, newQuantity).catch(error => {
-      console.error('Error updating quantity:', error);
-    });
+    try {
+      await updateQuantity(product._id, newQuantity);
+      console.log('✅ Quantity updated successfully');
+    } catch (error) {
+      console.error('❌ Error updating quantity:', error);
+      // Don't show toast here as it's already handled in the hook
+    }
   }, [updateQuantity, product?._id, lastQuantityChangeTime, getItemQuantity]);
 
   // Calculate pricing

@@ -96,6 +96,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
+  // Skip service worker for API requests - let them always go to network
+  if (url.pathname.includes('/api/')) {
+    return; // Let the request pass through without service worker intervention
+  }
+  
   // Handle navigation requests (page loads)
   if (event.request.mode === 'navigate') {
     event.respondWith(
@@ -150,7 +155,7 @@ self.addEventListener('fetch', (event) => {
     );
   }
   
-  // Handle other requests (API, images, etc.)
+  // Handle other requests (non-API images, etc.)
   else if (event.request.destination !== 'document') {
     event.respondWith(
       fetch(event.request)
@@ -167,7 +172,17 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // If network fails, try to get from all caches
-          return caches.match(event.request);
+          return caches.match(event.request).then((cachedResponse) => {
+            // If still no cached response, return a proper error response
+            if (!cachedResponse) {
+              return new Response('Resource not available offline', { 
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'text/plain' }
+              });
+            }
+            return cachedResponse;
+          });
         })
     );
   }

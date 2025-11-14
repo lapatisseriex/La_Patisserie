@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useShopStatus } from '../../context/ShopStatusContext';
@@ -10,12 +10,26 @@ const CartSection = () => {
   const { cartItems, cartCount, updateQuantity, removeFromCart } = useCart();
   const { isOpen: isShopOpen } = useShopStatus();
   const [removingItems, setRemovingItems] = useState(new Set());
+  const lastUpdateTimeRef = useRef({});
 
   // Don't render if cart is empty or shop is closed
   if (cartCount === 0 || !isShopOpen) return null;
 
   const handleQuantityChange = async (itemId, newQuantity) => {
     if (newQuantity < 1) return;
+    
+    // Throttle rapid clicks - prevent updates faster than 300ms per item
+    const now = Date.now();
+    const lastUpdateTime = lastUpdateTimeRef.current[itemId] || 0;
+    const timeSinceLastUpdate = now - lastUpdateTime;
+    
+    if (timeSinceLastUpdate < 300) {
+      console.log('⏳ Throttling quantity update - too fast');
+      return;
+    }
+    
+    lastUpdateTimeRef.current[itemId] = now;
+    
     try {
       await updateQuantity(itemId, newQuantity);
     } catch (error) {

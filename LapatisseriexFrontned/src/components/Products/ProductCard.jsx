@@ -115,6 +115,7 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
   }, [currentProduct._id, getItemQuantity, cartItems]);
 
   const quantityRef = useRef(currentQuantity);
+  const lastUpdateTimeRef = useRef(0);
 
   useEffect(() => {
     quantityRef.current = currentQuantity;
@@ -401,6 +402,17 @@ const ProductCard = React.memo(({ product, className = '', compact = false, feat
     if (delta === 0) {
       return;
     }
+
+    // Throttle rapid clicks - prevent updates faster than 300ms
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
+    
+    if (timeSinceLastUpdate < 300) {
+      console.log('⏳ Throttling quantity update - too fast');
+      return;
+    }
+    
+    lastUpdateTimeRef.current = now;
 
     const latestQuantity = quantityRef.current;
     const nextQuantity = Math.max(0, latestQuantity + delta);
