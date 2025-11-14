@@ -19,21 +19,23 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
+            padding: 0.75rem;
             margin: 0;
         }
         
         .offline-container {
             background: white;
             text-align: center;
-            max-width: 800px;
+            max-width: 600px;
             width: 100%;
+            padding: 0 0.5rem;
         }
         
         .offline-illustration {
-            width: 400px;
-            height: 300px;
-            margin: 0 auto 3rem;
+            width: 100%;
+            max-width: 250px;
+            height: 180px;
+            margin: 0 auto 1.5rem;
             background-image: url('/images/offline-illustration.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -41,25 +43,27 @@
         }
         
         .offline-fallback {
-            width: 400px;
-            height: 300px;
-            margin: 0 auto 3rem;
+            width: 100%;
+            max-width: 250px;
+            height: 180px;
+            margin: 0 auto 1.5rem;
             background: #f8fafc;
             border: 2px dashed #cbd5e1;
-            border-radius: 1rem;
+            border-radius: 0.5rem;
             display: none;
             align-items: center;
             justify-content: center;
-            font-size: 4rem;
+            font-size: 2.5rem;
             color: #64748b;
         }
         
         .offline-title {
-            font-size: 2rem;
+            font-size: 1.25rem;
             font-weight: normal;
             color: #281c20;
-            margin-bottom: 3rem;
+            margin-bottom: 1.5rem;
             font-family: sans-serif;
+            padding: 0 0.5rem;
         }
         
         .offline-description {
@@ -102,12 +106,14 @@
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
+            padding: 0 1rem;
         }
         
         .btn {
-            padding: 0.75rem 2rem;
+            padding: 0.625rem 1.5rem;
             border-radius: 0.5rem;
             font-weight: normal;
+            font-size: 0.875rem;
             font-family: sans-serif;
             text-decoration: none;
             border: none;
@@ -117,6 +123,9 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            width: 100%;
+            max-width: 200px;
+            margin: 0 auto;
         }
         
         .btn-primary {
@@ -126,7 +135,10 @@
         
         .btn-primary:hover {
             opacity: 0.9;
-            transform: translateY(-1px);
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
         }
         
         .btn-secondary {
@@ -146,7 +158,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
         }
         
         .status-indicator {
@@ -169,6 +181,74 @@
             }
             50% {
                 opacity: 0.5;
+            }
+        }
+        
+        /* Responsive styles for tablets and larger */
+        @media (min-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .offline-container {
+                max-width: 700px;
+                padding: 0 1rem;
+            }
+            
+            .offline-illustration,
+            .offline-fallback {
+                max-width: 320px;
+                height: 240px;
+                margin-bottom: 2rem;
+            }
+            
+            .offline-fallback {
+                font-size: 3rem;
+                border-radius: 0.75rem;
+            }
+            
+            .offline-title {
+                font-size: 1.75rem;
+                margin-bottom: 2rem;
+            }
+            
+            .btn {
+                padding: 0.75rem 2rem;
+                font-size: 0.9375rem;
+                max-width: 220px;
+            }
+            
+            .connection-status {
+                font-size: 0.875rem;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .offline-container {
+                max-width: 800px;
+            }
+            
+            .offline-illustration,
+            .offline-fallback {
+                max-width: 400px;
+                height: 300px;
+                margin-bottom: 3rem;
+            }
+            
+            .offline-fallback {
+                font-size: 4rem;
+                border-radius: 1rem;
+            }
+            
+            .offline-title {
+                font-size: 2rem;
+                margin-bottom: 3rem;
+            }
+            
+            .btn {
+                padding: 0.75rem 2rem;
+                font-size: 1rem;
+                max-width: 240px;
             }
         }
         
