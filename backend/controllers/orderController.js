@@ -1205,7 +1205,7 @@ export const cancelUserOrder = asyncHandler(async (req, res) => {
       }
     }
 
-    // Update order status to cancelled
+  // Update order status to cancelled
     order.orderStatus = 'cancelled';
     order.cancelReason = cancelReason || 'Cancelled by user';
     order.cancelledAt = new Date();
@@ -1223,6 +1223,29 @@ export const cancelUserOrder = asyncHandler(async (req, res) => {
         cancelReason: order.cancelReason
       }
     };
+
+    // Emit WebSocket events to notify all admin clients immediately
+    try {
+      if (global.io) {
+        global.io.emit('orderStatusUpdated', {
+          orderId: order._id.toString(),
+          orderNumber: order.orderNumber,
+          status: 'cancelled',
+          timestamp: new Date().toISOString()
+        });
+        // Optional: emit a dedicated event for cancellations for clients that listen to it
+        global.io.emit('orderCancelled', {
+          orderId: order._id.toString(),
+          orderNumber: order.orderNumber,
+          timestamp: new Date().toISOString()
+        });
+        console.log('📣 Emitted WebSocket events for order cancellation:', order.orderNumber);
+      } else {
+        console.warn('⚠️ WebSocket (io) not available - cannot emit cancellation events');
+      }
+    } catch (wsErr) {
+      console.error('❌ Failed to emit cancellation WebSocket events:', wsErr);
+    }
 
     // Send status update emails and notifications asynchronously (non-blocking)
     // This prevents the user from waiting for email delivery which can be slow

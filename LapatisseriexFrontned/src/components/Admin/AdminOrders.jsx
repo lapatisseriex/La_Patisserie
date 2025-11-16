@@ -59,6 +59,8 @@ const AdminOrders = () => {
   const [deliverySuccess, setDeliverySuccess] = useState({});
   const [showNewOrderBanner, setShowNewOrderBanner] = useState(false);
   const [newOrderCount, setNewOrderCount] = useState(0);
+  const [showCancelBanner, setShowCancelBanner] = useState(false);
+  const [cancelCount, setCancelCount] = useState(0);
   const [wsConnected, setWsConnected] = useState(false);
   const [wsSocketId, setWsSocketId] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grouped'
@@ -414,7 +416,7 @@ const AdminOrders = () => {
         icon: '🎉'});
     });
 
-    // Listen for order status updates
+  // Listen for order status updates
     socket.on('orderStatusUpdated', (data) => {
       console.log('%c📦 ORDER STATUS UPDATED!', 'color: blue; font-weight: bold; font-size: 16px; background: #e6f3ff; padding: 5px');
       console.log('📦 Order ID:', data.orderId);
@@ -422,28 +424,76 @@ const AdminOrders = () => {
       console.log('⏰ Updated at:', new Date().toLocaleTimeString());
       console.log('📋 Full Data:', data);
       
-      // Update the orders list with the new status
-      setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order._id === data.orderId 
-            ? { ...order, orderStatus: data.status, cartItems: data.items || order.cartItems }
-            : order
-        )
-      );
-      
-      // Update selected order if it's open
-      if (selectedOrder && selectedOrder._id === data.orderId) {
-        setSelectedOrder(prev => ({
-          ...prev,
-          orderStatus: data.status,
-          cartItems: data.items || prev.cartItems
-        }));
+      if (String(data.status).toLowerCase() === 'cancelled') {
+        // Remove the cancelled order from the list (by _id or entire group by orderNumber if provided)
+        setOrders(prev => {
+          const cancelledOrder = prev.find(o => o._id === data.orderId);
+          const orderNumber = data.orderNumber || cancelledOrder?.orderNumber;
+          if (orderNumber) {
+            return prev.filter(o => o.orderNumber !== orderNumber);
+          }
+          return prev.filter(o => o._id !== data.orderId);
+        });
+
+        // If the cancelled order is currently selected, close the modal
+        if (selectedOrder && (selectedOrder._id === data.orderId || (data.orderNumber && selectedOrder.orderNumber === data.orderNumber))) {
+          setShowOrderModal(false);
+          setSelectedOrder(null);
+        }
+
+        // Show the required cancellation message
+        toast.info('One order cancelled', { duration: 3000, icon: '🛑' });
+
+        // Also trigger a refresh banner similar to new orders
+        setShowCancelBanner(true);
+        setCancelCount((c) => c + 1);
+      } else {
+        // Update the orders list with the new status
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order._id === data.orderId 
+              ? { ...order, orderStatus: data.status, cartItems: data.items || order.cartItems }
+              : order
+          )
+        );
+
+        // Update selected order if it's open
+        if (selectedOrder && selectedOrder._id === data.orderId) {
+          setSelectedOrder(prev => ({
+            ...prev,
+            orderStatus: data.status,
+            cartItems: data.items || prev.cartItems
+          }));
+        }
+
+        // Show toast notification for status updates
+        toast.success(`Order status updated to ${data.status}`, {
+          duration: 3000,
+          icon: '✅'
+        });
       }
-      
-      // Show toast notification
-      toast.success(`Order status updated to ${data.status}`, {
-        duration: 3000,
-        icon: '✅'});
+    });
+
+    // Some backends emit a dedicated event for cancellations
+    socket.on('orderCancelled', (data) => {
+      console.log('%c🛑 ORDER CANCELLED EVENT!', 'color: #b91c1c; font-weight: bold; font-size: 16px; background: #ffe6e6; padding: 5px');
+      console.log('📦 Order ID:', data.orderId, 'OrderNumber:', data.orderNumber);
+
+      // Mirror the same behavior as in orderStatusUpdated(cancelled)
+      setOrders(prev => {
+        const byNumber = data.orderNumber;
+        if (byNumber) return prev.filter(o => o.orderNumber !== byNumber);
+        return prev.filter(o => o._id !== data.orderId);
+      });
+
+      if (selectedOrder && (selectedOrder._id === data.orderId || (data.orderNumber && selectedOrder.orderNumber === data.orderNumber))) {
+        setShowOrderModal(false);
+        setSelectedOrder(null);
+      }
+
+      toast.info('One order cancelled', { duration: 3000, icon: '🛑' });
+      setShowCancelBanner(true);
+      setCancelCount((c) => c + 1);
     });
 
     // Test event listener (for debugging)
@@ -465,6 +515,7 @@ const AdminOrders = () => {
       socket.off('reconnect_attempt');
       socket.off('reconnect_error');
       socket.off('reconnect_failed');
+      socket.off('orderCancelled');
       socket.disconnect();
     };
   }, []);
@@ -743,6 +794,48 @@ const AdminOrders = () => {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+      {/* Cancel Notification Banner */}
+      {showCancelBanner && (
+        <div className="mb-4 bg-gradient-to-r from-rose-50 to-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md animate-slide-down">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-red-500 rounded-full p-2 animate-pulse">
+                <FaBell className="text-white text-lg" />
+              </div>
+              <div>
+                <p className="text-red-800 font-semibold text-lg">
+                  {cancelCount > 1 ? `${cancelCount} orders cancelled` : 'One order cancelled'}
+                </p>
+                <p className="text-red-700 text-sm">
+                  {cancelCount > 1 ? `${cancelCount} orders were cancelled.` : 'An order was cancelled.'} Click refresh to ensure your view is up to date.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  fetchOrders(currentPage, filters);
+                  setShowCancelBanner(false);
+                  setCancelCount(0);
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+              >
+                <FaSyncAlt className="text-sm" />
+                <span>Refresh Now</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowCancelBanner(false);
+                  setCancelCount(0);
+                }}
+                className="text-red-600 hover:text-red-800 transition-colors p-2"
+              >
+                <FaTimes className="text-xl" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* New Order Notification Banner */}
       {showNewOrderBanner && (
         <div className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-lg shadow-md animate-slide-down">

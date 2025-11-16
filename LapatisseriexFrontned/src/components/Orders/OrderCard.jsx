@@ -21,6 +21,7 @@ import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import { longTimeoutAxiosInstance } from '../../utils/axiosConfig';
 import { toast } from 'react-toastify';
 import './OrderCard.css';
+import webSocketService from '../../services/websocketService';
 
 const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -155,9 +156,20 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
       );
 
       // Show success message
-      toast.success('Order cancelled successfully!', {
+      toast.success('One order cancelled', {
         position: "top-center",
         autoClose: 3000});
+
+      // Best-effort: notify server via WebSocket so admins get a live banner
+      try {
+        const sock = webSocketService.getSocket?.();
+        if (sock && sock.connected) {
+          // Emit a dedicated event
+          sock.emit('orderCancelled', { orderNumber: order.orderNumber });
+          // Also emit a generic status update shape some servers accept
+          sock.emit('orderStatusUpdated', { orderNumber: order.orderNumber, status: 'cancelled' });
+        }
+      } catch {}
 
       if (onOrderCancelled) {
         onOrderCancelled(order.orderNumber);

@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import { longTimeoutAxiosInstance } from '../../utils/axiosConfig';
 import { toast } from 'react-toastify';
+import webSocketService from '../../services/websocketService';
 import './OrderCard.css';
 
 const OrderTrackingContent = ({ order }) => {
@@ -228,9 +229,18 @@ const OrderTrackingContent = ({ order }) => {
       );
 
       // Show success message
-      toast.success('Order cancelled successfully! Redirecting to orders page...', {
+        toast.success('One order cancelled', {
         position: "top-center",
         autoClose: 3000});
+
+        // Best-effort WebSocket notify so Admin sees live banner
+        try {
+          const sock = webSocketService.getSocket?.();
+          if (sock && sock.connected) {
+            sock.emit('orderCancelled', { orderNumber: order.orderNumber });
+            sock.emit('orderStatusUpdated', { orderNumber: order.orderNumber, status: 'cancelled' });
+          }
+        } catch {}
 
       // Delay navigation to show the success message
       setTimeout(() => {
