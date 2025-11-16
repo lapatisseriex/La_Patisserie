@@ -511,40 +511,42 @@ export const sendContactForm = async (formData) => {
 
 // Order & Payment email API calls
 export const createOrderWithEmail = async (orderData) => {
+  // NOTE: Email dispatch on order-create has been removed. Always use Render API (VITE_API_URL).
   if (!orderData) throw new Error('Order data is required');
-  console.log(`[Email API] 📧 Creating order (will trigger confirmation email)`);
-  
-  return api.post('/payments/create-order', orderData, {
-    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
-  }).then(r => {
-    console.log('✅ Order created successfully via Vercel (confirmation email sent)');
-    return r.data;
-  }).catch(error => {
-    console.error('❌ Failed to create order:', error);
-    throw error;
-  });
+  console.log(`[Order API] Creating order via primary API base`);
+
+  return api.post('/payments/create-order', orderData)
+    .then(r => {
+      console.log('✅ Order created successfully via primary API');
+      return r.data;
+    })
+    .catch(error => {
+      console.error('❌ Failed to create order:', error);
+      throw error;
+    });
 };
 
 export const verifyPaymentWithEmail = async (paymentData) => {
+  // NOTE: Email dispatch on payment-verify has been removed. Always use Render API (VITE_API_URL).
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData;
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     throw new Error('Payment verification data is incomplete');
   }
-  console.log(`[Email API] 📧 Verifying payment (will trigger success email)`);
-  
-  return api.post('/payments/verify', { 
-    razorpay_order_id, 
-    razorpay_payment_id, 
-    razorpay_signature 
-  }, {
-    baseURL: getEmailApiUrl()  // Override baseURL to use Vercel
-  }).then(r => {
-    console.log('✅ Payment verified successfully via Vercel (success email sent)');
-    return r.data;
-  }).catch(error => {
-    console.error('❌ Failed to verify payment:', error);
-    throw error;
-  });
+  console.log(`[Order API] Verifying payment via primary API base`);
+
+  return api.post('/payments/verify', {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature
+  })
+    .then(r => {
+      console.log('✅ Payment verified successfully via primary API');
+      return r.data;
+    })
+    .catch(error => {
+      console.error('❌ Failed to verify payment:', error);
+      throw error;
+    });
 };
 
 // Export default api instance for other services
