@@ -2,8 +2,10 @@ name: Keep Backend Alive on Render
 
 on:
   schedule:
-    # Run every 5 minutes to better prevent Render cold starts
+    # Primary: run every 5 minutes to prevent Render cold starts
     - cron: '*/5 * * * *'
+    # Secondary (staggered by 2 mins): adds redundancy against cron drift
+    - cron: '2/5 * * * *'
   
   workflow_dispatch: # Allow manual trigger
 
