@@ -2,29 +2,36 @@ name: Keep Backend Alive on Render
 
 on:
   schedule:
-    # Run every 10 minutes to prevent Render cold starts
-    - cron: '*/10 * * * *'
+    # Run every 5 minutes to better prevent Render cold starts
+    - cron: '*/5 * * * *'
   
   workflow_dispatch: # Allow manual trigger
 
 jobs:
   ping-backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
+    concurrency:
+      group: keep-alive-render
+      cancel-in-progress: false
     
     steps:
       - name: 🏓 Ping Backend Health Endpoint
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: |
           echo "Pinging backend at $(date)"
           
-          # Backend URL - uses secret if set, otherwise uses your Render URL
-          BACKEND_URL="${{ secrets.BACKEND_URL || 'https://la-patisserie-1.onrender.com' }}"
+          # Backend URL - uses secret if set, otherwise fallback to your Render URL
+          BACKEND_URL="${BACKEND_URL:-https://la-patisserie-1.onrender.com}"
           
           # Ping with longer timeout and more retries (cold start can take 30+ seconds)
           for i in 1 2 3 4 5; do
             echo "Attempt $i of 5..."
             
             # Use longer timeout for cold starts (up to 45 seconds)
-            if curl -f -m 45 --connect-timeout 45 "$BACKEND_URL/api/health"; then
+            # Prefer lightweight health endpoint that doesn't require DB readiness
+            if curl -f -m 45 --connect-timeout 45 "$BACKEND_URL/health"; then
               echo "✅ Backend is alive! (attempt $i)"
               exit 0
             else
@@ -41,11 +48,11 @@ jobs:
           
           # If all attempts failed, log but don't fail the workflow (backend might be deploying)
           echo "⚠️ All 5 ping attempts failed - backend may be sleeping or restarting"
-          echo "This is normal on first run. Next ping in 10 minutes will wake it up."
+          echo "This is often normal after idle. Next ping in 5 minutes will wake it up."
           exit 0
       
       - name: 📊 Log Response Time
         if: success()
         run: |
           echo "Backend responded successfully at $(date)"
-          echo "Next ping in 10 minutes"
+          echo "Next ping in 5 minutes"
