@@ -79,3 +79,16 @@ La Patisserie is an online ordering experience for our bakery. Browse the menu, 
 
 If you’re looking for logo/static asset info used in emails and on the site, see `backend/public/README.md`.
 
+## Backend Uptime (Cold Start Mitigation)
+
+The backend is hosted on Render. Free instances can “sleep” after ~15 minutes of inactivity, causing a cold start (slower first response). To reduce this:
+
+- A GitHub Actions workflow (`.github/workflows/keep-alive.yml`) pings `https://<backend>/health` every 5 minutes plus a staggered secondary cron (at minute 2,7,12,…). Concurrency prevents overlapping runs.
+- The `/health` endpoint is lightweight so pings do not wait for full DB readiness.
+- For near‑zero cold starts you can also:
+	- Enable Render “Always On” (paid).
+	- Add an external uptime monitor (e.g. UptimeRobot) to ping `/health` every 5 minutes.
+	- Use a Render Cron Job hitting `/health` internally (less external dependency).
+
+Adjust the primary interval or remove the staggered cron in the workflow if you upgrade hosting and no longer need frequent wake pings.
+
