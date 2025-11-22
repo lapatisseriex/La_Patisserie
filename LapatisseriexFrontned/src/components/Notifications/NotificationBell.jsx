@@ -90,7 +90,19 @@ const NotificationBell = () => {
       fetchUnreadCount();
     };
 
+    // Listen to orderStatusUpdate for dispatch/delivered events (like order tracking does)
+    const handleOrderStatusUpdate = (update) => {
+      if (!update) {
+        return;
+      }
+      console.log('🔔 NotificationBell: Order status update received:', update);
+      // Refresh unread count when order status changes
+      triggerPulse();
+      fetchUnreadCount();
+    };
+
     webSocketService.onNewNotification(handleNewNotification);
+    webSocketService.onOrderStatusUpdate(handleOrderStatusUpdate);
 
     // Poll every 30 seconds as fallback
     const interval = isAuthenticated ? setInterval(fetchUnreadCount, 30000) : null;
@@ -100,6 +112,7 @@ const NotificationBell = () => {
         clearInterval(interval);
       }
       webSocketService.offNewNotification(handleNewNotification);
+      webSocketService.offOrderStatusUpdate(handleOrderStatusUpdate);
       // Don't disconnect - other components may still need WebSocket
     };
   }, [user?._id, isAuthenticated, fetchUnreadCount, triggerPulse]); // Removed user?.uid dependency

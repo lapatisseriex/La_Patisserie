@@ -209,10 +209,26 @@ const NotificationSidePanel = ({ isOpen, onClose, onUnreadCountChange }) => {
       }
     };
 
+    // Listen to orderStatusUpdate for dispatch/delivered events (like order tracking does)
+    const handleOrderStatusUpdate = (update) => {
+      if (!isMountedRef.current || !update) {
+        return;
+      }
+
+      console.log('🔔 NotificationSidePanel: Order status update received:', update);
+      
+      // Refresh notifications list when order status changes (dispatch/delivered)
+      console.log('🔄 NotificationSidePanel: Refreshing notification list');
+      setCurrentPage(1);
+      fetchNotifications(1, false, { silent: true });
+    };
+
     webSocketService.onNewNotification(handleNewNotification);
+    webSocketService.onOrderStatusUpdate(handleOrderStatusUpdate);
 
     return () => {
       webSocketService.offNewNotification(handleNewNotification);
+      webSocketService.offOrderStatusUpdate(handleOrderStatusUpdate);
     };
   }, [userId, isOpen, fetchNotifications, onUnreadCountChange]);
 
