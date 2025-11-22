@@ -6,15 +6,14 @@ const UI_CACHE = 'ui-components-v2';
 
 // Essential files to cache for offline functionality
 const urlsToCache = [
-  '/',
   '/offline.html',
   '/404.html',
   '/images/logo.png',
   '/images/offline-illustration.png',
   '/images/404-illustration.png',
-  '/favicon.ico',
-  '/favicon-32x32.png',
-  '/favicon-16x16.png',
+  '/images/favicon.ico',
+  '/images/favicon-32x32.png',
+  '/images/favicon-16x16.png',
   '/manifest.json'
 ];
 
@@ -46,20 +45,29 @@ self.addEventListener('install', (event) => {
   
   event.waitUntil(
     Promise.all([
-      // Cache main static assets
+      // Cache main static assets with individual error handling
       caches.open(CACHE_NAME).then((cache) => {
         console.log('Service Worker: Caching Static Files');
-        return cache.addAll(urlsToCache.filter(url => !url.startsWith('/src')));
+        return Promise.allSettled(
+          urlsToCache.map(url => 
+            cache.add(url)
+              .then(() => console.log('✅ Cached:', url))
+              .catch(err => console.warn('⚠️ Failed to cache:', url, err.message))
+          )
+        );
       }),
       
       // Cache external resources
       caches.open(UI_CACHE).then((cache) => {
         console.log('Service Worker: Caching External Resources');
         return Promise.allSettled(
-          externalResources.map(url => cache.add(url).catch(err => console.warn('Failed to cache:', url)))
+          externalResources.map(url => 
+            cache.add(url)
+              .then(() => console.log('✅ Cached external:', url))
+              .catch(err => console.warn('⚠️ Failed to cache external:', url, err.message))
+          )
         );
       }),
-      // No duplicate external caching block
     ]).then(() => {
       console.log('Service Worker: All caches updated');
       return self.skipWaiting();
@@ -160,8 +168,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // If we got a response, clone it and store it in cache
-          if (response.status === 200) {
+          // Only cache GET requests (POST/PUT/DELETE cannot be cached)
+          if (response.status === 200 && event.request.method === 'GET') {
             const responseClone = response.clone();
             caches.open(CACHE_NAME)
               .then((cache) => {

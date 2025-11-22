@@ -10,7 +10,10 @@ import {
   FaBoxOpen,
   FaChevronDown,
   FaChevronRight,
-  FaSync
+  FaSync,
+  FaBell,
+  FaSyncAlt,
+  FaTimes
 } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
@@ -253,6 +256,94 @@ const IndividualOrderCard = ({ order, onDispatchItem, dispatchLoading, dispatchS
 };
 
 const AdminOrderTracking = () => {
+  // Helper function to send dispatch email (non-blocking)
+  const sendDispatchEmail = async (order) => {
+    try {
+      console.log('\n📧 ===== FRONTEND: DISPATCH EMAIL REQUEST =====');
+      console.log('📦 Order Object Received:', order);
+      
+      if (!order || !order.orderNumber) {
+        console.warn('❌ Cannot send dispatch email: missing order data', {
+          orderExists: !!order,
+          orderNumber: order?.orderNumber
+        });
+        return;
+      }
+
+      const vercelApiUrl = import.meta.env.VITE_VERCEL_API_URL;
+      console.log('🔗 Vercel API URL:', vercelApiUrl);
+      
+      if (!vercelApiUrl) {
+        console.warn('❌ VITE_VERCEL_API_URL not configured, skipping dispatch email');
+        return;
+      }
+
+      // Determine dispatch type
+      const totalItems = order.totalItems || order.cartItems?.length || 0;
+      const dispatchedItems = order.dispatchedItems || 0;
+      const deliveredItems = order.deliveredItems || 0;
+      const processedItems = dispatchedItems + deliveredItems;
+      
+      let dispatchType = 'partial';
+      if (processedItems >= totalItems) {
+        dispatchType = 'complete';
+      }
+      
+      console.log('📊 Dispatch Calculation:', {
+        totalItems,
+        dispatchedItems,
+        deliveredItems,
+        processedItems,
+        dispatchType
+      });
+
+      const emailPayload = {
+        orderNumber: order.orderNumber,
+        userEmail: order.userDetails?.email || order.email,
+        userName: order.userDetails?.name || order.userName,
+        dispatchType,
+        itemsDispatched: dispatchedItems,
+        totalItems
+      };
+
+      console.log('📧 Email Payload:', JSON.stringify(emailPayload, null, 2));
+      
+      const requestUrl = `${vercelApiUrl}/email-dispatch/order-dispatched`;
+      console.log('🚀 Sending POST request to:', requestUrl);
+
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(emailPayload)
+      });
+
+      console.log('📡 Response Status:', response.status, response.statusText);
+      console.log('📡 Response Headers:', Object.fromEntries(response.headers.entries()));
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ ===== DISPATCH EMAIL SENT SUCCESSFULLY =====');
+        console.log('📨 Result:', JSON.stringify(result, null, 2));
+        console.log('===============================================\n');
+      } else {
+        const errorText = await response.text();
+        console.error('❌ ===== DISPATCH EMAIL FAILED =====');
+        console.error('Status:', response.status, response.statusText);
+        console.error('Error Response:', errorText);
+        console.error('====================================\n');
+      }
+    } catch (error) {
+      console.error('\n❌ ===== DISPATCH EMAIL EXCEPTION =====');
+      console.error('Error Name:', error.name);
+      console.error('Error Message:', error.message);
+      console.error('Error Stack:', error.stack);
+      console.error('Full Error:', error);
+      console.error('=======================================\n');
+    }
+  };
+
   // Initialize state with localStorage values for persistence
   const [orderData, setOrderData] = useState([]);
   const [individualOrders, setIndividualOrders] = useState([]);
@@ -260,6 +351,8 @@ const AdminOrderTracking = () => {
     return localStorage.getItem('adminOrderView') || 'grouped';
   });
   const [loading, setLoading] = useState(true);
+  const [showNewOrderBanner, setShowNewOrderBanner] = useState(false);
+  const [newOrderCount, setNewOrderCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedHostel, setSelectedHostel] = useState(() => {
     const saved = localStorage.getItem('selectedHostel');
@@ -307,8 +400,8 @@ const AdminOrderTracking = () => {
         return;
       }
       
-      // Use VITE_VERCEL_API_URL for admin operations to ensure emails are sent from production backend
-      const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
+      // Use main API URL for admin operations
+      const apiBaseUrl = import.meta.env.VITE_API_URL;
 
       // Fetch both grouped and individual data
       const [groupedResponse, individualResponse] = await Promise.all([
@@ -436,8 +529,23 @@ const AdminOrderTracking = () => {
   };
 
   useEffect(() => {
+    console.log('%c[AdminOrderTracking] 🔌 Setting up WebSocket listeners...', 'color: blue; font-weight: bold');
+    
     const socket = webSocketService.connect(null);
-    console.log('[AdminOrderTracking] WebSocket connection state:', socket?.connected, socket?.id);
+    console.log('[AdminOrderTracking] WebSocket connection state:', {
+      connected: socket?.connected,
+      socketId: socket?.id,
+      hasSocket: !!socket
+    });
+
+    if (!socket) {
+      console.error('%c[AdminOrderTracking] ❌ Failed to get socket connection!', 'color: red; font-weight: bold');
+      return;
+    }
+
+    console.log('[AdminOrderTracking] Socket object:', socket);
+    console.log('[AdminOrderTracking] Socket ID:', socket.id);
+    console.log('[AdminOrderTracking] Socket connected:', socket.connected);
 
     const scheduleRefresh = (reason, payload) => {
       console.log('[AdminOrderTracking] Scheduling refresh from real-time event:', reason, payload);
@@ -448,7 +556,10 @@ const AdminOrderTracking = () => {
       realtimeRefreshRef.current.timeoutId = setTimeout(() => {
         realtimeRefreshRef.current.timeoutId = null;
         if (typeof fetchOrderDataRef.current === 'function') {
+          console.log('[AdminOrderTracking] Executing fetchOrderData refresh...');
           fetchOrderDataRef.current(true);
+        } else {
+          console.error('[AdminOrderTracking] fetchOrderDataRef.current is not a function!');
         }
       }, 400);
     };
@@ -463,19 +574,76 @@ const AdminOrderTracking = () => {
       scheduleRefresh('paymentUpdated', payload);
     };
 
-    const handleNewOrderPlaced = (payload = {}) => {
-      console.log('[AdminOrderTracking] newOrderPlaced event received:', payload);
-      scheduleRefresh('newOrderPlaced', payload);
+    const handleNewOrderPlaced = (data = {}) => {
+      console.log('%c[AdminOrderTracking] 🎉 NEW ORDER EVENT RECEIVED!', 'color: green; font-weight: bold; font-size: 14px; background: #e6ffe6; padding: 3px');
+      console.log('📦 Order Number:', data.orderNumber);
+      console.log('💰 Amount:', data.orderData?.amount);
+      console.log('💳 Payment Method:', data.orderData?.paymentMethod);
+      console.log('📍 Location:', data.orderData?.deliveryLocation);
+      console.log('🏨 Hostel:', data.orderData?.hostelName);
+      console.log('⏰ Received at:', new Date().toLocaleTimeString());
+      console.log('📋 Full Data:', data);
+      
+      // Show banner notification
+      setShowNewOrderBanner(true);
+      setNewOrderCount(prev => prev + 1);
+      
+      // Show toast notification
+      toast.success(`New order #${data.orderNumber} received!`, {
+        duration: 4000,
+        icon: '🎉'
+      });
+      
+      scheduleRefresh('newOrderPlaced', data);
     };
 
-    webSocketService.onOrderStatusUpdated(handleOrderStatusUpdated);
-    webSocketService.onPaymentUpdated(handlePaymentUpdated);
-    webSocketService.onNewOrderPlaced(handleNewOrderPlaced);
+    // Test listener to verify socket is receiving ANY events
+    const testListener = (...args) => {
+      console.log('%c[AdminOrderTracking] 🔔 Generic event received:', 'color: orange', args);
+    };
+
+    // Use direct socket listeners like AdminOrders for better reliability
+    console.log('[AdminOrderTracking] Attaching event listeners...');
+    socket.on('orderStatusUpdated', handleOrderStatusUpdated);
+    console.log('[AdminOrderTracking] ✓ orderStatusUpdated listener attached');
+    
+    socket.on('paymentUpdated', handlePaymentUpdated);
+    console.log('[AdminOrderTracking] ✓ paymentUpdated listener attached');
+    
+    socket.on('newOrderPlaced', handleNewOrderPlaced);
+    console.log('[AdminOrderTracking] ✓ newOrderPlaced listener attached');
+    
+    // Add test listener for debugging
+    socket.onAny(testListener);
+    console.log('[AdminOrderTracking] ✓ onAny test listener attached');
+
+    console.log('%c[AdminOrderTracking] ✅ All WebSocket listeners set up successfully!', 'color: green; font-weight: bold');
+
+    // Log connection status changes
+    socket.on('connect', () => {
+      console.log('%c[AdminOrderTracking] 🟢 Socket CONNECTED!', 'color: green; font-weight: bold', {
+        socketId: socket.id,
+        connected: socket.connected
+      });
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('%c[AdminOrderTracking] 🔴 Socket DISCONNECTED!', 'color: red; font-weight: bold', {
+        reason,
+        socketId: socket.id
+      });
+    });
 
     return () => {
-      webSocketService.offOrderStatusUpdated(handleOrderStatusUpdated);
-      webSocketService.offPaymentUpdated(handlePaymentUpdated);
-      webSocketService.offNewOrderPlaced(handleNewOrderPlaced);
+      console.log('[AdminOrderTracking] Cleaning up WebSocket listeners...');
+      socket.off('orderStatusUpdated', handleOrderStatusUpdated);
+      socket.off('paymentUpdated', handlePaymentUpdated);
+      socket.off('newOrderPlaced', handleNewOrderPlaced);
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.offAny(testListener);
+      console.log('[AdminOrderTracking] ✓ All listeners removed');
+      
       if (realtimeRefreshRef.current.timeoutId) {
         clearTimeout(realtimeRefreshRef.current.timeoutId);
         realtimeRefreshRef.current.timeoutId = null;
@@ -803,8 +971,8 @@ const AdminOrderTracking = () => {
       for (const order of todaysOrders) {
         for (const item of order.pendingItems || []) {
           try {
-            // Use VITE_VERCEL_API_URL for dispatch operations to ensure emails are sent from production backend
-            const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
+            // Use main API URL for dispatch operations
+            const apiBaseUrl = import.meta.env.VITE_API_URL;
             const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
               method: 'POST',
               headers: {
@@ -820,6 +988,10 @@ const AdminOrderTracking = () => {
 
             if (response.ok) {
               successCount++;
+              // Send dispatch email for this order (non-blocking)
+              sendDispatchEmail(order).catch(err => 
+                console.warn(`Email dispatch failed for order ${order.orderNumber}:`, err)
+              );
             } else {
               failCount++;
               console.error(`Failed to dispatch ${item.productName} from order ${order._id}`);
@@ -870,8 +1042,8 @@ const AdminOrderTracking = () => {
       for (const order of individualOrders) {
         for (const item of order.pendingItems || []) {
           try {
-            // Use VITE_VERCEL_API_URL for dispatch operations to ensure emails are sent from production backend
-            const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
+            // Use main API URL for dispatch operations
+            const apiBaseUrl = import.meta.env.VITE_API_URL;
             const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
               method: 'POST',
               headers: {
@@ -887,6 +1059,10 @@ const AdminOrderTracking = () => {
 
             if (response.ok) {
               successCount++;
+              // Send dispatch email for this order (non-blocking)
+              sendDispatchEmail(order).catch(err => 
+                console.warn(`Email dispatch failed for order ${order.orderNumber}:`, err)
+              );
             } else {
               failCount++;
               console.error(`Failed to dispatch ${item.productName} from order ${order._id}`);
@@ -929,8 +1105,8 @@ const AdminOrderTracking = () => {
         return;
       }
       
-      // Use VITE_VERCEL_API_URL for dispatch operations to ensure emails are sent from production backend
-      const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
+      // Use main API URL for dispatch operations
+      const apiBaseUrl = import.meta.env.VITE_API_URL;
       const response = await fetch(`${apiBaseUrl}/admin/dispatch-item`, {
         method: 'POST',
         headers: {
@@ -949,21 +1125,43 @@ const AdminOrderTracking = () => {
       }
       
       const result = await response.json();
-      console.log('Dispatch successful:', result);
+      console.log('✅ Dispatch successful:', result);
+      console.log('📦 Result.order exists:', !!result.order);
+      console.log('📦 Result.orderNumber:', result.orderNumber);
+      if (result.order) {
+        console.log('📦 Result.order details:', JSON.stringify(result.order, null, 2));
+      }
       
       // Show success state briefly
       setDispatchSuccess(prev => ({ ...prev, [dispatchKey]: true }));
       
       // Immediately refresh ALL data after dispatch to ensure consistency
-      console.log('Refreshing all order data after item dispatch...');
+      console.log('🔄 Refreshing all order data after item dispatch...');
       await fetchOrderData(false); // Re-fetch both grouped and individual data
       
       // If we have a selected hostel, it will be automatically updated by the useEffect hook
       if (selectedHostel) {
-        console.log('Selected hostel will be updated with fresh data');
+        console.log('🏨 Selected hostel will be updated with fresh data');
       }
       
       toast.success(`Successfully dispatched ${productName} - All views updated`);
+      
+      console.log('\n📧 ========= DISPATCH EMAIL INITIATED =========');
+      const orderDataForEmail = result.order || { orderNumber: result.orderNumber };
+      console.log('📦 Order data for email:', orderDataForEmail);
+      console.log('📧 Calling sendDispatchEmail...');
+      
+      // Send dispatch email notification (non-blocking)
+      sendDispatchEmail(orderDataForEmail)
+        .then(() => {
+          console.log('✅ Email dispatch promise resolved');
+        })
+        .catch(err => {
+          console.error('❌ Email dispatch failed (non-critical):', err);
+        });
+      
+      console.log('📧 Email call initiated (non-blocking)');
+      console.log('==========================================\n');
       
       // Clear success state after a brief moment
       setTimeout(() => {
@@ -995,16 +1193,6 @@ const AdminOrderTracking = () => {
     toast.success(`Switched to Order View - You can now dispatch individual items`);
   };
 
-  // Debug function to check current order state
-  const debugOrderState = () => {
-    console.log('=== ORDER STATE DEBUG ===');
-    console.log('View Mode:', viewMode);
-    console.log('Grouped Orders Count:', orderData.length);
-    console.log('Individual Orders Count:', individualOrders.length);
-    console.log('Grouped Orders:', orderData);
-    console.log('Individual Orders:', individualOrders);
-    console.log('========================');
-  };
 
   // Dispatch all orders for a product (grouped view)
   const dispatchAll = async (hostel, category, productName, count) => {
@@ -1076,8 +1264,8 @@ const AdminOrderTracking = () => {
         return updatedData;
       });
       
-      // Use VITE_VERCEL_API_URL for dispatch operations to ensure emails are sent from production backend
-      const apiBaseUrl = import.meta.env.VITE_VERCEL_API_URL || import.meta.env.VITE_API_URL;
+      // Use main API URL for dispatch operations
+      const apiBaseUrl = import.meta.env.VITE_API_URL;
       const apiUrl = `${apiBaseUrl}/admin/dispatch`;
       
       const response = await fetch(apiUrl, {
@@ -1126,6 +1314,15 @@ const AdminOrderTracking = () => {
       await fetchOrderData();
       
       toast.success(`Successfully dispatched ${result.dispatchedCount || count} orders for ${productName}`);
+      
+      // Send dispatch emails for all affected orders (non-blocking)
+      if (result.dispatchedOrders && Array.isArray(result.dispatchedOrders)) {
+        result.dispatchedOrders.forEach(order => {
+          sendDispatchEmail(order).catch(err => 
+            console.warn(`Email dispatch failed for order ${order.orderNumber}:`, err)
+          );
+        });
+      }
       
       // Clear success state after a brief moment
       setTimeout(() => {
@@ -1203,6 +1400,48 @@ const AdminOrderTracking = () => {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-8 max-w-7xl mx-auto">
+      {/* New Order Banner */}
+      {showNewOrderBanner && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-[95%] max-w-2xl">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow-2xl p-4 animate-pulse">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <FaBell className="text-2xl" />
+                <div>
+                  <p className="font-bold text-lg">New order(s) issued!</p>
+                  <p className="text-sm opacity-90">
+                    {newOrderCount} new {newOrderCount === 1 ? 'order' : 'orders'} received
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    console.log('🔄 Refreshing due to new order notification');
+                    fetchOrderData();
+                    setShowNewOrderBanner(false);
+                    setNewOrderCount(0);
+                  }}
+                  className="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                >
+                  <FaSyncAlt />
+                  <span>Refresh Now</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNewOrderBanner(false);
+                    setNewOrderCount(0);
+                  }}
+                  className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+                >
+                  <FaTimes className="text-xl" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header (Responsive like AdminOrders) */}
       <div className="pt-16 md:pt-2 flex flex-col gap-4 2xl:flex-row 2xl:justify-between 2xl:items-start mb-6">
         <div className="flex-1 min-w-0">

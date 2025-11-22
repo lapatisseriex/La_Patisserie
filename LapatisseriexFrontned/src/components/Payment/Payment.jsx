@@ -554,25 +554,10 @@ const Payment = () => {
   // Route order creation to primary API (Render)
   const data = await createOrderWithEmail(orderData);
 
-      // Fire post-order email (Render used above; now Vercel) if not duplicate
-      if (!data.isDuplicate && data.orderNumber && user?.email) {
-        sendOrderPlacedEmail({
-          orderNumber: data.orderNumber,
-          userEmail: user.email,
-          paymentMethod: paymentMethod || 'unknown',
-          grandTotal: grandTotal
-        }).then(r => {
-          if (r?.success || r?.skipped) {
-            console.log('[Email] Post-order email dispatched (or skipped due to config).');
-          } else {
-            console.warn('[Email] Post-order email failure (non-blocking):', r?.error);
-          }
-        }).catch(err => {
-          console.warn('[Email] Post-order email unexpected error:', err.message);
-        });
-      } else {
-        console.log('[Email] Skipping order placed email (duplicate or missing data)');
-      }
+      // Fire post-order email ONLY for online payments at verification time (not here)
+      // For COD, email is sent after order placement since there's no verification step
+      // Note: Online payment email is sent in handleRazorpayPayment's handler after verification
+      console.log('[Email] Order placed email will be sent after payment verification for online payments');
 
       // Log the outcome and expected email behavior
       if (data?.success !== false) {

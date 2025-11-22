@@ -24,27 +24,44 @@ const resolveUserIdString = (userRef) => {
   }
 
   if (typeof userRef === 'object') {
-    // Check if it's a Mongoose ObjectId first (has toHexString method)
+    // First check if _id exists (populated user object)
+    if (userRef._id) {
+      // Check if _id is an ObjectId with toHexString
+      if (typeof userRef._id.toHexString === 'function') {
+        return userRef._id.toHexString();
+      }
+      // Check if _id is already a string
+      if (typeof userRef._id === 'string') {
+        return userRef._id;
+      }
+      // Recursively resolve _id
+      if (userRef._id !== userRef) {
+        return resolveUserIdString(userRef._id);
+      }
+    }
+
+    // Check if id exists
+    if (userRef.id) {
+      if (typeof userRef.id === 'string') {
+        return userRef.id;
+      }
+      if (userRef.id !== userRef) {
+        return resolveUserIdString(userRef.id);
+      }
+    }
+
+    // Check if it's a Mongoose ObjectId directly (has toHexString method)
     if (typeof userRef.toHexString === 'function') {
       return userRef.toHexString();
     }
 
-    // Then check for toString
+    // Last resort: try toString only if it looks like an ObjectId string
     if (typeof userRef.toString === 'function') {
       const stringValue = userRef.toString();
-      // Avoid infinite recursion - return string only if it's different from '[object Object]'
-      if (stringValue && stringValue !== '[object Object]') {
+      // Only return if it's a valid ObjectId format (24 hex characters)
+      if (stringValue && /^[a-f\d]{24}$/i.test(stringValue)) {
         return stringValue;
       }
-    }
-
-    // Only recurse if _id or id is different from the original object
-    if (userRef._id && userRef._id !== userRef) {
-      return resolveUserIdString(userRef._id);
-    }
-
-    if (userRef.id && userRef.id !== userRef) {
-      return resolveUserIdString(userRef.id);
     }
   }
 
@@ -549,10 +566,7 @@ export const dispatchOrders = asyncHandler(async (req, res) => {
 
       if (finalOrderDoc) {
         finalOrderDoc.cartItems = updatedCartItems;
-        // Send emails asynchronously (non-blocking) via Vercel
-        sendStatusEmails(finalOrderDoc, previousStatus, finalOrderDoc.orderStatus)
-          .then(() => console.log(`✅ Bulk dispatch email sent for order #${finalOrderDoc.orderNumber}`))
-          .catch(err => console.error(`❌ Bulk dispatch email failed for order #${finalOrderDoc.orderNumber}:`, err.message));
+        console.log(`✅ Order #${finalOrderDoc.orderNumber} dispatched successfully`);
       }
 
       const finalOrder = finalOrderDoc ? finalOrderDoc.toObject({ virtuals: true }) : order.toObject();
@@ -577,29 +591,44 @@ export const dispatchOrders = asyncHandler(async (req, res) => {
         let notificationTitle, notificationMessage;
         
         if (dispatchProgress.dispatched === dispatchProgress.total) {
-          notificationTitle = '**Complete Order Dispatched!** 🚚';
-          notificationMessage = `Your complete order **#${updatedOrder.orderNumber}** is now out for delivery and will reach you soon!`;
+          notificationTitle = 'Complete Order Dispatched!';
+          notificationMessage = `Your complete order #${updatedOrder.orderNumber} is now out for delivery and will reach you soon!`;
         } else {
-          notificationTitle = '**Partial Dispatch Update!** 📦';
-          notificationMessage = `**${productName}** from your order **#${updatedOrder.orderNumber}** has been dispatched! (${dispatchProgress.dispatched}/${dispatchProgress.total} items dispatched)`;
+          notificationTitle = 'Partial Dispatch Update!';
+          notificationMessage = `${productName} from your order #${updatedOrder.orderNumber} has been dispatched! (${dispatchProgress.dispatched}/${dispatchProgress.total} items dispatched)`;
         }
 
-        // Send real-time WebSocket notification immediately (before database write for faster delivery)
-        if (global.io && global.connectedUsers) {
-          const userSocketId = getConnectedUserSocketId(updatedOrder.userId);
-          if (userSocketId) {
-            global.io.to(userSocketId).emit('orderStatusUpdate', {
-              orderNumber: updatedOrder.orderNumber,
-              status: updatedOrder.orderStatus,
-              message: notificationMessage,
-              productDispatched: productName,
-              dispatchProgress: dispatchProgress,
-              timestamp: new Date().toISOString()
-            });
-          }
+        const userId = resolveUserIdString(updatedOrder.userId);
+        const userSocketId = getConnectedUserSocketId(updatedOrder.userId);
+
+        // Send real-time WebSocket notification FIRST (instant delivery to notification bell)
+        if (global.io && userSocketId) {
+          global.io.to(userSocketId).emit('newNotification', {
+            userId: userId,
+            orderNumber: updatedOrder.orderNumber,
+            title: notificationTitle,
+            message: notificationMessage,
+            type: 'order',
+            read: false,
+            timestamp: new Date().toISOString()
+          });
+          console.log(`✅ WebSocket newNotification sent to user ${userId} for bulk dispatch`);
         }
 
-        // Create notification in database (non-blocking)
+        // Also emit orderStatusUpdate for OrderTracking component
+        if (global.io && userSocketId) {
+          global.io.to(userSocketId).emit('orderStatusUpdate', {
+            orderNumber: updatedOrder.orderNumber,
+            status: updatedOrder.orderStatus,
+            message: notificationMessage,
+            productDispatched: productName,
+            dispatchProgress: dispatchProgress,
+            timestamp: new Date().toISOString()
+          });
+          console.log(`✅ WebSocket orderStatusUpdate sent to user ${userId} for bulk dispatch`);
+        }
+
+        // Create notification in database (after WebSocket for instant delivery)
         createNotification(
           updatedOrder.userId,
           updatedOrder.orderNumber,
@@ -728,15 +757,9 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
     order.orderStatus = newOrderStatus;
     order.updatedAt = new Date();
 
-    // Save order asynchronously to avoid blocking WebSocket notification
-    order.save().catch(err => console.error('Failed to save order status:', err.message));
-
-    // Send status emails asynchronously (non-blocking) via Vercel
-    console.log(`🚀 Triggering dispatch email for order #${order.orderNumber} at ${new Date().toISOString()}`);
-    // Don't await - fire and forget to avoid blocking the response
-    sendStatusEmails(order, previousStatus, newOrderStatus)
-      .then(() => console.log(`✅ Dispatch email sent for order #${order.orderNumber} at ${new Date().toISOString()}`))
-      .catch(err => console.error(`❌ Dispatch email failed for order #${order.orderNumber}:`, err.message));
+    // Save order with await to prevent race conditions
+    await order.save();
+    console.log(`✅ Order #${order.orderNumber} saved successfully with status: ${newOrderStatus}`);
 
     // Send notification to user
     try {
@@ -749,42 +772,56 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
       let notificationTitle, notificationMessage;
       
       if (dispatchedItems === totalItems && deliveredItems === 0) {
-        notificationTitle = '**Complete Order Dispatched!** 🚚';
-        notificationMessage = `Your complete order **#${order.orderNumber}** is now out for delivery!`;
+        notificationTitle = 'Complete Order Dispatched!';
+        notificationMessage = `Your complete order #${order.orderNumber} is now out for delivery!`;
       } else {
-        notificationTitle = '**Item Dispatched!** 📦';
-        notificationMessage = `**${productName}** from your order **#${order.orderNumber}** has been dispatched! (${dispatchedItems}/${totalItems} items dispatched)`;
+        notificationTitle = 'Item Dispatched!';
+        notificationMessage = `${productName} from your order #${order.orderNumber} has been dispatched! (${dispatchedItems}/${totalItems} items dispatched)`;
       }
 
-      // Send real-time WebSocket notification immediately (before database write for faster delivery)
-      if (global.io && global.connectedUsers) {
-        const userId = resolveUserIdString(order.userId);
-        const userSocketId = getConnectedUserSocketId(order.userId);
+      const userId = resolveUserIdString(order.userId);
+      const userSocketId = getConnectedUserSocketId(order.userId);
 
-        console.log(`🔔 Attempting WebSocket notification for user ${userId}`);
-        console.log(`🔌 User socket ID: ${userSocketId || 'NOT CONNECTED'}`);
-        console.log(`👥 Total connected users: ${global.connectedUsers.size}`);
+      console.log('🔍 WebSocket Debug Info:');
+      console.log('  - userId:', userId);
+      console.log('  - userSocketId:', userSocketId);
+      console.log('  - global.io available:', !!global.io);
+      console.log('  - global.connectedUsers size:', global.connectedUsers?.size || 0);
 
-        if (userSocketId) {
-          global.io.to(userSocketId).emit('orderStatusUpdate', {
-            orderNumber: order.orderNumber,
-            status: newOrderStatus,
-            message: notificationMessage,
-            productDispatched: productName,
-            dispatchProgress: dispatchProgress,
-            timestamp: new Date().toISOString()
-          });
-          console.log(`✅ WebSocket notification sent to user ${userId}`);
-        } else {
-          console.log(`⚠️ User ${userId} is not connected via WebSocket`);
-        }
+      // Send real-time WebSocket notification FIRST (instant delivery to notification bell)
+      if (global.io && userSocketId) {
+        global.io.to(userSocketId).emit('newNotification', {
+          userId: userId,
+          orderNumber: order.orderNumber,
+          title: notificationTitle,
+          message: notificationMessage,
+          type: 'order',
+          read: false,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`✅ WebSocket newNotification sent to socket ${userSocketId} for user ${userId}`);
       } else {
-        console.log('⚠️ WebSocket not available: io or connectedUsers is undefined');
+        console.log(`⚠️ Cannot send newNotification - io: ${!!global.io}, socketId: ${userSocketId}`);
       }
 
-      // Create notification in database (non-blocking)
+      // Also emit orderStatusUpdate for OrderTracking component
+      if (global.io && userSocketId) {
+        global.io.to(userSocketId).emit('orderStatusUpdate', {
+          orderNumber: order.orderNumber,
+          status: newOrderStatus,
+          message: notificationMessage,
+          productDispatched: productName,
+          dispatchProgress: dispatchProgress,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`✅ WebSocket orderStatusUpdate sent to socket ${userSocketId} for user ${userId}`);
+      } else {
+        console.log(`⚠️ Cannot send orderStatusUpdate - io: ${!!global.io}, socketId: ${userSocketId}`);
+      }
+
+      // Create notification in database (after WebSocket for instant delivery)
       createNotification(
-        resolveUserIdString(order.userId),
+        userId,
         order.orderNumber,
         'order_dispatched',
         notificationTitle,
@@ -811,6 +848,16 @@ export const dispatchIndividualItem = asyncHandler(async (req, res) => {
         dispatched: dispatchedItems,
         delivered: deliveredItems,
         pending: totalItems - dispatchedItems - deliveredItems
+      },
+      // Include order details for email dispatch
+      order: {
+        orderNumber: order.orderNumber,
+        userDetails: order.userDetails,
+        email: order.email,
+        userName: order.userName,
+        totalItems: totalItems,
+        dispatchedItems: dispatchedItems,
+        deliveredItems: deliveredItems
       }
     });
 

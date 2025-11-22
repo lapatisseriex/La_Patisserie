@@ -6,22 +6,56 @@ import { sendCustomNewsletter } from '../utils/newsletterEmailService.js';
 // No delegation, no retries/timeouts. Just send the email.
 
 const createTransporter = () => {
+  console.log('\n🔧 ===== CREATING EMAIL TRANSPORTER =====');
+  console.log('📋 Environment Variables Check:');
+  console.log('  - SMTP_HOST:', process.env.SMTP_HOST || 'NOT SET');
+  console.log('  - SMTP_PORT:', process.env.SMTP_PORT || 'NOT SET');
+  console.log('  - SMTP_SECURE:', process.env.SMTP_SECURE || 'NOT SET');
+  console.log('  - SMTP_USER:', process.env.SMTP_USER ? '✓ SET' : 'NOT SET');
+  console.log('  - SMTP_PASS:', process.env.SMTP_PASS ? '✓ SET (hidden)' : 'NOT SET');
+  console.log('  - EMAIL_SERVICE:', process.env.EMAIL_SERVICE || 'NOT SET');
+  console.log('  - EMAIL_USER:', process.env.EMAIL_USER ? `✓ SET (${process.env.EMAIL_USER})` : 'NOT SET');
+  console.log('  - EMAIL_PASS:', process.env.EMAIL_PASS ? '✓ SET (hidden)' : 'NOT SET');
+
   // Prefer explicit SMTP settings from environment
   if (process.env.SMTP_HOST) {
     const port = Number(process.env.SMTP_PORT || 587);
     const secure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true';
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+    
+    console.log('✅ Using EXPLICIT SMTP Configuration:');
+    console.log('  - Host:', process.env.SMTP_HOST);
+    console.log('  - Port:', port);
+    console.log('  - Secure:', secure);
+    console.log('  - User:', user ? `✓ (${user})` : '❌ MISSING');
+    console.log('  - Pass:', pass ? '✓ (length: ' + pass.length + ')' : '❌ MISSING');
+    
+    if (!user || !pass) {
+      console.error('❌ ERROR: Missing authentication credentials!');
+      console.error('   Set SMTP_USER/SMTP_PASS or EMAIL_USER/EMAIL_PASS in .env');
+    }
+    console.log('========================================\n');
+    
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port,
       secure,
-      auth: user && pass ? { user, pass } : undefined,
+      auth: {
+        user: user,
+        pass: pass,
+      },
     });
   }
 
   // Fallbacks: allow 'gmail' shorthand via EMAIL_SERVICE, else basic gmail service
   if (String(process.env.EMAIL_SERVICE).toLowerCase() === 'gmail') {
+    console.log('✅ Using GMAIL SERVICE Configuration:');
+    console.log('  - Service: gmail');
+    console.log('  - User:', process.env.EMAIL_USER ? '✓' : 'MISSING');
+    console.log('  - Pass:', process.env.EMAIL_PASS ? '✓' : 'MISSING');
+    console.log('========================================\n');
+    
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -32,6 +66,14 @@ const createTransporter = () => {
   }
 
   // Last resort default to Gmail SMTP SSL if nothing provided
+  console.log('⚠️ Using DEFAULT GMAIL SMTP Configuration (fallback):');
+  console.log('  - Host: smtp.gmail.com');
+  console.log('  - Port: 465');
+  console.log('  - Secure: true');
+  console.log('  - User:', process.env.EMAIL_USER ? '✓' : 'MISSING');
+  console.log('  - Pass:', process.env.EMAIL_PASS ? '✓' : 'MISSING');
+  console.log('========================================\n');
+  
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -142,15 +184,36 @@ export const sendNewsletter = async (req, res) => {
 // Lightweight confirmation separate from status-update so frontend can call Vercel directly after DB order creation.
 export const sendOrderPlacedEmail = async (req, res) => {
   try {
+    console.log('\n📧 ===== ORDER CONFIRMATION EMAIL - BACKEND =====');
+    console.log('📦 Request Body:', JSON.stringify(req.body, null, 2));
+    
     const { orderNumber, userEmail, paymentMethod, grandTotal } = req.body || {};
+    
+    console.log('📋 Extracted Parameters:');
+    console.log('  - Order Number:', orderNumber);
+    console.log('  - User Email:', userEmail);
+    console.log('  - Payment Method:', paymentMethod);
+    console.log('  - Grand Total:', grandTotal);
+    
     if (!orderNumber || !userEmail) {
+      console.error('❌ Missing required fields:', {
+        hasOrderNumber: !!orderNumber,
+        hasUserEmail: !!userEmail
+      });
       return res.status(400).json({ success: false, message: 'orderNumber and userEmail are required' });
     }
 
+    console.log('🔧 Creating email transporter...');
     const transporter = createTransporter();
+    console.log('✅ Transporter created');
+    
+    console.log('🔗 Building tracking URL...');
     const trackUrl = buildTrackUrl(orderNumber);
+    console.log('✅ Tracking URL:', trackUrl);
+    
     const pmLabel = paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment';
     const totalLabel = typeof grandTotal === 'number' ? `₹${grandTotal}` : 'your selected amount';
+    console.log('📝 Email Labels:', { pmLabel, totalLabel });
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f8f9fb;padding:0;margin:0;">`
       + `<div style="max-width:620px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #e5e7eb">`
@@ -165,16 +228,150 @@ export const sendOrderPlacedEmail = async (req, res) => {
       + `</div></body></html>`;
     const text = `Order Confirmation\nOrder Number: ${orderNumber}\nPayment Method: ${pmLabel}\nTotal: ${totalLabel}\nTrack: ${trackUrl}`;
 
-    const info = await transporter.sendMail({
+    console.log('📧 Preparing email configuration...');
+    const mailOptions = {
       from: { name: 'La Patisserie', address: process.env.EMAIL_USER },
       to: userEmail,
       subject: `Your La Patisserie Order ${orderNumber} Confirmed`,
       html,
       text
+    };
+    console.log('📬 Mail Options:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      htmlLength: html.length,
+      textLength: text.length
     });
+
+    console.log('🚀 Sending email via transporter...');
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent successfully!');
+    console.log('📨 Message ID:', info.messageId);
+    console.log('📊 Response Info:', JSON.stringify(info, null, 2));
+
+    console.log(`\n✅ ===== ORDER CONFIRMATION EMAIL SENT =====`);
+    console.log(`   Recipient: ${userEmail}`);
+    console.log(`   Order: ${orderNumber}`);
+    console.log(`   Message ID: ${info.messageId}`);
+    console.log(`==========================================\n`);
 
     return res.status(200).json({ success: true, messageId: info.messageId, orderNumber });
   } catch (err) {
+    console.error('\n❌ ===== ORDER CONFIRMATION EMAIL ERROR =====');
+    console.error('Error Name:', err.name);
+    console.error('Error Message:', err.message);
+    console.error('Error Stack:', err.stack);
+    console.error('Full Error:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+    console.error('============================================\n');
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// --- New: Order Dispatched Email ---
+export const sendOrderDispatchedEmail = async (req, res) => {
+  try {
+    console.log('\n📧 ===== ORDER DISPATCH EMAIL REQUEST =====');
+    console.log('📦 Request Body:', JSON.stringify(req.body, null, 2));
+    
+    const { orderNumber, userEmail, userName, dispatchType, itemsDispatched, totalItems } = req.body || {};
+    
+    console.log('📋 Extracted Parameters:');
+    console.log('  - Order Number:', orderNumber);
+    console.log('  - User Email:', userEmail);
+    console.log('  - User Name:', userName);
+    console.log('  - Dispatch Type:', dispatchType);
+    console.log('  - Items Dispatched:', itemsDispatched);
+    console.log('  - Total Items:', totalItems);
+    
+    if (!orderNumber || !userEmail) {
+      console.error('❌ Missing required fields - orderNumber or userEmail');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'orderNumber and userEmail are required' 
+      });
+    }
+
+    console.log('🔧 Creating email transporter...');
+    const transporter = createTransporter();
+    console.log('✅ Transporter created');
+    
+    console.log('🔗 Building tracking URL...');
+    const trackUrl = buildTrackUrl(orderNumber);
+    console.log('✅ Tracking URL:', trackUrl);
+    
+    // Determine dispatch message based on type
+    console.log('📝 Building dispatch message...');
+    let dispatchMessage = '';
+    if (dispatchType === 'complete') {
+      dispatchMessage = 'Your complete order has been dispatched and is on its way!';
+    } else if (dispatchType === 'partial') {
+      const dispatched = itemsDispatched || 0;
+      const total = totalItems || dispatched;
+      dispatchMessage = `${dispatched} out of ${total} items from your order have been dispatched.`;
+    } else {
+      dispatchMessage = 'Your order has been dispatched and is on its way!';
+    }
+    console.log('✅ Dispatch Message:', dispatchMessage);
+    
+    const greetingName = userName ? userName.split(' ')[0] : 'Valued Customer';
+    console.log('👤 Greeting Name:', greetingName);
+
+    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f8f9fb;padding:0;margin:0;">`
+      + `<div style="max-width:620px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #e5e7eb">`
+      + `<h2 style="margin:0 0 12px;color:#111">Order Dispatched</h2>`
+      + `<p style="margin:0 0 8px;color:#374151">Great news! ${dispatchMessage}</p>`
+      + `<p style="margin:0 0 8px;color:#374151">Order Number: <strong>${orderNumber}</strong></p>`
+      + `<p style="margin:0 0 16px;color:#374151">Status: <strong>Out for Delivery</strong></p>`
+      + `<p style="margin:0 0 12px;color:#374151">Our delivery partner will reach you shortly. Please keep your phone handy for any delivery updates.</p>`
+      + `<p style="margin:0 0 12px;color:#374151">You can track your order status here:</p>`
+      + `<p style="margin:0 0 20px"><a href="${trackUrl}" style="color:#733857;text-decoration:none;font-weight:600">${trackUrl}</a></p>`
+      + `<p style="margin:0 0 6px;color:#4b5563;font-size:12px">This is an automated message. Please do not reply.</p>`
+      + `</div></body></html>`;
+    const text = `Order Dispatched\n\n${dispatchMessage}\n\nOrder Number: ${orderNumber}\nStatus: Out for Delivery\n\nOur delivery partner will reach you shortly. Please keep your phone handy for any delivery updates.\n\nTrack: ${trackUrl}`;
+
+    console.log('📧 Preparing email configuration...');
+    const mailOptions = {
+      from: { name: 'La Patisserie', address: process.env.EMAIL_USER },
+      to: userEmail,
+      subject: `Your Order ${orderNumber} is Out for Delivery!`,
+      html,
+      text
+    };
+    console.log('📬 Mail Options:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      htmlLength: html.length,
+      textLength: text.length
+    });
+
+    console.log('🚀 Sending email via transporter...');
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent successfully!');
+    console.log('📨 Message ID:', info.messageId);
+    console.log('📊 Response Info:', JSON.stringify(info, null, 2));
+
+    console.log(`\n✅ ===== DISPATCH EMAIL SENT SUCCESSFULLY =====`);
+    console.log(`   Recipient: ${userEmail}`);
+    console.log(`   Order: ${orderNumber}`);
+    console.log(`   Type: ${dispatchType}`);
+    console.log(`   Message ID: ${info.messageId}`);
+    console.log(`=============================================\n`);
+    
+    return res.status(200).json({ 
+      success: true, 
+      messageId: info.messageId, 
+      orderNumber,
+      dispatchType 
+    });
+  } catch (err) {
+    console.error('\n❌ ===== DISPATCH EMAIL ERROR =====');
+    console.error('Error Name:', err.name);
+    console.error('Error Message:', err.message);
+    console.error('Error Stack:', err.stack);
+    console.error('Full Error:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+    console.error('===================================\n');
     return res.status(500).json({ success: false, message: err.message });
   }
 };

@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useRef, useState } from 'react';
+﻿import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle, MapPin, CreditCard, Banknote, Calendar, X, BadgeCheck, ChefHat, Home } from 'lucide-react';
 import { calculatePricing } from '../../utils/pricingUtils';
@@ -11,22 +11,80 @@ import { toast } from 'react-toastify';
 import webSocketService from '../../services/websocketService';
 import './OrderCard.css';
 
-const OrderTrackingContent = ({ order }) => {
+const OrderTrackingContent = ({ order, onOrderUpdate }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+  const [localOrder, setLocalOrder] = useState(order);
   const dialogRef = useRef(null);
+
+  // Listen for WebSocket order status updates
+  useEffect(() => {
+    // Ensure WebSocket is connected with MongoDB user ID (not Firebase UID)
+    // _id is the MongoDB ObjectId which is used for notifications and WebSocket mapping
+    const userId = user?._id;
+    if (userId) {
+      console.log('🔌 OrderTracking: Ensuring WebSocket connection for user:', userId);
+      webSocketService.connect(userId);
+    } else if (user) {
+      console.warn('⚠️ No MongoDB _id found in user object. User:', user);
+    }
+
+    const handleOrderStatusUpdate = (data) => {
+      console.log('📦 Order status update received:', data);
+      
+      // Check if this update is for the current order
+      if (data.orderNumber === localOrder.orderNumber) {
+        console.log('✅ Update matches current order, showing toast');
+        
+        // Show toast notification
+        toast.info(data.message || 'Order status updated. Refresh to see changes.', {
+          position: 'top-center',
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          icon: '🚚'
+        });
+
+        // Update local order status
+        setLocalOrder(prev => ({
+          ...prev,
+          orderStatus: data.status
+        }));
+
+        // Notify parent component if callback provided
+        if (onOrderUpdate) {
+          onOrderUpdate(data);
+        }
+      }
+    };
+
+    // Subscribe to order status updates
+    webSocketService.onOrderStatusUpdate(handleOrderStatusUpdate);
+
+    // Cleanup on unmount - only unsubscribe, don't disconnect
+    return () => {
+      webSocketService.offOrderStatusUpdate(handleOrderStatusUpdate);
+    };
+  }, [localOrder.orderNumber, onOrderUpdate, user?._id]); // Only depend on _id, not entire user object
+
+  // Update local order when prop changes
+  useEffect(() => {
+    setLocalOrder(order);
+  }, [order]);
   const formatAmount = (value) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? Math.round(parsed) : 0;
   };
   const cartItemsWithPricing = useMemo(() => {
-    if (!order?.cartItems) return [];
+    if (!localOrder?.cartItems) return [];
 
-    return order.cartItems.map((item) => {
+    return localOrder.cartItems.map((item) => {
       const pricing = item?.variant ? calculatePricing(item.variant) : null;
       const parsedMrp = Number.isFinite(pricing?.mrp) ? pricing.mrp : Number(item?.originalPrice);
       const parsedPrice = Number.isFinite(pricing?.finalPrice) ? pricing.finalPrice : Number(item?.price);
@@ -53,16 +111,16 @@ const OrderTrackingContent = ({ order }) => {
         variantLabel: resolveOrderItemVariantLabel(item)
       };
     });
-  }, [order?.cartItems]);
+  }, [localOrder?.cartItems]);
   const summary = useMemo(() => {
-    if (!order) return null;
+    if (!localOrder) return null;
 
     const parseAmount = (value) => {
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : null;
     };
 
-    const rawSummary = order.orderSummary || {};
+    const rawSummary = localOrder.orderSummary || {};
     const subtotalFromSummary = parseAmount(rawSummary.cartTotal ?? rawSummary.subtotal);
     const discountedTotalFromSummary = parseAmount(
       rawSummary.discountedTotal ?? rawSummary.discountedCartTotal ?? rawSummary.totalAfterDiscount
@@ -93,9 +151,9 @@ const OrderTrackingContent = ({ order }) => {
       ? discountFromSummary
       : resolvedSubtotal - resolvedDiscounted;
   discountTotal = Math.max(0, Number.isFinite(discountTotal) ? Math.abs(discountTotal) : 0);
-    const deliveryChargeRaw = deliveryChargeFromSummary ?? parseAmount(order?.deliveryCharge);
+    const deliveryChargeRaw = deliveryChargeFromSummary ?? parseAmount(localOrder?.deliveryCharge);
     const deliveryCharge = Math.max(0, Number.isFinite(deliveryChargeRaw) ? deliveryChargeRaw : 0);
-    const freeCashRaw = freeCashUsedFromSummary ?? parseAmount(order?.freeCashUsed);
+    const freeCashRaw = freeCashUsedFromSummary ?? parseAmount(localOrder?.freeCashUsed);
     const freeCashUsed = Math.max(0, Number.isFinite(freeCashRaw) ? Math.abs(freeCashRaw) : 0);
     const computedGrandTotal = resolvedDiscounted + deliveryCharge - freeCashUsed;
     const grandTotal = Math.max(0, grandTotalFromSummary ?? computedGrandTotal);
@@ -107,9 +165,9 @@ const OrderTrackingContent = ({ order }) => {
       deliveryCharge,
       freeCashUsed,
       grandTotal};
-  }, [order, cartItemsWithPricing]);
+  }, [localOrder, cartItemsWithPricing]);
   
-  if (!order) return null;
+  if (!localOrder) return null;
 
   const handleProductClick = (item) => {
     // Try multiple possible product ID paths
@@ -173,8 +231,8 @@ const OrderTrackingContent = ({ order }) => {
   // 1. Order must not be in out_for_delivery, delivered, or cancelled status
   // 2. ONLY COD orders can be cancelled (offline payment)
   // 3. Razorpay/online paid orders CANNOT be cancelled
-  const canCancel = !['out_for_delivery', 'delivered', 'cancelled'].includes(order.orderStatus)
-                    && order.paymentMethod === 'cod';
+  const canCancel = !['out_for_delivery', 'delivered', 'cancelled'].includes(localOrder.orderStatus)
+                    && localOrder.paymentMethod === 'cod';
 
   const handleCancelClick = () => {
     if (dialogRef.current) {
@@ -219,7 +277,7 @@ const OrderTrackingContent = ({ order }) => {
     try {
       const token = localStorage.getItem('authToken');
       await longTimeoutAxiosInstance.put(
-        `${import.meta.env.VITE_API_URL}/payments/orders/${order.orderNumber}/cancel`,
+        `${import.meta.env.VITE_API_URL}/payments/orders/${localOrder.orderNumber}/cancel`,
         { cancelReason: reasonToSend },
         {
           headers: {
@@ -237,8 +295,8 @@ const OrderTrackingContent = ({ order }) => {
         try {
           const sock = webSocketService.getSocket?.();
           if (sock && sock.connected) {
-            sock.emit('orderCancelled', { orderNumber: order.orderNumber });
-            sock.emit('orderStatusUpdated', { orderNumber: order.orderNumber, status: 'cancelled' });
+            sock.emit('orderCancelled', { orderNumber: localOrder.orderNumber });
+            sock.emit('orderStatusUpdated', { orderNumber: localOrder.orderNumber, status: 'cancelled' });
           }
         } catch {}
 
@@ -343,11 +401,11 @@ const OrderTrackingContent = ({ order }) => {
       if (!order) return map;
 
       const candidateCollections = [
-        order.statusHistory,
-        order.statusTimeline,
-        order.statusLogs,
-        order.statusUpdates,
-        order.timeline
+        order?.statusHistory,
+        order?.statusTimeline,
+        order?.statusLogs,
+        order?.statusUpdates,
+        order?.timeline
       ];
 
       candidateCollections.forEach((collection) => {
@@ -372,17 +430,17 @@ const OrderTrackingContent = ({ order }) => {
         }
       });
 
-      if (order.createdAt && !map.placed) {
+      if (order?.createdAt && !map.placed) {
         map.placed = order.createdAt;
       }
-      if (order.paymentStatus === 'pending' && order.createdAt && !map.pending) {
+      if (order?.paymentStatus === 'pending' && order?.createdAt && !map.pending) {
         map.pending = order.createdAt;
       }
-      if (order.estimatedDeliveryTime) {
+      if (order?.estimatedDeliveryTime) {
         map.ready = map.ready || order.estimatedDeliveryTime;
         map.out_for_delivery = map.out_for_delivery || order.estimatedDeliveryTime;
       }
-      if (order.actualDeliveryTime) {
+      if (order?.actualDeliveryTime) {
         map.delivered = map.delivered || order.actualDeliveryTime;
       } else if (order.orderStatus === 'delivered' && order.updatedAt) {
         map.delivered = map.delivered || order.updatedAt;
@@ -691,7 +749,7 @@ const OrderTrackingContent = ({ order }) => {
     });
   };
 
-  const statusConfig = getStatusConfig(order.orderStatus);
+  const statusConfig = getStatusConfig(localOrder.orderStatus);
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -707,11 +765,11 @@ const OrderTrackingContent = ({ order }) => {
   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4 sm:gap-0">
           <div className="flex-1">
             <h2 className="text-xl sm:text-2xl font-light mb-1" style={{ color: '#1a1a1a' }}>
-              Order #{order.orderNumber}
+              Order #{localOrder.orderNumber}
             </h2>
             <div className="flex items-center text-sm" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
               <Calendar className="w-4 h-4 mr-1.5" />
-              Placed on {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
+              Placed on {formatDate(localOrder.createdAt)} at {formatTime(localOrder.createdAt)}
             </div>
             <div className="mt-2">
               <span
@@ -742,7 +800,7 @@ const OrderTrackingContent = ({ order }) => {
               };
               return (
                 <img 
-                  src={statusToPng[order.orderStatus] || '/checkout.png'} 
+                  src={statusToPng[localOrder.orderStatus] || '/checkout.png'} 
                   alt={statusConfig.label}
                   className="w-4 h-4 sm:w-5 sm:h-5" 
                   style={{ 
@@ -765,12 +823,12 @@ const OrderTrackingContent = ({ order }) => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <span className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>Total Amount</span>
             <span className="text-xl sm:text-2xl font-medium" style={{ color: '#733857' }}>
-              ₹{formatAmount(summary?.grandTotal ?? order.amount ?? 0)}
+              ₹{formatAmount(summary?.grandTotal ?? localOrder.amount ?? 0)}
             </span>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center mt-2 text-sm gap-2 sm:gap-0" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
             <div className="flex items-center">
-              {order.paymentMethod === 'cod' ? (
+              {localOrder.paymentMethod === 'cod' ? (
                 <>
                   <Banknote className="w-4 h-4 mr-1.5" />
                   Cash on Delivery
@@ -783,7 +841,7 @@ const OrderTrackingContent = ({ order }) => {
               )}
             </div>
             <span className="hidden sm:inline mx-2">•</span>
-            <span>Payment {order.paymentStatus}</span>
+            <span>Payment {localOrder.paymentStatus}</span>
           </div>
         </div>
       </div>
@@ -799,7 +857,7 @@ const OrderTrackingContent = ({ order }) => {
         <h3 className="text-base sm:text-lg font-medium mb-4 sm:mb-6" style={{ color: '#1a1a1a' }}>
           Order Progress
         </h3>
-  <StatusTimeline order={order} />
+  <StatusTimeline order={localOrder} />
       </div>
 
       {/* Order Items - Responsive */}
@@ -811,7 +869,7 @@ const OrderTrackingContent = ({ order }) => {
         }}
       >
         <h3 className="text-base sm:text-lg font-medium mb-4 sm:mb-6" style={{ color: '#1a1a1a' }}>
-          Order Items ({order.cartItems?.length || 0})
+          Order Items ({localOrder.cartItems?.length || 0})
         </h3>
         <div className="space-y-4">
           {cartItemsWithPricing.map((item, index) => {
@@ -970,7 +1028,7 @@ const OrderTrackingContent = ({ order }) => {
       )}
 
       {/* Delivery Information */}
-      {(order.deliveryLocation || order.deliveryAddress) && (
+      {(localOrder.deliveryLocation || localOrder.deliveryAddress) && (
         <div 
           className="bg-white border border-gray-100 p-4 sm:p-6"
           style={{ 
@@ -989,21 +1047,21 @@ const OrderTrackingContent = ({ order }) => {
                   Delivery Address
                 </p>
                 <p className="text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
-                  {order.deliveryAddress ? (
+                  {localOrder.deliveryAddress ? (
                     <>
-                      {order.deliveryAddress.hostelName && `${order.deliveryAddress.hostelName}, `}
-                      {order.deliveryAddress.area}, {order.deliveryAddress.city}
+                      {localOrder.deliveryAddress.hostelName && `${localOrder.deliveryAddress.hostelName}, `}
+                      {localOrder.deliveryAddress.area}, {localOrder.deliveryAddress.city}
                     </>
                   ) : (
                     <>
-                      {order.hostelName && `${order.hostelName}, `}
-                      {order.deliveryLocation}
+                      {localOrder.hostelName && `${localOrder.hostelName}, `}
+                      {localOrder.deliveryLocation}
                     </>
                   )}
                 </p>
               </div>
             </div>
-            {order.estimatedDeliveryTime && (
+            {localOrder.estimatedDeliveryTime && (
               <div className="flex items-start pt-3 border-t border-gray-100">
                 <Clock className="w-5 h-5 mt-0.5 mr-3 flex-shrink-0" style={{ color: '#733857' }} />
                 <div>
@@ -1011,7 +1069,7 @@ const OrderTrackingContent = ({ order }) => {
                     Estimated Delivery
                   </p>
                   <p className="text-sm" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
-                    {formatDate(order.estimatedDeliveryTime)} at {formatTime(order.estimatedDeliveryTime)}
+                    {formatDate(localOrder.estimatedDeliveryTime)} at {formatTime(localOrder.estimatedDeliveryTime)}
                   </p>
                 </div>
               </div>
@@ -1073,7 +1131,7 @@ const OrderTrackingContent = ({ order }) => {
         data-open={showCancelConfirm ? 'true' : 'false'}
         onCancel={handleDialogCancel}
         onClose={handleDialogClose}
-        aria-label={`Cancel order ${order.orderNumber}`}
+        aria-label={`Cancel order ${localOrder.orderNumber}`}
       >
         <div className="order-dialog-canvas">
           <button
@@ -1087,7 +1145,7 @@ const OrderTrackingContent = ({ order }) => {
           </button>
 
           <div className="order-dialog-wrapper">
-            <h2 className="order-dialog-title">Cancel Order #{order.orderNumber}?</h2>
+            <h2 className="order-dialog-title">Cancel Order #{localOrder.orderNumber}?</h2>
             
             <textarea
               placeholder="Reason for cancellation (optional)"

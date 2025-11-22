@@ -375,6 +375,7 @@ export const verifyToken = asyncHandler(async (req, res) => {
       success: true,
       isNewUser: isNewUser || isProfileIncomplete, // Mark as new user if profile is incomplete
       user: {
+        _id: user._id, // Add MongoDB ObjectId for WebSocket and notifications
         uid: user.uid,
         email: user.email,
         name: user.name,

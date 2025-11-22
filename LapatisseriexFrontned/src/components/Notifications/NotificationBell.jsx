@@ -73,18 +73,26 @@ const NotificationBell = () => {
   }, [isAuthenticated, triggerPulse, handleUnreadCountChange]);
 
   useEffect(() => {
-    const userId = user?._id || user?.uid || null;
-    webSocketService.connect(userId);
+    // Use MongoDB _id for WebSocket connection (not Firebase uid)
+    const userId = user?._id;
+    if (userId) {
+      console.log('🔔 NotificationBell: Ensuring WebSocket connection with MongoDB _id:', userId);
+      webSocketService.connect(userId);
+    } else if (isAuthenticated && user) {
+      console.warn('⚠️ NotificationBell: No MongoDB _id found in user object:', user);
+    }
 
     fetchUnreadCount();
 
-    const handleNewNotification = () => {
+    const handleNewNotification = (data) => {
+      console.log('🔔 New notification received:', data);
       triggerPulse();
       fetchUnreadCount();
     };
 
     webSocketService.onNewNotification(handleNewNotification);
 
+    // Poll every 30 seconds as fallback
     const interval = isAuthenticated ? setInterval(fetchUnreadCount, 30000) : null;
 
     return () => {
@@ -92,8 +100,9 @@ const NotificationBell = () => {
         clearInterval(interval);
       }
       webSocketService.offNewNotification(handleNewNotification);
+      // Don't disconnect - other components may still need WebSocket
     };
-  }, [user?._id, user?.uid, isAuthenticated, fetchUnreadCount, triggerPulse]);
+  }, [user?._id, isAuthenticated, fetchUnreadCount, triggerPulse]); // Removed user?.uid dependency
 
   useEffect(() => () => {
     clearPulseTimeout();

@@ -340,6 +340,13 @@ const startServer = async () => {
     app.use('/api/auth', authRateLimit, authRoutes);
     app.use('/api/users', userRoutes);
   app.use('/api/email', emailRoutes);
+  // Add logging middleware for email-dispatch route
+  app.use('/api/email-dispatch', (req, res, next) => {
+    console.log(`\n🔔 Email Dispatch Route Hit: ${req.method} ${req.path}`);
+    console.log('📍 Full URL:', req.originalUrl);
+    console.log('🕒 Timestamp:', new Date().toISOString());
+    next();
+  });
   app.use('/api/email-dispatch', emailDispatchRoutes);
     app.use('/api/locations', locationRoutes);
     app.use('/api/admin', adminRoutes);
@@ -401,18 +408,42 @@ const startServer = async () => {
 
       // Handle user authentication
       socket.on('authenticate', (userId) => {
+        console.log('🔐 Authenticate event received. Raw userId:', userId, 'Type:', typeof userId);
+        
         const normalizedId = userId ? userId.toString() : null;
+        console.log('🔐 Normalized userId:', normalizedId);
 
+        // Remove old user mapping if this socket was previously authenticated with a different user
         if (socket.userId && socket.userId !== normalizedId) {
           connectedUsers.delete(socket.userId);
+          console.log(`🔄 Removed old user mapping: ${socket.userId}`);
         }
 
         if (normalizedId) {
+          // Check if this user is already connected with a different socket
+          const existingSocketId = connectedUsers.get(normalizedId);
+          if (existingSocketId && existingSocketId !== socket.id) {
+            console.log(`⚠️ User ${normalizedId} already connected with socket ${existingSocketId}, replacing with ${socket.id}`);
+            
+            // Notify the old socket that it's been replaced (optional)
+            const existingSocket = io.sockets.sockets.get(existingSocketId);
+            if (existingSocket) {
+              existingSocket.emit('session_replaced', { 
+                message: 'Your session has been replaced by a new connection' 
+              });
+              // Don't disconnect old socket - let it stay connected but not authenticated
+              existingSocket.userId = null;
+            }
+          }
+          
+          // Update mapping to new socket
           connectedUsers.set(normalizedId, socket.id);
           socket.userId = normalizedId;
           console.log(`✅ User ${normalizedId} authenticated with socket ${socket.id}`);
+          console.log(`📊 Total connected users: ${connectedUsers.size}`);
         } else {
           socket.userId = null;
+          console.warn('⚠️ Authentication failed: userId is null or empty');
         }
       });
 
@@ -424,14 +455,21 @@ const startServer = async () => {
         }
       });
 
-      socket.on('disconnect', () => {
+      socket.on('disconnect', (reason) => {
         if (socket.userId) {
-          connectedUsers.delete(socket.userId);
-          console.log(`❌ User ${socket.userId} disconnected`);
+          // Only remove from connectedUsers if this socket is still the active one for this user
+          const currentSocketId = connectedUsers.get(socket.userId);
+          if (currentSocketId === socket.id) {
+            connectedUsers.delete(socket.userId);
+            console.log(`❌ User ${socket.userId} disconnected (reason: ${reason})`);
+          } else {
+            console.log(`❌ Old socket ${socket.id} for user ${socket.userId} disconnected (reason: ${reason}), but user has newer connection`);
+          }
           socket.userId = null;
         } else {
-          console.log(`❌ Client ${socket.id} disconnected`);
+          console.log(`❌ Unauthenticated client ${socket.id} disconnected (reason: ${reason})`);
         }
+        console.log(`📊 Total connected users: ${connectedUsers.size}`);
       });
     });
 
