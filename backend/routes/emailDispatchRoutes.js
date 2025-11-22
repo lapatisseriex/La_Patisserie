@@ -3,7 +3,8 @@ import {
   sendStatusUpdate,
   sendPasswordReset,
   sendSignupOtp,
-  sendNewsletter
+  sendNewsletter,
+  sendOrderPlacedEmail
 } from '../controllers/emailDispatchController.js';
 
 const router = express.Router();
@@ -13,5 +14,6 @@ router.post('/status-update', sendStatusUpdate);
 router.post('/password-reset', sendPasswordReset);
 router.post('/signup-otp', sendSignupOtp);
 router.post('/newsletter/send', sendNewsletter);
+router.post('/order-placed', sendOrderPlacedEmail);
 
 export default router;

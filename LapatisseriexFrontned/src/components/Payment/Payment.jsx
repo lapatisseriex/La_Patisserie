@@ -16,6 +16,7 @@ import { calculateCartTotals, calculatePricing, formatCurrency } from '../../uti
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import api, { createOrderWithEmail, verifyPaymentWithEmail } from '../../services/apiService';
+import { sendOrderPlacedEmail } from '../../services/orderEmailService';
 
 const AUTO_REDIRECT_STORAGE_KEY = 'lapatisserie_payment_redirect';
 const AUTO_REDIRECT_DELAY_MS = 20000;
@@ -553,6 +554,26 @@ const Payment = () => {
   // Route order creation to primary API (Render)
   const data = await createOrderWithEmail(orderData);
 
+      // Fire post-order email (Render used above; now Vercel) if not duplicate
+      if (!data.isDuplicate && data.orderNumber && user?.email) {
+        sendOrderPlacedEmail({
+          orderNumber: data.orderNumber,
+          userEmail: user.email,
+          paymentMethod: paymentMethod || 'unknown',
+          grandTotal: grandTotal
+        }).then(r => {
+          if (r?.success || r?.skipped) {
+            console.log('[Email] Post-order email dispatched (or skipped due to config).');
+          } else {
+            console.warn('[Email] Post-order email failure (non-blocking):', r?.error);
+          }
+        }).catch(err => {
+          console.warn('[Email] Post-order email unexpected error:', err.message);
+        });
+      } else {
+        console.log('[Email] Skipping order placed email (duplicate or missing data)');
+      }
+
       // Log the outcome and expected email behavior
       if (data?.success !== false) {
         console.log(`✅ [Order] create-order success via ${orderApiBase || 'N/A'}`);
@@ -625,6 +646,25 @@ const Payment = () => {
               setCompletedPaymentMethod('razorpay');
               setIsOrderComplete(true);
               setOrderNumber(verifyData.orderNumber);
+              // Trigger order placed email (Vercel) after successful online payment verification
+              if (verifyData.orderNumber && user?.email) {
+                sendOrderPlacedEmail({
+                  orderNumber: verifyData.orderNumber,
+                  userEmail: user.email,
+                  paymentMethod: 'razorpay',
+                  grandTotal: grandTotal
+                }).then(r => {
+                  if (r?.success || r?.skipped) {
+                    console.log('[Email] Online payment order email dispatched (or skipped).');
+                  } else {
+                    console.warn('[Email] Online payment email failure (non-blocking):', r?.error);
+                  }
+                }).catch(err => {
+                  console.warn('[Email] Online payment email unexpected error:', err.message);
+                });
+              } else {
+                console.log('[Email] Skipping online payment email (missing orderNumber or email)');
+              }
               try {
                 await clearCart();
                 console.log('🧹 Cart cleared after successful payment');
@@ -745,7 +785,7 @@ const Payment = () => {
     try {
       console.log('🛒 Placing COD order for amount:', grandTotal);
   // Ensure at least 2 seconds of loading before showing success
-  const minDelay = new Promise((resolve) => setTimeout(resolve, 2000));
+      const minDelay = new Promise((resolve) => setTimeout(resolve, 2000));
       const orderPromise = createOrder(grandTotal, 'cod');
       const [orderData] = await Promise.all([orderPromise, minDelay]);
       
@@ -762,6 +802,26 @@ const Payment = () => {
       setOrderNumber(orderData.orderNumber);
       setCompletedPaymentMethod('cod');
       setIsOrderComplete(true);
+
+      // Fire post-order email for COD (skip if duplicate)
+      if (!orderData.isDuplicate && orderData.orderNumber && user?.email) {
+        sendOrderPlacedEmail({
+          orderNumber: orderData.orderNumber,
+          userEmail: user.email,
+          paymentMethod: 'cod',
+          grandTotal: grandTotal
+        }).then(r => {
+          if (r?.success || r?.skipped) {
+            console.log('[Email] COD order placed email dispatched (or skipped).');
+          } else {
+            console.warn('[Email] COD order email failure (non-blocking):', r?.error);
+          }
+        }).catch(err => {
+          console.warn('[Email] COD order email unexpected error:', err.message);
+        });
+      } else {
+        console.log('[Email] Skipping COD order email (duplicate or missing data)');
+      }
       
       try {
         await clearCart();

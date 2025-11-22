@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import OrderTrackingContent from '../components/Orders/OrderTrackingContent';
 import webSocketService from '../services/websocketService';
 import { getOrderExperienceInfo } from '../utils/orderExperience';
+import { toast } from 'react-toastify';
 
 const OrderDetail = () => {
   const { orderId } = useParams(); // This will be orderNumber
@@ -60,6 +61,22 @@ const OrderDetail = () => {
 
     const handleOrderStatusUpdate = (update) => {
       if (update?.orderNumber === orderId) {
+        console.log('📦 Order status update received:', update);
+        
+        // Show toast notification for delivered status
+        if (update.status === 'delivered') {
+          toast.success(update.message || 'Your order has been delivered! 🎉', {
+            position: 'top-center',
+            autoClose: 5000,
+          });
+        } else if (update.message) {
+          toast.info(update.message, {
+            position: 'top-center',
+            autoClose: 4000,
+          });
+        }
+        
+        // Refresh order details
         fetchOrderDetail();
       }
     };

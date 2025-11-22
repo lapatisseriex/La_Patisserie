@@ -8,6 +8,7 @@ import OfferBadge from '../components/common/OfferBadge';
 import { getOrderExperienceInfo } from '../utils/orderExperience';
 import webSocketService from '../services/websocketService';
 import OrderCardComponent from '../components/Orders/OrderCard';
+import { toast } from 'react-toastify';
 // Updated: Minor change for commit
 
 // Helper function to get product image URL
@@ -146,6 +147,23 @@ const Orders = () => {
       if (!update?.orderNumber) {
         return;
       }
+      
+      console.log('📦 Order status update received:', update);
+      
+      // Show toast notification for delivered status
+      if (update.status === 'delivered') {
+        toast.success(update.message || 'Your order has been delivered! 🎉', {
+          position: 'top-center',
+          autoClose: 5000,
+        });
+      } else if (update.message) {
+        toast.info(update.message, {
+          position: 'top-center',
+          autoClose: 4000,
+        });
+      }
+      
+      // Refresh orders list
       fetchUserOrders({ silent: true });
     };
 

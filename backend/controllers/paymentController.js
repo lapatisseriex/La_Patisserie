@@ -411,46 +411,8 @@ export const createOrder = asyncHandler(async (req, res) => {
       });
     }
 
-    // 🛡️ ENHANCED DUPLICATE ORDER PREVENTION
-    // Check for recent orders from the same user to prevent rapid duplicate orders
-    const duplicateCheckTime = new Date(Date.now() - 60 * 1000); // 60 seconds ago (increased for safety)
-    
-    // Multiple criteria to catch different types of duplicates
-    const duplicateQuery = {
-      userId,
-      createdAt: { $gte: duplicateCheckTime },
-      paymentMethod,
-      $or: [
-        { 'orderSummary.grandTotal': orderSummary.grandTotal },
-        { 
-          // Also check for similar cart size and total items
-          $and: [
-            { 'cartItems': { $size: cartItems.length } },
-            { 'orderSummary.cartTotal': { $gte: orderSummary.cartTotal * 0.95, $lte: orderSummary.cartTotal * 1.05 } }
-          ]
-        }
-      ]
-    };
-
-    const recentOrder = await Order.findOne(duplicateQuery).sort({ createdAt: -1 });
-
-    if (recentOrder) {
-      console.log('🚫 Duplicate order attempt blocked for user:', userId);
-      console.log('Recent order found:', recentOrder.orderNumber, 'created at:', recentOrder.createdAt);
-      console.log('Duplicate detection criteria matched - Amount:', orderSummary.grandTotal, 'vs', recentOrder.orderSummary?.grandTotal);
-      
-      // Return the existing order instead of creating a duplicate
-      return res.status(200).json({
-        success: true,
-        message: 'Order already exists',
-        orderNumber: recentOrder.orderNumber,
-        orderId: recentOrder.razorpayOrderId,
-        amount: recentOrder.amount,
-        currency: recentOrder.currency,
-        isDuplicate: true,
-        duplicateDetectionTime: new Date().toISOString()
-      });
-    }
+    // Duplicate order prevention removed to allow unlimited back-to-back orders.
+    // Note: Payment processing remains idempotent in the verification step to avoid double-charging.
 
     // Try to find hostel ID based on hostelName or deliveryLocation
     let hostelId = null;

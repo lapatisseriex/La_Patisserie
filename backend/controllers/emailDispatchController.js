@@ -137,3 +137,44 @@ export const sendNewsletter = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// --- New: Order Placed Email (initial confirmation) ---
+// Lightweight confirmation separate from status-update so frontend can call Vercel directly after DB order creation.
+export const sendOrderPlacedEmail = async (req, res) => {
+  try {
+    const { orderNumber, userEmail, paymentMethod, grandTotal } = req.body || {};
+    if (!orderNumber || !userEmail) {
+      return res.status(400).json({ success: false, message: 'orderNumber and userEmail are required' });
+    }
+
+    const transporter = createTransporter();
+    const trackUrl = buildTrackUrl(orderNumber);
+    const pmLabel = paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment';
+    const totalLabel = typeof grandTotal === 'number' ? `₹${grandTotal}` : 'your selected amount';
+
+    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f8f9fb;padding:0;margin:0;">`
+      + `<div style="max-width:620px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #e5e7eb">`
+      + `<h2 style="margin:0 0 12px;color:#111">Order Confirmation</h2>`
+      + `<p style="margin:0 0 8px;color:#374151">Thank you for your order at <strong>La Patisserie</strong>.</p>`
+      + `<p style="margin:0 0 8px;color:#374151">Order Number: <strong>${orderNumber}</strong></p>`
+      + `<p style="margin:0 0 8px;color:#374151">Payment Method: <strong>${pmLabel}</strong></p>`
+      + `<p style="margin:0 0 16px;color:#374151">Total: <strong>${totalLabel}</strong></p>`
+      + `<p style="margin:0 0 12px;color:#374151">You can track your order status here:</p>`
+      + `<p style="margin:0 0 20px"><a href="${trackUrl}" style="color:#733857;text-decoration:none;font-weight:600">${trackUrl}</a></p>`
+      + `<p style="margin:0 0 6px;color:#4b5563;font-size:12px">This is an automated message. Please do not reply.</p>`
+      + `</div></body></html>`;
+    const text = `Order Confirmation\nOrder Number: ${orderNumber}\nPayment Method: ${pmLabel}\nTotal: ${totalLabel}\nTrack: ${trackUrl}`;
+
+    const info = await transporter.sendMail({
+      from: { name: 'La Patisserie', address: process.env.EMAIL_USER },
+      to: userEmail,
+      subject: `Your La Patisserie Order ${orderNumber} Confirmed`,
+      html,
+      text
+    });
+
+    return res.status(200).json({ success: true, messageId: info.messageId, orderNumber });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

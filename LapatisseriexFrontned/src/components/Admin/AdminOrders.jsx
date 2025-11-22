@@ -521,6 +521,72 @@ const AdminOrders = () => {
   }, []);
 
   // Mark item(s) as delivered function
+  // Helper function to trigger delivery email via Vercel
+  const sendDeliveryEmail = async (orderData, newStatus) => {
+    try {
+      const vercelApiUrl = import.meta.env.VITE_VERCEL_API_URL;
+      if (!vercelApiUrl) {
+        console.warn('⚠️ VITE_VERCEL_API_URL not configured, skipping email');
+        return;
+      }
+
+      const userEmail = orderData.userDetails?.email;
+      if (!userEmail) {
+        console.warn('⚠️ No user email found, skipping email');
+        return;
+      }
+
+      console.log('📧 Sending delivery email via Vercel...', {
+        orderNumber: orderData.orderNumber,
+        status: newStatus,
+        email: userEmail,
+        vercelUrl: vercelApiUrl
+      });
+      
+      const emailPayload = {
+        orderDetails: {
+          orderNumber: orderData.orderNumber,
+          orderStatus: newStatus,
+          userDetails: orderData.userDetails,
+          cartItems: orderData.cartItems || orderData.items,
+          orderSummary: orderData.orderSummary,
+          deliveryLocation: orderData.deliveryLocation,
+          hostelName: orderData.hostelName
+        },
+        newStatus: newStatus,
+        userEmail: userEmail
+      };
+
+      console.log('📧 Email payload:', JSON.stringify(emailPayload, null, 2));
+      
+      const emailResponse = await fetch(`${vercelApiUrl}/email-dispatch/status-update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(emailPayload)
+      });
+
+      if (emailResponse.ok) {
+        const emailResult = await emailResponse.json();
+        console.log('✅ Delivery email sent successfully:', emailResult);
+        toast.success('📧 Delivery email sent to customer');
+      } else {
+        const errorText = await emailResponse.text();
+        console.error('⚠️ Email API returned error:', {
+          status: emailResponse.status,
+          statusText: emailResponse.statusText,
+          body: errorText
+        });
+        toast.warning('Order updated but email failed to send');
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending delivery email:', emailError);
+      toast.warning('Order updated but email failed to send');
+      // Don't throw - email failure shouldn't block the delivery confirmation
+    }
+  };
+
   const markAsDelivered = async (orderId, productName, categoryName, deliverAll = false) => {
     const deliveryKey = deliverAll ? `${orderId}-ALL_DISPATCHED` : `${orderId}-${productName}`;
     
@@ -534,7 +600,10 @@ const AdminOrders = () => {
         return;
       }
       
+      // STEP 1: Update order status via Render API (for WebSocket connectivity)
       const apiBaseUrl = import.meta.env.VITE_API_URL;
+      console.log('🚀 Updating order status via Render API:', apiBaseUrl);
+      
       const response = await fetch(`${apiBaseUrl}/admin/deliver-item`, {
         method: 'POST',
         headers: {
@@ -554,7 +623,7 @@ const AdminOrders = () => {
       }
       
       const result = await response.json();
-      console.log('Delivery successful:', result);
+      console.log('✅ Delivery status updated successfully:', result);
       console.log('Result order items:', result.order?.items);
       
       // Show success state briefly
@@ -579,6 +648,27 @@ const AdminOrders = () => {
             orderStatus: result.order.orderStatus,
             cartItems: result.order.items
           }));
+        }
+        
+        // STEP 2: Send delivery email via Vercel API (non-blocking)
+        // Find the full order data to send to email service
+        const fullOrder = orders.find(o => o._id === orderId) || selectedOrder;
+        const orderStatus = result.newOrderStatus || result.order?.orderStatus;
+        
+        console.log('📧 Checking email conditions:', {
+          fullOrder: !!fullOrder,
+          orderStatus,
+          shouldSendEmail: !!fullOrder && (orderStatus === 'delivered' || orderStatus === 'out_for_delivery')
+        });
+        
+        // Send email for delivered or out_for_delivery status
+        if (fullOrder && (orderStatus === 'delivered' || orderStatus === 'out_for_delivery')) {
+          console.log('📧 Triggering delivery email for order:', fullOrder.orderNumber);
+          sendDeliveryEmail(fullOrder, orderStatus).catch(err => 
+            console.error('Email sending failed silently:', err)
+          );
+        } else {
+          console.log('⚠️ Skipping email - conditions not met');
         }
       }
       

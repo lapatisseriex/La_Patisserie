@@ -24,20 +24,27 @@ const resolveUserIdString = (userRef) => {
   }
 
   if (typeof userRef === 'object') {
-    if (userRef._id) {
-      return resolveUserIdString(userRef._id);
-    }
-
-    if (userRef.id) {
-      return resolveUserIdString(userRef.id);
-    }
-
+    // Check if it's a Mongoose ObjectId first (has toHexString method)
     if (typeof userRef.toHexString === 'function') {
       return userRef.toHexString();
     }
 
+    // Then check for toString
     if (typeof userRef.toString === 'function') {
-      return userRef.toString();
+      const stringValue = userRef.toString();
+      // Avoid infinite recursion - return string only if it's different from '[object Object]'
+      if (stringValue && stringValue !== '[object Object]') {
+        return stringValue;
+      }
+    }
+
+    // Only recurse if _id or id is different from the original object
+    if (userRef._id && userRef._id !== userRef) {
+      return resolveUserIdString(userRef._id);
+    }
+
+    if (userRef.id && userRef.id !== userRef) {
+      return resolveUserIdString(userRef.id);
     }
   }
 
@@ -933,11 +940,6 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
 
     // Save order asynchronously to avoid blocking WebSocket notification
     order.save().catch(err => console.error('Failed to save delivery status:', err.message));
-
-  // Send status emails asynchronously (non-blocking) via Vercel
-  sendStatusEmails(order, previousStatus, newOrderStatus)
-    .then(() => console.log(`✅ Delivery email sent for order #${order.orderNumber}`))
-    .catch(err => console.error(`❌ Delivery email failed for order #${order.orderNumber}:`, err.message));
 
     if (shouldFinalizeCodPayment) {
       try {
