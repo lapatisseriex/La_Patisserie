@@ -1821,38 +1821,29 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #fdfbf9 0%, #ffffff 40%, #fdfbf9 100%)' }}>
+    <div className="min-h-screen overflow-x-hidden max-w-full" style={{ background: 'linear-gradient(to bottom, #fdfbf9 0%, #ffffff 40%, #fdfbf9 100%)' }}>
       
-      {/* Beautiful Profile Hero - Only show on main tab */}
+      {/* Beautiful Profile Hero - Only show on main tab for small/medium devices */}
       {activeTab === 'main' && (
-        <div className="relative overflow-hidden" style={{ 
+        <div className="relative overflow-hidden max-w-full lg:hidden" style={{ 
           background: 'linear-gradient(135deg, #fffcfe 0%, #fff5f8 30%, #fef2f5 50%, #fff5f8 70%, #fffcfe 100%)',
           borderBottom: '1px solid rgba(115, 56, 87, 0.15)'
         }}>
-          {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 opacity-8" style={{
-            background: 'radial-gradient(circle, rgba(190, 24, 93, 0.18) 0%, rgba(190, 24, 93, 0.08) 40%, transparent 70%)'}}></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 opacity-8" style={{
-            background: 'radial-gradient(circle, rgba(115, 56, 87, 0.15) 0%, rgba(115, 56, 87, 0.06) 40%, transparent 70%)'}}></div>
-          <div className="absolute top-1/2 left-1/2 w-72 h-72 opacity-4" style={{
-            background: 'radial-gradient(circle, rgba(190, 24, 93, 0.12) 0%, transparent 70%)',
-            transform: 'translate(-50%, -50%)'
-          }}></div>
           
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-            <div className="flex flex-col gap-6 sm:gap-8">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12 lg:py-16">
+            <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">{" "}
               {/* User Profile Info with Beautiful Layout */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
                 <div className="relative group flex-shrink-0">
                   {/* Profile Photo with Elegant Frame */}
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28" style={{
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full sm:rounded-none" style={{
                     boxShadow: '0 8px 24px rgba(115, 56, 87, 0.12)'
                   }}>
-                    <div className="absolute inset-0 border-2" style={{ 
+                    <div className="absolute inset-0 border-2 rounded-full sm:rounded-none" style={{ 
                       borderColor: '#733857',
                       background: 'linear-gradient(135deg, rgba(253, 251, 249, 0.9), rgba(255, 245, 240, 0.9))'
                     }}></div>
-                    <div className="absolute inset-2 bg-white overflow-hidden">
+                    <div className="absolute inset-2 bg-white overflow-hidden rounded-full sm:rounded-none">
                       {user && user.profilePhoto && user.profilePhoto.url ? (
                         <img 
                           src={user.profilePhoto.url} 
@@ -1901,28 +1892,26 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Elegant Stats Cards */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+              {/* Elegant Stats Cards - Hidden on large screens */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
                 {[
                   { icon: Package, value: orders?.length || 0, label: 'Orders', color: '#733857' },
                   { icon: Heart, value: favorites?.length || 0, label: 'Favorites', color: '#8d4466' },
                   { icon: GraduationCap, value: donationStats?.donationCount || 0, label: 'Contributions', color: '#412434' }
                 ].map((stat, index) => (
                   <div key={index} className="relative group">
-                    <div className=" p-3 sm:p-4 lg:p-6 text-center transition-all duration-300 " style={{
-                  
-                    }}>
-                      <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 mx-auto mb-2 sm:mb-3 transition-transform duration-300 group-hover:scale-110" 
+                    <div className="p-2 sm:p-3 md:p-4 lg:p-6 text-center transition-all duration-300">
+                      <stat.icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 mx-auto mb-1 sm:mb-2 md:mb-3 transition-transform duration-300 group-hover:scale-110" 
                         style={{ color: stat.color, opacity: 0.8 }} 
                         strokeWidth={1.5} 
                       />
-                      <div className="text-2xl sm:text-3xl lg:text-4xl font-light mb-1 sm:mb-2" style={{ 
+                      <div className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-light mb-0.5 sm:mb-1 md:mb-2" style={{ 
                         color: stat.color,
                         letterSpacing: '0.02em'
                       }}>
                         {stat.value}
                       </div>
-                      <div className="text-[10px] sm:text-xs uppercase tracking-wider font-medium" style={{ 
+                      <div className="text-[8px] sm:text-[10px] md:text-xs uppercase tracking-wider font-medium" style={{ 
                         color: 'rgba(40, 28, 32, 0.6)',
                         letterSpacing: '0.08em'
                       }}>

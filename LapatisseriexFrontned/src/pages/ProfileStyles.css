@@ -169,3 +169,50 @@
 .animate-bounce {
   animation: bounce 1s ease-in-out infinite;
 }
+
+/* Mobile Responsive Fixes - Prevent Overflow */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll on profile page */
+  .profile-form-mobile,
+  .profile-form-mobile * {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Ensure input fields don't overflow */
+  .profile-form-mobile input[type="tel"],
+  .profile-form-mobile input[type="text"],
+  .profile-form-mobile input[type="email"],
+  .profile-form-mobile input[type="date"],
+  .profile-form-mobile select {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Phone verification container */
+  .profile-form-mobile [class*="space-y"] {
+    max-width: 100%;
+    overflow: visible;
+  }
+  
+  /* Flex containers with proper wrapping */
+  .profile-form-mobile [class*="flex"] {
+    max-width: 100%;
+  }
+  
+  /* Ensure grid doesn't overflow */
+  .profile-form-mobile [class*="grid"] {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+
+/* Specific fix for phone input container */
+.profile-form-mobile input[type="tel"] {
+  min-width: 0 !important;
+  flex: 1 1 auto;
+}
+
+.profile-form-mobile select {
+  flex-shrink: 0;
+}

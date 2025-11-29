@@ -3,10 +3,10 @@
 /* Apply modern stylish font to all text elements */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
 
-/* Space for fixed announcement banners on desktop - REMOVE GAP */
+/* Space for fixed announcement banners on desktop - Account for contact bar + announcement banner */
 @media (min-width: 768px) {
   .header-with-banner {
-    top: 3.5rem !important; /* Reduced from 5rem to eliminate gap */
+    top: 3.5rem !important; /* Contact bar (~1.85rem) + Announcement banner (~1.65rem) */
   }
 }
 

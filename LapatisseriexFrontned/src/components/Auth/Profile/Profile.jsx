@@ -925,13 +925,13 @@ const Profile = ({ onDirtyChange }) => {
       </div>
       
       {/* Main content container - Elegant spacing */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 relative" style={{
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 lg:py-10 relative overflow-x-hidden" style={{
         background: 'linear-gradient(to bottom, #FDFBF9 0%, #FFFFFF 100%)'
       }}>
 
       <form 
         onSubmit={handleSubmit} 
-        className="profile-form-mobile space-y-6 sm:space-y-8 pb-20 md:pb-6"
+        className="profile-form-mobile space-y-4 sm:space-y-6 md:space-y-8 pb-20 md:pb-6 overflow-x-hidden max-w-full"
         onFocus={(e) => {
           // Prevent any scroll when form elements get focus
           if (savingRef.current) {
@@ -1038,7 +1038,7 @@ const Profile = ({ onDirtyChange }) => {
             </div>
           </div>
           
-          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" style={{
+          <div className="p-3 sm:p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6" style={{
             background: 'linear-gradient(to bottom, #FEFEFE 0%, #FCFCFC 100%)'
           }}>
             {/* Name Field */}
@@ -1126,7 +1126,7 @@ const Profile = ({ onDirtyChange }) => {
             </div>
           </div>
           
-          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" style={{
+          <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6 max-w-full overflow-hidden" style={{
             background: 'linear-gradient(to bottom, #FEFEFE 0%, #FCFCFC 100%)'
           }}>
             {/* Email verification section */}
@@ -1174,7 +1174,7 @@ const Profile = ({ onDirtyChange }) => {
             </div>
           </div>
           
-          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" style={{
+          <div className="p-3 sm:p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6" style={{
             background: 'linear-gradient(to bottom, rgba(255, 251, 252, 0.3) 0%, #FFFFFF 100%)'
           }}>
             {/* Date of Birth Field */}
@@ -1274,10 +1274,10 @@ const Profile = ({ onDirtyChange }) => {
             </div>
           </div>
           
-          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" style={{
+          <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6" style={{
             background: 'linear-gradient(to bottom, rgba(250, 250, 249, 0.3) 0%, #FFFFFF 100%)'
           }}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               {/* Delivery Location */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423'}}>
@@ -1352,7 +1352,7 @@ const Profile = ({ onDirtyChange }) => {
                 <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423'}}>
                   <Building className="h-4 w-4" style={{color: '#8B7355'}} />
                   Hostel/Residence
-                  <span className="text-xs font-normal ml-2" style={{color: '#8B7355'}}>(Optional)</span>
+    
                 </label>
                 <div className="relative">
                   {!isEditMode ? (

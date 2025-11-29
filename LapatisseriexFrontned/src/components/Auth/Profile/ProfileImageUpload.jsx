@@ -86,10 +86,9 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
     <div className="flex flex-col items-center space-y-4" style={{  }}>
       <div className="relative group">
         <div 
-          className={`overflow-hidden border-4 transition-all duration-300 ${size === 'small' ? 'w-16 h-16' : 'w-36 h-36'}`}
+          className={`overflow-hidden border-4 transition-all duration-300 rounded-full sm:rounded-xl ${size === 'small' ? 'w-16 h-16' : 'w-36 h-36'}`}
           style={{ 
             borderColor: isEditMode ? '#BE185D' : '#E5E7EB',
-            borderRadius: '8px',
             boxShadow: isEditMode ? '0 8px 24px rgba(190, 24, 93, 0.15)' : '0 4px 12px rgba(0, 0, 0, 0.08)'
           }}
         >
@@ -123,8 +122,8 @@ const ProfileImageUpload = ({ isEditMode = false, size = 'large' }) => {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="absolute -bottom-2 -right-2 p-3 text-white transition-all duration-300 shadow-lg disabled:opacity-50"
-            style={{ backgroundColor: '#BE185D', borderRadius: '8px' }}
+            className="absolute -bottom-2 -right-2 p-3 text-white transition-all duration-300 shadow-lg disabled:opacity-50 rounded-full sm:rounded-lg"
+            style={{ backgroundColor: '#BE185D' }}
             onMouseEnter={(e) => !isUploading && (e.currentTarget.style.backgroundColor = '#9F1239')}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#BE185D'}
             title="Upload new profile photo"

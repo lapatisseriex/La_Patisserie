@@ -763,7 +763,7 @@ const ProductDisplayPageNew = () => {
       )}
 
       {/* Mobile Layout */}
-      <div className="md:hidden min-h-screen bg-white pt-[75px]">
+      <div className="md:hidden min-h-screen bg-white pt-[60px]">
         {/* Mobile Image Display */}
         <div className="relative w-full">
           <div className="relative w-full overflow-hidden">

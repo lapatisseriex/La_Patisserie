@@ -154,7 +154,7 @@
   50% { background-position: 100% 50%; }
 }
 
-/* Make banner fixed on desktop - NO GAP */
+/* Make banner fixed on desktop ONLY */
 @media (min-width: 768px) {
   .announcement-banner {
     position: fixed;
@@ -162,6 +162,13 @@
     left: 0;
     right: 0;
     z-index: 61;
+  }
+}
+
+/* On mobile, banner is NOT fixed - stays in normal flow */
+@media (max-width: 767px) {
+  .announcement-banner {
+    position: relative;
   }
 }
 
