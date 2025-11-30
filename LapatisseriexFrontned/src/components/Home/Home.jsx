@@ -59,6 +59,12 @@ const Home = () => {
     navigate(`/product/${product._id}`);
   };
 
+  const handleSearchBarClick = () => {
+    console.log('🔍 Search bar clicked - navigating to products page');
+    // Navigate to products page with search focus
+    navigate('/products', { state: { focusSearch: true } });
+  };
+
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -180,10 +186,10 @@ const Home = () => {
 
         {/* Search Bar Section */}
         <section 
-          className="w-full px-4 md:px-6 lg:px-8 py-6 md:py-8" 
+          className="w-full px-4 md:px-6 lg:px-8 py-4 md:py-5" 
           style={{ 
-            minHeight: '120px',
-            background: 'linear-gradient(180deg, rgba(255, 245, 248, 0.7) 0%, rgba(255, 250, 252, 0.95) 100%)',
+            minHeight: '80px',
+            background: 'linear-gradient(180deg, rgba(255, 245, 248, 0.5) 0%, rgba(255, 250, 252, 0.8) 100%)',
             display: 'block'
           }}
         >
@@ -193,6 +199,7 @@ const Home = () => {
               newLaunches={newlyLaunchedProducts || []}
               cartPicks={cartPickedProducts || []}
               onProductClick={handleProductClick}
+              onSearchBarClick={handleSearchBarClick}
             />
           </div>
         </section>

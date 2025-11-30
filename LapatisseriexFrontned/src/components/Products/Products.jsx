@@ -36,6 +36,45 @@ const Products = () => {
     }
   }, [isSelectingFreeProduct, user, refreshCart]);
 
+  // Handle search bar focus from navigation state
+  useEffect(() => {
+    if (location.state?.focusSearch) {
+      console.log('🎯 Focus search triggered from home pageee');
+      // Wait for page to render
+      const timer = setTimeout(() => {
+        if (searchBarRef.current) {
+          const input = searchBarRef.current.querySelector('input');
+          if (input) {
+            console.log('✅ Focusing search input and scrolling');
+            // Scroll to search bar
+            window.scrollTo({
+              top: searchBarRef.current.offsetTop - 100,
+              behavior: 'smooth'
+            });
+            // Focus the input
+            setTimeout(() => {
+              input.focus();
+              input.click();
+              console.log('✅ Input focused successfully');
+            }, 400);
+          } else {
+            console.log('❌ Input not found in searchBarRef');
+          }
+        } else {
+          console.log('❌ searchBarRef not found');
+        }
+      }, 100);
+      
+      // Clear the navigation state to prevent re-triggering on re-renders
+      return () => {
+        clearTimeout(timer);
+        if (location.state?.focusSearch) {
+          window.history.replaceState({}, document.title);
+        }
+      };
+    }
+  }, [location.state]);
+
   // Products state organized by categories
   const [productsByCategory, setProductsByCategory] = useState({});
   // Use null to show skeletons before data arrives
@@ -52,6 +91,7 @@ const Products = () => {
   const categorySectionRef = useRef(null);
   const productsSectionRef = useRef(null);
   const categoryRefs = useRef({});
+  const searchBarRef = useRef(null);
   
   // Observer for scroll tracking
   const observerRef = useRef(null);
@@ -728,7 +768,7 @@ const Products = () => {
       <div className="container mx-auto px-4 pt-3 pb-4">
 
         {/* Products Search Bar (same as Home), now below category bar */}
-        <div className="mt-4 md:mt-6 lg:mt-8 mb-4">
+        <div ref={searchBarRef} className="mt-4 md:mt-6 lg:mt-8 mb-4">
           <SearchBar
             bestSellers={(allProducts || []).slice(0, 8)}
             newLaunches={(allProducts || []).slice(0, 8)}

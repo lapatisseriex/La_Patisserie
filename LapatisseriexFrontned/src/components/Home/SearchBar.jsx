@@ -17,6 +17,7 @@ const SearchBar = ({
   cartPicks = [], 
   onProductClick,
   onQueryChange,
+  onSearchBarClick,
   disableSuggestions = false,
   // Optional: control wrapper z-index for pages with their own sticky bars (e.g., Products)
   baseZIndex = 200
@@ -286,6 +287,13 @@ const SearchBar = ({
         {/* Search Input Container */}
         <div 
           className="relative flex items-center transition-all duration-300 bg-white/95 backdrop-blur-sm"
+          onClick={(e) => {
+            // If on home page and search is empty, navigate to products page
+            if (typeof onSearchBarClick === 'function' && !searchQuery) {
+              e.preventDefault();
+              onSearchBarClick();
+            }
+          }}
           style={{
             border: '1px solid',
             borderColor: isSearchFocused ? '#733857' : 'rgba(115,56,87,0.18)',
@@ -303,7 +311,8 @@ const SearchBar = ({
               ? 'linear-gradient(135deg, #ffffff 0%, #fdf7fa 55%, #f8eef3 100%)'
               : 'linear-gradient(135deg, #ffffff 0%, #fcfbfc 60%, #faf7fa 100%)',
             willChange: 'box-shadow, border-color, background',
-            transform: 'translateZ(0)'
+            transform: 'translateZ(0)',
+            cursor: typeof onSearchBarClick === 'function' && !searchQuery ? 'pointer' : 'default'
           }}
         >
         {/* Search Icon */}
@@ -338,14 +347,24 @@ const SearchBar = ({
             setSearchQuery(v);
             if (typeof onQueryChange === 'function') onQueryChange(v);
           }}
-          onFocus={() => setIsSearchFocused(true)}
+          onFocus={(e) => {
+            // If on home page with onSearchBarClick callback and no text, navigate to products
+            if (typeof onSearchBarClick === 'function' && !searchQuery) {
+              e.preventDefault();
+              e.target.blur();
+              onSearchBarClick();
+              return;
+            }
+            setIsSearchFocused(true);
+          }}
           autoComplete="off"
           placeholder={typewriterState.placeholder}
           className="flex-1 text-[12px] sm:text-[13px] md:text-sm outline-none bg-transparent font-light placeholder-gray-400 transition-all duration-300"
           style={{
             color: '#281c20',
             letterSpacing: '0.3px',
-            padding: isSmallPhone ? '8px 6px 8px 0' : isMobile ? '10px 8px 10px 0' : '12px 14px 12px 0'
+            padding: isSmallPhone ? '8px 6px 8px 0' : isMobile ? '10px 8px 10px 0' : '12px 14px 12px 0',
+            cursor: typeof onSearchBarClick === 'function' && !searchQuery ? 'pointer' : 'text'
           }}
           aria-label="Search products"
         />
