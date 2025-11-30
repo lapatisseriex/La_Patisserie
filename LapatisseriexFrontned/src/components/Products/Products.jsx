@@ -39,31 +39,61 @@ const Products = () => {
   // Handle search bar focus from navigation state
   useEffect(() => {
     if (location.state?.focusSearch) {
-      console.log('🎯 Focus search triggered from home pageee');
-      // Wait for page to render
+      console.log('🎯 Focus search triggered from home page');
+      
+      // On mobile, scroll to top to show category bar, then focus search
+      // On desktop, scroll to show search bar below header
+      const isMobile = window.innerWidth < 768;
+      
+      // Wait for page to render completely
       const timer = setTimeout(() => {
-        if (searchBarRef.current) {
-          const input = searchBarRef.current.querySelector('input');
-          if (input) {
-            console.log('✅ Focusing search input and scrolling');
-            // Scroll to search bar
-            window.scrollTo({
-              top: searchBarRef.current.offsetTop - 100,
-              behavior: 'smooth'
-            });
-            // Focus the input
-            setTimeout(() => {
-              input.focus();
-              input.click();
-              console.log('✅ Input focused successfully');
-            }, 400);
-          } else {
-            console.log('❌ Input not found in searchBarRef');
-          }
+        if (isMobile) {
+          // Mobile: Scroll to top to show category bar
+          console.log('📱 Mobile - scrolling to top');
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+          
+          // Focus search input after scroll
+          setTimeout(() => {
+            if (searchBarRef.current) {
+              const input = searchBarRef.current.querySelector('input');
+              if (input) {
+                input.focus();
+                input.click();
+                console.log('✅ Mobile input focused');
+              }
+            }
+          }, 600);
         } else {
-          console.log('❌ searchBarRef not found');
+          // Desktop: Scroll to search bar position
+          if (searchBarRef.current) {
+            const input = searchBarRef.current.querySelector('input');
+            if (input) {
+              console.log('✅ Desktop - focusing search input and scrolling');
+              const searchBarTop = searchBarRef.current.getBoundingClientRect().top + window.pageYOffset;
+              const headerOffset = 140;
+              const scrollTarget = Math.max(0, searchBarTop - headerOffset);
+              
+              window.scrollTo({
+                top: scrollTarget,
+                behavior: 'smooth'
+              });
+              
+              setTimeout(() => {
+                input.focus();
+                input.click();
+                console.log('✅ Desktop input focused successfully');
+              }, 500);
+            } else {
+              console.log('❌ Input not found in searchBarRef');
+            }
+          } else {
+            console.log('❌ searchBarRef not found');
+          }
         }
-      }, 100);
+      }, 200);
       
       // Clear the navigation state to prevent re-triggering on re-renders
       return () => {
@@ -768,7 +798,7 @@ const Products = () => {
       <div className="container mx-auto px-4 pt-3 pb-4">
 
         {/* Products Search Bar (same as Home), now below category bar */}
-        <div ref={searchBarRef} className="mt-4 md:mt-6 lg:mt-8 mb-4">
+        <div ref={searchBarRef} className="mt-2 md:mt-3 mb-3" style={{ position: 'relative', zIndex: 1 }}>
           <SearchBar
             bestSellers={(allProducts || []).slice(0, 8)}
             newLaunches={(allProducts || []).slice(0, 8)}
@@ -776,7 +806,7 @@ const Products = () => {
             onQueryChange={setSearchQuery}
             disableSuggestions={true}
             // Lower z-index on Products page so it doesn't overlap sticky category bars on mobile
-            baseZIndex={10}
+            baseZIndex={1}
             onProductClick={() => { /* optional: could scroll to product or open details */ }}
           />
         </div>

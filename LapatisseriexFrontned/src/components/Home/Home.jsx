@@ -186,9 +186,8 @@ const Home = () => {
 
         {/* Search Bar Section */}
         <section 
-          className="w-full px-4 md:px-6 lg:px-8 py-4 md:py-5" 
+          className="w-full px-4 md:px-6 lg:px-8 py-3 md:py-4" 
           style={{ 
-            minHeight: '80px',
             background: 'linear-gradient(180deg, rgba(255, 245, 248, 0.5) 0%, rgba(255, 250, 252, 0.8) 100%)',
             display: 'block'
           }}

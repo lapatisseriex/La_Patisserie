@@ -289,7 +289,7 @@ const SearchBar = ({
           className="relative flex items-center transition-all duration-300 bg-white/95 backdrop-blur-sm"
           onClick={(e) => {
             // If on home page and search is empty, navigate to products page
-            if (typeof onSearchBarClick === 'function' && !searchQuery) {
+            if (typeof onSearchBarClick === 'function' && !searchQuery && !disableSuggestions) {
               e.preventDefault();
               onSearchBarClick();
             }
@@ -312,7 +312,7 @@ const SearchBar = ({
               : 'linear-gradient(135deg, #ffffff 0%, #fcfbfc 60%, #faf7fa 100%)',
             willChange: 'box-shadow, border-color, background',
             transform: 'translateZ(0)',
-            cursor: typeof onSearchBarClick === 'function' && !searchQuery ? 'pointer' : 'default'
+            cursor: typeof onSearchBarClick === 'function' && !searchQuery && !disableSuggestions ? 'pointer' : 'default'
           }}
         >
         {/* Search Icon */}
@@ -349,7 +349,7 @@ const SearchBar = ({
           }}
           onFocus={(e) => {
             // If on home page with onSearchBarClick callback and no text, navigate to products
-            if (typeof onSearchBarClick === 'function' && !searchQuery) {
+            if (typeof onSearchBarClick === 'function' && !searchQuery && !disableSuggestions) {
               e.preventDefault();
               e.target.blur();
               onSearchBarClick();
@@ -364,7 +364,7 @@ const SearchBar = ({
             color: '#281c20',
             letterSpacing: '0.3px',
             padding: isSmallPhone ? '8px 6px 8px 0' : isMobile ? '10px 8px 10px 0' : '12px 14px 12px 0',
-            cursor: typeof onSearchBarClick === 'function' && !searchQuery ? 'pointer' : 'text'
+            cursor: typeof onSearchBarClick === 'function' && !searchQuery && !disableSuggestions ? 'pointer' : 'text'
           }}
           aria-label="Search products"
         />
