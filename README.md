@@ -35,7 +35,7 @@ La Patisserie is an online ordering experience for our bakery. Browse the menu, 
 ## Payments
 
 - We support common online payment methods.
-- Your payment is processed securely; we don’t store full card details.
+- Your payment is processed securely; we don’t store full card detail.
 
 ## Rewards and loyalty
 
