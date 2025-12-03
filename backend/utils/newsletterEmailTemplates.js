@@ -32,7 +32,7 @@ const getEmailFooter = () => `
       
       <div style="margin-bottom: 25px;">
         <p style="color: rgba(255, 255, 255, 0.5); font-size: 13px; margin: 5px 0; font-family: system-ui, -apple-system, sans-serif;">
-          📍 LIG 208 Gandhi Nagar, Peelamedu, Coimbatore
+          📍 LIG 208 Gandhi Maannagar, Peelamedu, Coimbatore
         </p>
       </div>
 

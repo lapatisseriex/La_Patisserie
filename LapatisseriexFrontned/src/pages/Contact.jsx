@@ -160,7 +160,7 @@ const Contact = () => {
                 <div>
                   <h3 className="font-medium mb-2" style={{ color: '#281c20' }}>Address</h3>
                   <p className="text-gray-700">
-                    LIG 208 Gandhi Nagar<br />
+                    LIG 208, Gandhi Maanagar<br />
                     Peelamedu, Coimbatore
                   </p>
                 </div>

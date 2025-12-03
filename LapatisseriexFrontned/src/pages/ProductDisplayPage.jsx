@@ -1113,7 +1113,7 @@ const ProductDisplayPageNew = () => {
                 </h4>
                 <div className="space-y-0.5 text-xs" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
                  
-                  <p>LIG 208 Gandhi Nagar</p>
+                  <p>LIG 208, Gandhi Maanagar</p>
                   <p>Peelamedu, Coimbatore</p>
                 </div>
               </div>
@@ -1445,7 +1445,7 @@ const ProductDisplayPageNew = () => {
                     </h4>
                     <div className="space-y-1 text-sm" style={{ color: 'rgba(26, 26, 26, 0.7)' }}>
                     
-                      <p>LIG 208 Gandhi Nagar</p>
+                      <p>LIG 208, Gandhi Maanagar</p>
                       <p>Peelamedu, Coimbatore</p>
                     </div>
                   </div>

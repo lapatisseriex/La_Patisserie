@@ -141,7 +141,7 @@ const FAQ = () => {
         },
         {
           q: "Where is your store located?",
-          a: "We're located at LIG 208 Gandhi Nagar, Peelamedu, Coimbatore, Tamil Nadu."
+          a: "We're located at LIG 208, Gandhi Maanagar, Peelamedu, Coimbatore, Tamil Nadu."
         },
         {
           q: "Do you cater for events?",

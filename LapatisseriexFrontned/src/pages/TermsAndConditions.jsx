@@ -135,7 +135,7 @@ const TermsAndConditions = () => {
             </p>
             <div className="space-y-3 text-base">
               <p><strong style={{ color: '#281c20' }}>La Pâtisserie</strong></p>
-              <p>LIG 208 Gandhi Nagar, Peelamedu, Coimbatore</p>
+              <p>LIG 208, Gandhi Maanagar, Peelamedu, Coimbatore</p>
               <p>Phone: <a href="tel:+917845712388" className="hover:opacity-70 transition-opacity" style={{ color: '#733857' }}>+91 7845712388</a></p>
               <p>Email: <a href="mailto:lapatisserielapatisserie@gmail.com" className="hover:opacity-70 transition-opacity" style={{ color: '#733857' }}>lapatisserielapatisserie@gmail.com</a></p>
             </div>

@@ -132,7 +132,7 @@ const RefundPolicy = () => {
               <div className="space-y-3 text-base">
                 <p>Phone: <a href="tel:+917845712388" className="hover:opacity-70 transition-opacity" style={{ color: '#733857' }}>+91 7845712388</a></p>
                 <p>Email: <a href="mailto:lapatisserielapatisserie@gmail.com" className="hover:opacity-70 transition-opacity" style={{ color: '#733857' }}>lapatisserielapatisserie@gmail.com</a></p>
-                <p>Address: LIG 208 Gandhi Nagar, Peelamedu, Coimbatore</p>
+                <p>Address: LIG 208, Gandhi Maanagar, Peelamedu, Coimbatore</p>
               </div>
             </div>
 

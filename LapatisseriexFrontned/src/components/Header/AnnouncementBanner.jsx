@@ -33,7 +33,7 @@ const AnnouncementBanner = () => {
           
           <div className="contact-info-item hidden lg:flex">
             <span className="contact-label">VISIT</span>
-            <span className="contact-text">LIG 208 Gandhi Nagar, Peelamedu, Coimbatore</span>
+            <span className="contact-text">LIG 208 Gandhi Maannagar, Peelamedu, Coimbatore</span>
           </div>
         </div>
       </div>

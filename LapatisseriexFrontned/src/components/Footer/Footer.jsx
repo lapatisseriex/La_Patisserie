@@ -243,7 +243,7 @@ const Footer = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span className="leading-tight">LIG 208 Gandhi Nagar, Peelamedu, Coimbatore</span>
+                    <span className="leading-tight">LIG 208 Gandhi Maannagar, Peelamedu, Coimbatore</span>
                   </div>
                 </div>
               )}
@@ -417,7 +417,7 @@ const Footer = () => {
                   </svg>
                 </div>
                 <span className="text-left text-sm leading-tight">
-                  LIG 208 Gandhi Nagar<br />
+                  LIG 208 Gandhi Maannagar<br />
                   Peelamedu, Coimbatore
                 </span>
               </div>
