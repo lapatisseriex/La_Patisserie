@@ -26,6 +26,10 @@ export const getProducts = asyncHandler(async (req, res) => {
     page = 1
   } = req.query;
 
+  console.log('🧩 [getProducts] Query params:', {
+    category, isActive, minPrice, maxPrice, isVeg, hasDiscount, tags, search, bestSeller, limit, page
+  });
+
   // Build filter object
   const filter = {};
   
@@ -79,6 +83,46 @@ export const getProducts = asyncHandler(async (req, res) => {
     filter.totalOrderCount = { $gte: 4 };
   }
   
+  // Role-based visibility filter
+  // Admin users see all products (admin-only + user + null)
+  // Non-admin users only see products with role='user' or role=null
+  const userRole = req.user?.role;
+  console.log('📊 [getProducts] Product Filter - User:', req.user ? `${req.user.name} (${req.user.uid})` : 'Not authenticated', '| Role:', userRole || 'none');
+  
+  // Only apply role filter if user is authenticated AND is not an admin
+  if (req.user && userRole !== 'admin') {
+    // Non-admin users: only show products with role='user' or role=null
+    filter.$or = filter.$or || [];
+    const roleFilter = [{ role: 'user' }, { role: null }];
+    
+    if (filter.$or.length > 0) {
+      // If $or already exists (from search), wrap it
+      const existingOr = filter.$or;
+      filter.$and = filter.$and || [];
+      filter.$and.push({ $or: existingOr }, { $or: roleFilter });
+      delete filter.$or;
+    } else {
+      filter.$or = roleFilter;
+    }
+    console.log('🧱 [getProducts] Role filter applied for non-admin: { $or: [{role:"user"},{role:null}] }');
+  } else if (req.user && userRole === 'admin') {
+    console.log('🛡️ [getProducts] Admin user: No role-based filtering applied');
+  } else {
+    console.log('🙈 [getProducts] Unauthenticated: Applying role filter { $or: [{role:"user"},{role:null}] }');
+    // Unauthenticated users: only show products with role='user' or role=null
+    filter.$or = filter.$or || [];
+    const roleFilter = [{ role: 'user' }, { role: null }];
+    
+    if (filter.$or.length > 0) {
+      const existingOr = filter.$or;
+      filter.$and = filter.$and || [];
+      filter.$and.push({ $or: existingOr }, { $or: roleFilter });
+      delete filter.$or;
+    } else {
+      filter.$or = roleFilter;
+    }
+  }
+  
   // Search by name, description, product id, and optionally Mongo _id if valid
   if (search) {
     const orConditions = [
@@ -92,7 +136,20 @@ export const getProducts = asyncHandler(async (req, res) => {
       orConditions.push({ _id: new mongoose.Types.ObjectId(search) });
     }
 
-    filter.$or = orConditions;
+    // Handle role filter with search
+    if (req.user && userRole === 'admin') {
+      // Admin: show all products
+      filter.$or = orConditions;
+    } else {
+      // Non-admin or unauthenticated: apply role filter
+      filter.$and = filter.$and || [];
+      filter.$and.push(
+        { $or: orConditions },
+        { $or: [{ role: 'user' }, { role: null }] }
+      );
+      delete filter.$or; // Remove the role filter from $or since it's now in $and
+      console.log('🔎 [getProducts] Search + non-admin: Combined search + role filters in $and');
+    }
   }
 
   // Calculate pagination
@@ -114,11 +171,11 @@ export const getProducts = asyncHandler(async (req, res) => {
   let products, totalProducts;
   
   if (cachedData) {
-    console.log('Cache hit for products query');
+    console.log('💾 [getProducts] Cache HIT');
     products = cachedData.products;
     totalProducts = cachedData.totalProducts;
   } else {
-    console.log('Cache miss for products query, fetching from database');
+    console.log('📡 [getProducts] Cache MISS — querying database…');
     
     // Execute query
     products = await Product.find(filter)
@@ -179,6 +236,8 @@ export const getProducts = asyncHandler(async (req, res) => {
       nextOpenTime: nextOpenTime
     }
   });
+
+  console.log(`📦 [getProducts] Responded with ${productsWithAvailability.length} products | total: ${totalProducts} | page: ${page}/${Math.ceil(totalProducts / Number(limit))}`);
 });
 
 // @desc    Get single product by ID
@@ -201,6 +260,13 @@ export const getProduct = asyncHandler(async (req, res) => {
 
     // For non-admin users, don't return inactive products
     if (!product.isActive && (!req.user || req.user.role !== 'admin')) {
+      res.status(404);
+      throw new Error('Product not found');
+    }
+
+    // Role-based visibility for single product:
+    // If the product is marked as admin-only, only admins can access it
+    if (product.role === 'admin' && (!req.user || req.user.role !== 'admin')) {
       res.status(404);
       throw new Error('Product not found');
     }
@@ -273,6 +339,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     extraFields,
     id,
     badge,
+    role, // Role-based visibility field
     variants // [{ name?, price, stock, quantity, measuring }]
   } = req.body;
 
@@ -336,6 +403,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     extraFields: extraFields || {},
     id,
     badge,
+    role: role || null, // Set role (admin, user, or null)
     variants: normalizedVariants // Store normalized variants only
   });
 
@@ -371,6 +439,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
     isActive,
     id,
     badge,
+    role, // Role-based visibility field
     cancelOffer,
     variants // Array of variant objects [{ name?, price, stock, quantity, measuring }]
   } = req.body;
@@ -403,6 +472,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
   product.isActive = isActive !== undefined ? isActive : product.isActive;
   product.id = id !== undefined ? id : product.id;
   product.badge = badge !== undefined ? badge : product.badge;
+  product.role = role !== undefined ? role : product.role; // Update role field
   product.importantField = importantField !== undefined ? importantField : product.importantField;
   product.extraFields = extraFields !== undefined ? extraFields : product.extraFields;
 

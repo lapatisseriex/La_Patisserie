@@ -4,8 +4,6 @@ import { GripVertical } from 'lucide-react';
 import { useProduct } from '../../../context/ProductContext/ProductContext';
 import { useCategory } from '../../../context/CategoryContext/CategoryContext';
 import MediaUploader from '../../common/MediaUpload/MediaUploader';
-import MediaPreview from '../../common/MediaUpload/MediaPreview';
-import PricingCalculator from '../../common/PricingCalculator';
 import QuickStockUpdate from './QuickStockUpdate';
 import { calculatePricing } from '../../../utils/pricingUtils';
 import {
@@ -169,6 +167,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
     isActive: true,
     id: '',
     badge: '',
+    role: null, // Role-based visibility: 'admin', 'user', or null
     tags: [],
     cancelOffer: false,
     importantField: { name: '', value: '' },
@@ -231,6 +230,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         isActive: product.isActive !== undefined ? product.isActive : true,
         id: product.id || '',
         badge: product.badge || '',
+        role: product.role !== undefined ? product.role : null, // Initialize role
         tags: product.tags || [],
         cancelOffer: product.cancelOffer || false,
         importantField: product.importantField || { name: '', value: '' }
@@ -425,6 +425,7 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
       // Prepare final data - handle optional stock field and auto-calculate MRP
       const finalData = {
         ...formData,
+        role: formData.role || null, // Convert empty string to null
         extraFields,
         variants: variants.map(v => {
           // Calculate MRP if pricing calculator inputs are provided
@@ -926,6 +927,12 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                                 💡 Will be auto-updated to ₹{calculatedMRP.toFixed(2)} based on pricing calculator
                               </p>
                             );
+                          } else if (variant.price > 0) {
+                            return (
+                              <p className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                                ✓ Manual price mode - this exact amount will be used
+                              </p>
+                            );
                           }
                           return (
                             <p className="text-xs text-gray-500">
@@ -1049,10 +1056,36 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                           const costPrice = variant.costPrice || 0;
                           const profitWanted = variant.profitWanted || 0;
                           const freeCashExpected = variant.freeCashExpected || 0;
+                          const manualPrice = variant.price || 0;
+                          
+                          // Check if using manual pricing mode
+                          const isManualPricing = (costPrice === 0 && profitWanted === 0 && freeCashExpected === 0 && manualPrice > 0);
                           
                           // Use centralized pricing calculation for consistency
                           const pricing = calculatePricing(variant);
                           const yourReturn = costPrice + profitWanted;
+                          
+                          if (isManualPricing) {
+                            return (
+                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <div className="flex items-start gap-2 mb-3">
+                                  <span className="text-2xl">📝</span>
+                                  <div>
+                                    <p className="text-sm font-semibold text-amber-800">Manual Pricing Mode</p>
+                                    <p className="text-xs text-amber-700 mt-1">
+                                      All pricing calculator fields are 0, so the manually entered price of ₹{manualPrice.toFixed(2)} will be used directly.
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="bg-amber-100 rounded-lg p-3 border border-amber-300">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-amber-800">Final Price (Manual)</span>
+                                    <span className="text-xl font-bold text-amber-900">₹{pricing.mrp.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
                           
                           return (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1075,26 +1108,47 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                         })()}
                         
                         {/* Formula Display */}
-                        <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-                          <div className="text-xs text-amber-700 space-y-1">
-                            <div><strong>Step 1:</strong> Final Price = {variant.costPrice || 0} + {variant.profitWanted || 0} + {variant.freeCashExpected || 0} = ₹{((variant.costPrice || 0) + (variant.profitWanted || 0) + (variant.freeCashExpected || 0)).toFixed(2)}</div>
-                            <div><strong>Step 2:</strong> 
-                              {(() => {
-                                const pricing = calculatePricing(variant);
-                                const discountType = variant.discount?.type;
-                                const discountValue = variant.discount?.value || 0;
-                                
-                                if (discountType === 'flat') {
-                                  return ` MRP = Final Price + Flat Discount = ${pricing.finalPrice.toFixed(2)} + ${discountValue} = ₹${pricing.mrp.toFixed(2)}`;
-                                } else if (discountType === 'percentage') {
-                                  return ` MRP = ((Discount% + 100) ÷ 100) × Final Price = ((${discountValue} + 100) ÷ 100) × ${pricing.finalPrice.toFixed(2)} = ₹${pricing.mrp.toFixed(2)}`;
-                                } else {
-                                  return ` MRP = Final Price (No discount) = ₹${pricing.mrp.toFixed(2)}`;
-                                }
-                              })()}
+                        {(() => {
+                          const costPrice = variant.costPrice || 0;
+                          const profitWanted = variant.profitWanted || 0;
+                          const freeCashExpected = variant.freeCashExpected || 0;
+                          const manualPrice = variant.price || 0;
+                          const isManualPricing = (costPrice === 0 && profitWanted === 0 && freeCashExpected === 0 && manualPrice > 0);
+                          
+                          if (isManualPricing) {
+                            return (
+                              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                                <div className="text-xs text-green-700 space-y-1">
+                                  <div><strong>Manual Pricing:</strong> Using price field directly = ₹{manualPrice.toFixed(2)}</div>
+                                  <div className="text-green-600 italic">No pricing calculator values entered, manual price will be saved to database</div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          return (
+                            <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                              <div className="text-xs text-amber-700 space-y-1">
+                                <div><strong>Step 1:</strong> Final Price = {costPrice} + {profitWanted} + {freeCashExpected} = ₹{(costPrice + profitWanted + freeCashExpected).toFixed(2)}</div>
+                                <div><strong>Step 2:</strong> 
+                                  {(() => {
+                                    const pricing = calculatePricing(variant);
+                                    const discountType = variant.discount?.type;
+                                    const discountValue = variant.discount?.value || 0;
+                                    
+                                    if (discountType === 'flat') {
+                                      return ` MRP = Final Price + Flat Discount = ${pricing.finalPrice.toFixed(2)} + ${discountValue} = ₹${pricing.mrp.toFixed(2)}`;
+                                    } else if (discountType === 'percentage') {
+                                      return ` MRP = ((Discount% + 100) ÷ 100) × Final Price = ((${discountValue} + 100) ÷ 100) × ${pricing.finalPrice.toFixed(2)} = ₹${pricing.mrp.toFixed(2)}`;
+                                    } else {
+                                      return ` MRP = Final Price (No discount) = ₹${pricing.mrp.toFixed(2)}`;
+                                    }
+                                  })()}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
+                          );
+                        })()}
                         
                         {/* ProductCard-like Price Display */}
                         <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
@@ -1105,23 +1159,35 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
                             const freeCashExpected = variant.freeCashExpected || 0;
                             const discountType = variant.discount?.type;
                             const discountValue = variant.discount?.value || 0;
+                            const manualPrice = variant.price || 0;
+                            
+                            // Check if using manual pricing mode
+                            const isManualPricing = (costPrice === 0 && profitWanted === 0 && freeCashExpected === 0 && manualPrice > 0);
                             
                             // Use centralized pricing calculation for consistency
                             const pricing = calculatePricing(variant);
                             
                             return (
-                              <div className="inline-block max-w-xs">
-                                <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-lg font-bold text-green-600">₹{Math.round(pricing.finalPrice)}</span>
+                              <div className="space-y-2">
+                                {isManualPricing && (
+                                  <div className="bg-green-50 border border-green-200 rounded-md p-2 mb-2">
+                                    <p className="text-xs text-green-700 font-medium">📝 Manual Pricing Mode Active</p>
+                                    <p className="text-xs text-green-600">Using manually entered price: ₹{manualPrice.toFixed(2)}</p>
+                                  </div>
+                                )}
+                                <div className="inline-block max-w-xs">
+                                  <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-lg font-bold text-green-600">₹{Math.round(pricing.finalPrice)}</span>
+                                        {pricing.discountPercentage > 0 && (
+                                          <span className="text-sm text-gray-500 line-through">₹{Math.round(pricing.mrp)}</span>
+                                        )}
+                                      </div>
                                       {pricing.discountPercentage > 0 && (
-                                        <span className="text-sm text-gray-500 line-through">₹{Math.round(pricing.mrp)}</span>
+                                        <span className="text-xs text-green-600 font-medium">{pricing.discountPercentage}% OFF</span>
                                       )}
                                     </div>
-                                    {pricing.discountPercentage > 0 && (
-                                      <span className="text-xs text-green-600 font-medium">{pricing.discountPercentage}% OFF</span>
-                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1189,6 +1255,28 @@ const ProductForm = ({ product = null, onClose, preSelectedCategory = '' }) => {
         {/* ADDITIONAL DETAILS TAB */}
         {activeTab === 'details' && (
           <>
+            {/* Product Visibility Role */}
+            <div className="mb-6 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Product Visibility Role
+              </label>
+              <select
+                name="role"
+                value={formData.role || ''}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+              >
+                <option value="">All Users (Default)</option>
+                <option value="user">Regular Users Only</option>
+                <option value="admin">Admin Only</option>
+              </select>
+              <p className="text-xs text-gray-600 mt-2">
+                <span className="font-medium">Admin Only:</span> Product visible only to admin users
+                <br />
+                <span className="font-medium">Regular Users / All Users:</span> Visible to everyone
+              </p>
+            </div>
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-black">Extra Fields</label>
               {extraFieldsArray.map((field, idx) => (

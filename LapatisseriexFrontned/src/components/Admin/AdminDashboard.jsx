@@ -76,7 +76,10 @@ const AdminDashboard = () => {
         ).length;
 
         // Fetch products statistics
-        const productsResponse = await axios.get(`${API_URL}/products`, { headers });
+        const productsResponse = await axios.get(`${API_URL}/products`, { 
+          headers,
+          params: { userRole: 'admin' }
+        });
         const productsData = productsResponse.data || [];
         const totalProducts = Array.isArray(productsData) ? productsData.length : 0;
 

@@ -117,171 +117,234 @@ export const ProductProvider = ({ children }) => {
       }
     });
 
-    const baseQueryString = queryParams.toString();
-
-    // Generate a unique cache key based only on the actual query parameters
-    const cacheKey = `products-${baseQueryString}`;
-    
+    // Attach userRole if available from auth and include Authorization header with brief hydration wait
     try {
-      // Circuit breaker check
-      if (isCircuitBreakerOpen()) {
-        console.warn('🚨 Circuit breaker is OPEN - returning cached data if available');
-        const cachedResult = requestCache.current.get(cacheKey);
-        if (cachedResult) {
-          setError("Service temporarily unavailable. Showing cached data.");
-          return cachedResult.data;
-        } else {
-          setError("Service temporarily unavailable. Please try again later.");
-          return { products: [] };
-        }
-      }
-      
-      // Only bypass cache for admin views or when forceRefresh is true
-      const isAdminView = actualFilters.isActive === 'all';
-      const shouldBypassCache = isAdminView || forceRefresh;
-      
-      // Improved caching: category pages now use cache for 5 minutes (300000ms)
-      const CACHE_TIMEOUT = 300000; // 5 minutes
-      
-      // Check for valid cache entry
-      const cachedResult = shouldBypassCache ? null : requestCache.current.get(cacheKey);
-      const now = Date.now();
-      let requestQueryString = baseQueryString;
+      const { getAuth, onAuthStateChanged } = await import('firebase/auth');
+      const auth = getAuth();
 
-      if (shouldBypassCache) {
-        const freshParams = new URLSearchParams(queryParams);
-        freshParams.set('_ts', now.toString());
-        requestQueryString = freshParams.toString();
+      // Prefer Redux auth user if available
+      const userRole = (user && user.role) ? user.role : null;
+      if (userRole) {
+        queryParams.set('userRole', userRole);
       }
-      
-      if (!shouldBypassCache && cachedResult && (now - cachedResult.timestamp < CACHE_TIMEOUT)) {
-        console.log(`Using cached product data for key: ${cacheKey} (age: ${(now - cachedResult.timestamp)/1000}s)`);
-        setLoading(false); // Ensure loading state is correct even when using cache
-        
-        // If it's an error cache, set the error state but still return the cached data
-        if (cachedResult.isError) {
-          setError("Service temporarily unavailable. Please try again later.");
+
+      // Helper: wait briefly for auth hydration to obtain idToken when currentUser is initially null
+      const tryGetIdToken = async () => {
+        const current = auth.currentUser;
+        if (current) {
+          return await current.getIdToken(false);
         }
-        
-        return cachedResult.data;
-      }
-      
-      // Prevent duplicate in-flight requests for the same data
-      if (requestInProgress.current.get(cacheKey)) {
-        console.log(`Request already in progress for: ${cacheKey}, waiting...`);
-        // Wait for the existing request to complete instead of making a duplicate
-        // Poll every 100ms to see if the request completes
-        let attempts = 0;
-        while (requestInProgress.current.get(cacheKey) && attempts < 100) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
-        
-        // Check if data is in cache after waiting
-        const resultAfterWait = requestCache.current.get(cacheKey);
-        if (resultAfterWait) {
-          return resultAfterWait.data;
-        }
-      }
-      
-      // Mark this request as in progress
-      requestInProgress.current.set(cacheKey, true);
-      
-      // Set loading state
-      setLoading(true);
-      setError(null);
-      
-      console.log(`📦 Fetching products: ${requestQueryString ? requestQueryString : 'all products'}`);
-      const response = await axiosInstance.get(
-        `${API_URL}/products${requestQueryString ? `?${requestQueryString}` : ''}`
-      );
-      
-      // Success log
-      console.log(`✅ Products loaded: ${response.data.products?.length || 0} items`);
-      
-      // Record successful API call for circuit breaker
-      recordSuccess();
-      
-      let productsData = [];
-      let responseData = response.data;
-      
-      if (response.data && response.data.products) {
-        productsData = response.data.products;
-        // Update the state
-        setProducts(productsData);
-      } else if (Array.isArray(response.data)) {
-        // Handle case where API returns array directly
-        productsData = response.data;
-        responseData = { products: productsData };
-        setProducts(productsData);
+        // Wait up to ~1s for auth state to hydrate
+        await new Promise((resolve) => {
+          const timeout = setTimeout(() => {
+            cleanup();
+            resolve(null);
+          }, 1000);
+
+          const unsubscribe = onAuthStateChanged(auth, async (usr) => {
+            if (!usr) {
+              cleanup();
+              resolve(null);
+              return;
+            }
+            try {
+              const token = await usr.getIdToken(false);
+              cleanup();
+              resolve(token);
+            } catch {
+              cleanup();
+              resolve(null);
+            }
+          });
+
+          function cleanup() {
+            clearTimeout(timeout);
+            unsubscribe();
+          }
+        });
+      };
+
+      const idToken = await tryGetIdToken();
+      var authHeaders = undefined;
+      if (idToken) {
+        authHeaders = { Authorization: `Bearer ${idToken}` };
+        console.log('🔐 Attaching Authorization header for products fetch');
       } else {
-        console.error('Invalid product data format:', response.data);
-        productsData = [];
-        responseData = { products: [] };
-        setProducts([]);
+        console.log('🙈 No auth token available for products fetch (unauthenticated path)');
       }
+
+      const baseQueryString = queryParams.toString();
+      // Generate a unique cache key based only on the actual query parameters
+      const cacheKey = `products-${baseQueryString}`;
       
-      // Store the result in cache with normalized structure
-      requestCache.current.set(cacheKey, {
-        data: responseData,
-        timestamp: now
-      });
-      
-      // Request is no longer in progress
-      requestInProgress.current.delete(cacheKey);
-      
-      // Clean up old cache entries if cache gets too large (more than 20 entries)
-      if (requestCache.current.size > 20) {
-        // Get all cache keys sorted by timestamp (oldest first)
-        const sortedCacheKeys = [...requestCache.current.entries()]
-          .sort((a, b) => a[1].timestamp - b[1].timestamp)
-          .map(entry => entry[0]);
-          
-        // Remove the 5 oldest entries
-        for (let i = 0; i < 5 && i < sortedCacheKeys.length; i++) {
-          requestCache.current.delete(sortedCacheKeys[i]);
+      try {
+        // Circuit breaker check
+        if (isCircuitBreakerOpen()) {
+          console.warn('🚨 Circuit breaker is OPEN - returning cached data if available');
+          const cachedResult = requestCache.current.get(cacheKey);
+          if (cachedResult) {
+            setError("Service temporarily unavailable. Showing cached data.");
+            return cachedResult.data;
+          } else {
+            setError("Service temporarily unavailable. Please try again later.");
+            return { products: [] };
+          }
         }
+        
+        // Only bypass cache for admin views or when forceRefresh is true
+        const isAdminView = actualFilters.isActive === 'all';
+        const shouldBypassCache = isAdminView || forceRefresh;
+        
+        // Improved caching: category pages now use cache for 5 minutes (300000ms)
+        const CACHE_TIMEOUT = 300000; // 5 minutes
+        
+        // Check for valid cache entry
+        const cachedResult = shouldBypassCache ? null : requestCache.current.get(cacheKey);
+        const now = Date.now();
+        let requestQueryString = baseQueryString;
+
+        if (shouldBypassCache) {
+          const freshParams = new URLSearchParams(queryParams);
+          freshParams.set('_ts', now.toString());
+          requestQueryString = freshParams.toString();
+        }
+        
+        if (!shouldBypassCache && cachedResult && (now - cachedResult.timestamp < CACHE_TIMEOUT)) {
+          console.log(`Using cached product data for key: ${cacheKey} (age: ${(now - cachedResult.timestamp)/1000}s)`);
+          setLoading(false); // Ensure loading state is correct even when using cache
+          
+          // If it's an error cache, set the error state but still return the cached data
+          if (cachedResult.isError) {
+            setError("Service temporarily unavailable. Please try again later.");
+          }
+          
+          return cachedResult.data;
+        }
+        
+        // Prevent duplicate in-flight requests for the same data
+        if (requestInProgress.current.get(cacheKey)) {
+          console.log(`Request already in progress for: ${cacheKey}, waiting...`);
+          // Wait for the existing request to complete instead of making a duplicate
+          // Poll every 100ms to see if the request completes
+          let attempts = 0;
+          while (requestInProgress.current.get(cacheKey) && attempts < 100) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+          
+          // Check if data is in cache after waiting
+          const resultAfterWait = requestCache.current.get(cacheKey);
+          if (resultAfterWait) {
+            return resultAfterWait.data;
+          }
+        }
+        
+        // Mark this request as in progress
+        requestInProgress.current.set(cacheKey, true);
+        
+        // Set loading state
+        setLoading(true);
+        setError(null);
+        
+        console.log(`📦 Fetching products: ${requestQueryString ? requestQueryString : 'all products'}`);
+        const response = await axiosInstance.get(
+          `${API_URL}/products${requestQueryString ? `?${requestQueryString}` : ''}`,
+          { headers: authHeaders }
+        );
+        
+        // Success log
+        console.log(`✅ Products loaded: ${response.data.products?.length || 0} items`);
+        
+        // Record successful API call for circuit breaker
+        recordSuccess();
+        
+        let productsData = [];
+        let responseData = response.data;
+        
+        if (response.data && response.data.products) {
+          productsData = response.data.products;
+          // Update the state
+          setProducts(productsData);
+        } else if (Array.isArray(response.data)) {
+          // Handle case where API returns array directly
+          productsData = response.data;
+          responseData = { products: productsData };
+          setProducts(productsData);
+        } else {
+          console.error('Invalid product data format:', response.data);
+          productsData = [];
+          responseData = { products: [] };
+          setProducts([]);
+        }
+        
+        // Store the result in cache with normalized structure
+        requestCache.current.set(cacheKey, {
+          data: responseData,
+          timestamp: now
+        });
+        
+        // Request is no longer in progress
+        requestInProgress.current.delete(cacheKey);
+        
+        // Clean up old cache entries if cache gets too large (more than 20 entries)
+        if (requestCache.current.size > 20) {
+          // Get all cache keys sorted by timestamp (oldest first)
+          const sortedCacheKeys = [...requestCache.current.entries()]
+            .sort((a, b) => a[1].timestamp - b[1].timestamp)
+            .map(entry => entry[0]);
+            
+          // Remove the 5 oldest entries
+          for (let i = 0; i < 5 && i < sortedCacheKeys.length; i++) {
+            requestCache.current.delete(sortedCacheKeys[i]);
+          }
+        }
+        
+        setLoading(false);
+        return responseData;
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        
+        // Record failure for circuit breaker
+        recordFailure(err);
+        
+        // Handle different types of errors
+        let errorMessage = "Failed to load products";
+        if (err.code === 'ECONNABORTED') {
+          errorMessage = "Request timeout. Please check your internet connection.";
+        } else if (err.response?.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        } else if (err.response?.status === 503) {
+          errorMessage = "Service temporarily unavailable. Please try again later.";
+        } else if (err.response?.status === 404) {
+          errorMessage = "Products not found.";
+        } else if (!navigator.onLine) {
+          errorMessage = "No internet connection. Please check your network.";
+        }
+        
+        setError(errorMessage);
+        setLoading(false);
+        
+        // Request is no longer in progress
+        requestInProgress.current.delete(cacheKey);
+        
+        // Return empty data instead of retrying to prevent infinite loops
+        const emptyResponse = { products: [] };
+        
+        // Cache the error response for a short time to prevent immediate retries
+        requestCache.current.set(cacheKey, {
+          data: emptyResponse,
+          timestamp: Date.now(),
+          isError: true
+        });
+        
+        return emptyResponse;
       }
-      
-      setLoading(false);
-      return responseData;
     } catch (err) {
-      console.error("Error fetching products:", err);
-      
-      // Record failure for circuit breaker
-      recordFailure(err);
-      
-      // Handle different types of errors
-      let errorMessage = "Failed to load products";
-      if (err.code === 'ECONNABORTED') {
-        errorMessage = "Request timeout. Please check your internet connection.";
-      } else if (err.response?.status === 500) {
-        errorMessage = "Server error. Please try again later.";
-      } else if (err.response?.status === 503) {
-        errorMessage = "Service temporarily unavailable. Please try again later.";
-      } else if (err.response?.status === 404) {
-        errorMessage = "Products not found.";
-      } else if (!navigator.onLine) {
-        errorMessage = "No internet connection. Please check your network.";
-      }
-      
-      setError(errorMessage);
+      console.error("Error attaching user role or auth headers:", err);
+      // Fallback to original error handling
+      setError("Failed to load products");
       setLoading(false);
-      
-      // Request is no longer in progress
-      requestInProgress.current.delete(cacheKey);
-      
-      // Return empty data instead of retrying to prevent infinite loops
-      const emptyResponse = { products: [] };
-      
-      // Cache the error response for a short time to prevent immediate retries
-      requestCache.current.set(cacheKey, {
-        data: emptyResponse,
-        timestamp: Date.now(),
-        isError: true
-      });
-      
-      return emptyResponse;
+      return { products: [] };
     }
   }, [API_URL]);
   
@@ -330,8 +393,63 @@ export const ProductProvider = ({ children }) => {
         setError(null);
 
         console.log(`Fetching product ${productId} from API...`);
+
+        // Try to attach Authorization header (admin/user role detection) with a brief auth hydration wait
+        let headers = undefined;
+        try {
+          const { getAuth, onAuthStateChanged } = await import('firebase/auth');
+          const auth = getAuth();
+
+          // Helper: wait briefly for auth hydration if currentUser is initially null
+          const tryGetIdToken = async () => {
+            const current = auth.currentUser;
+            if (current) {
+              return await current.getIdToken(/* forceRefresh */ false);
+            }
+            // Wait up to ~1s for auth state to hydrate
+            await new Promise((resolve, reject) => {
+              const timeout = setTimeout(() => {
+                cleanup();
+                resolve(null);
+              }, 1000);
+
+              const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                  cleanup();
+                  resolve(null);
+                  return;
+                }
+                try {
+                  const token = await user.getIdToken(false);
+                  cleanup();
+                  resolve(token);
+                } catch (e) {
+                  cleanup();
+                  resolve(null);
+                }
+              });
+
+              function cleanup() {
+                clearTimeout(timeout);
+                unsubscribe();
+              }
+            });
+          };
+
+          const idToken = await tryGetIdToken();
+          if (idToken) {
+            headers = { Authorization: `Bearer ${idToken}` };
+            console.log(`🔐 Attaching Authorization header for product ${productId}`);
+          } else {
+            console.log(`🙈 No auth token available for product ${productId} (unauthenticated path)`);
+          }
+        } catch (e) {
+          console.log('⚠️ Skipping auth header attachment due to error:', e?.message || e);
+        }
+
         const response = await axiosInstance.get(`${API_URL}/products/${productId}`, {
-          timeout: 8000 // Reduced timeout for faster failure detection
+          timeout: 8000, // Reduced timeout for faster failure detection
+          headers
         });
         
         if (!response.data) {

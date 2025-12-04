@@ -22,6 +22,7 @@ export const calculatePricing = (variant) => {
   const basePrice = parseFloat(variant.costPrice) || 0;
   const profitNeeded = parseFloat(variant.profitWanted) || 0;
   const freeCash = parseFloat(variant.freeCashExpected) || 0;
+  const manualPrice = parseFloat(variant.price) || 0;
   
   // Validate input parameters to prevent calculation errors
   if (basePrice < 0 || profitNeeded < 0 || freeCash < 0) {
@@ -29,11 +30,21 @@ export const calculatePricing = (variant) => {
     return { finalPrice: 0, mrp: 0, discountPercentage: 0, discountAmount: 0 };
   }
   
-  // Calculate base selling price (cost + profit) - this is what seller gets
-  const baseSelling = basePrice + profitNeeded;
+  let finalPrice;
+  let baseSelling;
   
-  // Calculate final price (base selling + free cash) - this is what customer pays without discount
-  const finalPrice = baseSelling + freeCash;
+  // If all pricing calculator fields are 0, use manual price
+  if (basePrice === 0 && profitNeeded === 0 && freeCash === 0 && manualPrice > 0) {
+    // Manual pricing mode - use the price field directly as final price
+    finalPrice = manualPrice;
+    baseSelling = manualPrice; // In manual mode, no separate calculation for seller return
+  } else {
+    // Calculate base selling price (cost + profit) - this is what seller gets
+    baseSelling = basePrice + profitNeeded;
+    
+    // Calculate final price (base selling + free cash) - this is what customer pays without discount
+    finalPrice = baseSelling + freeCash;
+  }
   
   // Debug logging removed (was noisy in console)
   

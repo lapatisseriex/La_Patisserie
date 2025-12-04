@@ -982,11 +982,12 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
       order.paymentStatus = 'paid';
     }
 
-  order.orderStatus = newOrderStatus;
+    order.orderStatus = newOrderStatus;
     order.updatedAt = new Date();
 
-    // Save order asynchronously to avoid blocking WebSocket notification
-    order.save().catch(err => console.error('Failed to save delivery status:', err.message));
+    // Save order with await to prevent race conditions
+    await order.save();
+    console.log(`✅ Order #${order.orderNumber} saved successfully with status: ${newOrderStatus}`);
 
     if (shouldFinalizeCodPayment) {
       try {
@@ -1042,21 +1043,48 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
         notificationMessage = `**${updatedItems[0]}** from your order **#${order.orderNumber}** has been delivered! (${deliveredItems}/${totalItems} items delivered)`;
       }
 
-      // Send real-time WebSocket notification immediately (before database write for faster delivery)
-      if (global.io && global.connectedUsers) {
-        const userSocketId = getConnectedUserSocketId(order.userId);
-        if (userSocketId) {
-          global.io.to(userSocketId).emit('orderStatusUpdate', {
-            orderNumber: order.orderNumber,
-            status: newOrderStatus,
-            message: notificationMessage,
-            itemsDelivered: updatedItems,
-            deliveryProgress: deliveryProgress,
-            timestamp: new Date().toISOString()
-          });
-        }
+      const userId = resolveUserIdString(order.userId);
+      const userSocketId = getConnectedUserSocketId(order.userId);
+
+      console.log('🔍 WebSocket Debug Info (Delivery):');
+      console.log('  - userId:', userId);
+      console.log('  - userSocketId:', userSocketId);
+      console.log('  - global.io available:', !!global.io);
+      console.log('  - global.connectedUsers size:', global.connectedUsers?.size || 0);
+
+      // Send real-time WebSocket notification FIRST (instant delivery to notification bell)
+      if (global.io && userSocketId) {
+        global.io.to(userSocketId).emit('newNotification', {
+          userId: userId,
+          orderNumber: order.orderNumber,
+          title: notificationTitle,
+          message: notificationMessage,
+          type: 'order',
+          read: false,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`✅ WebSocket newNotification sent to socket ${userSocketId} for user ${userId}`);
+      } else {
+        console.log(`⚠️ Cannot send newNotification - io: ${!!global.io}, socketId: ${userSocketId}`);
+      }
+
+      // Also emit orderStatusUpdate for OrderTracking component
+      if (global.io && userSocketId) {
+        global.io.to(userSocketId).emit('orderStatusUpdate', {
+          orderNumber: order.orderNumber,
+          status: newOrderStatus,
+          message: notificationMessage,
+          itemsDelivered: updatedItems,
+          deliveryProgress: deliveryProgress,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`✅ WebSocket orderStatusUpdate sent to socket ${userSocketId} for user ${userId}`);
+      } else {
+        console.log(`⚠️ Cannot send orderStatusUpdate - io: ${!!global.io}, socketId: ${userSocketId}`);
+      }
         
-        // Emit to all admin clients for instant UI update
+      // Emit to all admin clients for instant UI update
+      if (global.io) {
         global.io.emit('orderStatusUpdated', {
           orderId: order._id.toString(),
           orderNumber: order.orderNumber,
@@ -1075,11 +1103,12 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
           deliveryProgress: deliveryProgress,
           timestamp: new Date().toISOString()
         });
+        console.log(`✅ WebSocket orderStatusUpdated broadcasted to all admin clients`);
       }
 
-      // Create notification in database (non-blocking)
+      // Create notification in database (after WebSocket for instant delivery)
       createNotification(
-        resolveUserIdString(order.userId),
+        userId,
         order.orderNumber,
         'order_delivered',
         notificationTitle,
@@ -1093,7 +1122,7 @@ export const markAsDelivered = asyncHandler(async (req, res) => {
         }
       ).catch(err => console.error('Failed to create delivery notification:', err.message));
     } catch (notificationError) {
-      console.error('Error sending delivery notification:', notificationError);
+      console.error('❌ Error sending delivery notification:', notificationError);
     }
 
     res.status(200).json({

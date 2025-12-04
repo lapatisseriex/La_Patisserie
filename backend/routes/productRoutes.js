@@ -12,15 +12,15 @@ import {
   updateProductOrderCount,
   bulkUpdateOrderCounts
 } from '../controllers/productController.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Public routes
-router.get('/', getProducts);
+// Public routes (with optional authentication for role-based filtering)
+router.get('/', optionalAuth, getProducts);
 router.get('/bestsellers', getBestSellingProducts);
 router.get('/bestsellers/check', checkBestSellers);
-router.get('/:id', getProduct);
+router.get('/:id', optionalAuth, getProduct);
 
 // Admin only routes
 router.post('/', protect, admin, createProduct);

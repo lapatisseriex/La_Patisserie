@@ -8,6 +8,47 @@ const API_URL = import.meta.env.VITE_API_URL;
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
   async (params = {}) => {
+    // Helper: try to get a Firebase ID token, waiting briefly for auth hydration if needed
+    const tryGetIdToken = async () => {
+      try {
+        const { getAuth, onAuthStateChanged } = await import('firebase/auth');
+        const auth = getAuth();
+        const immediate = auth?.currentUser;
+        console.log('🔭 [fetchProducts] auth.currentUser (immediate):', immediate);
+        if (immediate) {
+          return await immediate.getIdToken(true);
+        }
+        // Wait up to ~1.5s for first auth state
+        const token = await new Promise((resolve) => {
+          let settled = false;
+          const unsub = onAuthStateChanged(auth, async (user) => {
+            if (settled) return;
+            settled = true;
+            try {
+              unsub && unsub();
+            } catch {}
+            if (user) {
+              const t = await user.getIdToken(true);
+              resolve(t);
+            } else {
+              resolve(undefined);
+            }
+          });
+          setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            try { unsub && unsub(); } catch {}
+            console.warn('⏳ [fetchProducts] Auth hydration timeout — proceeding without token');
+            resolve(undefined);
+          }, 1500);
+        });
+        return token;
+      } catch (e) {
+        console.warn('⚠️ [fetchProducts] Failed to get token:', e?.message || e);
+        return undefined;
+      }
+    };
+
     const queryParams = new URLSearchParams();
     
     // Add all params to query string
@@ -19,7 +60,15 @@ export const fetchProducts = createAsyncThunk(
 
     const queryString = queryParams.toString();
     const url = `${API_URL}/products${queryString ? `?${queryString}` : ''}`;
-    const response = await withRetry(() => axiosInstance.get(url), { retries: 2, delay: 250 });
+    console.log('🧪 [fetchProducts] params:', params, '| url:', url);
+
+    // Attempt to include auth token so backend can determine user role (admin/user)
+    const idToken = await tryGetIdToken();
+    const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
+    if (idToken) console.log('🔑 [fetchProducts] Attached Authorization header');
+
+    const response = await withRetry(() => axiosInstance.get(url, { headers }), { retries: 2, delay: 250 });
+    console.log('📦 [fetchProducts] Received products payload keys:', Object.keys(response?.data || {}));
     
     return response.data;
   }
@@ -29,7 +78,49 @@ export const fetchProducts = createAsyncThunk(
 export const fetchProductById = createAsyncThunk(
   'products/fetchProductById',
   async (productId) => {
-    const response = await axiosInstance.get(`${API_URL}/products/${productId}`);
+    console.log('🧪 [fetchProductById] productId:', productId);
+    // Include token if available so admins can access admin-only products
+    const tryGetIdToken = async () => {
+      try {
+        const { getAuth, onAuthStateChanged } = await import('firebase/auth');
+        const auth = getAuth();
+        const immediate = auth?.currentUser;
+        console.log('� [fetchProductById] auth.currentUser (immediate):', !!immediate);
+        if (immediate) return await immediate.getIdToken(true);
+        const token = await new Promise((resolve) => {
+          let settled = false;
+          const unsub = onAuthStateChanged(auth, async (user) => {
+            if (settled) return;
+            settled = true;
+            try { unsub && unsub(); } catch {}
+            if (user) {
+              const t = await user.getIdToken(true);
+              resolve(t);
+            } else {
+              resolve(undefined);
+            }
+          });
+          setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            try { unsub && unsub(); } catch {}
+            console.warn('⏳ [fetchProductById] Auth hydration timeout — proceeding without token');
+            resolve(undefined);
+          }, 1500);
+        });
+        return token;
+      } catch (e) {
+        console.warn('⚠️ [fetchProductById] Failed to get token:', e?.message || e);
+        return undefined;
+      }
+    };
+
+    const idToken = await tryGetIdToken();
+    const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
+    if (idToken) console.log('🔑 [fetchProductById] Attached Authorization header');
+    const url = `${API_URL}/products/${productId}`;
+    const response = await axiosInstance.get(url, { headers });
+    console.log('📦 [fetchProductById] Response status:', response?.status, '| url:', url);
     return response.data;
   }
 );

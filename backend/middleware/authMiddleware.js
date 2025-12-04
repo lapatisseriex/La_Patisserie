@@ -188,6 +188,79 @@ export const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Optional authentication middleware - sets req.user if token is valid, but doesn't block if no token
+export const optionalAuth = asyncHandler(async (req, res, next) => {
+  let token;
+
+  // Check for token in authorization header
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      console.log(`🛂 [optionalAuth] Path: ${req.method} ${req.originalUrl}`);
+      // Extract token from header
+      token = req.headers.authorization.split(' ')[1];
+      console.log(`🔐 [optionalAuth] Auth header present: Yes | Token length: ${token?.length || 0}`);
+      
+      if (!token || token === 'null' || token === 'undefined') {
+        // Invalid token format, continue without authentication
+        console.warn('⚠️ [optionalAuth] Invalid token string (null/undefined) — proceeding unauthenticated');
+        return next();
+      }
+      
+      // Check if token is in cache
+      let decodedToken;
+      const cacheKey = token;
+      const cachedResult = tokenCache.get(cacheKey);
+      
+      if (cachedResult && cachedResult.expiresAt > Date.now()) {
+        // Use cached token validation result
+        decodedToken = cachedResult.decodedToken;
+        console.log(`✅ [optionalAuth] Token cache HIT for uid: ${decodedToken?.uid}`);
+      } else {
+        // Token not in cache or expired, verify with Firebase
+        console.log('🧪 [optionalAuth] Verifying token with Firebase...');
+        decodedToken = await firebaseAdmin.auth().verifyIdToken(token, false);
+        
+        // Cache the result with expiry
+        tokenCache.set(cacheKey, {
+          decodedToken,
+          expiresAt: Date.now() + TOKEN_CACHE_TTL
+        });
+        console.log(`✅ [optionalAuth] Token verified. uid: ${decodedToken?.uid}`);
+      }
+      
+      // Find user in database
+      let user = await User.findOne({ uid: decodedToken.uid });
+      
+      if (user) {
+        // Update last active timestamp (without awaiting to not block request)
+        User.updateOne(
+          { _id: user._id },
+          { $set: { lastActive: new Date() } }
+        ).catch(err => console.error('Error updating lastActive timestamp:', err));
+        
+        // Attach user to request
+        req.user = user;
+        console.log(`👤 [optionalAuth] Attached user: ${user?.name || 'N/A'} (${user?.uid}) | role: ${user?.role}`);
+      }
+      
+      next();
+    } catch (error) {
+      // Token verification failed, but continue without authentication
+      console.warn(`❌ [optionalAuth] Token verification failed: ${error?.message}`);
+      // Clear token cache on error
+      if (token) {
+        tokenCache.delete(token);
+      }
+      console.log('➡️ [optionalAuth] Proceeding without user context');
+      next();
+    }
+  } else {
+    console.log(`🛂 [optionalAuth] Path: ${req.method} ${req.originalUrl} | Auth header present: No`);
+    // No token provided, continue without authentication
+    next();
+  }
+});
+
 // Admin middleware - ensures user is an admin
 export const admin = asyncHandler(async (req, res, next) => {
   if (req.user && req.user.role === 'admin') {

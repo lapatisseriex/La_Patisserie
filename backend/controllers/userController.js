@@ -444,6 +444,16 @@ export const getRecentlyViewed = asyncHandler(async (req, res) => {
   // Filter out any null products (in case products were deleted)
   let validRecentlyViewed = populatedUser.recentlyViewed.filter(item => item.productId);
 
+  // Apply role-based filtering: if the requester is not an admin, do not return admin-only products
+  const requesterRole = req.user?.role;
+  if (requesterRole !== 'admin') {
+    validRecentlyViewed = validRecentlyViewed.filter(item => {
+      // Keep items where product role is not set or explicitly 'user'
+      const prodRole = item.productId?.role ?? null;
+      return prodRole === null || prodRole === 'user';
+    });
+  }
+
   // Ensure we only return the latest 3 items
   if (validRecentlyViewed.length > 3) {
     validRecentlyViewed = validRecentlyViewed.slice(0, 3);

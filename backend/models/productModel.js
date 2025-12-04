@@ -70,6 +70,13 @@ const productSchema = new mongoose.Schema(
     extraFields: { type: Map, of: String, default: {} },
     isActive: { type: Boolean, default: true },
     badge: { type: String, trim: true },
+    // Role-based visibility: 'admin' = admin only, 'user' or null = visible to all
+    role: { 
+      type: String, 
+      enum: ['admin', 'user', null], 
+      default: null,
+      index: true 
+    },
     // Track total number of times this product has been ordered
     totalOrderCount: { type: Number, default: 0, min: 0 },
     // Track when the count was last updated
