@@ -141,7 +141,7 @@ const OurServices = () => {
               </p>
               <p className="flex items-start">
                 <span className="font-medium mr-3" style={{ color: '#733857' }}>Address:</span>
-                <span>LIG 208, Gandhi Maanagar, Peelamedu, Coimbatore</span>
+                <span>LIG 208 Gandhi Maannagar, Peelamedu, Coimbatore</span>
               </p>
             </div>
           </div>
