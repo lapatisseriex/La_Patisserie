@@ -9,6 +9,7 @@ import { useCategory } from '../../context/CategoryContext/CategoryContext';
 import { useFavorites } from '../../context/FavoritesContext/FavoritesContext';
 import SparkAnimation from '../common/SparkAnimation/SparkAnimation';
 import { useSparkAnimationContext } from '../../context/SparkAnimationContext/SparkAnimationContext';
+import { useDeliveryAvailability } from '../../context/DeliveryAvailabilityContext';
 import DebugUserState from '../common/DebugUserState';
 import './Header.css';
 import './remove-focus.css';
@@ -22,7 +23,7 @@ import AnnouncementBanner from './AnnouncementBanner';
 import { 
   User, 
   Menu, 
-  X, 
+  X,
   MapPin, 
   ChevronDown,
   ShoppingBag,
@@ -38,7 +39,11 @@ import {
   Utensils,
   Crown,
   Power,
-  Phone
+  Phone,
+  Navigation,
+  Loader2,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 
 const Header = ({ isAdminView = false }) => {
@@ -50,6 +55,13 @@ const Header = ({ isAdminView = false }) => {
   } = useAuth();
   
   const { sparks } = useSparkAnimationContext();
+  
+  // Delivery availability context
+  const { 
+    deliveryStatus, 
+    loading: deliveryLoading, 
+    detectUserLocation 
+  } = useDeliveryAvailability();
   
   // Debug log for sparks (only when sparks change)
   useEffect(() => {
@@ -622,6 +634,42 @@ const Header = ({ isAdminView = false }) => {
                 <div className="flex items-center">
                   <NotificationBell />
                 </div>
+              )}
+            </div>
+            
+            {/* Delivery Status Indicator - Mobile */}
+            <div className="mt-2">
+              {deliveryLoading ? (
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Checking delivery...</span>
+                </div>
+              ) : deliveryStatus.checked ? (
+                deliveryStatus.available ? (
+                  <div className="flex items-center gap-1.5 text-xs text-green-600">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>Delivery available</span>
+                    {deliveryStatus.matchedLocation && (
+                      <span className="text-green-500">• {deliveryStatus.matchedLocation.area}</span>
+                    )}
+                  </div>
+                ) : (
+                  <Link 
+                    to="/checkout"
+                    className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700"
+                  >
+                    <XCircle className="h-3 w-3" />
+                    <span>Delivery unavailable • Tap to set location</span>
+                  </Link>
+                )
+              ) : (
+                <Link 
+                  to="/checkout"
+                  className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700"
+                >
+                  <Navigation className="h-3 w-3" />
+                  <span>Set delivery location</span>
+                </Link>
               )}
             </div>
           </div>

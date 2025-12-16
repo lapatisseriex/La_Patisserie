@@ -10,7 +10,8 @@ import {
   createLocation, 
   updateLocation, 
   toggleLocationStatus,
-  deleteLocation
+  deleteLocation,
+  updateLocationGeo
 } from '../controllers/locationController.js';
 import {
   getGroupedPendingOrders,
@@ -40,6 +41,7 @@ router.get('/users/:userId/details', protect, admin, getUserDetailsForAdmin);
 router.get('/locations', protect, admin, getAllLocations);
 router.post('/locations', protect, admin, createLocation);
 router.put('/locations/:id', protect, admin, updateLocation);
+router.put('/locations/:id/geo', protect, admin, updateLocationGeo);
 router.patch('/locations/:id/toggle', protect, admin, toggleLocationStatus);
 router.delete('/locations/:id', protect, admin, deleteLocation);
 

@@ -23,6 +23,28 @@ const locationSchema = new mongoose.Schema(
       required: true,
       default: 49,
       min: 0
+    },
+    // Geo-location based delivery fields
+    coordinates: {
+      lat: {
+        type: Number,
+        default: null
+      },
+      lng: {
+        type: Number,
+        default: null
+      }
+    },
+    deliveryRadiusKm: {
+      type: Number,
+      default: 5, // Default 5km radius
+      min: 0.5,
+      max: 50
+    },
+    // Whether to use geo-based delivery checking
+    useGeoDelivery: {
+      type: Boolean,
+      default: false
     }
   },
   {

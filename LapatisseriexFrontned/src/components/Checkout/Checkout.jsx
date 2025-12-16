@@ -4,12 +4,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useHostel } from '../../context/HostelContext/HostelContext';
+import { useDeliveryAvailability } from '../../context/DeliveryAvailabilityContext';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import OfferBadge from '../common/OfferBadge';
 import AnimatedButton from '../common/AnimatedButton';
 import MaskButton from '../common/MaskButton';
 import CubeButton from '../common/CubeButton';
+import UserLocationPicker from './UserLocationPicker';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import {
   Mail,
@@ -37,6 +39,7 @@ const Checkout = () => {
   const { cartItems, cartTotal, cartCount, isEmpty } = useCart();
   const { locations, loading: locationsLoading, updateUserLocation, getCurrentLocationName } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
+  const { deliveryStatus, canProceedWithOrder, loading: deliveryLoading } = useDeliveryAvailability();
   const navigate = useNavigate();
 
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
@@ -207,6 +210,12 @@ const Checkout = () => {
     console.log('Validation check - User object:', user);
     console.log('User location:', user?.location);
     console.log('User hostel:', user?.hostel);
+    
+    // Check geo-delivery availability if checked
+    if (deliveryStatus.checked && !deliveryStatus.available) {
+      setError('Delivery is not available for your location. Please select a different delivery address.');
+      return;
+    }
     
     // Validate location selection
     if (!user?.location || !user.location._id) {
@@ -571,6 +580,11 @@ const Checkout = () => {
                     We currently serve only selected delivery areas and partner hostel students.
                   </p>
                 </div>
+                
+                {/* Geo-Delivery Location Picker - User can detect or manually enter location */}
+                <div className="mt-4">
+                  <UserLocationPicker />
+                </div>
 
                 {/* Small helper: how to change location/hostel */}
                 {!isEditMode && (
@@ -613,16 +627,28 @@ const Checkout = () => {
 
               {/* Proceed Button (only when NOT editing) */}
               {!isEditMode && (
-                <MaskButton
-                  onClick={handleProceedToPayment}
-                  disabled={saving}
-                  maskType="nature"
-                  className="mask-button--compact"
-                  style={{
-                    width: '100%'}}
-                >
-                  Continue to Payment
-                </MaskButton>
+                <>
+                  {/* Show warning if delivery not available */}
+                  {deliveryStatus.checked && !deliveryStatus.available && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-700 font-medium">
+                        🚫 Cannot proceed - Delivery not available for your location
+                      </p>
+                    </div>
+                  )}
+                  <MaskButton
+                    onClick={handleProceedToPayment}
+                    disabled={saving || deliveryLoading || (deliveryStatus.checked && !deliveryStatus.available)}
+                    maskType="nature"
+                    className="mask-button--compact"
+                    style={{
+                      width: '100%',
+                      opacity: (deliveryStatus.checked && !deliveryStatus.available) ? 0.5 : 1
+                    }}
+                  >
+                    {deliveryLoading ? 'Checking delivery...' : 'Continue to Payment'}
+                  </MaskButton>
+                </>
               )}
             </div>
           </div>

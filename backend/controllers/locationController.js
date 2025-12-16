@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import Location from '../models/locationModel.js';
+import { checkDeliveryAvailability, isValidCoordinates } from '../utils/geoUtils.js';
 
 // @desc    Get all active delivery locations
 // @route   GET /api/locations
@@ -89,4 +90,85 @@ export const deleteLocation = asyncHandler(async (req, res) => {
   await Location.findByIdAndDelete(req.params.id);
   
   res.status(200).json({ message: 'Location deleted successfully' });
+});
+
+// @desc    Check delivery availability for user coordinates
+// @route   POST /api/locations/check-delivery
+// @access  Public
+export const checkDelivery = asyncHandler(async (req, res) => {
+  const { lat, lng } = req.body;
+  
+  // Validate coordinates
+  if (!isValidCoordinates(lat, lng)) {
+    res.status(400);
+    throw new Error('Invalid coordinates. Please provide valid latitude and longitude.');
+  }
+  
+  // Get all active locations with geo-delivery enabled
+  const locations = await Location.find({ 
+    isActive: true,
+    useGeoDelivery: true,
+    'coordinates.lat': { $ne: null },
+    'coordinates.lng': { $ne: null }
+  });
+  
+  // Check delivery availability
+  const result = checkDeliveryAvailability(lat, lng, locations);
+  
+  res.status(200).json(result);
+});
+
+// @desc    Get locations with geo-delivery info (for frontend map display)
+// @route   GET /api/locations/geo
+// @access  Public
+export const getGeoLocations = asyncHandler(async (req, res) => {
+  const locations = await Location.find({ 
+    isActive: true,
+    useGeoDelivery: true,
+    'coordinates.lat': { $ne: null },
+    'coordinates.lng': { $ne: null }
+  }).select('area city pincode coordinates deliveryRadiusKm deliveryCharge');
+  
+  res.status(200).json(locations);
+});
+
+// @desc    Update location coordinates and radius (Admin)
+// @route   PUT /api/admin/locations/:id/geo
+// @access  Admin
+export const updateLocationGeo = asyncHandler(async (req, res) => {
+  const { lat, lng, deliveryRadiusKm, useGeoDelivery } = req.body;
+  
+  const location = await Location.findById(req.params.id);
+  
+  if (!location) {
+    res.status(404);
+    throw new Error('Location not found');
+  }
+  
+  // Validate coordinates if provided
+  if (lat !== undefined && lng !== undefined) {
+    if (!isValidCoordinates(lat, lng)) {
+      res.status(400);
+      throw new Error('Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180.');
+    }
+    location.coordinates = { lat, lng };
+  }
+  
+  // Update radius if provided
+  if (deliveryRadiusKm !== undefined) {
+    if (deliveryRadiusKm < 0.5 || deliveryRadiusKm > 50) {
+      res.status(400);
+      throw new Error('Delivery radius must be between 0.5 and 50 km');
+    }
+    location.deliveryRadiusKm = deliveryRadiusKm;
+  }
+  
+  // Update geo-delivery flag if provided
+  if (useGeoDelivery !== undefined) {
+    location.useGeoDelivery = useGeoDelivery;
+  }
+  
+  await location.save();
+  
+  res.status(200).json(location);
 });

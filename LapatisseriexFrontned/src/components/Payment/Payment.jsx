@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from '../../context/LocationContext/LocationContext';
+import { useDeliveryAvailability } from '../../context/DeliveryAvailabilityContext';
 import { useShopStatus } from '../../context/ShopStatusContext';
 import ShopClosureOverlay from '../common/ShopClosureOverlay';
 import OfferBadge from '../common/OfferBadge';
@@ -28,6 +29,7 @@ const Payment = () => {
   const { cartItems, cartTotal, clearCart, refreshCart } = useCart();
   const { user } = useAuth();
   const { hasValidDeliveryLocation, getCurrentLocationName, locations } = useLocation();
+  const { deliveryStatus } = useDeliveryAvailability();
   const navigate = useNavigate();
   const [showLocationError, setShowLocationError] = useState(false);
   const [useFreeCash, setUseFreeCash] = useState(false);
@@ -542,6 +544,8 @@ const Payment = () => {
           initiativeName: 'கற்பிப்போம் பயிலகம் - Education Initiative',
           initiativeDescription: 'Supporting student education and learning resources'
         } : null,
+        // Include user coordinates for backend geo-delivery validation
+        userCoordinates: deliveryStatus.userCoordinates || null,
         orderSummary: {
           cartTotal: discountedCartTotal,
           discountedTotal: discountedCartTotal,

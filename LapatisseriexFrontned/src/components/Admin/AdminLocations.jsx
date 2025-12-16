@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaExclamationTriangle, FaBuilding, FaEye, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaExclamationTriangle, FaBuilding, FaEye, FaChevronDown, FaChevronUp, FaMapPin, FaGlobeAsia } from 'react-icons/fa';
+import GoogleMapsLocationPicker from './GoogleMapsLocationPicker';
 
 const AdminLocations = () => {
   const [locations, setLocations] = useState([]);
@@ -16,6 +17,12 @@ const AdminLocations = () => {
   const [editingHostel, setEditingHostel] = useState(null);
   const [selectedLocationForHostels, setSelectedLocationForHostels] = useState(null);
   const [expandedLocation, setExpandedLocation] = useState(null);
+  
+  // Geo-location picker states
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [selectedLocationForMap, setSelectedLocationForMap] = useState(null);
+  const [savingGeo, setSavingGeo] = useState(false);
+  
   // Auth state
   const [authUser, setAuthUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
@@ -395,6 +402,76 @@ const AdminLocations = () => {
     });
   };
   
+  // Open map picker for a location
+  const openMapPicker = (location) => {
+    setSelectedLocationForMap(location);
+    setShowMapPicker(true);
+  };
+  
+  // Save geo location from map picker
+  const saveGeoLocation = async (geoData) => {
+    if (!selectedLocationForMap) return;
+    
+    try {
+      setSavingGeo(true);
+      
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        setError('Please log in to update location');
+        return;
+      }
+      const idToken = await user.getIdToken(true);
+      
+      await axios.put(
+        `${API_URL}/admin/locations/${selectedLocationForMap._id}/geo`,
+        {
+          lat: geoData.lat,
+          lng: geoData.lng,
+          deliveryRadiusKm: geoData.radius,
+          useGeoDelivery: true
+        },
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      
+      // Refresh locations
+      fetchLocations();
+      setShowMapPicker(false);
+      setSelectedLocationForMap(null);
+    } catch (err) {
+      console.error('Error saving geo location:', err);
+      setError('Failed to save delivery area. Please try again.');
+    } finally {
+      setSavingGeo(false);
+    }
+  };
+  
+  // Toggle geo-delivery for a location
+  const toggleGeoDelivery = async (locationId, currentState) => {
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        setError('Please log in to update location');
+        return;
+      }
+      const idToken = await user.getIdToken(true);
+      
+      await axios.put(
+        `${API_URL}/admin/locations/${locationId}/geo`,
+        { useGeoDelivery: !currentState },
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      
+      fetchLocations();
+    } catch (err) {
+      console.error('Error toggling geo-delivery:', err);
+      setError('Failed to update geo-delivery status.');
+    }
+  };
+  
   // Open hostel modal
   const openHostelModal = (locationId = null, hostel = null) => {
     if (hostel) {
@@ -560,6 +637,18 @@ const AdminLocations = () => {
                   <span className={`px-2 py-1 text-xs rounded-full font-medium ${location.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                     {location.isActive ? 'Active' : 'Inactive'}
                   </span>
+                  {location.useGeoDelivery && location.coordinates?.lat && (
+                    <span className="px-2 py-1 text-xs rounded-full font-medium bg-purple-100 text-purple-800">
+                      {location.deliveryRadiusKm || 5} km
+                    </span>
+                  )}
+                  <button
+                    onClick={() => openMapPicker(location)}
+                    className="text-purple-600 hover:text-purple-900"
+                    title="Set delivery area"
+                  >
+                    <FaGlobeAsia />
+                  </button>
                   <button
                     onClick={() => openEditModal(location)}
                     className="text-blue-600 hover:text-blue-900"
@@ -683,6 +772,9 @@ const AdminLocations = () => {
                 Hostels
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                Geo Delivery
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 Status
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
@@ -749,6 +841,43 @@ const AdminLocations = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        {location.useGeoDelivery && location.coordinates?.lat ? (
+                          <div className="flex items-center space-x-2">
+                            <span className="px-2 py-1 text-xs rounded-full font-medium bg-purple-100 text-purple-800">
+                              {location.deliveryRadiusKm || 5} km
+                            </span>
+                            <button
+                              onClick={() => openMapPicker(location)}
+                              className="text-purple-600 hover:text-purple-800"
+                              title="Edit delivery area"
+                            >
+                              <FaMapPin />
+                            </button>
+                            <button
+                              onClick={() => toggleGeoDelivery(location._id, location.useGeoDelivery)}
+                              className="text-amber-500 hover:text-amber-700"
+                              title="Disable geo-delivery"
+                            >
+                              <FaToggleOn />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">Not set</span>
+                            <button
+                              onClick={() => openMapPicker(location)}
+                              className="text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                              title="Set up geo-delivery area"
+                            >
+                              <FaGlobeAsia />
+                              <span className="text-xs">Set up</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                         location.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                       }`}>
@@ -785,7 +914,7 @@ const AdminLocations = () => {
                   {/* Expanded hostels row */}
                   {expandedLocation === location._id && (
                     <tr>
-                      <td colSpan="7" className="px-6 py-4 bg-gray-100">
+                      <td colSpan="8" className="px-6 py-4 bg-gray-100">
                         <div className="space-y-2">
                           <h4 className="font-bold text-black mb-3">Hostels in {location.area}</h4>
                           {getHostelsForLocation(location._id).length === 0 ? (
@@ -1084,6 +1213,23 @@ const AdminLocations = () => {
           </div>
         </div>
       </div>
+      
+      {/* Google Maps Location Picker Modal */}
+      {showMapPicker && selectedLocationForMap && (
+        <GoogleMapsLocationPicker
+          initialLat={selectedLocationForMap.coordinates?.lat}
+          initialLng={selectedLocationForMap.coordinates?.lng}
+          initialRadius={selectedLocationForMap.deliveryRadiusKm || 5}
+          googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+          onLocationSelect={(data) => console.log('Location selected:', data)}
+          onRadiusChange={(radius) => console.log('Radius changed:', radius)}
+          onClose={() => {
+            setShowMapPicker(false);
+            setSelectedLocationForMap(null);
+          }}
+          onSave={saveGeoLocation}
+        />
+      )}
     </div>
   );
 };

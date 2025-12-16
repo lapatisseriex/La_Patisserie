@@ -87,6 +87,7 @@ import { FavoritesProvider } from './context/FavoritesContext/FavoritesContext';
 import { CategoryProvider } from './context/CategoryContext/CategoryContext';
 import { ProductProvider } from './context/ProductContext/ProductContext'; // Only for admin routes
 import { RecentlyViewedProvider } from './context/RecentlyViewedContext/RecentlyViewedContext';
+import { DeliveryAvailabilityProvider } from './context/DeliveryAvailabilityContext';
 
 import { ShopStatusProvider } from './context/ShopStatusContext';
 import { SparkAnimationProvider } from './context/SparkAnimationContext/SparkAnimationContext';
@@ -155,28 +156,29 @@ function App() {
         <ShopStatusProvider>
           <LocationProvider>
             <HostelProvider>
-              <CategoryProvider>
-                <RecentlyViewedProvider>
-                  <FavoritesProvider>
-                    <SparkAnimationProvider>
-                      <Router>
-                        <ScrollToTop />
-                        
-                        {/* Network Status Banner - Shows connection status */}
-                        <NetworkStatusBanner />
-                        
-                        {/* Global toast notifications - styled to match site palette */}
-                        <ToastContainer
-                          containerId="app-toasts"
-                          position="top-right"
-                          transition={Slide}
-                          autoClose={3200}
-                          hideProgressBar={false}
-                          closeOnClick
-                          pauseOnHover
-                          draggable
-                        />
-                        {/* Data Sync Handler - ensures user state stays synchronized */}
+              <DeliveryAvailabilityProvider>
+                <CategoryProvider>
+                  <RecentlyViewedProvider>
+                    <FavoritesProvider>
+                      <SparkAnimationProvider>
+                        <Router>
+                          <ScrollToTop />
+                          
+                          {/* Network Status Banner - Shows connection status */}
+                          <NetworkStatusBanner />
+                          
+                          {/* Global toast notifications - styled to match site palette */}
+                          <ToastContainer
+                            containerId="app-toasts"
+                            position="top-right"
+                            transition={Slide}
+                            autoClose={3200}
+                            hideProgressBar={false}
+                            closeOnClick
+                            pauseOnHover
+                            draggable
+                          />
+                          {/* Data Sync Handler - ensures user state stays synchronized */}
                        
                         {/* Auth Modal - available on all pages */}
                         <NewAuthModal />
@@ -273,11 +275,12 @@ function App() {
                         {/* Global WhatsApp Float Button */}
                         <WhatsAppFloat />
                         
-                      </Router>
-                    </SparkAnimationProvider>
-                  </FavoritesProvider>
-                </RecentlyViewedProvider>
-              </CategoryProvider>
+                        </Router>
+                      </SparkAnimationProvider>
+                    </FavoritesProvider>
+                  </RecentlyViewedProvider>
+                </CategoryProvider>
+              </DeliveryAvailabilityProvider>
             </HostelProvider>
           </LocationProvider>
         </ShopStatusProvider>

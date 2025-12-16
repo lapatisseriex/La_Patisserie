@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useLocation as useRouterLocation } from 'react-router-dom';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
+import { useDeliveryAvailability } from '../../../context/DeliveryAvailabilityContext';
 import ProfileImageUpload from './ProfileImageUpload';
 import axios from 'axios';
 import { 
@@ -135,6 +136,13 @@ const Profile = ({ onDirtyChange }) => {
   const { user, updateProfile, authError, loading, isNewUser, updateUser, getCurrentUser } = useAuth();
   const { locations, loading: locationsLoading, fetchLocations } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
+  const { 
+    deliveryStatus, 
+    loading: deliveryLoading, 
+    detectUserLocation, 
+    resetDeliveryStatus,
+    error: deliveryError 
+  } = useDeliveryAvailability();
   const routerLocation = useRouterLocation();
   const currentUser = useSelector(state => state.auth.user);
   const [localError, setLocalError] = useState('');
@@ -1277,6 +1285,99 @@ const Profile = ({ onDirtyChange }) => {
           <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6" style={{
             background: 'linear-gradient(to bottom, rgba(250, 250, 249, 0.3) 0%, #FFFFFF 100%)'
           }}>
+            {/* Delivery Availability Check Banner */}
+            <div className="mb-4">
+              {!deliveryStatus.checked && !deliveryLoading ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-800">
+                        Check if we deliver to your location
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Allow location access to verify delivery availability
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => detectUserLocation()}
+                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        Detect My Location
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : deliveryLoading ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm text-gray-700">Checking delivery availability...</p>
+                  </div>
+                </div>
+              ) : deliveryStatus.available ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-800">
+                        ✓ Delivery available for your location!
+                      </p>
+                      {deliveryStatus.matchedLocation && (
+                        <p className="text-xs text-green-700 mt-1">
+                          Delivering from: {deliveryStatus.matchedLocation.area}, {deliveryStatus.matchedLocation.city}
+                        </p>
+                      )}
+                      {deliveryStatus.estimatedTime && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Estimated delivery: {deliveryStatus.estimatedTime}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => resetDeliveryStatus()}
+                        className="mt-2 text-xs text-green-700 hover:text-green-900 underline"
+                      >
+                        Check different location
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : deliveryStatus.checked ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <X className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-red-800">
+                        🚫 Delivery not available for your location
+                      </p>
+                      <p className="text-xs text-red-600 mt-1">
+                        Unfortunately, we don't deliver to your current location yet.
+                      </p>
+                      {deliveryStatus.closestArea && (
+                        <p className="text-xs text-red-600 mt-1">
+                          Nearest delivery area: {deliveryStatus.closestArea.area}, {deliveryStatus.closestArea.city}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => resetDeliveryStatus()}
+                        className="mt-2 text-xs text-red-700 hover:text-red-900 underline"
+                      >
+                        Check different location
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              {deliveryError && (
+                <div className="mt-2 text-xs text-amber-700">
+                  {deliveryError}
+                </div>
+              )}
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               {/* Delivery Location */}
               <div className="space-y-2">

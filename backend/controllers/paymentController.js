@@ -20,6 +20,7 @@ import { emitPaymentUpdate } from '../utils/socketEvents.js';
 import { resolveVariantInfoForItem } from '../utils/variantUtils.js';
 import NewCart from '../models/newCartModel.js';
 import { trackOrderDay, markFreeProductUsed } from '../middleware/freeProductMiddleware.js';
+import { checkDeliveryAvailability } from '../utils/geoUtils.js';
 
 // Initialize Razorpay with validation
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -409,6 +410,46 @@ export const createOrder = asyncHandler(async (req, res) => {
         success: false, 
         message: 'User not found in request' 
       });
+    }
+
+    // Validate delivery availability if user coordinates are provided
+    const { userCoordinates } = req.body;
+    if (userCoordinates && userCoordinates.lat && userCoordinates.lng) {
+      try {
+        // Fetch all geo-enabled delivery locations
+        const geoLocations = await Location.find({ 
+          isActive: true,
+          useGeoDelivery: true,
+          'coordinates.lat': { $ne: null },
+          'coordinates.lng': { $ne: null }
+        });
+
+        // Check if user is within any delivery area
+        if (geoLocations.length > 0) {
+          const deliveryCheck = checkDeliveryAvailability(
+            userCoordinates.lat,
+            userCoordinates.lng,
+            geoLocations
+          );
+
+          if (!deliveryCheck.available) {
+            return res.status(403).json({
+              success: false,
+              message: 'Delivery not available for your location',
+              details: {
+                userCoordinates,
+                closestArea: deliveryCheck.closestArea,
+                distance: deliveryCheck.distance
+              }
+            });
+          }
+
+          console.log('Delivery validated for user location:', deliveryCheck.matchedLocation?.area);
+        }
+      } catch (geoError) {
+        console.log('Geo validation skipped due to error:', geoError.message);
+        // Don't block order if geo validation fails - fallback to dropdown selection
+      }
     }
 
     // Duplicate order prevention removed to allow unlimited back-to-back orders.
