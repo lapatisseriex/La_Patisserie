@@ -5,8 +5,8 @@ import { useSelector } from 'react-redux';
 import { useLocation } from '../../../context/LocationContext/LocationContext';
 import { useLocation as useRouterLocation } from 'react-router-dom';
 import { useHostel } from '../../../context/HostelContext/HostelContext';
-import { useDeliveryAvailability } from '../../../context/DeliveryAvailabilityContext';
 import ProfileImageUpload from './ProfileImageUpload';
+import LocationAutocomplete from '../../common/LocationAutocomplete';
 import axios from 'axios';
 import { 
   User, 
@@ -136,13 +136,6 @@ const Profile = ({ onDirtyChange }) => {
   const { user, updateProfile, authError, loading, isNewUser, updateUser, getCurrentUser } = useAuth();
   const { locations, loading: locationsLoading, fetchLocations } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
-  const { 
-    deliveryStatus, 
-    loading: deliveryLoading, 
-    detectUserLocation, 
-    resetDeliveryStatus,
-    error: deliveryError 
-  } = useDeliveryAvailability();
   const routerLocation = useRouterLocation();
   const currentUser = useSelector(state => state.auth.user);
   const [localError, setLocalError] = useState('');
@@ -188,8 +181,10 @@ const Profile = ({ onDirtyChange }) => {
 
       // Location information
       country: savedData.country || userData.country || 'India',
-      location: savedData.location || userLocationId,  // Prioritize savedData.location (now as ID), fallback to extracted ID
-      hostel: savedData.hostel || userHostelId,  // Prioritize savedData.hostel (now as ID), fallback to extracted ID
+      location: savedData.location || userLocationId,  // Admin location ID
+      hostel: savedData.hostel || userHostelId,  // Hostel ID
+      // User's precise address (sublocation)
+      userAddress: savedData.userAddress || userData.userAddress || null,
     };
 
     console.log('Final hostel data (should be ID):', result.hostel, 'type:', typeof result.hostel);
@@ -501,7 +496,8 @@ const Profile = ({ onDirtyChange }) => {
         anniversary: initialFormData.anniversary || '',
         country: initialFormData.country || 'India',
         location: initialFormData.location || '',
-        hostel: initialFormData.hostel || ''
+        hostel: initialFormData.hostel || '',
+        userAddress: JSON.stringify(initialFormData.userAddress || {})
       };
       setIsDirty(false);
       if (onDirtyChange) onDirtyChange(false);
@@ -570,7 +566,9 @@ const Profile = ({ onDirtyChange }) => {
         anniversary: name === 'anniversary' ? processedValue : formData.anniversary,
         country: name === 'country' ? processedValue : formData.country,
         location: name === 'location' ? processedValue : formData.location,
-        hostel: name === 'hostel' ? processedValue : formData.hostel};
+        hostel: name === 'hostel' ? processedValue : formData.hostel,
+        userAddress: JSON.stringify(formData.userAddress || {})
+      };
       const dirtyNow = JSON.stringify(comparable) !== JSON.stringify(baselineRef.current);
       if (dirtyNow !== isDirty) {
         setIsDirty(dirtyNow);
@@ -686,7 +684,8 @@ const Profile = ({ onDirtyChange }) => {
             anniversary: typeof formData.anniversary === 'string' ? formData.anniversary : formatDate(formData.anniversary),
             country: formData.country || 'India',
             location: formData.location || '',
-            hostel: formData.hostel || ''
+            hostel: formData.hostel || '',
+            userAddress: JSON.stringify(formData.userAddress || {})
           };
           setIsDirty(false);
           if (onDirtyChange) onDirtyChange(false);
@@ -697,8 +696,9 @@ const Profile = ({ onDirtyChange }) => {
         savedUserData.location = formData.location;
         savedUserData.hostel = formData.hostel;
         savedUserData.anniversary = formData.anniversary;
+        savedUserData.userAddress = formData.userAddress; // Save user's precise sublocation
         localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
-        console.log('Permanently saved location and hostel to savedUserData:', savedUserData.location, savedUserData.hostel);
+        console.log('Permanently saved location, hostel, and userAddress to savedUserData:', savedUserData.location, savedUserData.hostel, savedUserData.userAddress);
 
         // Update cached user data
         const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
@@ -1285,135 +1285,66 @@ const Profile = ({ onDirtyChange }) => {
           <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6" style={{
             background: 'linear-gradient(to bottom, rgba(250, 250, 249, 0.3) 0%, #FFFFFF 100%)'
           }}>
-            {/* Delivery Availability Check Banner */}
-            <div className="mb-4">
-              {!deliveryStatus.checked && !deliveryLoading ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-800">
-                        Check if we deliver to your location
-                      </p>
-                      <p className="text-xs text-blue-600 mt-1">
-                        Allow location access to verify delivery availability
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => detectUserLocation()}
-                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <MapPin className="w-4 h-4" />
-                        Detect My Location
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : deliveryLoading ? (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm text-gray-700">Checking delivery availability...</p>
-                  </div>
-                </div>
-              ) : deliveryStatus.available ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-green-800">
-                        ✓ Delivery available for your location!
-                      </p>
-                      {deliveryStatus.matchedLocation && (
-                        <p className="text-xs text-green-700 mt-1">
-                          Delivering from: {deliveryStatus.matchedLocation.area}, {deliveryStatus.matchedLocation.city}
-                        </p>
-                      )}
-                      {deliveryStatus.estimatedTime && (
-                        <p className="text-xs text-green-600 mt-1">
-                          Estimated delivery: {deliveryStatus.estimatedTime}
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => resetDeliveryStatus()}
-                        className="mt-2 text-xs text-green-700 hover:text-green-900 underline"
-                      >
-                        Check different location
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : deliveryStatus.checked ? (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <X className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-red-800">
-                        🚫 Delivery not available for your location
-                      </p>
-                      <p className="text-xs text-red-600 mt-1">
-                        Unfortunately, we don't deliver to your current location yet.
-                      </p>
-                      {deliveryStatus.closestArea && (
-                        <p className="text-xs text-red-600 mt-1">
-                          Nearest delivery area: {deliveryStatus.closestArea.area}, {deliveryStatus.closestArea.city}
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => resetDeliveryStatus()}
-                        className="mt-2 text-xs text-red-700 hover:text-red-900 underline"
-                      >
-                        Check different location
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-              {deliveryError && (
-                <div className="mt-2 text-xs text-amber-700">
-                  {deliveryError}
-                </div>
-              )}
-            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
-              {/* Delivery Location */}
-              <div className="space-y-2">
+              {/* Delivery Location with Autocomplete */}
+              <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423'}}>
                   <MapPinned className="h-4 w-4" style={{color: '#8B7355'}} />
                   Delivery Location <span style={{color: '#6B4423'}}>*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    name="location"
-                    value={formData.location || ''}
-                    onChange={handleChange}
-                    disabled={isSaving || locationsLoading || !isEditMode}
-                    required
-                    className={`w-full px-4 py-3 border ${
-                      isEditMode 
-                        ? 'bg-white focus:border-black' 
-                        : 'bg-stone-50'
-                    } focus:ring-2 transition-all duration-300 outline-none appearance-none ${
-                      !isEditMode ? 'text-gray-700' : 'text-black'
-                    }`}
-                    style={{ borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
-                  >
-                    <option value="">Select delivery location</option>
-                    {locations && locations.length > 0 ? (
-                      locations.map(location => (
-                        <option key={location._id} value={location._id}>
-                          {location.area}, {location.city} - {location.pincode}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>Loading locations...</option>
-                    )}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{color: '#8B7355'}} />
-                </div>
+                {isEditMode ? (
+                  <LocationAutocomplete
+                    locations={locations}
+                    selectedLocationId={formData.location}
+                    currentUserAddress={formData.userAddress}
+                    onLocationSelect={(locationId, locationObj, userAddressData) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        location: locationId,
+                        userAddress: userAddressData, // Store user's precise sublocation
+                        hostel: '' // Reset hostel when location changes
+                      }));
+                      
+                      // Update dirty tracking when location changes
+                      if (baselineRef.current) {
+                        const comparable = {
+                          name: formData.name,
+                          gender: formData.gender,
+                          dob: formData.dob,
+                          anniversary: formData.anniversary,
+                          country: formData.country,
+                          location: locationId,
+                          hostel: '',
+                          userAddress: JSON.stringify(userAddressData || {})
+                        };
+                        const dirtyNow = JSON.stringify(comparable) !== JSON.stringify(baselineRef.current);
+                        setIsDirty(dirtyNow);
+                        if (onDirtyChange) onDirtyChange(dirtyNow);
+                      } else {
+                        // If no baseline, mark as dirty if location is set
+                        if (locationId) {
+                          setIsDirty(true);
+                          if (onDirtyChange) onDirtyChange(true);
+                        }
+                      }
+                    }}
+                    disabled={isSaving || locationsLoading}
+                    placeholder="Search your delivery area (e.g., SITRA, Peelamedu, Coimbatore)..."
+                  />
+                ) : (
+                  <div className={`w-full px-4 py-3 border bg-stone-50 text-gray-700`} style={{ borderColor: '#8B7355'}}>
+                    {(() => {
+                      // Show user's precise address if available, otherwise admin location
+                      if (formData.userAddress?.fullAddress) {
+                        return formData.userAddress.fullAddress;
+                      }
+                      if (!formData.location) return 'No location selected';
+                      const loc = locations.find(l => l._id === formData.location);
+                      return loc ? `${loc.area}, ${loc.city} - ${loc.pincode}` : 'Loading...';
+                    })()}
+                  </div>
+                )}
               </div>
 
               {/* Country Field */}

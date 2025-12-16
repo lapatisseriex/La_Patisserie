@@ -767,7 +767,7 @@ const OrderCard = ({ order, index }) => {
         </div>
 
         {/* Delivery Address */}
-        {order.deliveryAddress && (
+        {(order.deliveryAddress || order.userDetails?.userAddress?.fullAddress || order.deliveryLocation) && (
           <div 
             className="mt-4 pt-4 border-t border-gray-100 flex items-start"
           >
@@ -777,8 +777,22 @@ const OrderCard = ({ order, index }) => {
                 Delivery Location
               </p>
               <p className="text-xs leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.5)' }}>
-                {order.deliveryAddress.hostelName && `${order.deliveryAddress.hostelName}, `}
-                {order.deliveryAddress.area}, {order.deliveryAddress.city}
+                {order.userDetails?.userAddress?.fullAddress ? (
+                  <>
+                    {order.hostelName && `${order.hostelName}, `}
+                    {order.userDetails.userAddress.fullAddress}
+                  </>
+                ) : order.deliveryAddress ? (
+                  <>
+                    {order.deliveryAddress.hostelName && `${order.deliveryAddress.hostelName}, `}
+                    {order.deliveryAddress.area}, {order.deliveryAddress.city}
+                  </>
+                ) : (
+                  <>
+                    {order.hostelName && `${order.hostelName}, `}
+                    {order.deliveryLocation}
+                  </>
+                )}
               </p>
             </div>
           </div>

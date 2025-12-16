@@ -200,6 +200,10 @@ const Payment = () => {
   }, [user, locations]);
 
   const locationName = useMemo(() => {
+    // Priority 1: User's precise sublocation from Google autocomplete
+    if (user?.userAddress?.fullAddress) {
+      return user.userAddress.fullAddress;
+    }
     if (resolvedLocation?.fullAddress) {
       return resolvedLocation.fullAddress;
     }
@@ -210,7 +214,7 @@ const Payment = () => {
       return getCurrentLocationName();
     }
     return '';
-  }, [resolvedLocation, getCurrentLocationName]);
+  }, [resolvedLocation, getCurrentLocationName, user?.userAddress]);
 
   const deliveryPincode = resolvedLocation?.pincode || user?.pincode || user?.postalCode || '';
   const deliveryCity = resolvedLocation?.city || user?.city || '';
@@ -535,7 +539,9 @@ const Payment = () => {
           phone: user?.phone,
           city: user?.location?.city || user?.city,
           pincode: user?.location?.pincode || user?.pincode,
-          country: user?.country || 'India'
+          country: user?.country || 'India',
+          // Include user's precise address (sublocation) for admin/order tracking
+          userAddress: user?.userAddress || null
         },
         deliveryLocation: user?.location?.fullAddress || getCurrentLocationName(),
         hostelName: user?.hostel?.name || null,

@@ -1028,7 +1028,7 @@ const OrderTrackingContent = ({ order, onOrderUpdate }) => {
       )}
 
       {/* Delivery Information */}
-      {(localOrder.deliveryLocation || localOrder.deliveryAddress) && (
+      {(localOrder.deliveryLocation || localOrder.deliveryAddress || localOrder.userDetails?.userAddress?.fullAddress) && (
         <div 
           className="bg-white border border-gray-100 p-4 sm:p-6"
           style={{ 
@@ -1047,7 +1047,12 @@ const OrderTrackingContent = ({ order, onOrderUpdate }) => {
                   Delivery Address
                 </p>
                 <p className="text-sm leading-relaxed" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
-                  {localOrder.deliveryAddress ? (
+                  {localOrder.userDetails?.userAddress?.fullAddress ? (
+                    <>
+                      {localOrder.hostelName && `${localOrder.hostelName}, `}
+                      {localOrder.userDetails.userAddress.fullAddress}
+                    </>
+                  ) : localOrder.deliveryAddress ? (
                     <>
                       {localOrder.deliveryAddress.hostelName && `${localOrder.deliveryAddress.hostelName}, `}
                       {localOrder.deliveryAddress.area}, {localOrder.deliveryAddress.city}

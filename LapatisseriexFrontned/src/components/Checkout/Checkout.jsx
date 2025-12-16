@@ -4,14 +4,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
 import { useLocation } from '../../context/LocationContext/LocationContext';
 import { useHostel } from '../../context/HostelContext/HostelContext';
-import { useDeliveryAvailability } from '../../context/DeliveryAvailabilityContext';
 import { calculatePricing, calculateCartTotals, formatCurrency } from '../../utils/pricingUtils';
 import { resolveOrderItemVariantLabel } from '../../utils/variantUtils';
 import OfferBadge from '../common/OfferBadge';
 import AnimatedButton from '../common/AnimatedButton';
 import MaskButton from '../common/MaskButton';
 import CubeButton from '../common/CubeButton';
-import UserLocationPicker from './UserLocationPicker';
+import LocationAutocomplete from '../common/LocationAutocomplete';
 import { getOrderExperienceInfo } from '../../utils/orderExperience';
 import {
   Mail,
@@ -39,7 +38,6 @@ const Checkout = () => {
   const { cartItems, cartTotal, cartCount, isEmpty } = useCart();
   const { locations, loading: locationsLoading, updateUserLocation, getCurrentLocationName } = useLocation();
   const { hostels, loading: hostelsLoading, fetchHostelsByLocation, clearHostels } = useHostel();
-  const { deliveryStatus, canProceedWithOrder, loading: deliveryLoading } = useDeliveryAvailability();
   const navigate = useNavigate();
 
   const orderExperience = useMemo(() => getOrderExperienceInfo(user), [user]);
@@ -53,6 +51,7 @@ const Checkout = () => {
   const [editName, setEditName] = useState(user?.name || '');
   const [editLocationId, setEditLocationId] = useState(user?.location?._id || '');
   const [editHostelId, setEditHostelId] = useState(user?.hostel?._id || '');
+  const [editUserAddress, setEditUserAddress] = useState(user?.userAddress || null);
   const [saving, setSaving] = useState(false);
 
   // Update local state when user data changes
@@ -60,6 +59,7 @@ const Checkout = () => {
     if (user) {
       setEditName(user.name || '');
       setEditLocationId(user.location?._id || '');
+      setEditUserAddress(user.userAddress || null);
       setEditHostelId(user.hostel?._id || '');
       setEmail(user.email || '');
     }
@@ -145,14 +145,15 @@ const Checkout = () => {
         return;
       }
 
-      // Update user name, location, and hostel in one API call
+      // Update user name, location, hostel, and userAddress in one API call
       const authToken = localStorage.getItem('authToken');
       const response = await axios.put(
         `${import.meta.env.VITE_API_URL}/users/${user.uid}`,
         { 
           name: editName.trim(),
           location: editLocationId,
-          hostel: editHostelId 
+          hostel: editHostelId,
+          userAddress: editUserAddress // Include user's precise sublocation
         },
         {
           headers: {
@@ -169,9 +170,17 @@ const Checkout = () => {
           ...user,
           name: editName.trim(),
           location: selectedLocation || editLocationId,
-          hostel: selectedHostel || editHostelId
+          hostel: selectedHostel || editHostelId,
+          userAddress: editUserAddress
         });
       }
+
+      // Also save to localStorage
+      const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
+      savedUserData.location = editLocationId;
+      savedUserData.hostel = editHostelId;
+      savedUserData.userAddress = editUserAddress;
+      localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
 
       // Also update location in LocationContext for immediate UI update
       await updateUserLocation(editLocationId);
@@ -196,6 +205,7 @@ const Checkout = () => {
     setEditName(user?.name || '');
     setEditLocationId(user?.location?._id || '');
     setEditHostelId(user?.hostel?._id || '');
+    setEditUserAddress(user?.userAddress || null);
     setIsEditMode(false);
     setError('');
   };
@@ -210,12 +220,6 @@ const Checkout = () => {
     console.log('Validation check - User object:', user);
     console.log('User location:', user?.location);
     console.log('User hostel:', user?.hostel);
-    
-    // Check geo-delivery availability if checked
-    if (deliveryStatus.checked && !deliveryStatus.available) {
-      setError('Delivery is not available for your location. Please select a different delivery address.');
-      return;
-    }
     
     // Validate location selection
     if (!user?.location || !user.location._id) {
@@ -481,55 +485,57 @@ const Checkout = () => {
                   />
                 </div>
                 {/* Location + Hostel compact grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4">
                   {/* Location */}
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-[#733857] mb-1.5 sm:mb-2">
                       Delivery Location
                     </label>
                     {isEditMode ? (
-                      <select
-                        value={editLocationId}
-                        onChange={(e) => setEditLocationId(e.target.value)}
-                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
-                      >
-                        <option value="">Select a location</option>
-                        {locationsLoading ? (
-                          <option disabled>Loading locations...</option>
-                        ) : (
-                          locations.map((location) => (
-                            <option key={location._id} value={location._id}>
-                              {location.area}, {location.city} - {location.pincode}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={(() => {
-                          const locationName = getCurrentLocationName();
-                          if (locationName === "Select Location" || locationName === "Location Loading...") {
-                            if (user?.location) {
-                              if (typeof user.location === 'object' && user.location.area) {
-                                return `${user.location.area}, ${user.location.city}`;
-                              } else if (typeof user.location === 'string' && locations.length > 0) {
-                                const loc = locations.find(l => l._id === user.location);
-                                return loc ? `${loc.area}, ${loc.city}` : 'Not set';
-                              }
-                            }
-                            return 'Not set';
-                          }
-                          return locationName;
-                        })()}
-                        readOnly
-                        className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.location ? 'border-red-300' : ''}`}
+                      <LocationAutocomplete
+                        locations={locations}
+                        selectedLocationId={editLocationId}
+                        currentUserAddress={editUserAddress}
+                        onLocationSelect={(locationId, locationObj, userAddressData) => {
+                          setEditLocationId(locationId);
+                          setEditUserAddress(userAddressData); // Store user's precise sublocation
+                          setEditHostelId(''); // Reset hostel when location changes
+                        }}
+                        disabled={locationsLoading || saving}
+                        placeholder="Search your delivery area..."
                       />
-                    )}
-                    {!user?.location && !isEditMode && (
-                      <p className="text-xs sm:text-sm text-red-600 mt-1">
-                        Please set your delivery location before proceeding
-                      </p>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={(() => {
+                            // First priority: user's precise address
+                            if (user?.userAddress?.fullAddress) {
+                              return user.userAddress.fullAddress;
+                            }
+                            const locationName = getCurrentLocationName();
+                            if (locationName === "Select Location" || locationName === "Location Loading...") {
+                              if (user?.location) {
+                                if (typeof user.location === 'object' && user.location.area) {
+                                  return `${user.location.area}, ${user.location.city}`;
+                                } else if (typeof user.location === 'string' && locations.length > 0) {
+                                  const loc = locations.find(l => l._id === user.location);
+                                  return loc ? `${loc.area}, ${loc.city}` : 'Not set';
+                                }
+                              }
+                              return 'Not set';
+                            }
+                            return locationName;
+                          })()}
+                          readOnly
+                          className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.location ? 'border-red-300' : ''}`}
+                        />
+                        {!user?.location && (
+                          <p className="text-xs sm:text-sm text-red-600 mt-1">
+                            Please set your delivery location before proceeding
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -558,17 +564,19 @@ const Checkout = () => {
                         )}
                       </select>
                     ) : (
-                      <input
-                        type="text"
-                        value={user?.hostel?.name || 'Not set'}
-                        readOnly
-                        className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.hostel ? 'border-red-300' : ''}`}
-                      />
-                    )}
-                    {!user?.hostel && !isEditMode && (
-                      <p className="text-xs sm:text-sm text-red-600 mt-1">
-                        Please set your hostel before proceeding
-                      </p>
+                      <>
+                        <input
+                          type="text"
+                          value={user?.hostel?.name || 'Not set'}
+                          readOnly
+                          className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.hostel ? 'border-red-300' : ''}`}
+                        />
+                        {!user?.hostel && (
+                          <p className="text-xs sm:text-sm text-red-600 mt-1">
+                            Please set your hostel before proceeding
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -579,11 +587,6 @@ const Checkout = () => {
                   <p className="text-[11px] sm:text-xs leading-snug text-[#412434]">
                     We currently serve only selected delivery areas and partner hostel students.
                   </p>
-                </div>
-                
-                {/* Geo-Delivery Location Picker - User can detect or manually enter location */}
-                <div className="mt-4">
-                  <UserLocationPicker />
                 </div>
 
                 {/* Small helper: how to change location/hostel */}
@@ -628,25 +631,16 @@ const Checkout = () => {
               {/* Proceed Button (only when NOT editing) */}
               {!isEditMode && (
                 <>
-                  {/* Show warning if delivery not available */}
-                  {deliveryStatus.checked && !deliveryStatus.available && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-700 font-medium">
-                        🚫 Cannot proceed - Delivery not available for your location
-                      </p>
-                    </div>
-                  )}
                   <MaskButton
                     onClick={handleProceedToPayment}
-                    disabled={saving || deliveryLoading || (deliveryStatus.checked && !deliveryStatus.available)}
+                    disabled={saving}
                     maskType="nature"
                     className="mask-button--compact"
                     style={{
-                      width: '100%',
-                      opacity: (deliveryStatus.checked && !deliveryStatus.available) ? 0.5 : 1
+                      width: '100%'
                     }}
                   >
-                    {deliveryLoading ? 'Checking delivery...' : 'Continue to Payment'}
+                    Continue to Payment
                   </MaskButton>
                 </>
               )}

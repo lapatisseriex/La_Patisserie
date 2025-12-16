@@ -589,7 +589,17 @@ const AdminUsers = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {user.location ? (
+                    {user.userAddress?.fullAddress ? (
+                      <div className="flex flex-col">
+                        <div className="flex items-center">
+                          <FaMapMarkerAlt className="mr-2 text-black" />
+                          <span className="text-sm text-black font-normal">{user.userAddress.fullAddress}</span>
+                        </div>
+                        {user.location && (
+                          <span className="text-xs text-blue-600 ml-6">📍 Zone: {user.location.area}, {user.location.city}</span>
+                        )}
+                      </div>
+                    ) : user.location ? (
                       <div className="flex items-center">
                         <FaMapMarkerAlt className={`mr-2 ${user.location.isActive ? 'text-black' : 'text-gray-400'}`} />
                         <span className="text-sm text-black font-normal">{user.location.area}, {user.location.city}</span>
@@ -717,12 +727,22 @@ const AdminUsers = () => {
                   </div>
                   <div>
                     <div className="text-gray-500">Location</div>
-                    <div className="text-black flex items-center min-w-0">
-                      {user.location ? (
+                    <div className="text-black flex flex-col min-w-0">
+                      {user.userAddress?.fullAddress ? (
                         <>
+                          <div className="flex items-center">
+                            <FaMapMarkerAlt className="mr-1 shrink-0 text-black" />
+                            <span className="truncate">{user.userAddress.fullAddress}</span>
+                          </div>
+                          {user.location && (
+                            <span className="text-xs text-blue-600 ml-5">📍 Zone: {user.location.area}, {user.location.city}</span>
+                          )}
+                        </>
+                      ) : user.location ? (
+                        <div className="flex items-center">
                           <FaMapMarkerAlt className={`mr-1 shrink-0 ${user.location.isActive ? 'text-black' : 'text-gray-400'}`} />
                           <span className="truncate">{user.location.area}, {user.location.city}</span>
-                        </>
+                        </div>
                       ) : (
                         <span className="text-gray-500">Not set</span>
                       )}
@@ -865,10 +885,17 @@ const AdminUsers = () => {
                           Location & Stats
                         </h4>
                         <div className="space-y-3">
+                          {/* User's precise sublocation from Google */}
+                          {selectedUser.userAddress?.fullAddress && (
+                            <div>
+                              <span className="font-medium text-gray-700">Precise Location:</span>
+                              <p className="text-gray-900">{selectedUser.userAddress.fullAddress}</p>
+                            </div>
+                          )}
                           {selectedUser.location ? (
                             <>
                               <div>
-                                <span className="font-medium text-gray-700">Area:</span>
+                                <span className="font-medium text-gray-700">{selectedUser.userAddress?.fullAddress ? 'Delivery Zone:' : 'Area:'}</span>
                                 <p className="text-gray-900">{selectedUser.location.area}</p>
                               </div>
                               <div>
@@ -888,7 +915,7 @@ const AdminUsers = () => {
                             </>
                           ) : (
                             <p className="text-gray-500 italic">No delivery location set</p>
-                          )}
+                          )}}
                           
                           {userDetails.userInfo && (
                             <>

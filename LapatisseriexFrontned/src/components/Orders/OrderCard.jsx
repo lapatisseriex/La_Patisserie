@@ -323,10 +323,10 @@ const OrderCard = ({ order, onOrderCancelled, isCancelledView = false }) => {
             {isExpanded && (
               <div className="px-5 sm:px-6 pb-4 space-y-3 bg-gray-50">
                 {/* Delivery Location */}
-                {order.deliveryLocation && (
+                {(order.userDetails?.userAddress?.fullAddress || order.deliveryLocation) && (
                   <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(26, 26, 26, 0.6)' }}>
                     <MapPin className="h-3.5 w-3.5" />
-                    <span>{order.deliveryLocation}</span>
+                    <span>{order.userDetails?.userAddress?.fullAddress || order.deliveryLocation}</span>
                   </div>
                 )}
                 

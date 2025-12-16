@@ -4,6 +4,7 @@ import { FaMapMarkerAlt, FaSearch, FaCrosshairs, FaCheck, FaTimes } from 'react-
 /**
  * Google Maps Location Picker Component
  * Allows admin to select a location on the map and set delivery radius
+ * Auto-fills: Area, City, State, Pincode from reverse geocoding
  * 
  * Props:
  * - initialLat: Initial latitude
@@ -34,7 +35,12 @@ const GoogleMapsLocationPicker = ({
   const [selectedLocation, setSelectedLocation] = useState({
     lat: initialLat,
     lng: initialLng,
-    address: ''
+    address: '',
+    area: '',
+    city: '',
+    state: '',
+    pincode: '',
+    country: 'India'
   });
   const [radius, setRadius] = useState(initialRadius);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +49,101 @@ const GoogleMapsLocationPicker = ({
 
   // Default center (Coimbatore, India - adjust as needed)
   const defaultCenter = { lat: 11.0168, lng: 76.9558 };
+
+  /**
+   * Parse address components from Google Geocoding response
+   * Extracts: area, city, state, pincode, country
+   */
+  const parseAddressComponents = (results) => {
+    let area = '';
+    let city = '';
+    let state = '';
+    let pincode = '';
+    let country = 'India';
+    let fullAddress = '';
+
+    if (results && results.length > 0) {
+      fullAddress = results[0].formatted_address || '';
+      
+      // Go through address components
+      const components = results[0].address_components || [];
+      
+      for (const component of components) {
+        const types = component.types;
+        
+        // Pincode / Postal Code
+        if (types.includes('postal_code')) {
+          pincode = component.long_name;
+        }
+        
+        // Area / Locality / Neighborhood / Sublocality
+        if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
+          area = component.long_name;
+        }
+        if (!area && types.includes('neighborhood')) {
+          area = component.long_name;
+        }
+        if (!area && types.includes('locality')) {
+          // Use locality as area if no sublocality found
+          area = component.long_name;
+        }
+        
+        // City
+        if (types.includes('locality')) {
+          city = component.long_name;
+        }
+        if (!city && types.includes('administrative_area_level_2')) {
+          city = component.long_name;
+        }
+        
+        // State
+        if (types.includes('administrative_area_level_1')) {
+          state = component.long_name;
+        }
+        
+        // Country
+        if (types.includes('country')) {
+          country = component.long_name;
+        }
+      }
+      
+      // If area is same as city, try to get more specific area from sublocality_level_2
+      if (area === city) {
+        for (const component of components) {
+          if (component.types.includes('sublocality_level_2')) {
+            area = component.long_name;
+            break;
+          }
+        }
+      }
+    }
+
+    return { area, city, state, pincode, country, fullAddress };
+  };
+
+  /**
+   * Reverse geocode coordinates to get full address details
+   */
+  const reverseGeocode = useCallback((lat, lng) => {
+    return new Promise((resolve) => {
+      if (!window.google || !window.google.maps) {
+        resolve({ area: '', city: '', state: '', pincode: '', country: 'India', fullAddress: '' });
+        return;
+      }
+
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results) {
+          const parsed = parseAddressComponents(results);
+          console.log('📍 Reverse geocoded:', parsed);
+          resolve(parsed);
+        } else {
+          console.log('Geocoding failed:', status);
+          resolve({ area: '', city: '', state: '', pincode: '', country: 'India', fullAddress: '' });
+        }
+      });
+    });
+  }, []);
 
   // Load Google Maps script
   useEffect(() => {
@@ -149,34 +250,56 @@ const GoogleMapsLocationPicker = ({
 
         addMarkerAndCircle({ lat, lng }, radius);
         
-        setSelectedLocation({ lat, lng, address });
-        onLocationSelect?.({ lat, lng, address });
+        // Parse address components from the place result
+        const parsed = parseAddressComponents([{ 
+          formatted_address: address, 
+          address_components: place.address_components || [] 
+        }]);
+        
+        const locationData = { 
+          lat, 
+          lng, 
+          address,
+          area: parsed.area,
+          city: parsed.city,
+          state: parsed.state,
+          pincode: parsed.pincode,
+          country: parsed.country
+        };
+        
+        setSelectedLocation(locationData);
+        onLocationSelect?.(locationData);
         setError(null);
       });
     }
 
     // Click listener to place marker
-    map.addListener('click', (event) => {
+    map.addListener('click', async (event) => {
       const lat = event.latLng.lat();
       const lng = event.latLng.lng();
 
       addMarkerAndCircle({ lat, lng }, radius);
 
-      // Reverse geocode to get address
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        let address = '';
-        if (status === 'OK' && results[0]) {
-          address = results[0].formatted_address;
-        }
-        
-        setSelectedLocation({ lat, lng, address });
-        onLocationSelect?.({ lat, lng, address });
-      });
+      // Reverse geocode to get full address details
+      const parsed = await reverseGeocode(lat, lng);
+      
+      const locationData = { 
+        lat, 
+        lng, 
+        address: parsed.fullAddress,
+        area: parsed.area,
+        city: parsed.city,
+        state: parsed.state,
+        pincode: parsed.pincode,
+        country: parsed.country
+      };
+      
+      setSelectedLocation(locationData);
+      onLocationSelect?.(locationData);
     });
 
     setIsLoading(false);
-  }, [selectedLocation.lat, selectedLocation.lng, radius, onLocationSelect]);
+  }, [selectedLocation.lat, selectedLocation.lng, radius, onLocationSelect, reverseGeocode]);
 
   // Add or update marker and circle
   const addMarkerAndCircle = useCallback((position, radiusKm) => {
@@ -213,29 +336,34 @@ const GoogleMapsLocationPicker = ({
     });
 
     // Marker drag listener
-    marker.addListener('dragend', () => {
+    marker.addListener('dragend', async () => {
       const newPos = marker.getPosition();
       const lat = newPos.lat();
       const lng = newPos.lng();
 
       circle.setCenter({ lat, lng });
 
-      // Reverse geocode
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        let address = '';
-        if (status === 'OK' && results[0]) {
-          address = results[0].formatted_address;
-        }
-        
-        setSelectedLocation({ lat, lng, address });
-        onLocationSelect?.({ lat, lng, address });
-      });
+      // Reverse geocode with full address parsing
+      const parsed = await reverseGeocode(lat, lng);
+      
+      const locationData = { 
+        lat, 
+        lng, 
+        address: parsed.fullAddress,
+        area: parsed.area,
+        city: parsed.city,
+        state: parsed.state,
+        pincode: parsed.pincode,
+        country: parsed.country
+      };
+      
+      setSelectedLocation(locationData);
+      onLocationSelect?.(locationData);
     });
 
     markerRef.current = marker;
     circleRef.current = circle;
-  }, [onLocationSelect]);
+  }, [onLocationSelect, reverseGeocode]);
 
   // Update circle radius
   useEffect(() => {
@@ -252,7 +380,7 @@ const GoogleMapsLocationPicker = ({
   };
 
   // Get current location
-  const getCurrentLocation = () => {
+  const getCurrentLocation = async () => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
       return;
@@ -260,7 +388,7 @@ const GoogleMapsLocationPicker = ({
 
     setIsLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         const map = mapInstanceRef.current;
         
@@ -269,18 +397,23 @@ const GoogleMapsLocationPicker = ({
           map.setZoom(15);
           addMarkerAndCircle({ lat: latitude, lng: longitude }, radius);
 
-          // Reverse geocode
-          const geocoder = new window.google.maps.Geocoder();
-          geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-            let address = '';
-            if (status === 'OK' && results[0]) {
-              address = results[0].formatted_address;
-            }
-            
-            setSelectedLocation({ lat: latitude, lng: longitude, address });
-            onLocationSelect?.({ lat: latitude, lng: longitude, address });
-            setIsLoading(false);
-          });
+          // Reverse geocode with full address parsing
+          const parsed = await reverseGeocode(latitude, longitude);
+          
+          const locationData = { 
+            lat: latitude, 
+            lng: longitude, 
+            address: parsed.fullAddress,
+            area: parsed.area,
+            city: parsed.city,
+            state: parsed.state,
+            pincode: parsed.pincode,
+            country: parsed.country
+          };
+          
+          setSelectedLocation(locationData);
+          onLocationSelect?.(locationData);
+          setIsLoading(false);
         }
       },
       (error) => {
@@ -302,6 +435,11 @@ const GoogleMapsLocationPicker = ({
       lat: selectedLocation.lat,
       lng: selectedLocation.lng,
       address: selectedLocation.address,
+      area: selectedLocation.area,
+      city: selectedLocation.city,
+      state: selectedLocation.state,
+      pincode: selectedLocation.pincode,
+      country: selectedLocation.country,
       radius
     });
   };
@@ -398,13 +536,47 @@ const GoogleMapsLocationPicker = ({
           {selectedLocation.lat && selectedLocation.lng && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <FaMapMarkerAlt className="text-green-600 mt-1" />
-                <div>
+                <FaMapMarkerAlt className="text-green-600 mt-1 flex-shrink-0" />
+                <div className="flex-1">
                   <p className="text-sm font-medium text-green-800">Selected Location</p>
+                  
+                  {/* Auto-filled Address Details */}
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                    {selectedLocation.area && (
+                      <div>
+                        <span className="text-gray-500">Area: </span>
+                        <span className="text-green-700 font-medium">{selectedLocation.area}</span>
+                      </div>
+                    )}
+                    {selectedLocation.city && (
+                      <div>
+                        <span className="text-gray-500">City: </span>
+                        <span className="text-green-700 font-medium">{selectedLocation.city}</span>
+                      </div>
+                    )}
+                    {selectedLocation.state && (
+                      <div>
+                        <span className="text-gray-500">State: </span>
+                        <span className="text-green-700 font-medium">{selectedLocation.state}</span>
+                      </div>
+                    )}
+                    {selectedLocation.pincode && (
+                      <div>
+                        <span className="text-gray-500">Pincode: </span>
+                        <span className="text-green-700 font-medium">{selectedLocation.pincode}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Full Address */}
                   {selectedLocation.address && (
-                    <p className="text-sm text-green-700 mt-1">{selectedLocation.address}</p>
+                    <p className="text-xs text-green-600 mt-2 border-t border-green-200 pt-2">
+                      📍 {selectedLocation.address}
+                    </p>
                   )}
-                  <p className="text-xs text-green-600 mt-1">
+                  
+                  {/* Coordinates */}
+                  <p className="text-xs text-green-500 mt-1">
                     Lat: {selectedLocation.lat.toFixed(6)}, Lng: {selectedLocation.lng.toFixed(6)}
                   </p>
                 </div>

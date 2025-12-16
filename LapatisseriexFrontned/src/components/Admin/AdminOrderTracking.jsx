@@ -235,7 +235,15 @@ const IndividualOrderCard = ({ order, onDispatchItem, dispatchLoading, dispatchS
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Delivery Location:</span>
-              <p className="font-medium">{order.deliveryLocation}</p>
+              <p className="font-medium">
+                {order.userDetails?.userAddress?.fullAddress || order.deliveryLocation}
+              </p>
+              {/* Show admin zone if user has precise sublocation */}
+              {order.userDetails?.userAddress?.fullAddress && order.deliveryLocation && (
+                <p className="text-xs text-blue-600 mt-1">
+                  📍 Zone: {order.deliveryLocation}
+                </p>
+              )}
             </div>
             <div>
               <span className="text-gray-500">Order Time:</span>

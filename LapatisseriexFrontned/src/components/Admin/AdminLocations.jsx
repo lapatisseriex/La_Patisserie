@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaExclamationTriangle, FaBuilding, FaEye, FaChevronDown, FaChevronUp, FaMapPin, FaGlobeAsia } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaPlus, FaEdit, FaTrash, FaToggleOn, FaToggleOff, FaExclamationTriangle, FaBuilding, FaEye, FaChevronDown, FaChevronUp, FaMapPin, FaGlobeAsia, FaSearch, FaCrosshairs } from 'react-icons/fa';
 import GoogleMapsLocationPicker from './GoogleMapsLocationPicker';
 
 const AdminLocations = () => {
@@ -27,12 +27,21 @@ const AdminLocations = () => {
   const [authUser, setAuthUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   
+  // Location search autocomplete state
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const locationSearchInputRef = useRef(null);
+  const autocompleteInstanceRef = useRef(null);
+  
   const [formData, setFormData] = useState({
     city: '',
     area: '',
     pincode: '',
     deliveryCharge: 49,
-    isActive: true
+    isActive: true,
+    // Geo fields for auto-fill
+    coordinates: { lat: null, lng: null },
+    state: ''
   });
   
   const [hostelFormData, setHostelFormData] = useState({
@@ -62,6 +71,141 @@ const AdminLocations = () => {
     })();
     return () => { if (unsubscribe) unsubscribe(); };
   }, []);
+
+  // Load Google Maps script for Places Autocomplete
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return;
+
+    // Check if already loaded
+    if (window.google && window.google.maps && window.google.maps.places) {
+      setIsGoogleMapsLoaded(true);
+      return;
+    }
+
+    // Check if script is already being loaded
+    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+      const checkLoaded = setInterval(() => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          clearInterval(checkLoaded);
+          setIsGoogleMapsLoaded(true);
+        }
+      }, 100);
+      return;
+    }
+
+    // Load script
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setIsGoogleMapsLoaded(true);
+    document.head.appendChild(script);
+  }, []);
+
+  // Initialize autocomplete when modal opens and Google Maps is loaded
+  useEffect(() => {
+    if (!isGoogleMapsLoaded || !showAddModal || !locationSearchInputRef.current) return;
+    if (autocompleteInstanceRef.current) return; // Already initialized
+
+    try {
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        locationSearchInputRef.current,
+        {
+          componentRestrictions: { country: 'in' }, // India only
+          types: ['geocode', 'establishment'],
+          fields: ['geometry', 'formatted_address', 'address_components', 'name']
+        }
+      );
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        
+        if (place.geometry && place.geometry.location) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          
+          // Parse address components
+          const components = place.address_components || [];
+          let area = '';
+          let city = '';
+          let state = '';
+          let pincode = '';
+
+          for (const component of components) {
+            const types = component.types;
+            
+            if (types.includes('postal_code')) {
+              pincode = component.long_name;
+            }
+            if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
+              area = component.long_name;
+            }
+            if (!area && types.includes('neighborhood')) {
+              area = component.long_name;
+            }
+            if (types.includes('locality')) {
+              city = component.long_name;
+              if (!area) area = component.long_name;
+            }
+            if (!city && types.includes('administrative_area_level_2')) {
+              city = component.long_name;
+            }
+            if (types.includes('administrative_area_level_1')) {
+              state = component.long_name;
+            }
+          }
+
+          // If area same as city, try sublocality_level_2
+          if (area === city) {
+            for (const component of components) {
+              if (component.types.includes('sublocality_level_2')) {
+                area = component.long_name;
+                break;
+              }
+            }
+          }
+
+          console.log('📍 Auto-filled from Google Places:', { area, city, state, pincode, lat, lng });
+
+          // Update form data with auto-filled values
+          setFormData(prev => ({
+            ...prev,
+            area: area || prev.area,
+            city: city || prev.city,
+            pincode: pincode || prev.pincode,
+            state: state || prev.state,
+            coordinates: { lat, lng }
+          }));
+
+          setLocationSearchQuery(place.formatted_address || place.name || '');
+        }
+      });
+
+      autocompleteInstanceRef.current = autocomplete;
+    } catch (err) {
+      console.error('Error initializing Places Autocomplete:', err);
+    }
+
+    return () => {
+      // Cleanup on unmount
+      if (autocompleteInstanceRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners(autocompleteInstanceRef.current);
+        autocompleteInstanceRef.current = null;
+      }
+    };
+  }, [isGoogleMapsLoaded, showAddModal]);
+
+  // Reset autocomplete when modal closes
+  useEffect(() => {
+    if (!showAddModal && !editingLocation) {
+      setLocationSearchQuery('');
+      if (autocompleteInstanceRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners(autocompleteInstanceRef.current);
+        autocompleteInstanceRef.current = null;
+      }
+    }
+  }, [showAddModal, editingLocation]);
   
   // Fetch all locations (including inactive ones)
   const fetchLocations = async () => {
@@ -376,8 +520,11 @@ const AdminLocations = () => {
       area: '',
       pincode: '',
       deliveryCharge: 49,
-      isActive: true
+      isActive: true,
+      coordinates: { lat: null, lng: null },
+      state: ''
     });
+    setLocationSearchQuery('');
   };
   
   // Reset hostel form
@@ -398,7 +545,9 @@ const AdminLocations = () => {
       area: location.area,
       pincode: location.pincode,
       deliveryCharge: location.deliveryCharge || 49, // Default to 49 if undefined
-      isActive: location.isActive
+      isActive: location.isActive,
+      coordinates: location.coordinates || { lat: null, lng: null },
+      state: location.state || ''
     });
   };
   
@@ -424,14 +573,26 @@ const AdminLocations = () => {
       }
       const idToken = await user.getIdToken(true);
       
+      // Build update data with auto-filled address details
+      const updateData = {
+        lat: geoData.lat,
+        lng: geoData.lng,
+        deliveryRadiusKm: geoData.radius,
+        useGeoDelivery: true
+      };
+      
+      // Add auto-filled address components if available
+      if (geoData.area) updateData.area = geoData.area;
+      if (geoData.city) updateData.city = geoData.city;
+      if (geoData.state) updateData.state = geoData.state;
+      if (geoData.pincode) updateData.pincode = geoData.pincode;
+      if (geoData.address) updateData.address = geoData.address;
+      
+      console.log('📍 Saving geo location with auto-filled data:', updateData);
+      
       await axios.put(
         `${API_URL}/admin/locations/${selectedLocationForMap._id}/geo`,
-        {
-          lat: geoData.lat,
-          lng: geoData.lng,
-          deliveryRadiusKm: geoData.radius,
-          useGeoDelivery: true
-        },
+        updateData,
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
       
@@ -578,7 +739,7 @@ const AdminLocations = () => {
           <p className="text-black font-light">Manage delivery locations and hostels for your store</p>
         </div>
   {/* Header actions: always visible; stack below title under 1052px */}
-  <div className="locations-header-actions flex flex-row flex-wrap gap-3 hidden md:flex">
+  <div className="locations-header-actions hidden md:flex flex-row flex-wrap gap-3">
           <button
             onClick={() => openHostelModal()}
             className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-700 transition-colors font-medium"
@@ -975,13 +1136,42 @@ const AdminLocations = () => {
       {/* Add/Edit Location Modal */}
       {(showAddModal || editingLocation) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-sans">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-black mb-4">
               {editingLocation ? 'Edit Location' : 'Add New Location'}
             </h3>
             
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
+                {/* Google Places Search - Auto-fill City, Area, Pincode */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <label className="block text-sm font-medium text-blue-800 mb-2">
+                    <FaSearch className="inline mr-2" />
+                    Search Location (Auto-fill)
+                  </label>
+                  <input
+                    ref={locationSearchInputRef}
+                    type="text"
+                    placeholder="Search for a place in India..."
+                    className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
+                    value={locationSearchQuery}
+                    onChange={(e) => setLocationSearchQuery(e.target.value)}
+                  />
+                  <p className="text-xs text-blue-600 mt-1">
+                    🔍 Type an address and select to auto-fill City, Area & Pincode
+                  </p>
+                </div>
+
+                {/* Auto-filled indicator */}
+                {formData.coordinates?.lat && formData.coordinates?.lng && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <FaMapMarkerAlt className="text-green-600" />
+                    <span className="text-xs text-green-700">
+                      📍 Location set: {formData.coordinates.lat.toFixed(4)}, {formData.coordinates.lng.toFixed(4)}
+                    </span>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-black mb-1">
                     City

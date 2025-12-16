@@ -14,6 +14,15 @@ const locationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    state: {
+      type: String,
+      default: 'Tamil Nadu'
+    },
+    // Full address from Google Geocoding (auto-filled)
+    geoAddress: {
+      type: String,
+      default: null
+    },
     isActive: {
       type: Boolean,
       default: true

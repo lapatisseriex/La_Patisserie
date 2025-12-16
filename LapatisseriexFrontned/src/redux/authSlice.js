@@ -478,8 +478,8 @@ export const getCurrentUser = createAsyncThunk(
           ...response.data.user,
           // Restore saved fields if they don't exist in the response
           email: response.data.user.email || savedUserData.email || null,
-          anniversary: response.data.user.anniversary || savedUserData.anniversary || null,
-          // Ensure phone verification fields are included
+          anniversary: response.data.user.anniversary || savedUserData.anniversary || null,          // Preserve userAddress from backend or localStorage
+          userAddress: response.data.user.userAddress || savedUserData.userAddress || null,          // Ensure phone verification fields are included
           phone: response.data.user.phone || '',
           phoneVerified: response.data.user.phoneVerified || false,
           phoneVerifiedAt: response.data.user.phoneVerifiedAt || null};

@@ -137,7 +137,14 @@ export const LocationProvider = ({ children }) => {
   
   // Get current selected location name for display
   const getCurrentLocationName = () => {
-    if (!user || !user.location) return "Select Location";
+    if (!user) return "Select Location";
+    
+    // Priority 1: User's precise sublocation from Google autocomplete
+    if (user.userAddress?.fullAddress) {
+      return user.userAddress.fullAddress;
+    }
+    
+    if (!user.location) return "Select Location";
     
     const userLocation = user.location;
     

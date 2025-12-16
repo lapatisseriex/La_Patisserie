@@ -62,6 +62,18 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location',
     },
+    // User's precise address (sublocation) - full Google autocomplete data
+    userAddress: {
+      fullAddress: { type: String, default: '' }, // Full formatted address from Google
+      area: { type: String, default: '' }, // Sublocation area (e.g., SITRA)
+      city: { type: String, default: '' },
+      state: { type: String, default: '' },
+      pincode: { type: String, default: '' },
+      coordinates: {
+        lat: { type: Number, default: null },
+        lng: { type: Number, default: null }
+      }
+    },
     hostel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Hostel',

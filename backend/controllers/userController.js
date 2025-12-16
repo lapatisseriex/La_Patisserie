@@ -66,6 +66,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       country: user.country,
       location: user.location,
       hostel: user.hostel,
+      userAddress: user.userAddress || null, // User's precise sublocation
       profilePhoto: user.profilePhoto || { url: '', public_id: '' },
       createdAt: user.createdAt,
       email: user.email || '',
@@ -118,7 +119,8 @@ export const updateUser = asyncHandler(async (req, res) => {
     email,
     phone,
     phoneVerified,
-    phoneVerifiedAt
+    phoneVerifiedAt,
+    userAddress // User's precise sublocation from Google autocomplete
   } = req.body;
   
   if (name) user.name = name;
@@ -144,6 +146,11 @@ export const updateUser = asyncHandler(async (req, res) => {
   if (country !== undefined) user.country = country || 'India';
   if (location) user.location = location;
   if (hostel !== undefined) user.hostel = hostel || null;
+  
+  // Store user's precise address (sublocation)
+  if (userAddress !== undefined) {
+    user.userAddress = userAddress;
+  }
   
   // Only admins can update roles
   if (role && req.user.role === 'admin') {
@@ -213,6 +220,7 @@ export const updateUser = asyncHandler(async (req, res) => {
       country: updatedUser.country,
       location: updatedUser.location,
       hostel: updatedUser.hostel,
+      userAddress: updatedUser.userAddress || null, // User's precise sublocation
       profilePhoto: updatedUser.profilePhoto || { url: '', public_id: '' },
       email: updatedUser.email || '',
       emailVerified: updatedUser.emailVerified || false,

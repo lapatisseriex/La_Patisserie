@@ -749,7 +749,12 @@ const AdminOrders = () => {
               <div className="flex-1">
                 <p className="text-sm font-semibold text-gray-900">{order.userDetails?.name || 'N/A'}</p>
                 <p className="text-xs text-gray-600">{order.userDetails?.phone || 'N/A'}</p>
-                <p className="text-xs text-gray-500">{order.deliveryLocation}</p>
+                <p className="text-xs text-gray-500">
+                  {order.userDetails?.userAddress?.fullAddress || order.deliveryLocation}
+                </p>
+                {order.userDetails?.userAddress?.fullAddress && order.deliveryLocation && (
+                  <p className="text-xs text-blue-600 mt-0.5">📍 Zone: {order.deliveryLocation}</p>
+                )}
                 {order.hostelName && (
                   <p className="text-xs text-blue-600 font-medium mt-1">
                     🏠 {order.hostelName}
@@ -1248,8 +1253,13 @@ const AdminOrders = () => {
                           {formatDate(order.createdAt)}
                         </div>
                         <div className="text-xs text-gray-400">
-                          {order.deliveryLocation}
+                          {order.userDetails?.userAddress?.fullAddress || order.deliveryLocation}
                         </div>
+                        {order.userDetails?.userAddress?.fullAddress && order.deliveryLocation && (
+                          <div className="text-xs text-blue-600">
+                            📍 Zone: {order.deliveryLocation}
+                          </div>
+                        )}
                         {order.hostelName && (
                           <div className="text-xs text-blue-600 font-medium">
                             🏠 {order.hostelName}
@@ -1608,7 +1618,12 @@ const AdminOrders = () => {
                         <div className="flex items-start justify-between">
                           <span className="font-medium text-gray-700">Location:</span>
                           <div className="text-right">
-                            <p className="text-gray-900">{selectedOrder.deliveryLocation}</p>
+                            <p className="text-gray-900">
+                              {selectedOrder.userDetails?.userAddress?.fullAddress || selectedOrder.deliveryLocation}
+                            </p>
+                            {selectedOrder.userDetails?.userAddress?.fullAddress && selectedOrder.deliveryLocation && (
+                              <p className="text-xs text-blue-600 mt-1">📍 Zone: {selectedOrder.deliveryLocation}</p>
+                            )}
                             {selectedOrder.hostelName && (
                               <div className="flex items-center mt-1">
                                 <HiOutlineOfficeBuilding className="text-gray-500 mr-1 text-sm" />

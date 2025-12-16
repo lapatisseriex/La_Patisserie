@@ -153,6 +153,11 @@ const Header = ({ isAdminView = false }) => {
   
   // Memoize location display to prevent unnecessary re-calculations and ensure it updates properly
   const memoizedUserLocationDisplay = useMemo(() => {
+    // Priority 1: User's precise sublocation from Google autocomplete
+    if (user?.userAddress?.fullAddress) {
+      return user.userAddress.fullAddress;
+    }
+    
     // If we have a valid user location object, display it immediately
     if (user?.location && typeof user.location === 'object' && user.location.area && user.location.city) {
       const hostelName = user.hostel && typeof user.hostel === 'object' ? user.hostel.name : '';
@@ -163,7 +168,7 @@ const Header = ({ isAdminView = false }) => {
     
     // Otherwise use the computed display text
     return userLocationDisplay;
-  }, [userLocationDisplay, user?.location, user?.hostel]);
+  }, [userLocationDisplay, user?.location, user?.hostel, user?.userAddress]);
   
   // Update location display once when user changes
   const locationDisplayInitialized = useRef(false);
@@ -197,6 +202,13 @@ const Header = ({ isAdminView = false }) => {
   }, [user?.hostel, hostels, fetchHostelById, findHostelById]);
   
   useEffect(() => {
+    // Priority 1: User's precise sublocation
+    if (user?.userAddress?.fullAddress) {
+      setUserLocationDisplay(user.userAddress.fullAddress);
+      locationDisplayInitialized.current = true;
+      return;
+    }
+    
     // If user location is already a populated object, use it directly
     if (user?.location && typeof user.location === 'object' && user.location.area && user.location.city) {
       const hostelName = user.hostel && typeof user.hostel === 'object' ? user.hostel.name : '';

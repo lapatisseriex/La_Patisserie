@@ -2199,7 +2199,8 @@ export const listPayments = asyncHandler(async (req, res) => {
       customerName,
       phone: customerPhone,
       deliveryLocationLabel: deliveryLabel,
-      hostelName: order?.hostelName || doc.orderHostel || ''
+      hostelName: order?.hostelName || doc.orderHostel || '',
+      userSubLocation: order?.userDetails?.userAddress?.fullAddress || ''
     };
 
     if (user) {
@@ -2218,7 +2219,9 @@ export const listPayments = asyncHandler(async (req, res) => {
         order: {
           orderStatus: order.orderStatus,
           orderNumber: order.orderNumber,
-          paymentStatus: order.paymentStatus
+          paymentStatus: order.paymentStatus,
+          deliveryLocation: order.deliveryLocation,
+          userDetails: order.userDetails
         },
         location: locationInfo
       };

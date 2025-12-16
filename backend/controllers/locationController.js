@@ -22,19 +22,34 @@ export const getAllLocations = asyncHandler(async (req, res) => {
 // @route   POST /api/admin/locations
 // @access  Admin
 export const createLocation = asyncHandler(async (req, res) => {
-  const { city, area, pincode, deliveryCharge } = req.body;
+  const { city, area, pincode, deliveryCharge, coordinates, state } = req.body;
   
   if (!city || !area || !pincode) {
     res.status(400);
     throw new Error('Please provide city, area, and pincode');
   }
   
-  const location = await Location.create({
+  const locationData = {
     city,
     area,
     pincode,
     deliveryCharge: deliveryCharge || 49, // Default to 49 if not provided
-  });
+  };
+  
+  // Add coordinates if provided from Google Maps search
+  if (coordinates && coordinates.lat && coordinates.lng) {
+    locationData.coordinates = {
+      lat: coordinates.lat,
+      lng: coordinates.lng
+    };
+  }
+  
+  // Add state if provided
+  if (state) {
+    locationData.state = state;
+  }
+  
+  const location = await Location.create(locationData);
   
   res.status(201).json(location);
 });
@@ -132,11 +147,22 @@ export const getGeoLocations = asyncHandler(async (req, res) => {
   res.status(200).json(locations);
 });
 
-// @desc    Update location coordinates and radius (Admin)
+// @desc    Update location coordinates, radius, and address details (Admin)
 // @route   PUT /api/admin/locations/:id/geo
 // @access  Admin
 export const updateLocationGeo = asyncHandler(async (req, res) => {
-  const { lat, lng, deliveryRadiusKm, useGeoDelivery } = req.body;
+  const { 
+    lat, 
+    lng, 
+    deliveryRadiusKm, 
+    useGeoDelivery,
+    // Auto-filled address fields from Google Geocoding
+    area,
+    city,
+    state,
+    pincode,
+    address
+  } = req.body;
   
   const location = await Location.findById(req.params.id);
   
@@ -168,7 +194,32 @@ export const updateLocationGeo = asyncHandler(async (req, res) => {
     location.useGeoDelivery = useGeoDelivery;
   }
   
+  // Auto-fill address details from Google Geocoding
+  if (area) {
+    location.area = area;
+  }
+  if (city) {
+    location.city = city;
+  }
+  if (state) {
+    location.state = state;
+  }
+  if (pincode) {
+    location.pincode = pincode;
+  }
+  if (address) {
+    location.geoAddress = address;
+  }
+  
   await location.save();
+  
+  console.log('📍 Location updated with geo data:', {
+    id: location._id,
+    area: location.area,
+    city: location.city,
+    pincode: location.pincode,
+    coordinates: location.coordinates
+  });
   
   res.status(200).json(location);
 });

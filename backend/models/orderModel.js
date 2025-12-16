@@ -79,6 +79,18 @@ const userDetailsSchema = new mongoose.Schema({
   country: {
     type: String,
     default: 'India'
+  },
+  // User's precise address (sublocation from Google autocomplete)
+  userAddress: {
+    fullAddress: { type: String, default: '' },
+    area: { type: String, default: '' },
+    city: { type: String, default: '' },
+    state: { type: String, default: '' },
+    pincode: { type: String, default: '' },
+    coordinates: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null }
+    }
   }
 });
 

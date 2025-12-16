@@ -294,7 +294,12 @@ const PaymentsTable = ({ items, onMarkPaid, onView }) => {
                   {p.hostelName || '—'}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-700">
-                  {p.deliveryLocationLabel || '—'}
+                  <div>
+                    {p.userSubLocation || p.deliveryLocationLabel || '—'}
+                    {p.userSubLocation && p.deliveryLocationLabel && (
+                      <div className="text-xs text-blue-600">📍 Zone: {p.deliveryLocationLabel}</div>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-sm">
                   <div className="w-full flex flex-wrap gap-2 justify-end">
@@ -393,7 +398,12 @@ const PaymentsCards = ({ items, onMarkPaid, onView }) => {
               </div>
               <div>
                 <div className="font-medium text-gray-700">Delivery</div>
-                <div className="text-gray-900 break-words">{p.deliveryLocationLabel || '—'}</div>
+                <div className="text-gray-900 break-words">
+                  {p.userSubLocation || p.deliveryLocationLabel || '—'}
+                </div>
+                {p.userSubLocation && p.deliveryLocationLabel && (
+                  <div className="text-xs text-blue-600 break-words">📍 Zone: {p.deliveryLocationLabel}</div>
+                )}
                 <div className="text-xs text-gray-500 break-words">{p.hostelName || '—'}</div>
               </div>
             </div>
@@ -967,10 +977,14 @@ const AdminPayments = () => {
                               <span className="font-medium text-gray-700">Location:</span>
                               <div className="text-right">
                                 <p className="text-gray-900">
-                                  {viewing?.data?.location?.area ? `${viewing?.data?.location?.area}, ` : ''}
-                                  {viewing?.data?.location?.city || viewing?.data?.order?.deliveryLocation || 'N/A'}
-                                  {viewing?.data?.location?.pincode ? ` - ${viewing?.data?.location?.pincode}` : ''}
+                                  {viewing?.data?.order?.userDetails?.userAddress?.fullAddress ||
+                                   (viewing?.data?.location?.area ? `${viewing?.data?.location?.area}, ` : '') +
+                                   (viewing?.data?.location?.city || viewing?.data?.order?.deliveryLocation || 'N/A') +
+                                   (viewing?.data?.location?.pincode ? ` - ${viewing?.data?.location?.pincode}` : '')}
                                 </p>
+                                {viewing?.data?.order?.userDetails?.userAddress?.fullAddress && viewing?.data?.order?.deliveryLocation && (
+                                  <p className="text-xs text-blue-600 mt-1">📍 Zone: {viewing?.data?.order?.deliveryLocation}</p>
+                                )}
                               </div>
                             </div>
                           </div>

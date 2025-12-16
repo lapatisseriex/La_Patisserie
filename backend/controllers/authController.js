@@ -389,6 +389,7 @@ export const verifyToken = asyncHandler(async (req, res) => {
         anniversary: user.anniversary || null,
         location: user.location || null,
         hostel: user.hostel || null,
+        userAddress: user.userAddress || null, // User's precise sublocation
         profilePhoto: user.profilePhoto || { url: '', public_id: '' }, // Include profile photo
         emailVerified: user.emailVerified || false,
         emailVerifiedAt: user.emailVerifiedAt || null,

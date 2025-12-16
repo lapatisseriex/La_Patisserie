@@ -149,6 +149,8 @@ const userSlice = createSlice({
         savedData.hostel = typeof state.user.hostel === 'object' 
           ? state.user.hostel._id 
           : state.user.hostel;
+        // Preserve userAddress (sublocation)
+        savedData.userAddress = state.user.userAddress || null;
       }
       
       // Clear state
