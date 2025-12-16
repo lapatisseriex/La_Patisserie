@@ -144,12 +144,13 @@ export const updateUser = asyncHandler(async (req, res) => {
   if (city !== undefined) user.city = city || null;
   if (pincode !== undefined) user.pincode = pincode || null;
   if (country !== undefined) user.country = country || 'India';
-  if (location) user.location = location;
+  // Allow location to be cleared (set to null/empty)
+  if (location !== undefined) user.location = location || null;
   if (hostel !== undefined) user.hostel = hostel || null;
   
-  // Store user's precise address (sublocation)
+  // Store user's precise address (sublocation) - can also be cleared
   if (userAddress !== undefined) {
-    user.userAddress = userAddress;
+    user.userAddress = userAddress || null;
   }
   
   // Only admins can update roles

@@ -22,7 +22,7 @@ export const getAllLocations = asyncHandler(async (req, res) => {
 // @route   POST /api/admin/locations
 // @access  Admin
 export const createLocation = asyncHandler(async (req, res) => {
-  const { city, area, pincode, deliveryCharge, coordinates, state } = req.body;
+  const { city, area, pincode, deliveryCharge, coordinates, state, geoAddress } = req.body;
   
   if (!city || !area || !pincode) {
     res.status(400);
@@ -47,6 +47,11 @@ export const createLocation = asyncHandler(async (req, res) => {
   // Add state if provided
   if (state) {
     locationData.state = state;
+  }
+  
+  // Add full address from Google Places
+  if (geoAddress) {
+    locationData.geoAddress = geoAddress;
   }
   
   const location = await Location.create(locationData);

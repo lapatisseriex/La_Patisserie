@@ -268,9 +268,18 @@ const LocationAutocomplete = ({
   // Handle manual dropdown selection
   const handleDropdownSelect = (location) => {
     setSearchQuery(`${location.area}, ${location.city} - ${location.pincode}`);
-    setMatchResult({ matched: true, location });
+    // Create userAddressData from the selected admin location
+    const userAddressData = {
+      fullAddress: `${location.area}, ${location.city} - ${location.pincode}`,
+      area: location.area,
+      city: location.city,
+      state: location.state || '',
+      pincode: location.pincode,
+      coordinates: location.coordinates || { lat: null, lng: null }
+    };
+    setMatchResult({ matched: true, location, userAddress: userAddressData });
     setIsInitialized(true);
-    onLocationSelect(location._id, location);
+    onLocationSelect(location._id, location, userAddressData);
     setShowDropdown(false);
   };
 
@@ -347,10 +356,10 @@ const LocationAutocomplete = ({
 
       {/* Match Result Message */}
       {matchResult && (
-        <div className={`mt-2 p-2 rounded-lg text-sm ${
+        <div className={`mt-2 p-3 rounded-lg text-sm ${
           matchResult.matched 
             ? 'bg-green-50 text-green-700 border border-green-200' 
-            : 'bg-red-50 text-red-700 border border-red-200'
+            : 'bg-amber-50 text-amber-800 border border-amber-200'
         }`}>
           {matchResult.matched ? (
             <div className="flex items-start gap-2">
@@ -366,11 +375,39 @@ const LocationAutocomplete = ({
               </div>
             </div>
           ) : (
-            <div className="flex items-start gap-2">
-              <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">Sorry, we don't deliver to this location</p>
-                <p className="text-xs mt-1">Please try a different area within our delivery zones.</p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-600" />
+                <div>
+                  <p className="font-medium text-amber-800">We're not in your area yet! 🎂</p>
+                  <p className="text-xs mt-1 text-amber-700">
+                    Looks like our delivery trucks haven't explored your neighborhood. But don't worry, we're expanding soon!
+                  </p>
+                </div>
+              </div>
+              
+              {/* Show available locations dropdown */}
+              <div className="pt-2 border-t border-amber-200">
+                <p className="text-xs font-medium text-amber-800 mb-2 flex items-center gap-1">
+                  <span>📍</span> Select from our delivery zones:
+                </p>
+                <select
+                  className="w-full px-3 py-2 bg-white border border-amber-300 rounded-md text-sm text-gray-700 focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                  value=""
+                  onChange={(e) => {
+                    const loc = locations.find(l => l._id === e.target.value);
+                    if (loc) {
+                      handleDropdownSelect(loc);
+                    }
+                  }}
+                >
+                  <option value="">Choose a delivery location...</option>
+                  {locations.filter(loc => loc.isActive !== false).map(loc => (
+                    <option key={loc._id} value={loc._id}>
+                      {loc.area}, {loc.city} - {loc.pincode}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           )}
@@ -378,7 +415,7 @@ const LocationAutocomplete = ({
       )}
 
       <p className="text-xs text-gray-500 mt-1">
-        Search your area to check delivery availability
+        🔍 Search your area or select from available delivery zones
       </p>
     </div>
   );

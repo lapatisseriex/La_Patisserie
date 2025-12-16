@@ -160,18 +160,23 @@ const Profile = ({ onDirtyChange }) => {
   const createInitialFormData = (userData = {}, savedData = {}) => {
     // Log the input data for debugging
     console.log('Creating initial form data with:');
-    console.log('User data:', userData);
-    console.log('Saved data:', savedData);
+    console.log('User data (from Redux - source of truth):', userData);
+    console.log('Saved data (from localStorage - for form fields only):', savedData);
 
     // Extract IDs from userData if they are objects
-    const userLocationId = typeof userData.location === 'object' ? userData.location?._id || '' : userData.location || '';
-    const userHostelId = typeof userData.hostel === 'object' ? userData.hostel?._id || '' : userData.hostel || '';
+    // userData is from Redux and is the source of truth for location/hostel/userAddress
+    const userLocationId = userData.location === null ? '' : 
+      (typeof userData.location === 'object' ? userData.location?._id || '' : userData.location || '');
+    const userHostelId = userData.hostel === null ? '' :
+      (typeof userData.hostel === 'object' ? userData.hostel?._id || '' : userData.hostel || '');
+    const userAddressData = userData.userAddress === null ? null : (userData.userAddress || null);
 
     console.log('Extracted user location ID:', userLocationId, 'from:', userData.location);
     console.log('Extracted user hostel ID:', userHostelId, 'from:', userData.hostel);
+    console.log('Extracted user address:', userAddressData);
 
     const result = {
-      // Personal information
+      // Personal information - savedData can provide fallbacks for form-only fields
       name: savedData.name || userData.name || '',
       phone: userData.phone || '',  // Phone cannot be changed
       email: savedData.email || userData.email || '',
@@ -179,12 +184,11 @@ const Profile = ({ onDirtyChange }) => {
       gender: savedData.gender || userData.gender || '',
       anniversary: savedData.anniversary || (userData.anniversary ? formatDate(userData.anniversary) : ''),
 
-      // Location information
+      // Location information - Redux user data is source of truth (including null/empty)
       country: savedData.country || userData.country || 'India',
-      location: savedData.location || userLocationId,  // Admin location ID
-      hostel: savedData.hostel || userHostelId,  // Hostel ID
-      // User's precise address (sublocation)
-      userAddress: savedData.userAddress || userData.userAddress || null,
+      location: userLocationId, // Use Redux value directly (empty string if null/cleared)
+      hostel: userHostelId, // Use Redux value directly (empty string if null/cleared)
+      userAddress: userAddressData, // Use Redux value directly (null if cleared)
     };
 
     console.log('Final hostel data (should be ID):', result.hostel, 'type:', typeof result.hostel);
@@ -242,12 +246,18 @@ const Profile = ({ onDirtyChange }) => {
         phoneVerified: user.phoneVerified,
         phoneVerifiedAt: user.phoneVerifiedAt,
         phone: user.phone,
-        userUid: user.uid
+        userUid: user.uid,
+        location: user.location,
+        hostel: user.hostel,
+        userAddress: user.userAddress
       });
       
+      // Re-read savedUserData from localStorage to get latest values
+      const latestSavedData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
+      
       // Update form data with latest user state to reflect any changes
-      // This is particularly important for phone verification status
-      const updatedFormData = createInitialFormData(user, savedUserData);
+      // This is particularly important for phone verification status AND location changes
+      const updatedFormData = createInitialFormData(user, latestSavedData);
       setFormData(prev => {
         if (JSON.stringify(prev) !== JSON.stringify(updatedFormData)) {
           console.log('Profile - Updating form data due to user state change');
@@ -256,19 +266,13 @@ const Profile = ({ onDirtyChange }) => {
         return prev;
       });
     }
-  }, [user?.phoneVerified, user?.phoneVerifiedAt, user?.phone, user?.uid, user?.name, user?.email]);
+  }, [user?.phoneVerified, user?.phoneVerifiedAt, user?.phone, user?.uid, user?.name, user?.email, user?.location, user?.hostel, user?.userAddress]);
   
   useEffect(() => {
     if (!hasRunLocationsFetch.current) {
       fetchLocations().then(result => {
-        if (result && result.length > 0) {
-          if (!formData.location && result.length > 0) {
-            setFormData(prev => ({
-              ...prev,
-              location: result[0]._id
-            }));
-          }
-        }
+        // Just fetch locations, don't auto-set first location
+        // User intentionally cleared location should stay cleared
         hasRunLocationsFetch.current = true;
       });
     }
@@ -693,19 +697,32 @@ const Profile = ({ onDirtyChange }) => {
 
         // Save user data to localStorage
         const savedUserData = JSON.parse(localStorage.getItem('savedUserData') || '{}');
-        savedUserData.location = formData.location;
-        savedUserData.hostel = formData.hostel;
+        // Update or clear location data - use null for empty values
+        savedUserData.location = formData.location || null;
+        savedUserData.hostel = formData.hostel || null;
         savedUserData.anniversary = formData.anniversary;
-        savedUserData.userAddress = formData.userAddress; // Save user's precise sublocation
+        savedUserData.userAddress = formData.userAddress || null; // Save or clear user's precise sublocation
         localStorage.setItem('savedUserData', JSON.stringify(savedUserData));
         console.log('Permanently saved location, hostel, and userAddress to savedUserData:', savedUserData.location, savedUserData.hostel, savedUserData.userAddress);
 
-        // Update cached user data
+        // Update cached user data - also clear location/hostel if removed
         const cachedUser = JSON.parse(localStorage.getItem('cachedUser') || '{}');
         cachedUser.anniversary = formData.anniversary || cachedUser.anniversary || '';
+        cachedUser.location = formData.location || null;
+        cachedUser.hostel = formData.hostel || null;
+        cachedUser.userAddress = formData.userAddress || null;
         localStorage.setItem('cachedUser', JSON.stringify(cachedUser));
         
-        console.log('Successfully updated profile, preserved email and anniversary in cache');
+        console.log('Successfully updated profile, cleared/updated location in cache');
+        
+        // CRITICAL: Refresh Redux user state from backend to sync all components (Header, etc.)
+        try {
+          console.log('🔄 Refreshing Redux user state from backend...');
+          await getCurrentUser();
+          console.log('✅ Redux user state refreshed');
+        } catch (refreshErr) {
+          console.error('Error refreshing user state:', refreshErr);
+        }
         
         // For admin users, refresh user data from server
         if (isAdmin) {
@@ -1301,12 +1318,12 @@ const Profile = ({ onDirtyChange }) => {
                     onLocationSelect={(locationId, locationObj, userAddressData) => {
                       setFormData(prev => ({
                         ...prev,
-                        location: locationId,
-                        userAddress: userAddressData, // Store user's precise sublocation
+                        location: locationId || '', // Allow empty string for clearing
+                        userAddress: userAddressData || null, // Store user's precise sublocation or null
                         hostel: '' // Reset hostel when location changes
                       }));
                       
-                      // Update dirty tracking when location changes
+                      // Update dirty tracking when location changes (including clearing)
                       if (baselineRef.current) {
                         const comparable = {
                           name: formData.name,
@@ -1314,7 +1331,7 @@ const Profile = ({ onDirtyChange }) => {
                           dob: formData.dob,
                           anniversary: formData.anniversary,
                           country: formData.country,
-                          location: locationId,
+                          location: locationId || '',
                           hostel: '',
                           userAddress: JSON.stringify(userAddressData || {})
                         };
@@ -1322,24 +1339,29 @@ const Profile = ({ onDirtyChange }) => {
                         setIsDirty(dirtyNow);
                         if (onDirtyChange) onDirtyChange(dirtyNow);
                       } else {
-                        // If no baseline, mark as dirty if location is set
-                        if (locationId) {
-                          setIsDirty(true);
-                          if (onDirtyChange) onDirtyChange(true);
-                        }
+                        // If no baseline, mark as dirty for any change (including clearing)
+                        setIsDirty(true);
+                        if (onDirtyChange) onDirtyChange(true);
                       }
                     }}
                     disabled={isSaving || locationsLoading}
                     placeholder="Search your delivery area (e.g., SITRA, Peelamedu, Coimbatore)..."
                   />
                 ) : (
-                  <div className={`w-full px-4 py-3 border bg-stone-50 text-gray-700`} style={{ borderColor: '#8B7355'}}>
+                  <div className={`w-full px-4 py-3 border ${!formData.location && !formData.userAddress?.fullAddress ? 'bg-amber-50 border-amber-300' : 'bg-stone-50'} text-gray-700`} style={{ borderColor: !formData.location && !formData.userAddress?.fullAddress ? undefined : '#8B7355'}}>
                     {(() => {
                       // Show user's precise address if available, otherwise admin location
                       if (formData.userAddress?.fullAddress) {
                         return formData.userAddress.fullAddress;
                       }
-                      if (!formData.location) return 'No location selected';
+                      if (!formData.location) {
+                        return (
+                          <span className="text-amber-700 flex items-center gap-2">
+                            <span>📍</span>
+                            <span>Please select your delivery location to continue</span>
+                          </span>
+                        );
+                      }
                       const loc = locations.find(l => l._id === formData.location);
                       return loc ? `${loc.area}, ${loc.city} - ${loc.pincode}` : 'Loading...';
                     })()}
@@ -1388,9 +1410,16 @@ const Profile = ({ onDirtyChange }) => {
                 </label>
                 <div className="relative">
                   {!isEditMode ? (
-                    <div className={`w-full px-4 py-3 border bg-stone-50 text-gray-700`} style={{ borderColor: '#8B7355'}}>
+                    <div className={`w-full px-4 py-3 border ${!formData.hostel ? 'bg-amber-50 border-amber-300' : 'bg-stone-50'} text-gray-700`} style={{ borderColor: !formData.hostel ? undefined : '#8B7355'}}>
                       {(() => {
-                        if (!formData.hostel) return 'No hostel selected';
+                        if (!formData.hostel) {
+                          return (
+                            <span className="text-amber-700 flex items-center gap-2">
+                              <span>🏠</span>
+                              <span>Select a hostel for faster delivery</span>
+                            </span>
+                          );
+                        }
                         if (user?.hostel && typeof user.hostel === 'object' && user.hostel._id === formData.hostel) {
                           return `${user.hostel.name || 'Unknown Hostel'}`;
                         }
@@ -1402,34 +1431,42 @@ const Profile = ({ onDirtyChange }) => {
                       })()}
                     </div>
                   ) : (
-                    <select
-                      name="hostel"
-                      value={formData.hostel || ''}
-                      onChange={handleChange}
-                      disabled={isSaving || hostelsLoading}
-                      className={`w-full px-4 py-3 border bg-white focus:border-black focus:ring-2 transition-all duration-300 outline-none appearance-none text-black`}
-                      style={{ borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
-                    >
-                      <option value="">Select hostel/residence</option>
-                      {hostels && hostels.length > 0 ? (
-                        hostels.map(hostel => (
-                          <option key={hostel._id} value={hostel._id}>
-                            {hostel.name}
+                    <>
+                      <select
+                        name="hostel"
+                        value={formData.hostel || ''}
+                        onChange={handleChange}
+                        disabled={isSaving || hostelsLoading}
+                        className={`w-full px-4 py-3 border bg-white focus:border-black focus:ring-2 transition-all duration-300 outline-none appearance-none text-black`}
+                        style={{ borderColor: '#8B7355', '--tw-ring-color': '#6B4423'}}
+                      >
+                        <option value="">🏠 Select your hostel/residence</option>
+                        {hostels && hostels.length > 0 ? (
+                          hostels.map(hostel => (
+                            <option key={hostel._id} value={hostel._id}>
+                              {hostel.name}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="" disabled>
+                            {hostelsLoading ? '⏳ Loading hostels...' : '📍 No hostels listed for this area'}
                           </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>
-                          {hostelsLoading ? 'Loading hostels...' : 'No hostels available'}
-                        </option>
+                        )}
+                      </select>
+                      {hostels && hostels.length > 0 && !formData.hostel && (
+                        <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                          <span>💡</span>
+                          <span>Not a hostel resident? No worries! Select any nearby hostel to enjoy our delicious treats! 🍰</span>
+                        </p>
                       )}
-                    </select>
+                    </>
                   )}
                   {isEditMode && (
-                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{color: '#8B7355'}} />
+                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 pointer-events-none" style={{color: '#8B7355'}} />
                   )}
                 </div>
                 <p className="text-xs" style={{color: '#8B7355'}}>
-                  Help us deliver faster
+                  🎓 Students & residents get priority delivery! Everyone is welcome to select a hostel near you 💜
                 </p>
               </div>
             )}

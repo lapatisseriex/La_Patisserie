@@ -473,16 +473,26 @@ export const getCurrentUser = createAsyncThunk(
           console.error('Error parsing saved user data:', error);
         }
         
-        // Update user state with the fresh data, preserving saved fields
+        // Update user state with the fresh data
+        // Backend data takes precedence - if backend returns null/empty, don't override with localStorage
+        // Only use localStorage as fallback for fields that backend doesn't return
         const freshUserData = {
           ...response.data.user,
-          // Restore saved fields if they don't exist in the response
+          // Email fallback - only if backend doesn't have it
           email: response.data.user.email || savedUserData.email || null,
-          anniversary: response.data.user.anniversary || savedUserData.anniversary || null,          // Preserve userAddress from backend or localStorage
-          userAddress: response.data.user.userAddress || savedUserData.userAddress || null,          // Ensure phone verification fields are included
+          // Anniversary fallback - only if backend doesn't have it
+          anniversary: response.data.user.anniversary || savedUserData.anniversary || null,
+          // userAddress - use backend value (including null), no localStorage override
+          userAddress: response.data.user.userAddress,
+          // location - use backend value (including null)
+          location: response.data.user.location,
+          // hostel - use backend value (including null)
+          hostel: response.data.user.hostel,
+          // Ensure phone verification fields are included
           phone: response.data.user.phone || '',
           phoneVerified: response.data.user.phoneVerified || false,
-          phoneVerifiedAt: response.data.user.phoneVerifiedAt || null};
+          phoneVerifiedAt: response.data.user.phoneVerifiedAt || null
+        };
         
         // Note: User data now cached via redux-persist, not manual localStorage
         

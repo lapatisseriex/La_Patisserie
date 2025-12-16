@@ -545,35 +545,44 @@ const Checkout = () => {
                       Hostel/Residence
                     </label>
                     {isEditMode ? (
-                      <select
-                        value={editHostelId}
-                        onChange={(e) => setEditHostelId(e.target.value)}
-                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
-                      >
-                        <option value="">Select a hostel</option>
-                        {hostelsLoading ? (
-                          <option disabled>Loading hostels...</option>
-                        ) : hostels.length === 0 ? (
-                          <option disabled>No hostels available for this location</option>
-                        ) : (
-                          hostels.map((hostel) => (
-                            <option key={hostel._id} value={hostel._id}>
-                              {hostel.name}
-                            </option>
-                          ))
+                      <>
+                        <select
+                          value={editHostelId}
+                          onChange={(e) => setEditHostelId(e.target.value)}
+                          className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#733857] focus:border-transparent"
+                        >
+                          <option value="">🏠 Select your hostel/residence</option>
+                          {hostelsLoading ? (
+                            <option disabled>⏳ Loading hostels...</option>
+                          ) : hostels.length === 0 ? (
+                            <option disabled>📍 No hostels listed for this area</option>
+                          ) : (
+                            hostels.map((hostel) => (
+                              <option key={hostel._id} value={hostel._id}>
+                                {hostel.name}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                        {hostels.length > 0 && !editHostelId && (
+                          <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                            <span>💡</span>
+                            <span>Not a hostel resident? That's perfectly fine! Pick any nearby hostel to get our yummy treats delivered! 🧁</span>
+                          </p>
                         )}
-                      </select>
+                      </>
                     ) : (
                       <>
                         <input
                           type="text"
                           value={user?.hostel?.name || 'Not set'}
                           readOnly
-                          className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 ${!user?.hostel ? 'border-red-300' : ''}`}
+                          className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm border rounded-lg bg-white text-gray-900 ${!user?.hostel ? 'border-amber-300 bg-amber-50' : 'border-gray-300'}`}
                         />
                         {!user?.hostel && (
-                          <p className="text-xs sm:text-sm text-red-600 mt-1">
-                            Please set your hostel before proceeding
+                          <p className="text-xs sm:text-sm text-amber-600 mt-1 flex items-center gap-1">
+                            <span>🏠</span>
+                            <span>Select any nearby hostel to order our delicious pastries! 🥐</span>
                           </p>
                         )}
                       </>
@@ -585,7 +594,7 @@ const Checkout = () => {
                 <div className="mt-3 sm:mt-4 rounded-md bg-[#f9f4f6] border border-[#733857]/20 px-3 py-2 flex items-start gap-2">
                   <AlertCircle size={14} className="mt-0.5 text-[#733857] flex-shrink-0" />
                   <p className="text-[11px] sm:text-xs leading-snug text-[#412434]">
-                    We currently serve only selected delivery areas and partner hostel students.
+                    🎓 Students & all sweet lovers welcome! Select a hostel near you to enjoy our freshly baked goodies 💜
                   </p>
                 </div>
 

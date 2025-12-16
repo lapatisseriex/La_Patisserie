@@ -41,7 +41,8 @@ const AdminLocations = () => {
     isActive: true,
     // Geo fields for auto-fill
     coordinates: { lat: null, lng: null },
-    state: ''
+    state: '',
+    geoAddress: '' // Full address from Google Places
   });
   
   const [hostelFormData, setHostelFormData] = useState({
@@ -127,7 +128,10 @@ const AdminLocations = () => {
           
           // Parse address components
           const components = place.address_components || [];
-          let area = '';
+          let streetNumber = '';
+          let route = '';
+          let sublocality = '';
+          let neighborhood = '';
           let city = '';
           let state = '';
           let pincode = '';
@@ -135,18 +139,26 @@ const AdminLocations = () => {
           for (const component of components) {
             const types = component.types;
             
+            if (types.includes('street_number')) {
+              streetNumber = component.long_name;
+            }
+            if (types.includes('route')) {
+              route = component.long_name;
+            }
+            if (types.includes('premise') || types.includes('subpremise')) {
+              if (!streetNumber) streetNumber = component.long_name;
+            }
             if (types.includes('postal_code')) {
               pincode = component.long_name;
             }
             if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
-              area = component.long_name;
+              sublocality = component.long_name;
             }
-            if (!area && types.includes('neighborhood')) {
-              area = component.long_name;
+            if (types.includes('neighborhood')) {
+              neighborhood = component.long_name;
             }
             if (types.includes('locality')) {
               city = component.long_name;
-              if (!area) area = component.long_name;
             }
             if (!city && types.includes('administrative_area_level_2')) {
               city = component.long_name;
@@ -156,17 +168,36 @@ const AdminLocations = () => {
             }
           }
 
-          // If area same as city, try sublocality_level_2
-          if (area === city) {
-            for (const component of components) {
-              if (component.types.includes('sublocality_level_2')) {
-                area = component.long_name;
-                break;
-              }
+          // Build area from street address parts (e.g., "123/34 ABC Street, Neighborhood")
+          let area = '';
+          
+          // Priority 1: Use place name if it's an establishment (like "ABC Shop")
+          if (place.name && !place.name.includes(city) && place.name !== sublocality) {
+            area = place.name;
+          }
+          
+          // Priority 2: Build from street number + route (e.g., "123/34 Main Road")
+          if (!area && (streetNumber || route)) {
+            area = [streetNumber, route].filter(Boolean).join(' ');
+          }
+          
+          // Priority 3: Add neighborhood/sublocality for more context
+          if (area && (neighborhood || sublocality)) {
+            const subloc = neighborhood || sublocality;
+            if (!area.includes(subloc)) {
+              area = `${area}, ${subloc}`;
             }
           }
+          
+          // Priority 4: Fall back to neighborhood or sublocality
+          if (!area) {
+            area = neighborhood || sublocality || '';
+          }
 
-          console.log('📍 Auto-filled from Google Places:', { area, city, state, pincode, lat, lng });
+          // Store full formatted address
+          const fullAddress = place.formatted_address || '';
+
+          console.log('📍 Auto-filled from Google Places:', { area, city, state, pincode, lat, lng, fullAddress });
 
           // Update form data with auto-filled values
           setFormData(prev => ({
@@ -175,10 +206,11 @@ const AdminLocations = () => {
             city: city || prev.city,
             pincode: pincode || prev.pincode,
             state: state || prev.state,
-            coordinates: { lat, lng }
+            coordinates: { lat, lng },
+            geoAddress: fullAddress
           }));
 
-          setLocationSearchQuery(place.formatted_address || place.name || '');
+          setLocationSearchQuery(fullAddress || place.name || '');
         }
       });
 
@@ -522,7 +554,8 @@ const AdminLocations = () => {
       deliveryCharge: 49,
       isActive: true,
       coordinates: { lat: null, lng: null },
-      state: ''
+      state: '',
+      geoAddress: ''
     });
     setLocationSearchQuery('');
   };
@@ -547,7 +580,8 @@ const AdminLocations = () => {
       deliveryCharge: location.deliveryCharge || 49, // Default to 49 if undefined
       isActive: location.isActive,
       coordinates: location.coordinates || { lat: null, lng: null },
-      state: location.state || ''
+      state: location.state || '',
+      geoAddress: location.geoAddress || ''
     });
   };
   

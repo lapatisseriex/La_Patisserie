@@ -1023,16 +1023,24 @@ const Cart = () => {
                       </h3>
                     </div>
                     <div className="ml-6 space-y-1 text-xs text-pink-800">
-                      {!user?.hostel && <div>• Add Hostel</div>}
+                      {!user?.hostel && (
+                        <div className="flex flex-col gap-0.5">
+                          <span>• Add Hostel/Residence</span>
+                          <span className="text-[10px] text-pink-600 ml-2">💡 Not a student? No problem! Select any nearby hostel to enjoy our treats!</span>
+                        </div>
+                      )}
                       {!user?.location && <div>• Add Delivery Location</div>}
                       {(!user?.phone || !user?.phoneVerified) && <div>• Verify Phone Number</div>}
                     </div>
-                    <Link 
-                      to="/profile" 
-                      className="inline-block ml-6 mt-2 text-xs font-semibold text-pink-700 hover:text-pink-900 underline"
-                    >
-                      Update Profile →
-                    </Link>
+                    <div className="ml-6 mt-2 flex items-center gap-2">
+                      <Link 
+                        to="/profile" 
+                        className="text-xs font-semibold text-pink-700 hover:text-pink-900 underline"
+                      >
+                        Update Profile →
+                      </Link>
+                      <span className="text-[10px] text-pink-500">🍰 Delicious pastries await!</span>
+                    </div>
                   </div>
                 </div>
               )}

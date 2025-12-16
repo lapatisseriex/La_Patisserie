@@ -153,6 +153,11 @@ const Header = ({ isAdminView = false }) => {
   
   // Memoize location display to prevent unnecessary re-calculations and ensure it updates properly
   const memoizedUserLocationDisplay = useMemo(() => {
+    // If user has no location set at all, show "Select Location"
+    if (!user?.location && !user?.userAddress?.fullAddress) {
+      return 'Select Location';
+    }
+    
     // Priority 1: User's precise sublocation from Google autocomplete
     if (user?.userAddress?.fullAddress) {
       return user.userAddress.fullAddress;
@@ -307,7 +312,7 @@ const Header = ({ isAdminView = false }) => {
       prevLocationIdRef.current = null;
     }
     locationDisplayInitialized.current = true;
-  }, [user?.uid, user?.location, user?.hostel, locations, hostels, findLocationById, findHostelById, fetchFreshUserData, isRefreshingLocation]);
+  }, [user?.uid, user?.location, user?.hostel, user?.userAddress, locations, hostels, findLocationById, findHostelById, fetchFreshUserData, isRefreshingLocation]);
   
   // Effect to fetch hostels when user has location but hostel lookup failed
   useEffect(() => {
