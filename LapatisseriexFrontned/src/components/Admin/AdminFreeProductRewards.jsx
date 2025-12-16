@@ -14,7 +14,7 @@ const AdminFreeProductRewards = () => {
   const [pagination, setPagination] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
-  const [viewMode, setViewMode] = useState('claims'); // 'claims' or 'all-users'
+  const [viewMode, setViewMode] = useState('all-users'); // 'claims' or 'all-users' - default to all-users to show progress
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'eligible', 'used', 'progress'
   // Responsive list rendering
   const [useTableView, setUseTableView] = useState(true);
@@ -547,17 +547,18 @@ const AdminFreeProductRewards = () => {
                     <tr>
                       <th className="px-6 py-4 text-left text-sm font-semibold">User</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold">Current Days</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold">Days Remaining</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Progress</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Remaining</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold">Last Claim</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold">Total Claims</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Total</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {loading ? (
                       <tr>
-                        <td colSpan="7" className="px-6 py-12 text-center">
+                        <td colSpan="8" className="px-6 py-12 text-center">
                           <div className="flex justify-center items-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#733857]"></div>
                             <span className="ml-3 text-[#733857]">Loading...</span>
@@ -566,49 +567,74 @@ const AdminFreeProductRewards = () => {
                       </tr>
                     ) : allUsers.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="px-6 py-12 text-center text-[#733857]">No users found</td>
+                        <td colSpan="8" className="px-6 py-12 text-center text-[#733857]">No users found</td>
                       </tr>
                     ) : (
-                      allUsers.map((user, index) => (
+                      allUsers.map((user, index) => {
+                        const progressPercent = Math.min((user.currentOrderDays / 10) * 100, 100);
+                        const isEligible = user.status === 'eligible';
+                        const hasUsed = user.status === 'used';
+                        
+                        return (
                         <tr key={index} className="hover:bg-[#f9f4f6] transition-colors">
                           <td className="px-6 py-4 text-sm font-medium text-[#412434]">{user.userName || 'N/A'}</td>
                           <td className="px-6 py-4 text-sm text-[#733857]">{user.userEmail}</td>
-                          <td className="px-6 py-4 text-sm text-center">
-                            <button onClick={() => fetchUserDetails(user.userId)} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f7eef3] text-[#733857] hover:bg-[#733857] hover:text-white transition-colors cursor-pointer">
-                              {user.currentOrderDays}/10 days
-                            </button>
+                          <td className="px-6 py-4">
+                            <div className="w-28">
+                              <div className="flex items-center justify-between mb-1">
+                                <FaGift className={`text-xs ${isEligible ? 'text-green-500' : hasUsed ? 'text-blue-500' : 'text-rose-400'}`} />
+                                <span className={`text-xs font-semibold ${isEligible ? 'text-green-600' : hasUsed ? 'text-blue-600' : 'text-[#733857]'}`}>
+                                  {user.currentOrderDays}/10
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full transition-all ${isEligible ? 'bg-green-500' : hasUsed ? 'bg-blue-500' : 'bg-gradient-to-r from-[#733857] to-[#a05577]'}`}
+                                  style={{ width: `${progressPercent}%` }}
+                                ></div>
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-center text-[#733857]">{user.daysRemaining} days</td>
+                          <td className="px-6 py-4 text-sm text-center">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                              {user.daysRemaining} days
+                            </span>
+                          </td>
                           <td className="px-6 py-4 text-sm">
-                            {user.status === 'eligible' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Eligible</span>
-                            ) : user.status === 'used' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Used</span>
+                            {isEligible ? (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">✨ Eligible</span>
+                            ) : hasUsed ? (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">✓ Claimed</span>
                             ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">In Progress</span>
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">⏳ In Progress</span>
                             )}
                           </td>
                           <td className="px-6 py-4 text-sm text-[#733857]">
                             {user.lastClaim ? (
                               <div>
-                                <div className="font-medium">{user.lastClaim.productName}</div>
+                                <div className="font-medium text-[#412434]">{user.lastClaim.productName}</div>
                                 <div className="text-xs text-gray-500">{new Date(user.lastClaim.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                               </div>
                             ) : (
-                              <span className="text-gray-400">Never</span>
+                              <span className="text-gray-400 italic">Never claimed</span>
                             )}
                           </td>
                           <td className="px-6 py-4 text-sm text-center">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{user.totalClaims}</span>
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">{user.totalClaims}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <button onClick={() => fetchUserDetails(user.userId)} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-[#733857] text-white hover:bg-[#5a2a44] transition-colors">
+                              View 👁️
+                            </button>
                           </td>
                         </tr>
-                      ))
+                      )})
                     )}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                 {loading ? (
                   <div className="col-span-full px-6 py-12 text-center">
                     <div className="flex justify-center items-center">
@@ -619,30 +645,77 @@ const AdminFreeProductRewards = () => {
                 ) : allUsers.length === 0 ? (
                   <div className="col-span-full px-6 py-12 text-center text-[#733857]">No users found</div>
                 ) : (
-                  allUsers.map((user, index) => (
-                    <div key={index} className="p-4 sm:p-5 border border-gray-100 rounded-lg hover:bg-[#f9f4f6] transition-colors">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-[#412434] truncate">{user.userName || 'N/A'}</div>
-                          <div className="text-xs text-[#733857] truncate">{user.userEmail}</div>
+                  allUsers.map((user, index) => {
+                    const progressPercent = Math.min((user.currentOrderDays / 10) * 100, 100);
+                    const isEligible = user.status === 'eligible';
+                    const hasUsed = user.status === 'used';
+                    
+                    return (
+                    <div key={index} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden">
+                      {/* Card Header */}
+                      <div className="p-4 bg-gradient-to-r from-[#f7eef3] to-[#f9f4f6] border-b border-gray-100">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-bold text-[#412434] truncate">{user.userName || 'N/A'}</div>
+                            <div className="text-xs text-[#733857] truncate">{user.userEmail}</div>
+                          </div>
+                          {isEligible ? (
+                            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">✨ Eligible</span>
+                          ) : hasUsed ? (
+                            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">✓ Claimed</span>
+                          ) : (
+                            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">⏳ Progress</span>
+                          )}
                         </div>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{user.totalClaims} total</span>
                       </div>
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-[#733857]">
-                        <div><span className="text-gray-500">Current:</span> <span className="font-medium">{user.currentOrderDays}/10 days</span></div>
-                        <div><span className="text-gray-500">Remaining:</span> <span className="font-medium">{user.daysRemaining} days</span></div>
-                        <div className="col-span-2"><span className="text-gray-500">Status:</span> <span className="font-medium">{user.status === 'eligible' ? 'Eligible' : user.status === 'used' ? 'Used' : 'In Progress'}</span></div>
-                        <div className="col-span-2">
-                          <span className="text-gray-500">Last Claim:</span> <span className="font-medium">{user.lastClaim ? `${user.lastClaim.productName} • ${new Date(user.lastClaim.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Never'}</span>
+                      
+                      {/* Progress Section */}
+                      <div className="p-4">
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <FaGift className={`text-sm ${isEligible ? 'text-green-500' : hasUsed ? 'text-blue-500' : 'text-[#733857]'}`} />
+                              <span className="text-xs font-medium text-gray-600">Monthly Progress</span>
+                            </div>
+                            <span className={`text-sm font-bold ${isEligible ? 'text-green-600' : hasUsed ? 'text-blue-600' : 'text-[#733857]'}`}>
+                              {user.currentOrderDays}/10 days
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div 
+                              className={`h-2.5 rounded-full transition-all ${isEligible ? 'bg-green-500' : hasUsed ? 'bg-blue-500' : 'bg-gradient-to-r from-[#733857] to-[#a05577]'}`}
+                              style={{ width: `${progressPercent}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between mt-1">
+                            <span className="text-[10px] text-gray-400">{user.daysRemaining} days remaining</span>
+                            <span className="text-[10px] text-gray-400">{user.totalClaims} total claims</span>
+                          </div>
+                        </div>
+                        
+                        {/* Last Claim */}
+                        <div className="text-xs border-t border-gray-100 pt-3 mt-2">
+                          <span className="text-gray-500">Last Claim:</span>
+                          {user.lastClaim ? (
+                            <div className="mt-1 flex items-center gap-2">
+                              <span className="font-medium text-[#412434]">{user.lastClaim.productName}</span>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-gray-500">{new Date(user.lastClaim.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            </div>
+                          ) : (
+                            <span className="ml-1 text-gray-400 italic">Never claimed</span>
+                          )}
                         </div>
                       </div>
-                      <div className="mt-3">
-                        <button onClick={() => fetchUserDetails(user.userId)} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#f7eef3] text-[#733857] hover:bg-[#733857] hover:text-white transition-colors">
-                          View details 👁️
+                      
+                      {/* Card Footer */}
+                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+                        <button onClick={() => fetchUserDetails(user.userId)} className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs font-medium bg-[#733857] text-white hover:bg-[#5a2a44] transition-colors">
+                          View Details 👁️
                         </button>
                       </div>
                     </div>
-                  ))
+                  )})
                 )}
               </div>
             )}
@@ -713,27 +786,45 @@ const AdminFreeProductRewards = () => {
               <div className="p-6">
                 {/* Current Status */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-bold text-[#412434] mb-3 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-[#412434] mb-4 flex items-center gap-2">
                     <FaCalendarAlt className="text-[#733857]" />
                     Current Month Progress ({selectedUser.currentStatus.currentMonth})
                   </h3>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-gradient-to-br from-[#f7eef3] to-[#f9f4f6] rounded-lg p-4 border border-[#733857]/10">
-                      <p className="text-sm text-[#733857] font-medium">Order Days</p>
-                      <p className="text-2xl font-bold text-[#412434]">
-                        {selectedUser.currentStatus.orderDaysThisMonth}/10
-                      </p>
-                    </div>
-                    <div className="bg-gradient-to-br from-[#f7eef3] to-[#f9f4f6] rounded-lg p-4 border border-[#733857]/10">
-                      <p className="text-sm text-[#733857] font-medium">Days Remaining</p>
-                      <p className="text-2xl font-bold text-[#412434]">
-                        {selectedUser.currentStatus.daysRemaining}
-                      </p>
-                    </div>
-                  </div>
+                  
+                  {/* Visual Progress Bar */}
+                  {(() => {
+                    const progressPercent = Math.min((selectedUser.currentStatus.orderDaysThisMonth / 10) * 100, 100);
+                    const isEligible = selectedUser.currentStatus.eligible;
+                    const hasUsed = selectedUser.currentStatus.used;
+                    
+                    return (
+                      <div className="bg-gradient-to-br from-[#f7eef3] to-[#f9f4f6] rounded-xl p-5 border border-[#733857]/20 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <FaGift className={`text-xl ${isEligible ? 'text-green-500' : hasUsed ? 'text-blue-500' : 'text-[#733857]'}`} />
+                            <span className="font-semibold text-[#412434]">Daily Rewards Progress</span>
+                          </div>
+                          <span className={`text-2xl font-bold ${isEligible ? 'text-green-600' : hasUsed ? 'text-blue-600' : 'text-[#733857]'}`}>
+                            {selectedUser.currentStatus.orderDaysThisMonth}/10
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-4 mb-3">
+                          <div 
+                            className={`h-4 rounded-full transition-all ${isEligible ? 'bg-gradient-to-r from-green-400 to-green-600' : hasUsed ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gradient-to-r from-[#733857] to-[#a05577]'}`}
+                            style={{ width: `${progressPercent}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>0 days</span>
+                          <span className="font-medium">{selectedUser.currentStatus.daysRemaining} days remaining</span>
+                          <span>10 days</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className={`rounded-lg p-3 border-2 ${selectedUser.currentStatus.eligible ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
                       <p className="text-xs text-gray-600 mb-1">Eligible</p>
                       <p className="font-bold text-sm">
                         {selectedUser.currentStatus.eligible ? (
@@ -743,8 +834,8 @@ const AdminFreeProductRewards = () => {
                         )}
                       </p>
                     </div>
-                    <div className="bg-white rounded-lg p-3 border border-gray-200">
-                      <p className="text-xs text-gray-600 mb-1">Used</p>
+                    <div className={`rounded-lg p-3 border-2 ${selectedUser.currentStatus.used ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}>
+                      <p className="text-xs text-gray-600 mb-1">Claimed</p>
                       <p className="font-bold text-sm">
                         {selectedUser.currentStatus.used ? (
                           <span className="text-blue-600">✓ Yes</span>

@@ -16,8 +16,8 @@ export const getAllUsersRewardStatus = asyncHandler(async (req, res) => {
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
     
-    // Build query - get all users
-    const query = {};
+    // Build query - get all users who have any reward-related activity
+    let query = {};
     
     // Filter by status if provided
     if (status === 'eligible') {
@@ -26,8 +26,20 @@ export const getAllUsersRewardStatus = asyncHandler(async (req, res) => {
     } else if (status === 'used') {
       query.freeProductUsed = true;
     } else if (status === 'progress') {
-      query.freeProductEligible = false;
-      query.freeProductUsed = false;
+      // Users in progress: have some order days but not yet eligible
+      query.$and = [
+        { freeProductEligible: { $ne: true } },
+        { freeProductUsed: { $ne: true } },
+        { 'monthlyOrderDays.0': { $exists: true } } // Has at least one order day
+      ];
+    } else {
+      // Default: show all users who have any monthly order days OR any claim history
+      query.$or = [
+        { 'monthlyOrderDays.0': { $exists: true } },
+        { 'freeProductClaimHistory.0': { $exists: true } },
+        { freeProductEligible: true },
+        { freeProductUsed: true }
+      ];
     }
     
     const skip = (parseInt(page) - 1) * parseInt(limit);

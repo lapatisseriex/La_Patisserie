@@ -1,6 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import LoyaltyProgram from '../models/loyaltyProgramModel.js';
 import Product from '../models/productModel.js';
+import User from '../models/userModel.js';
 
 // @desc    Get loyalty status for admin view
 // @route   GET /api/admin/users/:userId/loyalty
@@ -9,41 +10,52 @@ export const getUserLoyaltyForAdmin = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const loyalty = await LoyaltyProgram.findOne({ userId });
-
-    if (!loyalty) {
-      return res.json({
-        success: true,
-        data: {
-          hasLoyaltyProgram: false,
-          uniqueDaysCount: 0,
-          totalOrdersThisMonth: 0,
-          freeProductEligible: false,
-          freeProductClaimed: false,
-          remainingDays: 10,
-          currentMonth: new Date().toISOString().substring(0, 7),
-          lastOrderDate: null,
-          history: []
-        }
+    // Get user data first - this contains the actual monthlyOrderDays
+    const user = await User.findOne({ uid: userId });
+    
+    // Calculate current month days from User model
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentYear = now.getFullYear();
+    const currentMonthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    
+    let uniqueDaysCount = 0;
+    let orderDatesFromUser = [];
+    
+    if (user && user.monthlyOrderDays && Array.isArray(user.monthlyOrderDays)) {
+      const currentMonthDays = user.monthlyOrderDays.filter(day => {
+        return day.month === currentMonth && day.year === currentYear;
+      });
+      uniqueDaysCount = currentMonthDays.length;
+      orderDatesFromUser = currentMonthDays.map(day => {
+        const dateObj = new Date(day.date);
+        return dateObj.toISOString().split('T')[0];
       });
     }
-
-    const remainingDays = loyalty.getRemainingDays();
+    
+    const remainingDays = Math.max(0, 10 - uniqueDaysCount);
+    const freeProductEligible = user?.freeProductEligible || false;
+    const freeProductClaimed = user?.freeProductUsed || false;
+    
+    // Also check LoyaltyProgram for additional data
+    const loyalty = await LoyaltyProgram.findOne({ userId });
 
     res.json({
       success: true,
       data: {
-        hasLoyaltyProgram: true,
-        uniqueDaysCount: loyalty.uniqueDaysCount,
-        totalOrdersThisMonth: loyalty.totalOrdersThisMonth,
-        freeProductEligible: loyalty.freeProductEligible,
-        freeProductClaimed: loyalty.freeProductClaimed,
-        freeProductClaimedAt: loyalty.freeProductClaimedAt,
+        hasLoyaltyProgram: !!loyalty || uniqueDaysCount > 0,
+        uniqueDaysCount: uniqueDaysCount,
+        totalOrdersThisMonth: loyalty?.totalOrdersThisMonth || uniqueDaysCount,
+        freeProductEligible: freeProductEligible,
+        freeProductClaimed: freeProductClaimed,
+        freeProductClaimedAt: loyalty?.freeProductClaimedAt || null,
         remainingDays,
-        currentMonth: loyalty.currentMonth,
-        lastOrderDate: loyalty.lastOrderDate,
-        orderDates: loyalty.orderDates,
-        history: loyalty.history || []
+        currentMonth: currentMonthKey,
+        lastOrderDate: loyalty?.lastOrderDate || (orderDatesFromUser.length > 0 ? orderDatesFromUser[orderDatesFromUser.length - 1] : null),
+        orderDates: orderDatesFromUser.length > 0 ? orderDatesFromUser : (loyalty?.orderDates || []),
+        history: loyalty?.history || [],
+        // Include user claim history if available
+        claimHistory: user?.freeProductClaimHistory || []
       }
     });
   } catch (error) {

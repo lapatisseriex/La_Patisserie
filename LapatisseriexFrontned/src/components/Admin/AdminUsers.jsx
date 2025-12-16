@@ -7,6 +7,21 @@ import { toast } from 'react-hot-toast';
 import io from 'socket.io-client';
 import { getWebSocketBaseUrl, getSocketOptions } from '../../utils/websocketUrl.js';
 
+// Helper function to calculate current month's order days for rewards
+const calculateCurrentMonthDays = (monthlyOrderDays) => {
+  if (!monthlyOrderDays || !Array.isArray(monthlyOrderDays)) return 0;
+  
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const currentYear = now.getFullYear();
+  
+  const currentMonthDays = monthlyOrderDays.filter(day => {
+    return day.month === currentMonth && day.year === currentYear;
+  });
+  
+  return currentMonthDays.length;
+};
+
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -520,6 +535,9 @@ const AdminUsers = () => {
                 Role
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                Daily Rewards
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
                 Joined
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
@@ -530,13 +548,13 @@ const AdminUsers = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-black font-light">
+                <td colSpan="7" className="px-6 py-4 text-center text-black font-light">
                   Loading users...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-black font-light">
+                <td colSpan="7" className="px-6 py-4 text-center text-black font-light">
                   No users found
                 </td>
               </tr>
@@ -587,6 +605,31 @@ const AdminUsers = () => {
                         {user.role}
                       </span>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {(() => {
+                      const currentMonthDays = calculateCurrentMonthDays(user.monthlyOrderDays);
+                      const progressPercent = Math.min((currentMonthDays / 10) * 100, 100);
+                      const isEligible = user.freeProductEligible && !user.freeProductUsed;
+                      const hasUsed = user.freeProductUsed;
+                      
+                      return (
+                        <div className="w-24">
+                          <div className="flex items-center justify-between mb-1">
+                            <FaGift className={`text-xs ${isEligible ? 'text-green-500' : hasUsed ? 'text-blue-500' : 'text-rose-400'}`} />
+                            <span className={`text-[10px] font-medium ${isEligible ? 'text-green-600' : hasUsed ? 'text-blue-600' : 'text-gray-600'}`}>
+                              {isEligible ? 'Eligible!' : hasUsed ? 'Claimed' : `${currentMonthDays}/10`}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-1.5">
+                            <div 
+                              className={`h-1.5 rounded-full transition-all ${isEligible ? 'bg-green-500' : hasUsed ? 'bg-blue-500' : 'bg-rose-400'}`}
+                              style={{ width: `${progressPercent}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-black font-normal">
@@ -710,6 +753,34 @@ const AdminUsers = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Daily Rewards Progress Bar */}
+              {(() => {
+                const currentMonthDays = calculateCurrentMonthDays(user.monthlyOrderDays);
+                const progressPercent = Math.min((currentMonthDays / 10) * 100, 100);
+                const isEligible = user.freeProductEligible && !user.freeProductUsed;
+                const hasUsed = user.freeProductUsed;
+                
+                return (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1">
+                        <FaGift className={`text-xs ${isEligible ? 'text-green-500' : hasUsed ? 'text-blue-500' : 'text-rose-400'}`} />
+                        <span className="text-[10px] text-gray-600">Daily Rewards</span>
+                      </div>
+                      <span className={`text-[10px] font-medium ${isEligible ? 'text-green-600' : hasUsed ? 'text-blue-600' : 'text-gray-600'}`}>
+                        {isEligible ? 'Eligible!' : hasUsed ? 'Claimed' : `${currentMonthDays}/10 days`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div 
+                        className={`h-1.5 rounded-full transition-all ${isEligible ? 'bg-green-500' : hasUsed ? 'bg-blue-500' : 'bg-rose-400'}`}
+                        style={{ width: `${progressPercent}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           ))
         )}

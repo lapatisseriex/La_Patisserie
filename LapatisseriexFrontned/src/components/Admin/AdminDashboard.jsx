@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaUsers, FaShoppingCart, FaMapMarkerAlt, FaList, FaCheckCircle, FaSearch } from 'react-icons/fa';
+import { FaUsers, FaShoppingCart, FaMapMarkerAlt, FaList, FaCheckCircle, FaSearch, FaGift } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
@@ -7,6 +7,21 @@ import InventoryWidget from './Dashboard/InventoryWidget';
 
 import { useLocation as useLocationContext } from '../../context/LocationContext/LocationContext';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+
+// Helper function to calculate current month's order days for rewards
+const calculateCurrentMonthDays = (monthlyOrderDays) => {
+  if (!monthlyOrderDays || !Array.isArray(monthlyOrderDays)) return 0;
+  
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const currentYear = now.getFullYear();
+  
+  const currentMonthDays = monthlyOrderDays.filter(day => {
+    return day.month === currentMonth && day.year === currentYear;
+  });
+  
+  return currentMonthDays.length;
+};
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -344,7 +359,13 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {recentUsers.map((userData, i) => (
+              {recentUsers.map((userData, i) => {
+                const currentMonthDays = calculateCurrentMonthDays(userData.monthlyOrderDays);
+                const progressPercent = Math.min((currentMonthDays / 10) * 100, 100);
+                const isEligible = userData.freeProductEligible && !userData.freeProductUsed;
+                const hasUsed = userData.freeProductUsed;
+                
+                return (
                 <div key={userData._id || i} className="group border border-gray-100 hover:border-rose-200 rounded-lg p-3 transition-colors bg-white/50">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center min-w-0">
@@ -360,8 +381,26 @@ const AdminDashboard = () => {
                       Joined {userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown'}
                     </div>
                   </div>
+                  {/* Daily Rewards Progress */}
+                  <div className="mt-2 pt-2 border-t border-gray-50">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1">
+                        <FaGift className={`text-xs ${isEligible ? 'text-green-500' : hasUsed ? 'text-blue-500' : 'text-rose-400'}`} />
+                        <span className="text-[10px] text-gray-600">Daily Rewards</span>
+                      </div>
+                      <span className={`text-[10px] font-medium ${isEligible ? 'text-green-600' : hasUsed ? 'text-blue-600' : 'text-gray-600'}`}>
+                        {isEligible ? 'Eligible!' : hasUsed ? 'Claimed' : `${currentMonthDays}/10 days`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div 
+                        className={`h-1.5 rounded-full transition-all ${isEligible ? 'bg-green-500' : hasUsed ? 'bg-blue-500' : 'bg-rose-400'}`}
+                        style={{ width: `${progressPercent}%` }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
           <div className="mt-4">
