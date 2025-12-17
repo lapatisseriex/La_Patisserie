@@ -161,6 +161,26 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
       return;
     }
 
+    // Check permission status first (for Firefox/Edge/Brave compatibility)
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+        console.log('Geolocation permission status:', permissionStatus.state);
+        
+        if (permissionStatus.state === 'denied') {
+          setDetectionResult({
+            success: false,
+            error: 'Location permission is blocked. Please enable it in your browser settings (click the lock icon in the address bar).'
+          });
+          setPermissionState('denied');
+          setIsDetecting(false);
+          return;
+        }
+      } catch (permErr) {
+        console.log('Permissions API not fully supported, continuing with geolocation request');
+      }
+    }
+
     // Helper function to get position with specific options
     // Uses watchPosition as fallback for better cross-browser support
     const getPosition = (options) => {
@@ -285,21 +305,35 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
     } catch (error) {
       console.error('Geolocation error:', error);
       
+      // Detect browser for better error messages
+      const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+      const isEdge = navigator.userAgent.toLowerCase().includes('edg');
+      const isBrave = navigator.brave !== undefined;
+      
       let errorMessage = 'Unable to detect your location';
+      let browserHint = '';
+      
+      if (isFirefox) {
+        browserHint = ' In Firefox: Click the lock icon 🔒 → Permissions → Allow Location.';
+      } else if (isEdge) {
+        browserHint = ' In Edge: Click the lock icon 🔒 → Site permissions → Allow Location.';
+      } else if (isBrave) {
+        browserHint = ' In Brave: Click the lock icon 🔒 → Site settings → Allow Location. Also check Brave Shields.';
+      }
       
       switch (error.code) {
-        case error.PERMISSION_DENIED:
-          errorMessage = 'Location permission was denied. Please enable it in your browser settings.';
+        case 1: // PERMISSION_DENIED
+          errorMessage = 'Location permission was denied.' + browserHint;
           setPermissionState('denied');
           break;
-        case error.POSITION_UNAVAILABLE:
-          errorMessage = 'Location information is unavailable. Please try again.';
+        case 2: // POSITION_UNAVAILABLE
+          errorMessage = 'Location information is unavailable. Please check your device location settings and try again.';
           break;
-        case error.TIMEOUT:
-          errorMessage = 'Location request timed out. Please try again.';
+        case 3: // TIMEOUT
+          errorMessage = 'Location request timed out. Please ensure location services are enabled on your device and try again.' + browserHint;
           break;
         default:
-          errorMessage = 'An unknown error occurred while detecting your location.';
+          errorMessage = 'An unknown error occurred while detecting your location. Please try again or select manually.';
       }
 
       setDetectionResult({

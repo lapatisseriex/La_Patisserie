@@ -572,6 +572,24 @@ const Profile = ({ onDirtyChange }) => {
     setDetectedAddress('');
     setLocalError('');
 
+    // Check permission status first (for Firefox/Edge/Brave compatibility)
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+        console.log('Geolocation permission status:', permissionStatus.state);
+        
+        if (permissionStatus.state === 'denied') {
+          setLocalError('Location blocked. Click the lock icon 🔒 in address bar to enable.');
+          setDetectionStatus('error');
+          setIsDetectingLocation(false);
+          setTimeout(() => setLocalError(''), 5000);
+          return;
+        }
+      } catch (permErr) {
+        console.log('Permissions API not fully supported, continuing...');
+      }
+    }
+
     // Helper function to get position with specific options
     // Uses watchPosition as fallback for better cross-browser support (Firefox, Edge, Brave)
     const getPosition = (options) => {
@@ -669,16 +687,31 @@ const Profile = ({ onDirtyChange }) => {
       console.error('Geolocation error:', error);
       setDetectionStatus('error');
       
+      // Detect browser for better error messages
+      const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+      const isEdge = navigator.userAgent.toLowerCase().includes('edg');
+      const isBrave = navigator.brave !== undefined;
+      
+      let errorMsg = 'Failed to detect location.';
+      
       if (error.code === 1) {
-        setLocalError('Location permission denied. Please enable location access.');
+        if (isFirefox) {
+          errorMsg = 'Location blocked. Click 🔒 → Permissions → Allow Location.';
+        } else if (isEdge) {
+          errorMsg = 'Location blocked. Click 🔒 → Site permissions → Allow.';
+        } else if (isBrave) {
+          errorMsg = 'Location blocked. Click 🔒 and check Brave Shields.';
+        } else {
+          errorMsg = 'Location permission denied. Click 🔒 to enable.';
+        }
       } else if (error.code === 2) {
-        setLocalError('Unable to determine your location. Please try again.');
+        errorMsg = 'Location unavailable. Check device location settings.';
       } else if (error.code === 3) {
-        setLocalError('Location request timed out. Please try again.');
-      } else {
-        setLocalError('Failed to detect location. Please select manually.');
+        errorMsg = 'Location timed out. Enable location services and retry.';
       }
-      setTimeout(() => setLocalError(''), 4000);
+      
+      setLocalError(errorMsg);
+      setTimeout(() => setLocalError(''), 6000);
     } finally {
       setIsDetectingLocation(false);
     }
