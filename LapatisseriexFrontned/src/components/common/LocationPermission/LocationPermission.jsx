@@ -162,34 +162,61 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
     }
 
     // Helper function to get position with specific options
+    // Uses watchPosition as fallback for better cross-browser support
     const getPosition = (options) => {
       return new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+        // First try getCurrentPosition
+        const timeoutId = setTimeout(() => {
+          // If getCurrentPosition is slow, try watchPosition (works better in Firefox/Edge)
+          console.log('getCurrentPosition slow, trying watchPosition...');
+          const watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+              navigator.geolocation.clearWatch(watchId);
+              resolve(pos);
+            },
+            (err) => {
+              navigator.geolocation.clearWatch(watchId);
+              reject(err);
+            },
+            { ...options, timeout: options.timeout / 2 }
+          );
+        }, options.timeout / 2);
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            clearTimeout(timeoutId);
+            resolve(pos);
+          },
+          (err) => {
+            clearTimeout(timeoutId);
+            reject(err);
+          },
+          options
+        );
       });
     };
 
     try {
       let position;
       
-      // Try high accuracy first with longer timeout, fallback to lower accuracy
+      // Try with lower accuracy first for faster response (works better cross-browser)
+      // then try high accuracy if needed
       try {
+        console.log('Attempting location detection...');
+        position = await getPosition({
+          enableHighAccuracy: false, // Start with network-based (faster, more compatible)
+          timeout: 20000,
+          maximumAge: 120000
+        });
+        console.log('Network-based location obtained');
+      } catch (lowAccuracyError) {
+        console.log('Network location failed, trying GPS...', lowAccuracyError.message);
+        // Try high accuracy as fallback
         position = await getPosition({
           enableHighAccuracy: true,
-          timeout: 30000, // 30 second timeout for GPS
-          maximumAge: 60000 // Allow 1 minute cached position
+          timeout: 30000,
+          maximumAge: 60000
         });
-      } catch (highAccuracyError) {
-        if (highAccuracyError.code === 3) {
-          // Timeout - try with lower accuracy (uses WiFi/cell towers, faster)
-          console.log('High accuracy timed out, trying network-based location...');
-          position = await getPosition({
-            enableHighAccuracy: false,
-            timeout: 20000,
-            maximumAge: 120000 // Allow 2 minute cached position
-          });
-        } else {
-          throw highAccuracyError;
-        }
       }
 
       const { latitude, longitude, accuracy } = position.coords;
