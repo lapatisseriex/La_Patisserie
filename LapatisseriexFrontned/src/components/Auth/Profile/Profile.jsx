@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { useSelector } from 'react-redux';
@@ -26,7 +26,10 @@ import {
   MapPinned,
   Shield,
   Award,
-  Sparkles
+  Sparkles,
+  Navigation,
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 import EmailVerification from './EmailVerification';
 import PhoneVerification from './PhoneVerification';
@@ -145,6 +148,11 @@ const Profile = ({ onDirtyChange }) => {
   const savingRef = useRef(false); // Ref to track saving state across re-renders
   const baselineRef = useRef(null); // Baseline snapshot for dirty tracking
   const [isDirty, setIsDirty] = useState(false);
+  
+  // Location detection states
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [detectionStatus, setDetectionStatus] = useState(''); // 'detecting', 'success', 'error'
+  const [detectedAddress, setDetectedAddress] = useState('');
   
   // Common CSS classes for form fields
   const inputClasses = `w-full pl-10 pr-4 py-3 border border-gray-300 rounded-none 
@@ -517,6 +525,138 @@ const Profile = ({ onDirtyChange }) => {
       userDataInitialized.current = true;
     }
   }, [user]);
+
+  // Haversine formula to calculate distance between two points
+  const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // Find matching admin location based on coordinates
+  const findMatchingLocation = useCallback((userLat, userLng) => {
+    if (!locations || locations.length === 0) return null;
+    
+    for (const location of locations) {
+      if (location.coordinates?.lat && location.coordinates?.lng) {
+        const distance = calculateDistance(
+          userLat, 
+          userLng, 
+          location.coordinates.lat, 
+          location.coordinates.lng
+        );
+        const radiusKm = location.deliveryRadiusKm || 5;
+        if (distance <= radiusKm) {
+          return location;
+        }
+      }
+    }
+    return null;
+  }, [locations, calculateDistance]);
+
+  // Detect user's location using GPS
+  const detectUserLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setLocalError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    setDetectionStatus('detecting');
+    setDetectedAddress('');
+    setLocalError('');
+
+    // Helper function to get position with specific options
+    const getPosition = (options) => {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      });
+    };
+
+    try {
+      let position;
+      
+      // Try high accuracy first, fallback to low accuracy if it times out
+      try {
+        position = await getPosition({
+          enableHighAccuracy: true,
+          timeout: 30000, // 30 seconds for GPS
+          maximumAge: 60000 // Allow 1 minute cached
+        });
+      } catch (highAccuracyError) {
+        if (highAccuracyError.code === 3) {
+          // Timeout - try with network-based location (faster)
+          console.log('High accuracy timed out, trying network-based location...');
+          position = await getPosition({
+            enableHighAccuracy: false,
+            timeout: 20000,
+            maximumAge: 120000 // Allow 2 minute cached
+          });
+        } else {
+          throw highAccuracyError;
+        }
+      }
+
+      const { latitude, longitude } = position.coords;
+
+      // Reverse geocode to get address
+      if (window.google && window.google.maps) {
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+          if (status === 'OK' && results[0]) {
+            setDetectedAddress(results[0].formatted_address);
+          }
+        });
+      }
+
+      // Find matching admin location
+      const matchedLocation = findMatchingLocation(latitude, longitude);
+
+      if (matchedLocation) {
+        // Update form data with matched location
+        setFormData(prev => ({
+          ...prev,
+          location: matchedLocation._id,
+          hostel: ''
+        }));
+        
+        // Fetch hostels for this location
+        if (fetchHostelsByLocation) {
+          fetchHostelsByLocation(matchedLocation._id);
+        }
+        
+        setDetectionStatus('success');
+        setSuccessMessage(`Location detected: ${matchedLocation.name}`);
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setDetectionStatus('error');
+        setLocalError('No delivery zone found for your location. Please select manually.');
+        setTimeout(() => setLocalError(''), 4000);
+      }
+    } catch (error) {
+      console.error('Geolocation error:', error);
+      setDetectionStatus('error');
+      
+      if (error.code === 1) {
+        setLocalError('Location permission denied. Please enable location access.');
+      } else if (error.code === 2) {
+        setLocalError('Unable to determine your location. Please try again.');
+      } else if (error.code === 3) {
+        setLocalError('Location request timed out. Please try again.');
+      } else {
+        setLocalError('Failed to detect location. Please select manually.');
+      }
+      setTimeout(() => setLocalError(''), 4000);
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  }, [findMatchingLocation, fetchHostelsByLocation]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1306,10 +1446,47 @@ const Profile = ({ onDirtyChange }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               {/* Delivery Location with Autocomplete */}
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423'}}>
-                  <MapPinned className="h-4 w-4" style={{color: '#8B7355'}} />
-                  Delivery Location <span style={{color: '#6B4423'}}>*</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold flex items-center gap-2" style={{color: '#6B4423'}}>
+                    <MapPinned className="h-4 w-4" style={{color: '#8B7355'}} />
+                    Delivery Location <span style={{color: '#6B4423'}}>*</span>
+                  </label>
+                  {isEditMode && (
+                    <button
+                      type="button"
+                      onClick={detectUserLocation}
+                      disabled={isDetectingLocation || isSaving}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-50"
+                      style={{ 
+                        color: '#6B4423', 
+                        borderColor: '#8B7355',
+                        background: detectionStatus === 'success' ? 'rgba(34, 197, 94, 0.08)' : 'transparent'
+                      }}
+                    >
+                      {isDetectingLocation ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Detecting...</span>
+                        </>
+                      ) : detectionStatus === 'success' ? (
+                        <>
+                          <CheckCircle className="h-3 w-3" style={{ color: '#22c55e' }} />
+                          <span>Detected</span>
+                        </>
+                      ) : (
+                        <>
+                          <Navigation className="h-3 w-3" />
+                          <span>Detect Location</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                {detectedAddress && detectionStatus === 'success' && (
+                  <p className="text-xs mt-1" style={{ color: '#6B4423' }}>
+                    📍 {detectedAddress}
+                  </p>
+                )}
                 {isEditMode ? (
                   <LocationAutocomplete
                     locations={locations}

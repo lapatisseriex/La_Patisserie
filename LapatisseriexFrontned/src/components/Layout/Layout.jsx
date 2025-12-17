@@ -4,6 +4,7 @@ import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
 import BottomNavigation from '../common/BottomNavigation';
 import OfflineAwareOutlet from '../common/OfflineAwareOutlet';
+import LocationPermission from '../common/LocationPermission';
 
 const Layout = () => {
 
@@ -26,6 +27,9 @@ const Layout = () => {
       </main>
       <Footer />
       <BottomNavigation />
+      
+      {/* Location Permission Modal - asks for geolocation on first visit */}
+      <LocationPermission />
     </>
   );
 };
