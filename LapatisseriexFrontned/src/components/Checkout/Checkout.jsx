@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 import { useCart } from '../../hooks/useCart';
@@ -26,7 +26,9 @@ import {
   Building,
   Edit2,
   Save,
-  X} from 'lucide-react';
+  X,
+  Navigation,
+  Loader2} from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
@@ -53,6 +55,10 @@ const Checkout = () => {
   const [editHostelId, setEditHostelId] = useState(user?.hostel?._id || '');
   const [editUserAddress, setEditUserAddress] = useState(user?.userAddress || null);
   const [saving, setSaving] = useState(false);
+  
+  // Location detection states
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [detectionStatus, setDetectionStatus] = useState(user?.location?._id ? 'success' : '');
 
   // Update local state when user data changes
   useEffect(() => {
@@ -120,6 +126,150 @@ const Checkout = () => {
       setError('Your cart is empty. Add some items before proceeding to checkout.');
     }
   }, [isEmpty]);
+
+  // Haversine formula to calculate distance between two points
+  const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // Find matching admin location based on coordinates
+  const findMatchingLocation = useCallback((userLat, userLng) => {
+    if (!locations || locations.length === 0) return null;
+    
+    for (const location of locations) {
+      if (location.coordinates?.lat && location.coordinates?.lng) {
+        const distance = calculateDistance(
+          userLat, 
+          userLng, 
+          location.coordinates.lat, 
+          location.coordinates.lng
+        );
+        const radiusKm = location.deliveryRadiusKm || 5;
+        if (distance <= radiusKm) {
+          return location;
+        }
+      }
+    }
+    return null;
+  }, [locations, calculateDistance]);
+
+  // Detect user's location using GPS
+  const detectUserLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    setDetectionStatus('detecting');
+    setError('');
+
+    // Check permission status first
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+        if (permissionStatus.state === 'denied') {
+          setError('Location blocked. Click 🔒 in address bar to enable.');
+          setDetectionStatus('error');
+          setIsDetectingLocation(false);
+          return;
+        }
+      } catch (permErr) {
+        console.log('Permissions API not fully supported, continuing...');
+      }
+    }
+
+    const getPosition = (options) => {
+      return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          const watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+              navigator.geolocation.clearWatch(watchId);
+              resolve(pos);
+            },
+            (err) => {
+              navigator.geolocation.clearWatch(watchId);
+              reject(err);
+            },
+            { ...options, timeout: options.timeout / 2 }
+          );
+        }, options.timeout / 2);
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            clearTimeout(timeoutId);
+            resolve(pos);
+          },
+          (err) => {
+            clearTimeout(timeoutId);
+            reject(err);
+          },
+          options
+        );
+      });
+    };
+
+    try {
+      let position;
+      
+      try {
+        position = await getPosition({
+          enableHighAccuracy: false,
+          timeout: 20000,
+          maximumAge: 120000
+        });
+      } catch (lowAccuracyError) {
+        position = await getPosition({
+          enableHighAccuracy: true,
+          timeout: 30000,
+          maximumAge: 60000
+        });
+      }
+
+      const { latitude, longitude } = position.coords;
+      const matchedLocation = findMatchingLocation(latitude, longitude);
+
+      if (matchedLocation) {
+        if (editLocationId === matchedLocation._id) {
+          setDetectionStatus('success');
+          toast.success(`Location confirmed: ${matchedLocation.area}`);
+        } else {
+          setEditLocationId(matchedLocation._id);
+          setEditHostelId('');
+          setEditUserAddress(null);
+          fetchHostelsByLocation(matchedLocation._id);
+          setDetectionStatus('success');
+          toast.success(`Location updated: ${matchedLocation.area}`);
+        }
+      } else {
+        setDetectionStatus('error');
+        setError('No delivery zone found. Please select manually.');
+      }
+    } catch (error) {
+      console.error('Geolocation error:', error);
+      setDetectionStatus('error');
+      
+      if (error.code === 1) {
+        setError('Location permission denied. Click 🔒 to enable.');
+      } else if (error.code === 2) {
+        setError('Location unavailable. Check device settings.');
+      } else if (error.code === 3) {
+        setError('Location timed out. Try again.');
+      } else {
+        setError('Failed to detect location.');
+      }
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  }, [findMatchingLocation, editLocationId, fetchHostelsByLocation]);
 
   // Handle save changes
   const handleSaveChanges = async () => {
@@ -488,9 +638,41 @@ const Checkout = () => {
                 <div className="grid grid-cols-1 gap-3 sm:gap-4">
                   {/* Location */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-[#733857] mb-1.5 sm:mb-2">
-                      Delivery Location
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-[#733857]">
+                        Delivery Location
+                      </label>
+                      {isEditMode && (
+                        <button
+                          type="button"
+                          onClick={detectUserLocation}
+                          disabled={isDetectingLocation || saving}
+                          className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-50"
+                          style={{ 
+                            color: '#6B4423', 
+                            borderColor: '#8B7355',
+                            background: detectionStatus === 'success' ? 'rgba(34, 197, 94, 0.08)' : 'transparent'
+                          }}
+                        >
+                          {isDetectingLocation ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span className="hidden sm:inline">Detecting...</span>
+                            </>
+                          ) : detectionStatus === 'success' ? (
+                            <>
+                              <CheckCircle className="h-3 w-3" style={{ color: '#22c55e' }} />
+                              <span className="hidden sm:inline">Detected</span>
+                            </>
+                          ) : (
+                            <>
+                              <Navigation className="h-3 w-3" />
+                              <span className="hidden sm:inline">Detect Location</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                     {isEditMode ? (
                       <LocationAutocomplete
                         locations={locations}
@@ -500,6 +682,12 @@ const Checkout = () => {
                           setEditLocationId(locationId);
                           setEditUserAddress(userAddressData); // Store user's precise sublocation
                           setEditHostelId(''); // Reset hostel when location changes
+                          // Update detection status based on selection
+                          if (!locationId) {
+                            setDetectionStatus('');
+                          } else {
+                            setDetectionStatus('success');
+                          }
                         }}
                         disabled={locationsLoading || saving}
                         placeholder="Search your delivery area..."

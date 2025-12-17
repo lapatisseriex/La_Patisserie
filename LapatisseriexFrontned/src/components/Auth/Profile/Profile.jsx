@@ -514,6 +514,11 @@ const Profile = ({ onDirtyChange }) => {
       setIsDirty(false);
       if (onDirtyChange) onDirtyChange(false);
       
+      // If user already has a location saved, show "Detected" status
+      if (initialFormData.location) {
+        setDetectionStatus('success');
+      }
+      
       // Save the complete form data to localStorage for refresh protection
       const dataToCache = {
         ...initialFormData
@@ -663,21 +668,61 @@ const Profile = ({ onDirtyChange }) => {
       const matchedLocation = findMatchingLocation(latitude, longitude);
 
       if (matchedLocation) {
-        // Update form data with matched location
-        setFormData(prev => ({
-          ...prev,
-          location: matchedLocation._id,
-          hostel: ''
-        }));
-        
-        // Fetch hostels for this location
-        if (fetchHostelsByLocation) {
-          fetchHostelsByLocation(matchedLocation._id);
+        // Check if the detected location is same as current - don't change anything
+        if (formData.location === matchedLocation._id) {
+          setDetectionStatus('success');
+          setSuccessMessage(`Location confirmed: ${matchedLocation.name}`);
+          setTimeout(() => setSuccessMessage(''), 3000);
+          // Don't change hostel or anything else - keep existing selection
+        } else {
+          // Different location detected - update form
+          setFormData(prev => ({
+            ...prev,
+            location: matchedLocation._id,
+            hostel: '' // Only reset hostel when location actually changes
+          }));
+          
+          // Fetch hostels for this new location
+          if (fetchHostelsByLocation) {
+            fetchHostelsByLocation(matchedLocation._id);
+          }
+          
+          // Auto-save the detected location to backend (silently, without redirect)
+          try {
+            const authToken = localStorage.getItem('authToken');
+            await fetch(`${import.meta.env.VITE_API_URL}/users/${user.uid}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+              },
+              body: JSON.stringify({
+                location: matchedLocation._id,
+                hostel: null,
+                userAddress: null
+              })
+            });
+            
+            // Update Redux store immediately (without triggering any redirects)
+            if (updateUser) {
+              updateUser({
+                ...user,
+                location: matchedLocation,
+                hostel: null,
+                userAddress: null
+              });
+            }
+            
+            setDetectionStatus('success');
+            setSuccessMessage(`Location saved: ${matchedLocation.name || matchedLocation.area}. Now select your hostel.`);
+            setTimeout(() => setSuccessMessage(''), 4000);
+          } catch (saveError) {
+            console.error('Error saving location:', saveError);
+            setDetectionStatus('success');
+            setSuccessMessage(`Location detected: ${matchedLocation.name || matchedLocation.area}. Click Save to apply.`);
+            setTimeout(() => setSuccessMessage(''), 3000);
+          }
         }
-        
-        setDetectionStatus('success');
-        setSuccessMessage(`Location detected: ${matchedLocation.name}`);
-        setTimeout(() => setSuccessMessage(''), 3000);
       } else {
         setDetectionStatus('error');
         setLocalError('No delivery zone found for your location. Please select manually.');
@@ -715,7 +760,7 @@ const Profile = ({ onDirtyChange }) => {
     } finally {
       setIsDetectingLocation(false);
     }
-  }, [findMatchingLocation, fetchHostelsByLocation]);
+  }, [findMatchingLocation, fetchHostelsByLocation, formData.location, updateUser, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1167,24 +1212,21 @@ const Profile = ({ onDirtyChange }) => {
         {/* Loading Overlay via Portal (always above everything) */}
         <LoadingOverlayPortal show={isSaving || savingRef.current} />
         
-        {/* Success Message - Fixed Position at Top */}
+        {/* Success Message - Fixed Position below header */}
         {successMessage && !isSaving && (
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998] w-full max-w-md mx-4 animate-slideDown">
-            <div className="bg-white border-2 border-green-500 rounded-lg shadow-2xl p-6 transform transition-all duration-300">
-              <div className="flex items-start space-x-4">
-                {/* Success Icon with Animation */}
+          <div className="fixed top-[70px] md:top-[130px] left-1/2 transform -translate-x-1/2 z-[9998] w-full max-w-md px-4 animate-slideDown">
+            <div className="bg-white border border-green-500 shadow-lg p-4">
+              <div className="flex items-center gap-3">
+                {/* Success Icon */}
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center animate-scaleIn">
-                    <Check className="h-7 w-7 text-white animate-checkmark" />
+                  <div className="w-8 h-8 bg-green-500 flex items-center justify-center">
+                    <Check className="h-5 w-5 text-white" />
                   </div>
                 </div>
                 {/* Success Text */}
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
                     {successMessage}
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Your profile has been updated successfully!
                   </p>
                 </div>
                 {/* Close Button */}
@@ -1192,7 +1234,7 @@ const Profile = ({ onDirtyChange }) => {
                   onClick={() => setSuccessMessage('')}
                   className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -1472,7 +1514,7 @@ const Profile = ({ onDirtyChange }) => {
         </div>
 
         {/* Delivery Information Section - Elegant Chocolate Theme */}
-        <div className="bg-white overflow-hidden transition-all duration-300 hover:shadow-lg" style={{
+        <div className="bg-white transition-all duration-300 hover:shadow-lg" style={{
           border: '1px solid rgba(107, 68, 35, 0.15)',
           boxShadow: '0 2px 8px rgba(107, 68, 35, 0.06)'
         }}>
@@ -1515,27 +1557,27 @@ const Profile = ({ onDirtyChange }) => {
                       type="button"
                       onClick={detectUserLocation}
                       disabled={isDetectingLocation || isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-50"
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] md:text-xs font-medium border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ 
-                        color: '#6B4423', 
-                        borderColor: '#8B7355',
-                        background: detectionStatus === 'success' ? 'rgba(34, 197, 94, 0.08)' : 'transparent'
+                        color: detectionStatus === 'success' ? '#16a34a' : '#6B4423', 
+                        borderColor: detectionStatus === 'success' ? '#16a34a' : '#8B7355',
+                        background: 'transparent'
                       }}
                     >
                       {isDetectingLocation ? (
                         <>
                           <Loader2 className="h-3 w-3 animate-spin" />
-                          <span>Detecting...</span>
+                          <span className="hidden sm:inline">Detecting</span>
                         </>
                       ) : detectionStatus === 'success' ? (
                         <>
-                          <CheckCircle className="h-3 w-3" style={{ color: '#22c55e' }} />
-                          <span>Detected</span>
+                          <CheckCircle className="h-3 w-3" />
+                          <span className="hidden sm:inline">Detected</span>
                         </>
                       ) : (
                         <>
                           <Navigation className="h-3 w-3" />
-                          <span>Detect Location</span>
+                          <span className="hidden sm:inline">Detect</span>
                         </>
                       )}
                     </button>
@@ -1558,6 +1600,14 @@ const Profile = ({ onDirtyChange }) => {
                         userAddress: userAddressData || null, // Store user's precise sublocation or null
                         hostel: '' // Reset hostel when location changes
                       }));
+                      
+                      // Reset detection status when location is cleared or changed manually
+                      if (!locationId) {
+                        setDetectionStatus(''); // Reset to show "Detect Location" button
+                        setDetectedAddress('');
+                      } else {
+                        setDetectionStatus('success'); // Show as detected when manually selected
+                      }
                       
                       // Update dirty tracking when location changes (including clearing)
                       if (baselineRef.current) {

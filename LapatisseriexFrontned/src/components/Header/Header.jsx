@@ -654,15 +654,15 @@ const Header = ({ isAdminView = false }) => {
               )}
             </div>
             
-            {/* Delivery Status Indicator - Mobile */}
-            <div className="mt-2">
-              {deliveryLoading ? (
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Checking delivery...</span>
-                </div>
-              ) : deliveryStatus.checked ? (
-                deliveryStatus.available ? (
+            {/* Delivery Status Indicator - Mobile - Only show when delivery has been checked */}
+            {deliveryStatus.checked && (
+              <div className="mt-2">
+                {deliveryLoading ? (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>Checking...</span>
+                  </div>
+                ) : deliveryStatus.available ? (
                   <div className="flex items-center gap-1.5 text-xs text-green-600">
                     <CheckCircle className="h-3 w-3" />
                     <span>Delivery available</span>
@@ -671,24 +671,13 @@ const Header = ({ isAdminView = false }) => {
                     )}
                   </div>
                 ) : (
-                  <Link 
-                    to="/checkout"
-                    className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700"
-                  >
+                  <div className="flex items-center gap-1.5 text-xs text-amber-600">
                     <XCircle className="h-3 w-3" />
-                    <span>Delivery unavailable • Tap to set location</span>
-                  </Link>
-                )
-              ) : (
-                <Link 
-                  to="/checkout"
-                  className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700"
-                >
-                  <Navigation className="h-3 w-3" />
-                  <span>Set delivery location</span>
-                </Link>
-              )}
-            </div>
+                    <span>Delivery unavailable</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

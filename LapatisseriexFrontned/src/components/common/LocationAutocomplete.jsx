@@ -1,6 +1,41 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, MapPin, CheckCircle, X, Loader2 } from 'lucide-react';
 
+// Fix Google autocomplete dropdown z-index and visibility
+const autocompleteStyles = `
+  .pac-container {
+    z-index: 99999 !important;
+    background-color: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    margin-top: 4px !important;
+    font-family: inherit !important;
+  }
+  .pac-item {
+    padding: 10px 12px !important;
+    cursor: pointer !important;
+    border-top: 1px solid #f3f4f6 !important;
+  }
+  .pac-item:first-child {
+    border-top: none !important;
+  }
+  .pac-item:hover {
+    background-color: #f9fafb !important;
+  }
+  .pac-item-query {
+    font-size: 14px !important;
+    color: #374151 !important;
+  }
+  .pac-matched {
+    font-weight: 600 !important;
+    color: #6B4423 !important;
+  }
+  .pac-icon {
+    display: none !important;
+  }
+`;
+
 /**
  * LocationAutocomplete Component
  * A reusable Google Places Autocomplete input for selecting delivery locations
@@ -22,6 +57,17 @@ const LocationAutocomplete = ({
   const [matchResult, setMatchResult] = useState(null); // { matched: boolean, location: object }
   const [showDropdown, setShowDropdown] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Inject autocomplete z-index fix styles
+  useEffect(() => {
+    const styleId = 'pac-container-fix';
+    if (!document.getElementById(styleId)) {
+      const styleTag = document.createElement('style');
+      styleTag.id = styleId;
+      styleTag.textContent = autocompleteStyles;
+      document.head.appendChild(styleTag);
+    }
+  }, []);
   
   const searchInputRef = useRef(null);
   const autocompleteRef = useRef(null);

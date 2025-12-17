@@ -480,37 +480,36 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
     }
   };
 
-  // Floating trigger button (always visible when showTriggerButton is true)
-  const TriggerButton = () => (
-    <button
-      onClick={handleOpenModal}
-      className="fixed bottom-24 right-4 md:bottom-8 z-[100] bg-gradient-to-r from-[#733857] to-[#8B4D6B] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group"
-      title="Detect My Location"
-    >
-      <div className="relative">
-        <Navigation className="w-6 h-6" />
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-      </div>
-      {/* Tooltip */}
-      <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        📍 Detect My Location
-      </span>
-    </button>
-  );
+  // Floating trigger button (only visible when user is logged in)
+  const TriggerButton = () => {
+    // Only show if user is logged in
+    if (!user) return null;
+    
+    return (
+      <button
+        onClick={handleOpenModal}
+        className="fixed bottom-20 right-3 md:bottom-6 md:right-4 z-[100] bg-[#6B4423] hover:bg-[#5a3a1d] text-white px-3 py-2 shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 text-xs font-medium border border-[#8B7355]"
+        title="Detect My Location"
+      >
+        <Navigation className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">Detect Location</span>
+      </button>
+    );
+  };
 
-  // If modal is not shown but trigger button should be visible
+  // If modal is not shown but trigger button should be visible (only when logged in)
   if (!showModal && !showSuccessBanner) {
-    return showTriggerButton ? <TriggerButton /> : null;
+    return (showTriggerButton && user) ? <TriggerButton /> : null;
   }
 
   // Success banner (brief notification after location is set)
   if (showSuccessBanner && detectionResult?.success) {
     return (
       <>
-        {showTriggerButton && <TriggerButton />}
+        {showTriggerButton && user && <TriggerButton />}
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] animate-slideDown">
-          <div className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
-            <CheckCircle className="w-5 h-5" />
+          <div className="bg-green-600 text-white px-4 py-2 shadow-md flex items-center gap-2 text-sm border border-green-700">
+            <CheckCircle className="w-4 h-4" />
             <span className="font-medium">
               📍 Delivering to {detectionResult.location.area}!
             </span>
@@ -523,77 +522,76 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
   return (
     <>
       {/* Trigger Button (visible even when modal is open on desktop) */}
-      {showTriggerButton && !showModal && <TriggerButton />}
+      {showTriggerButton && !showModal && user && <TriggerButton />}
       
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] animate-fadeIn"
+        className="fixed inset-0 bg-black/40 z-[9998]"
         onClick={handleDismiss}
       />
       
       {/* Modal */}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
         <div 
-          className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scaleIn"
+          className="bg-white shadow-xl max-w-sm w-full overflow-hidden border border-gray-200"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#733857] to-[#8B4D6B] text-white p-6 relative">
+          <div className="bg-[#6B4423] text-white px-4 py-3 relative">
             <button 
               onClick={handleDismiss}
-              className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition-colors"
+              className="absolute top-3 right-3 p-1 hover:bg-white/20 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
             
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
-                <Navigation className="w-7 h-7" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 flex items-center justify-center">
+                <Navigation className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Enable Location</h2>
-                <p className="text-white/80 text-sm">For faster, accurate delivery</p>
+                <h2 className="text-base font-semibold">Enable Location</h2>
+                <p className="text-white/80 text-xs">For faster, accurate delivery</p>
               </div>
             </div>
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-4">
             {/* Initial State - Asking for permission */}
             {!isDetecting && !detectionResult && (
               <>
-                <div className="text-center mb-6">
-                  <div className="w-20 h-20 bg-[#FFF5F8] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MapPin className="w-10 h-10 text-[#733857]" />
+                <div className="text-center mb-4">
+                  <div className="w-14 h-14 bg-[#FFF8F5] flex items-center justify-center mx-auto mb-3 border border-[#E8DDD5]">
+                    <MapPin className="w-7 h-7 text-[#6B4423]" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Allow La Pâtisserie to access your location?
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                    Allow location access?
                   </h3>
-                  <p className="text-gray-600 text-sm">
-                    We'll use your location to find the nearest delivery zone and ensure your 
-                    delicious treats reach you fresh! 🍰
+                  <p className="text-gray-600 text-xs">
+                    We'll find the nearest delivery zone for fresh treats! 🍰
                   </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <button
                     onClick={handleAllowLocation}
-                    className="w-full py-3 px-4 bg-[#733857] hover:bg-[#5a2a45] text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-3 bg-[#6B4423] hover:bg-[#5a3a1d] text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 border border-[#8B7355]"
                   >
-                    <Navigation className="w-5 h-5" />
+                    <Navigation className="w-4 h-4" />
                     Allow Location Access
                   </button>
                   
                   <button
                     onClick={handleDismiss}
-                    className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+                    className="w-full py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors border border-gray-200"
                   >
                     Maybe Later
                   </button>
                   
                   <button
                     onClick={handleDontAskAgain}
-                    className="w-full py-2 text-gray-500 text-sm hover:text-gray-700 transition-colors"
+                    className="w-full py-1.5 text-gray-500 text-xs hover:text-gray-700 transition-colors"
                   >
                     Don't ask again
                   </button>
@@ -603,59 +601,59 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
 
             {/* Detecting State */}
             {isDetecting && (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-[#FFF5F8] rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <Loader2 className="w-8 h-8 text-[#733857] animate-spin" />
+              <div className="text-center py-6">
+                <div className="w-12 h-12 bg-[#FFF8F5] flex items-center justify-center mx-auto mb-3 border border-[#E8DDD5]">
+                  <Loader2 className="w-6 h-6 text-[#6B4423] animate-spin" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Detecting your location...
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                  Detecting location...
                 </h3>
-                <p className="text-gray-500 text-sm">
-                  Please wait while we pinpoint your location 📍
+                <p className="text-gray-500 text-xs">
+                  Please wait 📍
                 </p>
               </div>
             )}
 
             {/* Success State */}
             {detectionResult?.success && (
-              <div className="py-4">
+              <div className="py-3">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  <div className="w-12 h-12 bg-green-50 flex items-center justify-center mx-auto mb-3 border border-green-200">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Live Location Detected! 🎉
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                    Location Detected! 🎉
                   </h3>
-                  <p className="text-gray-600 mb-4">
-                    Matched to <span className="font-semibold text-[#733857]">{detectionResult.location.area}, {detectionResult.location.city}</span>
+                  <p className="text-gray-600 text-xs mb-3">
+                    Matched to <span className="font-semibold text-[#6B4423]">{detectionResult.location.area}, {detectionResult.location.city}</span>
                   </p>
                 </div>
                 
                 {/* Live Location Details Box */}
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-semibold text-green-700">📍 Your Live Location</span>
+                <div className="bg-green-50 border border-green-200 p-3 mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 bg-green-500 animate-pulse"></div>
+                    <span className="text-xs font-semibold text-green-700">📍 Your Live Location</span>
                   </div>
                   
                   {/* Coordinates */}
                   {detectionResult.userCoords && (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between items-center bg-white/60 rounded-lg px-3 py-2">
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between items-center bg-white/60 px-2 py-1.5">
                         <span className="text-gray-600">Latitude:</span>
                         <span className="font-mono text-gray-900">{detectionResult.userCoords.lat.toFixed(6)}</span>
                       </div>
-                      <div className="flex justify-between items-center bg-white/60 rounded-lg px-3 py-2">
+                      <div className="flex justify-between items-center bg-white/60 px-2 py-1.5">
                         <span className="text-gray-600">Longitude:</span>
                         <span className="font-mono text-gray-900">{detectionResult.userCoords.lng.toFixed(6)}</span>
                       </div>
-                      <div className="flex justify-between items-center bg-white/60 rounded-lg px-3 py-2">
+                      <div className="flex justify-between items-center bg-white/60 px-2 py-1.5">
                         <span className="text-gray-600">Accuracy:</span>
                         <span className="font-mono text-gray-900">±{detectionResult.userCoords.accuracy.toFixed(0)}m</span>
                       </div>
                       {detectionResult.distance && (
-                        <div className="flex justify-between items-center bg-white/60 rounded-lg px-3 py-2">
-                          <span className="text-gray-600">Distance to zone:</span>
+                        <div className="flex justify-between items-center bg-white/60 px-2 py-1.5">
+                          <span className="text-gray-600">Distance:</span>
                           <span className="font-mono text-gray-900">{detectionResult.distance} km</span>
                         </div>
                       )}
@@ -664,54 +662,54 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
                   
                   {/* Reverse Geocoded Address */}
                   {detectionResult.reverseGeocodedAddress && (
-                    <div className="mt-3 pt-3 border-t border-green-200">
-                      <p className="text-xs text-gray-500 mb-1">Detected Address:</p>
-                      <p className="text-sm text-gray-700">{detectionResult.reverseGeocodedAddress}</p>
+                    <div className="mt-2 pt-2 border-t border-green-200">
+                      <p className="text-xs text-gray-500 mb-0.5">Address:</p>
+                      <p className="text-xs text-gray-700">{detectionResult.reverseGeocodedAddress}</p>
                     </div>
                   )}
                 </div>
                 
                 {/* Delivery Zone Matched */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>✨ Great news! We deliver to your area. Location saved!</span>
+                <div className="bg-green-50 border border-green-200 p-2 text-xs text-green-700 flex items-center gap-2">
+                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>✨ We deliver to your area. Location saved!</span>
                 </div>
               </div>
             )}
 
             {/* Error State - No matching zone */}
             {detectionResult && !detectionResult.success && (
-              <div className="py-4">
-                <div className="text-center mb-4">
-                  <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MapPinOff className="w-8 h-8 text-amber-600" />
+              <div className="py-3">
+                <div className="text-center mb-3">
+                  <div className="w-12 h-12 bg-amber-50 flex items-center justify-center mx-auto mb-2 border border-amber-200">
+                    <MapPinOff className="w-6 h-6 text-amber-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    We're Not In Your Area Yet 😔
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                    Not In Your Area Yet 😔
                   </h3>
-                  <p className="text-gray-600 text-sm mb-2">
+                  <p className="text-gray-600 text-xs mb-2">
                     {detectionResult.error}
                   </p>
                 </div>
 
                 {/* Show detected location details even when not matched */}
                 {detectionResult.userCoords && (
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm font-semibold text-amber-700">📍 Your Detected Location</span>
+                  <div className="bg-amber-50 border border-amber-200 p-3 mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-1.5 h-1.5 bg-amber-500 animate-pulse"></div>
+                      <span className="text-xs font-semibold text-amber-700">📍 Your Detected Location</span>
                     </div>
                     
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between items-center bg-white/60 rounded-lg px-3 py-2">
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between items-center bg-white/60 px-2 py-1.5">
                         <span className="text-gray-600">Latitude:</span>
                         <span className="font-mono text-gray-900">{detectionResult.userCoords.lat.toFixed(6)}</span>
                       </div>
-                      <div className="flex justify-between items-center bg-white/60 rounded-lg px-3 py-2">
+                      <div className="flex justify-between items-center bg-white/60 px-2 py-1.5">
                         <span className="text-gray-600">Longitude:</span>
                         <span className="font-mono text-gray-900">{detectionResult.userCoords.lng.toFixed(6)}</span>
                       </div>
-                      <div className="flex justify-between items-center bg-white/60 rounded-lg px-3 py-2">
+                      <div className="flex justify-between items-center bg-white/60 px-2 py-1.5">
                         <span className="text-gray-600">Accuracy:</span>
                         <span className="font-mono text-gray-900">±{detectionResult.userCoords.accuracy.toFixed(0)}m</span>
                       </div>
@@ -719,22 +717,22 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
                     
                     {/* Reverse Geocoded Address */}
                     {detectionResult.reverseGeocodedAddress && (
-                      <div className="mt-3 pt-3 border-t border-amber-200">
-                        <p className="text-xs text-gray-500 mb-1">Detected Address:</p>
-                        <p className="text-sm text-gray-700">{detectionResult.reverseGeocodedAddress}</p>
+                      <div className="mt-2 pt-2 border-t border-amber-200">
+                        <p className="text-xs text-gray-500 mb-0.5">Address:</p>
+                        <p className="text-xs text-gray-700">{detectionResult.reverseGeocodedAddress}</p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Manual selection dropdown */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">
+                <div className="bg-gray-50 border border-gray-200 p-3">
+                  <p className="text-xs font-medium text-gray-700 mb-2">
                     Select a delivery zone manually:
                   </p>
                   <select
                     onChange={(e) => handleSelectLocation(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#733857] focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 bg-white text-sm focus:ring-1 focus:ring-[#6B4423] focus:border-[#6B4423]"
                     defaultValue=""
                   >
                     <option value="" disabled>Choose a location...</option>
@@ -748,7 +746,7 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
 
                 <button
                   onClick={handleDismiss}
-                  className="w-full mt-4 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+                  className="w-full mt-3 py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors border border-gray-200"
                 >
                   Close
                 </button>
@@ -757,55 +755,13 @@ const LocationPermission = ({ isOpen: externalIsOpen, onClose, showTriggerButton
           </div>
 
           {/* Footer note */}
-          <div className="px-6 pb-4">
+          <div className="px-4 pb-3">
             <p className="text-xs text-gray-400 text-center">
-              🔒 Your location data is only used for delivery purposes and is never shared.
+              🔒 Your location is only used for delivery
             </p>
           </div>
         </div>
       </div>
-
-      {/* CSS for animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-          from { 
-            opacity: 0; 
-            transform: scale(0.9); 
-          }
-          to { 
-            opacity: 1; 
-            transform: scale(1); 
-          }
-        }
-        
-        @keyframes slideDown {
-          from { 
-            opacity: 0; 
-            transform: translate(-50%, -20px); 
-          }
-          to { 
-            opacity: 1; 
-            transform: translate(-50%, 0); 
-          }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out forwards;
-        }
-        
-        .animate-scaleIn {
-          animation: scaleIn 0.3s ease-out forwards;
-        }
-        
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out forwards;
-        }
-      `}</style>
     </>
   );
 };
