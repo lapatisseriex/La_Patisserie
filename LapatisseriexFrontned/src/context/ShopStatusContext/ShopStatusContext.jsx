@@ -29,18 +29,61 @@ export const ShopStatusProvider = ({ children }) => {
   const [lastFetch, setLastFetch] = useState(0);
   const CACHE_DURATION = 30 * 1000; // 30 seconds cache (reduced from 1 minute)
 
-  // Toast styling to match site palette (header/products/orders)
-  // Styling is now handled by toast-custom.css for consistency
+  // Sleek minimal toast styling - mobile-first responsive
   const getToastOptions = (variant = 'open') => {
+    const isOpen = variant === 'open';
     return {
       containerId: 'app-toasts',
-      icon: variant === 'open' ? '🟢' : '🔒',
-      autoClose: 3200,
+      icon: false,
+      autoClose: 2500,
       closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true
+      pauseOnHover: false,
+      draggable: false,
+      hideProgressBar: true,
+      closeButton: false, // Remove close button for cleaner mobile look
+      className: 'shop-toast-minimal',
+      style: {
+        background: '#1a1a1a',
+        color: '#fafafa',
+        borderRadius: '100px',
+        padding: '8px 16px',
+        fontSize: '12px',
+        fontWeight: '500',
+        letterSpacing: '0.02em',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+        border: `1.5px solid ${isOpen ? '#22c55e' : '#f59e0b'}`,
+        minHeight: 'unset',
+        width: 'fit-content',
+        maxWidth: '200px',
+        margin: '0 auto',
+      }
     };
   };
+
+  // Ultra-compact pill toast
+  const StatusToast = ({ isOpen, timeInfo }) => (
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '6px',
+      whiteSpace: 'nowrap'
+    }}>
+      <span style={{ 
+        width: '6px', 
+        height: '6px', 
+        borderRadius: '50%', 
+        background: isOpen ? '#22c55e' : '#f59e0b',
+        flexShrink: 0,
+        animation: 'pulse 2s infinite'
+      }} />
+      <span style={{ fontSize: '12px' }}>
+        {isOpen ? 'Open' : 'Closed'}
+        {timeInfo && (
+          <span style={{ opacity: 0.7, fontSize: '11px' }}> · {timeInfo}</span>
+        )}
+      </span>
+    </div>
+  );
 
   const formatNextOpening = (iso, tz = 'Asia/Kolkata') => {
     if (!iso) return null;
@@ -154,15 +197,15 @@ export const ShopStatusProvider = ({ children }) => {
       // First resolved status on landing: show a one-time toast
       if (!initialToastShownRef.current) {
         if (shopStatus.isOpen) {
-          const formattedClose = formatNextOpening(shopStatus.closingTime, shopStatus.timezone);
-          toast.success(
-            formattedClose ? `We're open. Closes ${formattedClose}` : "We're open.",
+          const timeInfo = formatNextOpening(shopStatus.closingTime, shopStatus.timezone);
+          toast(
+            <StatusToast isOpen={true} timeInfo={timeInfo ? `closes ${timeInfo}` : null} />,
             getToastOptions('open')
           );
         } else {
-          const formattedOpen = formatNextOpening(shopStatus.nextOpeningTime, shopStatus.timezone);
-          toast.info(
-            formattedOpen ? `We're closed. Opens ${formattedOpen}` : "We're closed.",
+          const timeInfo = formatNextOpening(shopStatus.nextOpeningTime, shopStatus.timezone);
+          toast(
+            <StatusToast isOpen={false} timeInfo={timeInfo ? `opens ${timeInfo}` : null} />,
             getToastOptions('closed')
           );
         }
@@ -173,15 +216,15 @@ export const ShopStatusProvider = ({ children }) => {
     }
     if (prevOpenRef.current !== shopStatus.isOpen) {
       if (shopStatus.isOpen) {
-        const formattedClose = formatNextOpening(shopStatus.closingTime, shopStatus.timezone);
-        toast.success(
-          formattedClose ? `We're now open! Closes ${formattedClose}` : "We're now open!",
+        const timeInfo = formatNextOpening(shopStatus.closingTime, shopStatus.timezone);
+        toast(
+          <StatusToast isOpen={true} timeInfo={timeInfo ? `closes ${timeInfo}` : null} />,
           getToastOptions('open')
         );
       } else {
-        const formatted = formatNextOpening(shopStatus.nextOpeningTime, shopStatus.timezone);
-        toast.info(
-          formatted ? `We're now closed. Opens ${formatted}` : "We're now closed.",
+        const timeInfo = formatNextOpening(shopStatus.nextOpeningTime, shopStatus.timezone);
+        toast(
+          <StatusToast isOpen={false} timeInfo={timeInfo ? `opens ${timeInfo}` : null} />,
           getToastOptions('closed')
         );
       }
