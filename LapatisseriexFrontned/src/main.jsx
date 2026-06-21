@@ -6,6 +6,12 @@ import './index.css';
 import './styles/network-status.css';
 import App from './App.jsx';
 
+// Silence console logs/info in production, keeping warn/error intact
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
 
 createRoot(document.getElementById('root')).render(
   <App />
